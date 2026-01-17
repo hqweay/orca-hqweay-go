@@ -1,14 +1,15 @@
 import { formatUtil } from "@/utils/format";
 import { setupL10N, t } from "@/libs/l10n";
+const thisPluginName = "lets-format";
 export async function load(_name: string) {
   const Button = orca.components.Button;
 
-  if (orca.state.headbarButtons["lets-format.format-block"] == null) {
-    orca.headbar.registerHeadbarButton("lets-format.format-block", () => (
+  if (orca.state.headbarButtons[`${thisPluginName}.format-block`] == null) {
+    orca.headbar.registerHeadbarButton(`${thisPluginName}.format-block`, () => (
       <Button
         variant="plain"
         onClick={async () =>
-          orca.commands.invokeCommand("lets-format.format-block")
+          orca.commands.invokeCommand(`${thisPluginName}.format-block`)
         }
       >
         <i className="ti ti-refresh" />
@@ -17,7 +18,7 @@ export async function load(_name: string) {
   }
 
   orca.commands.registerCommand(
-    "lets-format.format-block",
+    `${thisPluginName}.format-block`,
     async () => {
       // 1. Get active panel info
       const panel = orca.state.activePanel;
@@ -122,5 +123,5 @@ export async function load(_name: string) {
 }
 
 export function unload() {
-  orca.commands.unregisterCommand("lets-format.format-block");
+  orca.commands.unregisterCommand(`${thisPluginName}.format-block`);
 }
