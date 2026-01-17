@@ -39,7 +39,6 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
   private async syncVoiceNotes(fullSync: boolean = false) {
     const settings = orca.state.plugins[this.mainPluginName]?.settings;
 
-    console.log("settings", settings);
     if (!settings?.[`${this.name}.token`]) {
       orca.notify(
         "error",
