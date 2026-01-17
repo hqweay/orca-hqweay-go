@@ -292,7 +292,7 @@ export default class ImportPlugin extends BasePlugin {
     );
   }
 
-  public async onLoad(pluginName: string): Promise<void> {
+  public async onLoad(): Promise<void> {
     setupL10N(orca.state.locale, { "zh-CN": zhCN });
     this.injectStyles();
 

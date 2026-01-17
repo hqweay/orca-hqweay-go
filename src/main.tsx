@@ -17,7 +17,7 @@ export async function load(_name: string) {
         // It's a BasePlugin class
         // Extract name from path e.g. "./lets-format/index.tsx" -> "lets-format"
         const folderName = path.split("/")[1];
-        const pluginInstance = new module.default(folderName);
+        const pluginInstance = new module.default(_name, folderName);
         pluginInstances.push(pluginInstance);
 
         console.log(`Loading sub-plugin (class) from ${path}`);

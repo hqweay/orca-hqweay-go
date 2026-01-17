@@ -36,155 +36,148 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
     };
   }
 
-  public async onLoad(pluginName: string): Promise<void> {
+  private async syncVoiceNotes(fullSync: boolean = false) {
+    const settings = orca.state.plugins[this.mainPluginName]?.settings;
+
+    console.log("settings", settings);
+    if (!settings?.[`${this.name}.token`]) {
+      orca.notify(
+        "error",
+        t("Please provide a Voicenotes API token in plugin settings."),
+      );
+      return;
+    }
+
+    orca.notify("info", t("Starting to sync VoiceNotes, please wait..."));
+
+    const inboxName = settings[`${this.name}.inboxName`] || "VoiceNotes Inbox";
+    const noteTag = settings[`${this.name}.noteTag`] || "VoiceNote";
+
+    let lastSyncTime = await orca.plugins.getData(this.name, "syncKey");
+    if (fullSync) {
+      lastSyncTime = undefined;
+    }
+
+    const api = new VoiceNotesApi({
+      token: settings[`${this.name}.token`],
+      lastSyncedNoteUpdatedAt: lastSyncTime,
+    });
+
+    try {
+      let recordingsResponse = await api.getRecordings();
+      let allNotes: VoiceNote[] = [];
+
+      while (recordingsResponse && recordingsResponse.data) {
+        allNotes.push(...recordingsResponse.data);
+        if (allNotes.length >= 2) break;
+        if (recordingsResponse.links && recordingsResponse.links.next) {
+          recordingsResponse = await api.getRecordingsFromLink(
+            recordingsResponse.links.next,
+          );
+        } else {
+          break;
+        }
+      }
+      allNotes = allNotes.slice(0, 2);
+
+      if (allNotes.length === 0) {
+        orca.notify("info", t("Nothing to sync."));
+        return;
+      }
+
+      // Group notes by date (created_at)
+      const notesByDate: Record<string, VoiceNote[]> = {};
+      for (const note of allNotes) {
+        const dateStr = note.created_at.split("T")[0]; // YYYY-MM-DD
+        if (!notesByDate[dateStr]) {
+          notesByDate[dateStr] = [];
+        }
+        notesByDate[dateStr].push(note);
+      }
+
+      await orca.commands.invokeGroup(async () => {
+        for (const [dateStr, notes] of Object.entries(notesByDate)) {
+          // dateStr is YYYY-MM-DD
+          const createdAt = new Date(`${dateStr} 00:00:00`);
+          const journal: Block = await orca.invokeBackend(
+            "get-journal-block",
+            createdAt,
+          );
+          if (journal == null) continue;
+          const inbox = await ensureInbox(journal, inboxName);
+
+          for (const note of notes) {
+            await syncNote(note, inbox, noteTag);
+          }
+        }
+      });
+
+      let maxUpdatedAt = lastSyncTime;
+      if (allNotes.length > 0) {
+        // Find max
+        const maxDate = allNotes.reduce((max, note) => {
+          return note.updated_at > max ? note.updated_at : max;
+        }, allNotes[0].updated_at);
+        maxUpdatedAt = maxDate;
+      }
+
+      if (maxUpdatedAt) {
+        // 子插件的存储
+        await orca.plugins.setData(this.name, "syncKey", maxUpdatedAt);
+      }
+
+      orca.notify("success", t("VoiceNotes synced successfully."));
+    } catch (err) {
+      this.logger.error("VOICENOTES SYNC:", err);
+      orca.notify("error", t("Failed to sync VoiceNotes."));
+    }
+  }
+
+  public async onLoad(): Promise<void> {
     setupL10N(orca.state.locale, { "zh-CN": zhCN });
 
     const Button = orca.components.Button;
-    const HoverContextMenu = orca.components.HoverContextMenu;
-    const MenuText = orca.components.MenuText;
 
-    if (orca.state.commands["voicenotes.sync"] == null) {
+    if (orca.state.commands[`${this.name}.voicenotes-sync`] == null) {
       orca.commands.registerCommand(
-        "voicenotes.sync",
+        `${this.name}.voicenotes-sync`,
         async (fullSync: boolean = false) => {
-          const settings = orca.state.plugins[pluginName]?.settings;
-
-          if (!settings?.[`${this.name}.token`]) {
-            orca.notify(
-              "error",
-              t("Please provide a Voicenotes API token in plugin settings."),
-            );
-            return;
-          }
-
-          orca.notify("info", t("Starting to sync VoiceNotes, please wait..."));
-
-          const inboxName =
-            settings[`${this.name}.inboxName`] || "VoiceNotes Inbox";
-          const noteTag = settings[`${this.name}.noteTag`] || "VoiceNote";
-
-          let lastSyncTime = await orca.plugins.getData(pluginName, "syncKey");
-          if (fullSync) {
-            lastSyncTime = undefined;
-          }
-
-          const api = new VoiceNotesApi({
-            token: settings[`${this.name}.token`],
-            lastSyncedNoteUpdatedAt: lastSyncTime,
-          });
-
-          try {
-            let recordingsResponse = await api.getRecordings();
-            let allNotes: VoiceNote[] = [];
-
-            while (recordingsResponse && recordingsResponse.data) {
-              allNotes.push(...recordingsResponse.data);
-              if (allNotes.length >= 2) break;
-              if (recordingsResponse.links && recordingsResponse.links.next) {
-                recordingsResponse = await api.getRecordingsFromLink(
-                  recordingsResponse.links.next,
-                );
-              } else {
-                break;
-              }
-            }
-            allNotes = allNotes.slice(0, 2);
-
-            if (allNotes.length === 0) {
-              orca.notify("info", t("Nothing to sync."));
-              return;
-            }
-
-            // Group notes by date (created_at)
-            const notesByDate: Record<string, VoiceNote[]> = {};
-            for (const note of allNotes) {
-              const dateStr = note.created_at.split("T")[0]; // YYYY-MM-DD
-              if (!notesByDate[dateStr]) {
-                notesByDate[dateStr] = [];
-              }
-              notesByDate[dateStr].push(note);
-            }
-
-            await orca.commands.invokeGroup(async () => {
-              for (const [dateStr, notes] of Object.entries(notesByDate)) {
-                // dateStr is YYYY-MM-DD
-                const createdAt = new Date(`${dateStr} 00:00:00`);
-                const journal: Block = await orca.invokeBackend(
-                  "get-journal-block",
-                  createdAt,
-                );
-                if (journal == null) continue;
-                const inbox = await ensureInbox(journal, inboxName);
-
-                for (const note of notes) {
-                  await syncNote(note, inbox, noteTag);
-                }
-              }
-            });
-
-            let maxUpdatedAt = lastSyncTime;
-            if (allNotes.length > 0) {
-              // Find max
-              const maxDate = allNotes.reduce((max, note) => {
-                return note.updated_at > max ? note.updated_at : max;
-              }, allNotes[0].updated_at);
-              maxUpdatedAt = maxDate;
-            }
-
-            if (maxUpdatedAt) {
-              await orca.plugins.setData(pluginName, "syncKey", maxUpdatedAt);
-            }
-
-            orca.notify("success", t("VoiceNotes synced successfully."));
-          } catch (err) {
-            this.logger.error("VOICENOTES SYNC:", err);
-            orca.notify("error", t("Failed to sync VoiceNotes."));
-          }
+          await this.syncVoiceNotes(fullSync);
+        },
+        t("Sync VoiceNotes"),
+      );
+    }
+    if (orca.state.commands[`${this.name}.voicenotes-sync-full`] == null) {
+      orca.commands.registerCommand(
+        `${this.name}.voicenotes-sync-full`,
+        async () => {
+          await this.syncVoiceNotes(true);
         },
         t("Sync VoiceNotes"),
       );
     }
 
-    if (orca.state.headbarButtons["voicenotes.sync"] == null) {
-      orca.headbar.registerHeadbarButton("voicenotes.sync", () => (
-        <HoverContextMenu
-          menu={(closeMenu: () => void) => (
-            <>
-              <MenuText
-                title={t("Incremental sync")}
-                onClick={async () => {
-                  closeMenu();
-                  await orca.commands.invokeCommand("voicenotes.sync");
-                }}
-              />
-              <MenuText
-                title={t("Full sync")}
-                onClick={async () => {
-                  closeMenu();
-                  await orca.commands.invokeCommand("voicenotes.sync", true);
-                }}
-              />
-            </>
-          )}
+    if (orca.state.headbarButtons[`${this.name}.voicenotes-sync`] == null) {
+      orca.headbar.registerHeadbarButton(`${this.name}.voicenotes-sync`, () => (
+        <Button
+          variant="plain"
+          onClick={async () =>
+            orca.commands.invokeCommand(`${this.name}.voicenotes-sync`)
+          }
         >
-          <Button
-            variant="plain"
-            onClick={async () => orca.commands.invokeCommand("voicenotes.sync")}
+          <svg
+            viewBox="0 0 1024 1024"
+            version="1.1"
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
           >
-            <svg
-              viewBox="0 0 1024 1024"
-              version="1.1"
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-            >
-              <path
-                d="M487.648 240a16 16 0 0 1 16-16h16a16 16 0 0 1 16 16v546.784a16 16 0 0 1-16 16h-16a16 16 0 0 1-16-16V240z m155.84 89.04a16 16 0 0 1 16-16h16a16 16 0 0 1 16 16v346.432a16 16 0 0 1-16 16h-16a16 16 0 0 1-16-16V329.04z m155.824 144.704a16 16 0 0 1 16-16h16a16 16 0 0 1 16 16v123.824a16 16 0 0 1-16 16h-16a16 16 0 0 1-16-16v-123.84z m-467.488-144.704a16 16 0 0 1 16-16h16a16 16 0 0 1 16 16v346.432a16 16 0 0 1-16 16h-16a16 16 0 0 1-16-16V329.04zM176 473.76a16 16 0 0 1 16-16h16a16 16 0 0 1 16 16v112.688a16 16 0 0 1-16 16h-16a16 16 0 0 1-16-16V473.76z"
-                fill="#000000"
-              ></path>
-            </svg>
-          </Button>
-        </HoverContextMenu>
+            <path
+              d="M487.648 240a16 16 0 0 1 16-16h16a16 16 0 0 1 16 16v546.784a16 16 0 0 1-16 16h-16a16 16 0 0 1-16-16V240z m155.84 89.04a16 16 0 0 1 16-16h16a16 16 0 0 1 16 16v346.432a16 16 0 0 1-16 16h-16a16 16 0 0 1-16-16V329.04z m155.824 144.704a16 16 0 0 1 16-16h16a16 16 0 0 1 16 16v123.824a16 16 0 0 1-16 16h-16a16 16 0 0 1-16-16v-123.84z m-467.488-144.704a16 16 0 0 1 16-16h16a16 16 0 0 1 16 16v346.432a16 16 0 0 1-16 16h-16a16 16 0 0 1-16-16V329.04zM176 473.76a16 16 0 0 1 16-16h16a16 16 0 0 1 16 16v112.688a16 16 0 0 1-16 16h-16a16 16 0 0 1-16-16V473.76z"
+              fill="#000000"
+            ></path>
+          </svg>
+        </Button>
       ));
     }
 
@@ -192,9 +185,8 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
   }
 
   public async onUnload(): Promise<void> {
-    orca.headbar.unregisterHeadbarButton("voicenotes.sync");
-    orca.commands.unregisterCommand("voicenotes.sync");
-    // orca.themes.removeCSSResources(pluginName)
+    orca.headbar.unregisterHeadbarButton(`${this.name}.voicenotes-sync`);
+    orca.commands.unregisterCommand(`${this.name}.voicenotes-sync`);
     this.logger.info(`${this.name} unloaded.`);
   }
 }

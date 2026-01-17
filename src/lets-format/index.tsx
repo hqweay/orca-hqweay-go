@@ -3,7 +3,7 @@ import { setupL10N, t } from "@/libs/l10n";
 import { BasePlugin } from "@/libs/BasePlugin";
 
 export default class FormatPlugin extends BasePlugin {
-  public async onLoad(pluginName: string): Promise<void> {
+  public async onLoad(): Promise<void> {
     const Button = orca.components.Button;
 
     if (orca.state.headbarButtons[`${this.name}.format-block`] == null) {
