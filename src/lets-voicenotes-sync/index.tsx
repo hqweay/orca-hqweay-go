@@ -12,10 +12,6 @@ import type { VoiceNote } from "../types";
 import { BasePlugin } from "@/libs/BasePlugin";
 
 export default class VoiceNotesSyncPlugin extends BasePlugin {
-  constructor(name: string) {
-    super(name);
-  }
-
   public getSettingsSchema() {
     return {
       [`${this.name}.token`]: {

@@ -3,10 +3,6 @@ import { setupL10N, t } from "@/libs/l10n";
 import { BasePlugin } from "@/libs/BasePlugin";
 
 export default class FormatPlugin extends BasePlugin {
-  constructor(name: string) {
-    super(name);
-  }
-
   public async onLoad(pluginName: string): Promise<void> {
     const Button = orca.components.Button;
 

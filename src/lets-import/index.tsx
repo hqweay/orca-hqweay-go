@@ -10,10 +10,6 @@ export default class ImportPlugin extends BasePlugin {
   private isImportDialogOpen = false;
   private isFolderSelectorOpen = false;
 
-  constructor(name: string) {
-    super(name);
-  }
-
   private async createPage(markdownFile: MarkdownFile) {
     // Get file content using browser APIs
     const file: any = markdownFile.file;
