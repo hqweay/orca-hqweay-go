@@ -60,15 +60,17 @@ export default class FormatPlugin extends BasePlugin {
         );
 
         if (!blockTree) return;
-
+        const rootBlock = orca.state.blocks[rootBlockId];
         const updates: { id: number; content: any[] }[] = [];
 
         // Helper to process a block
         const processBlock = (block: any) => {
+          // 只格式化文本块，且纯文本块。代码块、包含富文本元素等块都不格式化
           if (
             block.content &&
             block.content.length === 1 &&
-            block.content[0].t === "t"
+            block.content[0].t === "t" &&
+            block.properties?.[0].value?.type === "text"
           ) {
             const originalText = block.content[0].v;
             const formattedText = formatUtil.formatContent(originalText);
@@ -84,7 +86,7 @@ export default class FormatPlugin extends BasePlugin {
 
         // 4. Traverse tree (Root + Children + Grandchildren)
         // Level 0: Root
-        // processBlock(rootBlock);
+        processBlock(rootBlock);
 
         // if (rootBlock.childrenBlocks) {
         for (const child of blockTree) {
