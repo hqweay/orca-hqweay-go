@@ -14,6 +14,30 @@ let pluginName: string;
 
 let thisPluginName = "voicenotes-sync";
 
+export function getSettingsSchema() {
+  return {
+    [`${thisPluginName}.token`]: {
+      label: t(thisPluginName + ".Token"),
+      description: t("The Voicenotes API token."),
+      type: "string",
+    },
+    [`${thisPluginName}.inboxName`]: {
+      label: t(thisPluginName + ".Inbox name"),
+      description: t(
+        "The text used for the block where imported notes are placed under.",
+      ),
+      type: "string",
+      defaultValue: "VoiceNotes Inbox",
+    },
+    [`${thisPluginName}.noteTag`]: {
+      label: t(thisPluginName + ".Note tag"),
+      description: t(".The tag applied to imported notes."),
+      type: "string",
+      defaultValue: "VoiceNote",
+    },
+  };
+}
+
 export async function load(_name: string) {
   pluginName = _name;
 
@@ -27,35 +51,13 @@ export async function load(_name: string) {
   // const testBlock = orca.state.blocks[1205];
   // if (testBlock) { ... } // Removed explicit block fetch to avoid errors if block doesn't exist in dev env.
 
-  await orca.plugins.setSettingsSchema(pluginName, {
-    token: {
-      label: t(thisPluginName + ".Token"),
-      description: t("The Voicenotes API token."),
-      type: "string",
-    },
-    inboxName: {
-      label: t(thisPluginName + ".Inbox name"),
-      description: t(
-        "The text used for the block where imported notes are placed under.",
-      ),
-      type: "string",
-      defaultValue: "VoiceNotes Inbox",
-    },
-    noteTag: {
-      label: t(thisPluginName + ".Note tag"),
-      description: t(".The tag applied to imported notes."),
-      type: "string",
-      defaultValue: "VoiceNote",
-    },
-  });
-
   if (orca.state.commands["voicenotes.sync"] == null) {
     orca.commands.registerCommand(
       "voicenotes.sync",
       async (fullSync: boolean = false) => {
         const settings = orca.state.plugins[pluginName]?.settings;
 
-        if (!settings?.token) {
+        if (!settings?.[`${thisPluginName}.token`]) {
           orca.notify(
             "error",
             t("Please provide a Voicenotes API token in plugin settings."),
@@ -65,8 +67,9 @@ export async function load(_name: string) {
 
         orca.notify("info", t("Starting to sync VoiceNotes, please wait..."));
 
-        const inboxName = settings.inboxName || "VoiceNotes Inbox";
-        const noteTag = settings.noteTag || "VoiceNote";
+        const inboxName =
+          settings[`${thisPluginName}.inboxName`] || "VoiceNotes Inbox";
+        const noteTag = settings[`${thisPluginName}.noteTag`] || "VoiceNote";
 
         let lastSyncTime = await orca.plugins.getData(pluginName, "syncKey");
         if (fullSync) {
@@ -74,7 +77,7 @@ export async function load(_name: string) {
         }
 
         const api = new VoiceNotesApi({
-          token: settings.token,
+          token: settings[`${thisPluginName}.token`],
           lastSyncedNoteUpdatedAt: lastSyncTime,
         });
 
