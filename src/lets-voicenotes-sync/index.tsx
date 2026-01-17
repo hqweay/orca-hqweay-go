@@ -6,9 +6,9 @@ import { setupL10N, t } from "@/libs/l10n";
 import { ensureInbox } from "@/libs/utils";
 import { formatUtil } from "@/utils/format";
 // import { Block, DbId, QueryDescription } from "../orca.d.ts" // orca is global
-import type { Block, DbId, QueryDescription } from "#/orca";
+import type { Block, DbId, QueryDescription } from "../orca";
 import zhCN from "@/translations/zhCN";
-import type { VoiceNote } from "./types";
+import type { VoiceNote } from "../types";
 
 let pluginName: string;
 
@@ -30,9 +30,7 @@ export async function load(_name: string) {
   await orca.plugins.setSettingsSchema(pluginName, {
     token: {
       label: t(thisPluginName + ".Token"),
-      description: t(
-        "The Voicenotes API token that you can find in Settings -> Integrations -> Obsidian.",
-      ),
+      description: t("The Voicenotes API token."),
       type: "string",
     },
     inboxName: {
@@ -180,12 +178,18 @@ export async function load(_name: string) {
           variant="plain"
           onClick={async () => orca.commands.invokeCommand("voicenotes.sync")}
         >
-          <img
-            className="voicenotes-button"
-            src={LogoImg}
-            alt="Sync"
-            style={{ width: 16, height: 16 }}
-          />
+          <svg
+            viewBox="0 0 1024 1024"
+            version="1.1"
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+          >
+            <path
+              d="M487.648 240a16 16 0 0 1 16-16h16a16 16 0 0 1 16 16v546.784a16 16 0 0 1-16 16h-16a16 16 0 0 1-16-16V240z m155.84 89.04a16 16 0 0 1 16-16h16a16 16 0 0 1 16 16v346.432a16 16 0 0 1-16 16h-16a16 16 0 0 1-16-16V329.04z m155.824 144.704a16 16 0 0 1 16-16h16a16 16 0 0 1 16 16v123.824a16 16 0 0 1-16 16h-16a16 16 0 0 1-16-16v-123.84z m-467.488-144.704a16 16 0 0 1 16-16h16a16 16 0 0 1 16 16v346.432a16 16 0 0 1-16 16h-16a16 16 0 0 1-16-16V329.04zM176 473.76a16 16 0 0 1 16-16h16a16 16 0 0 1 16 16v112.688a16 16 0 0 1-16 16h-16a16 16 0 0 1-16-16V473.76z"
+              fill="#000000"
+            ></path>
+          </svg>
         </Button>
       </HoverContextMenu>
     ));
