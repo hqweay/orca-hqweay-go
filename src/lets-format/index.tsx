@@ -114,6 +114,8 @@ export async function load(_name: string) {
           message: "No blocks needed formatting.",
         });
       }
+
+      orca.notify("info", t(`Formatted ${updates.length} blocks.`));
     },
     t("Format Block"),
   );

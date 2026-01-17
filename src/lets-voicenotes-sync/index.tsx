@@ -10,8 +10,6 @@ import type { Block, DbId, QueryDescription } from "../orca";
 import zhCN from "@/translations/zhCN";
 import type { VoiceNote } from "../types";
 
-let pluginName: string;
-
 let thisPluginName = "voicenotes-sync";
 
 export function getSettingsSchema() {
@@ -38,9 +36,7 @@ export function getSettingsSchema() {
   };
 }
 
-export async function load(_name: string) {
-  pluginName = _name;
-
+export async function load(pluginName: string) {
   setupL10N(orca.state.locale, { "zh-CN": zhCN });
 
   const Button = orca.components.Button;
