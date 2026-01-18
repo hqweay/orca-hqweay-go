@@ -41,14 +41,14 @@ export default class ImportPlugin extends BasePlugin {
 
     this.logger.info("tagid", tagId);
 
-    const result = await orca.commands.invokeEditorCommand(
-      "core.editor.insertBlock",
-      null,
-      orca.state.blocks[tagId], // 使用指定的块ID或当前位置
-      "firstChild",
-      [{ t: "t", v: `${tagOfPath}` }],
-      { type: "text" },
-    );
+    // const result = await orca.commands.invokeEditorCommand(
+    //   "core.editor.insertBlock",
+    //   null,
+    //   orca.state.blocks[tagId], // 使用指定的块ID或当前位置
+    //   "firstChild",
+    //   [{ t: "t", v: `${tagOfPath}` }],
+    //   { type: "text" },
+    // );
 
     // Set as long form display
     await orca.commands.invokeEditorCommand(
