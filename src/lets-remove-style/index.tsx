@@ -14,7 +14,7 @@ export default class FormatPlugin extends BasePlugin {
           menu={(closeMenu: () => void) => (
             <>
               <MenuText
-                title={t("Remove inline style")}
+                title={t("remove inline style")}
                 onClick={async () => {
                   closeMenu();
                   await orca.commands.invokeCommand(
@@ -24,12 +24,22 @@ export default class FormatPlugin extends BasePlugin {
                 }}
               />
               <MenuText
-                title={t("remove link")}
+                title={t("remove link style")}
                 onClick={async () => {
                   closeMenu();
                   await orca.commands.invokeCommand(
                     `${this.name}.remove-style`,
                     ["link"],
+                  );
+                }}
+              />
+              <MenuText
+                title={t("remove empty lines")}
+                onClick={async () => {
+                  closeMenu();
+                  await orca.commands.invokeCommand(
+                    `${this.name}.remove-style`,
+                    ["emptyLine"],
                   );
                 }}
               />
@@ -100,6 +110,7 @@ export default class FormatPlugin extends BasePlugin {
         if (!blockTree) return;
 
         const updates: { id: number; content: any[] }[] = [];
+        const blocksToDelete: number[] = [];
 
         const processBlock = (block: any) => {
           // Helper to process a block
@@ -110,6 +121,25 @@ export default class FormatPlugin extends BasePlugin {
           //   fa?: Record<string, any>;
           //   [key: string]: any;
           // };
+
+          // Handling "remove empty lines"
+          if (removeTypes.includes("emptyLine")) {
+            const isContentEmpty =
+              !block.content ||
+              block.content.length === 0 ||
+              (block.content.length === 1 &&
+                block.content[0].t === "t" &&
+                // 如果是空格行，也删掉
+                block.content[0].v.trim() === "");
+            const isChildrenEmpty =
+              !block.children || block.children.length === 0;
+
+            if (isContentEmpty && isChildrenEmpty) {
+              blocksToDelete.push(block.id);
+              return;
+            }
+          }
+
           // 如果存在fa，说明存在样式，需要删除
           if (block.content) {
             block.content.forEach((fragment: any) => {
@@ -142,6 +172,14 @@ export default class FormatPlugin extends BasePlugin {
         }
 
         // 5. Apply updates
+        if (blocksToDelete.length > 0) {
+          await orca.commands.invokeEditorCommand(
+            "core.editor.deleteBlocks",
+            null,
+            blocksToDelete,
+          );
+        }
+
         if (updates.length > 0) {
           await orca.commands.invokeEditorCommand(
             "core.editor.setBlocksContent",
@@ -149,16 +187,24 @@ export default class FormatPlugin extends BasePlugin {
             updates,
             false, // setBackCursor
           );
+        }
 
+        if (updates.length > 0 || blocksToDelete.length > 0) {
           // Notify user
+          const messages = [];
+          if (updates.length > 0)
+            messages.push(`Updated ${updates.length} blocks`);
+          if (blocksToDelete.length > 0)
+            messages.push(`Deleted ${blocksToDelete.length} empty blocks`);
+
           orca.broadcasts.broadcast("core.notify", {
             type: "success",
-            message: `Removed styles from ${updates.length} blocks.`,
+            message: messages.join(". "),
           });
         } else {
           orca.broadcasts.broadcast("core.notify", {
             type: "info",
-            message: "No blocks needed removing styles.",
+            message: "No blocks needed removing styles or deleting.",
           });
         }
       },

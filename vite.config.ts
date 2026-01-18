@@ -1,5 +1,9 @@
-import { resolve } from "path";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
 import react from "@vitejs/plugin-react-swc";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 import externalGlobals from "rollup-plugin-external-globals";
 import livereload from "rollup-plugin-livereload";
 import zipPack from "vite-plugin-zip-pack";

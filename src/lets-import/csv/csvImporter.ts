@@ -46,7 +46,7 @@ export class CSVImporter {
   private convertToObjects(
     rows: string[][],
     headers: string[],
-    skipHeader: boolean
+    skipHeader: boolean,
   ): CSVRowData[] {
     const dataRows = skipHeader ? rows.slice(1) : rows;
     return dataRows.map((row) => {
@@ -60,7 +60,7 @@ export class CSVImporter {
   }
 
   async importFromConfig(
-    config: CSVImportConfig
+    config: CSVImportConfig,
   ): Promise<{ success: number; failed: number }> {
     try {
       const fileContent = await this.readFileContent(config.file);
@@ -74,7 +74,7 @@ export class CSVImporter {
       const dataObjects = this.convertToObjects(
         rows,
         headers,
-        config.skipHeader
+        config.skipHeader,
       );
 
       let success = 0;
@@ -107,17 +107,17 @@ export class CSVImporter {
   }
 
   private async findExistingBlockByContent(
-    content: string
+    content: string,
   ): Promise<number | null> {
     try {
       // 使用search-blocks-by-text API搜索已存在的块
       const searchResults = await orca.invokeBackend(
         "search-blocks-by-text",
-        content
+        content,
       );
 
-      console.log("Search results:");
-      console.log(searchResults);
+      // console.log("Search results:");
+      // console.log(searchResults);
 
       if (searchResults && Array.isArray(searchResults)) {
         // 检查是否有完全匹配的内容
@@ -157,7 +157,7 @@ export class CSVImporter {
   // 合并用户配置和自动映射
   private mergeMappings(
     userMappings: { [columnIndex: number]: string },
-    autoMappings: { [columnIndex: number]: string }
+    autoMappings: { [columnIndex: number]: string },
   ): { [columnIndex: number]: string } {
     const merged = { ...autoMappings };
 
@@ -174,7 +174,7 @@ export class CSVImporter {
   public createTagDataFromMappings(
     data: CSVRowData,
     mappings: { [columnIndex: number]: string },
-    columnTypes: { [columnIndex: number]: number } = {}
+    columnTypes: { [columnIndex: number]: number } = {},
   ): { name: string; value: any; type?: number }[] {
     const tagData: { name: string; value: any; type?: number }[] = [];
     const headers = Object.keys(data);
@@ -222,7 +222,7 @@ export class CSVImporter {
 
   private async createBlockFromData(
     data: CSVRowData,
-    config: CSVImportConfig
+    config: CSVImportConfig,
   ): Promise<void> {
     // 获取内容列的值作为块内容
     const headers = Object.keys(data);
@@ -280,7 +280,7 @@ export class CSVImporter {
         targetBlock, // 使用指定的块ID或当前位置
         "lastChild",
         blockContent,
-        { type: "text" }
+        { type: "text" },
       );
 
       if (!result) {
@@ -301,7 +301,7 @@ export class CSVImporter {
     const autoMappings = this.generateAutoMappingsFromHeaders(headers);
     const finalMappings = this.mergeMappings(
       config.columnMappings,
-      autoMappings
+      autoMappings,
     );
 
     // console.log("自动生成的映射（使用CSV列名）:", autoMappings);
@@ -315,7 +315,7 @@ export class CSVImporter {
           tagBlockId,
           data,
           finalMappings,
-          config.columnTypes
+          config.columnTypes,
         );
       }
     }
@@ -326,14 +326,14 @@ export class CSVImporter {
     tagBlockId: number,
     data: CSVRowData,
     mappings: { [columnIndex: number]: string },
-    columnTypes: { [columnIndex: number]: number } = {}
+    columnTypes: { [columnIndex: number]: number } = {},
   ): Promise<void> {
     try {
       // 检查块是否已经有这个标签
       const block = orca.state.blocks[blockId];
       if (block && block.refs) {
         const existingTag = block.refs.find(
-          (ref) => ref.type === 2 && ref.id === tagBlockId // 2 is RefType.Property
+          (ref) => ref.type === 2 && ref.id === tagBlockId, // 2 is RefType.Property
         );
         if (existingTag) {
           // 标签已存在，跳过
@@ -347,7 +347,7 @@ export class CSVImporter {
         tagBlockId,
         data,
         mappings,
-        columnTypes
+        columnTypes,
       );
     } catch (error) {
       console.error("Failed to add tag to existing block:", error);
@@ -360,7 +360,7 @@ export class CSVImporter {
     tagBlockId: number,
     data: CSVRowData,
     mappings: { [columnIndex: number]: string },
-    columnTypes: { [columnIndex: number]: number } = {}
+    columnTypes: { [columnIndex: number]: number } = {},
   ): Promise<void> {
     try {
       // 验证标签块是否存在
@@ -373,7 +373,7 @@ export class CSVImporter {
       const tagData = this.createTagDataFromMappings(
         data,
         mappings,
-        columnTypes
+        columnTypes,
       );
 
       const propertiesToSet = [...tagData]
@@ -392,7 +392,7 @@ export class CSVImporter {
       if (propertiesToSet.length > 0) {
         // console.log("propertiesToSet", propertiesToSet);
         const oldProperties = orca.state.blocks[tagBlockId]?.properties?.filter(
-          (prop) => prop.type === PropType.TextChoices
+          (prop) => prop.type === PropType.TextChoices,
         );
         const rawProperties = JSON.parse(JSON.stringify(oldProperties));
 
@@ -407,7 +407,7 @@ export class CSVImporter {
           // );
           if (oldProp) {
             prop.typeArgs.choices = prop.typeArgs.choices.concat(
-              oldProp.typeArgs.choices ? oldProp.typeArgs.choices : []
+              oldProp.typeArgs.choices ? oldProp.typeArgs.choices : [],
             );
           }
 
@@ -417,11 +417,11 @@ export class CSVImporter {
               item != undefined &&
               item != null &&
               item.n != undefined &&
-              item.n != null
+              item.n != null,
           );
           prop.typeArgs.choices = prop.typeArgs.choices.filter(
             (item: any, index: number, self: any) =>
-              index === self.findIndex((t: any) => t && t.n === item.n)
+              index === self.findIndex((t: any) => t && t.n === item.n),
           );
         });
 
@@ -430,7 +430,7 @@ export class CSVImporter {
           "core.editor.setProperties",
           null,
           [tagBlockId],
-          propertiesToSet
+          propertiesToSet,
         );
       }
 
@@ -453,7 +453,7 @@ export class CSVImporter {
         null,
         blockId,
         tagBlock.aliases[0].trim(),
-        tagData
+        tagData,
       );
 
       // console.log("singleChoiceProperties", tagData);
@@ -486,7 +486,7 @@ export class CSVImporter {
   // 获取CSV文件的预览数据
   async getCSVPreview(
     file: File,
-    maxRows: number = 5
+    maxRows: number = 5,
   ): Promise<{
     headers: string[];
     rows: string[][];
