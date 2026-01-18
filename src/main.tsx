@@ -8,7 +8,7 @@ const pluginInstances: BasePlugin[] = [];
 
 export async function load(_name: string) {
   let settingsSchema: any = {};
-  
+
   for (const path in pluginModules) {
     const module: any = pluginModules[path];
     try {
@@ -17,21 +17,30 @@ export async function load(_name: string) {
         // It's a BasePlugin class
         // Extract name from path e.g. "./lets-format/index.tsx" -> "lets-format"
         const folderName = path.split("/")[1];
-        const pluginInstance = new module.default(
-          _name,
-          folderName.replace("lets-", ""),
-        );
+        const pluginName = folderName.replace("lets-", "");
+        const pluginInstance = new module.default(_name, pluginName);
         pluginInstances.push(pluginInstance);
 
         console.log(`Loading sub-plugin (class) from ${path}`);
 
         // Collect settings
         settingsSchema = {
+          [pluginName]: {
+            label: t(`Enable ${pluginName}`),
+            description: t(`Enable ${pluginName}`),
+            type: "boolean",
+            defaultValue: false,
+          },
           ...settingsSchema,
           ...pluginInstance.getSettingsSchema(),
         };
 
         // Load
+        const settings = orca.state.plugins[_name]?.settings;
+        if (!settings?.[`${pluginName}`]) {
+          return;
+        }
+
         await pluginInstance.onLoad(_name);
       } else {
         // Fallback to legacy functional style
