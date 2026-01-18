@@ -41,4 +41,4 @@
 
 ## License
 
-MIT
+WTFPL
