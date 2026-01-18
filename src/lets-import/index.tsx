@@ -5,15 +5,19 @@ import { FolderSelector } from "./markdown/importUI";
 import React from "react";
 import { setupL10N, t } from "@/libs/l10n";
 import { BasePlugin } from "@/libs/BasePlugin";
+import { formatUtil } from "@/utils/format";
 
 export default class ImportPlugin extends BasePlugin {
-  private isImportDialogOpen = false;
   private isFolderSelectorOpen = false;
 
   private async createPage(markdownFile: MarkdownFile) {
     // Get file content using browser APIs
     const file: any = markdownFile.file;
-    const content = await file.text();
+    let content = await file.text();
+
+    // todo 导入前格式化一下
+    content = formatUtil.formatContent(content);
+    content = content.replace("(assets/", "(./");
 
     const fileName = file.name.split(".")[0];
     const tagOfPath: any = markdownFile.directoryHandle;
@@ -433,7 +437,6 @@ export default class ImportPlugin extends BasePlugin {
       });
 
       // Reset state
-      this.isImportDialogOpen = false;
       this.isFolderSelectorOpen = false;
 
       // Unregister commands
