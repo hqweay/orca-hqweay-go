@@ -38,6 +38,7 @@ export default defineConfig(({ command, mode }) => {
                 inDir: "./dist",
                 outDir: "./",
                 outFileName: "package.zip",
+                pathPrefix: "orca-hwqeay-go/dist",
               }),
             ]
           : [],
