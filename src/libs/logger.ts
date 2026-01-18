@@ -7,7 +7,7 @@ export enum LogLevel {
 
 export class Logger {
   private namespace: string;
-  private static globalLevel: LogLevel = LogLevel.INFO;
+  private static globalLevel: LogLevel = LogLevel.DEBUG;
 
   constructor(namespace: string) {
     this.namespace = namespace;
@@ -46,15 +46,19 @@ export class Logger {
   }
 
   private getLevelEnum(levelStr: string): LogLevel {
-      switch(levelStr) {
-          case "DEBUG": return LogLevel.DEBUG;
-          case "INFO": return LogLevel.INFO;
-          case "WARN": return LogLevel.WARN;
-          case "ERROR": return LogLevel.ERROR;
-          default: return LogLevel.INFO;
-      }
+    switch (levelStr) {
+      case "DEBUG":
+        return LogLevel.DEBUG;
+      case "INFO":
+        return LogLevel.INFO;
+      case "WARN":
+        return LogLevel.WARN;
+      case "ERROR":
+        return LogLevel.ERROR;
+      default:
+        return LogLevel.INFO;
+    }
   }
-
 
   debug(...args: any[]) {
     if (this.shouldLog(LogLevel.DEBUG)) {

@@ -1,5 +1,6 @@
 const standardNameList = [
   "MySQL",
+  "App",
   "Redis",
   "MacOS",
   "iPhone",

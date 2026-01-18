@@ -68,7 +68,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
 
       while (recordingsResponse && recordingsResponse.data) {
         allNotes.push(...recordingsResponse.data);
-        if (allNotes.length >= 2) break;
+        // if (allNotes.length >= 2) break;
         if (recordingsResponse.links && recordingsResponse.links.next) {
           recordingsResponse = await api.getRecordingsFromLink(
             recordingsResponse.links.next,
@@ -77,7 +77,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
           break;
         }
       }
-      allNotes = allNotes.slice(0, 2);
+      // allNotes = allNotes.slice(0, 2);
 
       if (allNotes.length === 0) {
         orca.notify("info", t("Nothing to sync."));
@@ -152,7 +152,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
         async () => {
           await this.syncVoiceNotes(true);
         },
-        t("Sync VoiceNotes"),
+        t("Sync VoiceNotes Full"),
       );
     }
 
@@ -223,6 +223,8 @@ async function syncNote(note: VoiceNote, inbox: Block, noteTag: string) {
     },
     pageSize: 1,
   } as QueryDescription)) as DbId[];
+
+  note.title = cleanText(note.title);
 
   if (resultIds.length > 0) {
     const noteBlockId = resultIds[0];
@@ -366,7 +368,7 @@ async function syncNote(note: VoiceNote, inbox: Block, noteTag: string) {
     for (const creation of note.creations) {
       if (creation.markdown_content) {
         const title =
-          creation.title ||
+          cleanText(creation.title!) ||
           (creation as any).name ||
           creation.type ||
           "Summary";
