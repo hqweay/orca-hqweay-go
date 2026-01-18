@@ -1,4 +1,4 @@
-import type { ContentFragment } from "../orca";
+import type { ContentFragment } from "@/orca";
 
 /**
  * Markdown import functionality for Orca Note plugin
@@ -31,9 +31,7 @@ export interface ImportResult {
 /**
  * Parse markdown content into Orca content fragments
  */
-export function parseMarkdownToContentFragments(
-  markdown: string
-): ContentFragment[] {
+export function parseMarkdownToContentFragments(markdown: string): ContentFragment[] {
   const lines = markdown.split("\n");
   const fragments: ContentFragment[] = [];
   let currentContent = "";
@@ -164,10 +162,7 @@ export function parseMarkdownToContentFragments(
 /**
  * Extract title from markdown content (first header or filename)
  */
-export function extractTitleFromMarkdown(
-  markdown: string,
-  filename: string
-): string {
+export function extractTitleFromMarkdown(markdown: string, filename: string): string {
   // Try to find first header
   const headerMatch = markdown.match(/^#{1,6}\s+(.+)$/m);
   if (headerMatch) {
@@ -232,7 +227,7 @@ export function createFolderStructure(files: MarkdownFile[]): Map<string, any> {
 export async function importMarkdownFiles(
   files: MarkdownFile[],
   options: ImportOptions,
-  parentBlockId?: number
+  parentBlockId?: number,
 ): Promise<ImportResult> {
   const result: ImportResult = {
     success: true,
@@ -270,7 +265,7 @@ async function processFolder(
   folderData: any,
   options: ImportOptions,
   parentBlockId: number | undefined,
-  result: ImportResult
+  result: ImportResult,
 ): Promise<void> {
   let folderPageId: number | undefined;
 
@@ -279,7 +274,7 @@ async function processFolder(
     folderPageId = await createFolderPage(folderData.name, parentBlockId);
     result.createdBlocks++;
     console.log(
-      `Created folder page: ${folderData.name} (Page ID: ${folderPageId})`
+      `Created folder page: ${folderData.name} (Page ID: ${folderPageId})`,
     );
   }
 
@@ -289,7 +284,7 @@ async function processFolder(
       subFolderData,
       options,
       folderPageId || parentBlockId,
-      result
+      result,
     );
   }
 
@@ -306,7 +301,7 @@ async function processFile(
   file: MarkdownFile,
   options: ImportOptions,
   parentBlockId: number | undefined,
-  result: ImportResult
+  result: ImportResult,
 ): Promise<void> {
   try {
     const title = options.preserveFileNameAsTitle
@@ -335,7 +330,7 @@ async function processFile(
  */
 async function createFolderPage(
   folderName: string,
-  parentBlockId?: number
+  parentBlockId?: number,
 ): Promise<number> {
   try {
     // First create a block with the folder name as title
@@ -345,7 +340,7 @@ async function createFolderPage(
       parentBlockId ? orca.state.blocks[parentBlockId] : null, // reference block
       "lastChild", // position
       [{ t: "t", v: folderName }], // content
-      { type: "text" } // repr
+      { type: "text" }, // repr
     );
 
     // Then create an alias to make it a page
@@ -354,13 +349,13 @@ async function createFolderPage(
       null, // cursor data
       folderName, // alias name
       pageBlockId, // block ID to alias
-      true // asPage: true - create as page
+      true, // asPage: true - create as page
     );
 
     if (aliasError) {
       console.warn(
         "Failed to create page alias, but block was created:",
-        aliasError
+        aliasError,
       );
     }
 
@@ -378,7 +373,7 @@ async function createFolderPage(
 async function createBlock(
   title: string,
   content: ContentFragment[],
-  parentBlockId?: number
+  parentBlockId?: number,
 ): Promise<number> {
   try {
     // Use the core.editor.insertBlock command with correct parameter order
@@ -388,7 +383,7 @@ async function createBlock(
       parentBlockId ? orca.state.blocks[parentBlockId] : null, // reference block
       "lastChild", // position
       content, // content
-      { type: "text", title } // repr
+      { type: "text", title }, // repr
     );
 
     return newBlockId;

@@ -37,7 +37,7 @@ export interface Orca {
    * console.log(`Found ${taggedBlocks.length} active projects`)
    * ```
    */
-  invokeBackend(type: APIMsg, ...args: any[]): Promise<any>
+  invokeBackend(type: APIMsg, ...args: any[]): Promise<any>;
 
   /**
    * The current state of the Orca Note application.
@@ -58,7 +58,7 @@ export interface Orca {
      * orca.nav.goTo("block", { blockId: 123 }, activePanelId)
      * ```
      */
-    activePanel: string
+    activePanel: string;
 
     /**
      * Registry of block converters that transform block content to different formats.
@@ -83,7 +83,7 @@ export interface Orca {
           | undefined
         >
       | undefined
-    >
+    >;
 
     /**
      * Registry of block renderer components used to render different block types.
@@ -95,7 +95,7 @@ export interface Orca {
      * const codeBlockRenderer = orca.state.blockRenderers["code"]
      * ```
      */
-    blockRenderers: Record<string, any>
+    blockRenderers: Record<string, any>;
 
     /**
      * Map of all blocks currently loaded in memory, indexed by their database IDs.
@@ -110,7 +110,7 @@ export interface Orca {
      * }
      * ```
      */
-    blocks: Record<string | DbId, Block | undefined>
+    blocks: Record<string | DbId, Block | undefined>;
 
     /**
      * Registry of all registered commands in the application, indexed by their IDs.
@@ -124,7 +124,7 @@ export interface Orca {
      * }
      * ```
      */
-    commands: Record<string, CommandWithPinyin | undefined>
+    commands: Record<string, CommandWithPinyin | undefined>;
 
     /**
      * The absolute path to the application data directory.
@@ -135,7 +135,7 @@ export interface Orca {
      * console.log(`Application data directory: ${orca.state.dataDir}`)
      * ```
      */
-    dataDir: string
+    dataDir: string;
 
     /**
      * The absolute path to the current repository directory, if a repository is added from non-standard location.
@@ -148,7 +148,7 @@ export interface Orca {
      * }
      * ```
      */
-    repoDir?: string
+    repoDir?: string;
 
     /**
      * Registry of inline content converters that transform inline content to different formats.
@@ -164,7 +164,7 @@ export interface Orca {
       string,
       | Record<string, (content: ContentFragment) => string | Promise<string>>
       | undefined
-    >
+    >;
 
     /**
      * Registry of inline renderer components used to render different inline content types.
@@ -176,7 +176,7 @@ export interface Orca {
      * const codeInlineRenderer = orca.state.inlineRenderers["code"]
      * ```
      */
-    inlineRenderers: Record<string, any>
+    inlineRenderers: Record<string, any>;
 
     /**
      * Registry of panel renderer components used to render different panel types.
@@ -188,7 +188,7 @@ export interface Orca {
      * const journalPanelRenderer = orca.state.panelRenderers["journal"]
      * ```
      */
-    panelRenderers: Record<string, any>
+    panelRenderers: Record<string, any>;
 
     /**
      * The current locale of the application (e.g., "en" for English, "zh-CN" for Chinese).
@@ -201,7 +201,7 @@ export interface Orca {
      * }
      * ```
      */
-    locale: string
+    locale: string;
 
     /**
      * Array of active notifications currently displayed to the user.
@@ -213,7 +213,7 @@ export interface Orca {
      * const hasErrors = orca.state.notifications.some(n => n.type === "error")
      * ```
      */
-    notifications: Notification[]
+    notifications: Notification[];
 
     /**
      * History of past panel states for backward navigation.
@@ -225,7 +225,7 @@ export interface Orca {
      * const canGoBack = orca.state.panelBackHistory.length > 0
      * ```
      */
-    panelBackHistory: PanelHistory[]
+    panelBackHistory: PanelHistory[];
 
     /**
      * History of forward panel states for forward navigation after going back.
@@ -237,7 +237,7 @@ export interface Orca {
      * const canGoForward = orca.state.panelForwardHistory.length > 0
      * ```
      */
-    panelForwardHistory: PanelHistory[]
+    panelForwardHistory: PanelHistory[];
 
     /**
      * The root panel structure that defines the current layout of the application.
@@ -251,7 +251,7 @@ export interface Orca {
      * console.log(`Number of child panels: ${rootPanel.children.length}`)
      * ```
      */
-    panels: RowPanel
+    panels: RowPanel;
 
     /**
      * Registry of all installed plugins, indexed by their names.
@@ -266,7 +266,7 @@ export interface Orca {
      * }
      * ```
      */
-    plugins: Record<string, Plugin | undefined>
+    plugins: Record<string, Plugin | undefined>;
 
     /**
      * The name of the current repository.
@@ -277,7 +277,7 @@ export interface Orca {
      * console.log(`Current repository: ${orca.state.repo}`)
      * ```
      */
-    repo: string
+    repo: string;
 
     /**
      * Application and repository settings, indexed by their numeric IDs.
@@ -289,7 +289,7 @@ export interface Orca {
      * const editorFontSize = orca.state.settings[12345]
      * ```
      */
-    settings: Record<number, any>
+    settings: Record<number, any>;
 
     /**
      * Indicates whether the settings panel is currently opened.
@@ -302,7 +302,7 @@ export interface Orca {
      * }
      * ```
      */
-    settingsOpened: boolean
+    settingsOpened: boolean;
 
     /**
      * Indicates whether the command palette is currently opened.
@@ -315,7 +315,7 @@ export interface Orca {
      * }
      * ```
      */
-    commandPaletteOpened: boolean
+    commandPaletteOpened: boolean;
 
     /**
      * Indicates whether the global search panel is currently opened.
@@ -328,7 +328,7 @@ export interface Orca {
      * }
      * ```
      */
-    globalSearchOpened: boolean
+    globalSearchOpened: boolean;
 
     /**
      * Registry of keyboard shortcuts, mapping shortcut strings to command IDs.
@@ -343,7 +343,7 @@ export interface Orca {
      * }
      * ```
      */
-    shortcuts: Record<string, string | undefined>
+    shortcuts: Record<string, string | undefined>;
 
     /**
      * The current theme mode of the application ("light" or "dark").
@@ -356,7 +356,7 @@ export interface Orca {
      * }
      * ```
      */
-    themeMode: "light" | "dark"
+    themeMode: "light" | "dark";
 
     /**
      * Registry of installed themes, mapping theme names to CSS file paths.
@@ -368,7 +368,7 @@ export interface Orca {
      * const oceanThemePath = orca.state.themes["Ocean Blue"]
      * ```
      */
-    themes: Record<string, string | undefined>
+    themes: Record<string, string | undefined>;
 
     /**
      * Registry of custom buttons registered for the header bar.
@@ -380,7 +380,7 @@ export interface Orca {
      * const hasMyButton = !!orca.state.headbarButtons["myplugin.syncButton"]
      * ```
      */
-    headbarButtons: Record<string, (() => React.ReactElement) | undefined>
+    headbarButtons: Record<string, (() => React.ReactElement) | undefined>;
 
     /**
      * Registry of toolbar buttons or button groups registered for the editor toolbar.
@@ -395,7 +395,7 @@ export interface Orca {
     toolbarButtons: Record<
       string,
       (ToolbarButton | ToolbarButton[]) | undefined
-    >
+    >;
 
     /**
      * Registry of slash commands available in the editor, indexed by their IDs.
@@ -407,7 +407,7 @@ export interface Orca {
      * const hasInsertChartCommand = !!orca.state.slashCommands["myplugin.insertChart"]
      * ```
      */
-    slashCommands: Record<string, SlashCommandWithPinyin | undefined>
+    slashCommands: Record<string, SlashCommandWithPinyin | undefined>;
 
     /**
      * Registry of block menu commands that appear in block context menus.
@@ -419,7 +419,7 @@ export interface Orca {
      * const hasExportCommand = !!orca.state.blockMenuCommands["myplugin.exportBlock"]
      * ```
      */
-    blockMenuCommands: Record<string, BlockMenuCommand | undefined>
+    blockMenuCommands: Record<string, BlockMenuCommand | undefined>;
 
     /**
      * Registry of tag menu commands that appear in tag context menus.
@@ -431,7 +431,7 @@ export interface Orca {
      * const hasTagStatsCommand = !!orca.state.tagMenuCommands["myplugin.tagStats"]
      * ```
      */
-    tagMenuCommands: Record<string, TagMenuCommand | undefined>
+    tagMenuCommands: Record<string, TagMenuCommand | undefined>;
 
     /**
      * Registry of editor sidetools that appear in the block editor's sidebar.
@@ -443,7 +443,7 @@ export interface Orca {
      * const hasTocTool = !!orca.state.editorSidetools["myplugin.toc"]
      * ```
      */
-    editorSidetools: Record<string, EditorSidetool | undefined>
+    editorSidetools: Record<string, EditorSidetool | undefined>;
 
     /**
      * The currently active tab in the sidebar.
@@ -456,7 +456,7 @@ export interface Orca {
      * }
      * ```
      */
-    sidebarTab: string
+    sidebarTab: string;
 
     /**
      * Optional filter for tags shown in the tags panel.
@@ -469,7 +469,7 @@ export interface Orca {
      * }
      * ```
      */
-    filterInTags?: string
+    filterInTags?: string;
 
     /**
      * Optional filter for pages shown in the pages panel.
@@ -482,8 +482,8 @@ export interface Orca {
      * }
      * ```
      */
-    filterInPages?: string
-  }
+    filterInPages?: string;
+  };
 
   /**
    * Commands API, used to register, invoke, and manage commands in Orca.
@@ -527,7 +527,7 @@ export interface Orca {
      * )
      * ```
      */
-    registerCommand(id: string, fn: CommandFn, label: string): void
+    registerCommand(id: string, fn: CommandFn, label: string): void;
 
     /**
      * Unregisters a previously registered command.
@@ -540,7 +540,7 @@ export interface Orca {
      * orca.commands.unregisterCommand("myplugin.exportAsPDF")
      * ```
      */
-    unregisterCommand(id: string): void
+    unregisterCommand(id: string): void;
 
     /**
      * Registers an editor command that can be undone/redone in the editor.
@@ -586,7 +586,7 @@ export interface Orca {
       doFn: EditorCommandFn,
       undoFn: CommandFn,
       opts: { label: string; hasArgs?: boolean; noFocusNeeded?: boolean },
-    ): void
+    ): void;
 
     /**
      * Unregisters a previously registered editor command.
@@ -599,7 +599,7 @@ export interface Orca {
      * orca.commands.unregisterEditorCommand("myplugin.formatSelectedText")
      * ```
      */
-    unregisterEditorCommand(id: string): void
+    unregisterEditorCommand(id: string): void;
 
     /**
      * Invokes a command by its ID with optional arguments.
@@ -620,7 +620,7 @@ export interface Orca {
      * )
      * ```
      */
-    invokeCommand(id: string, ...args: any[]): Promise<any>
+    invokeCommand(id: string, ...args: any[]): Promise<any>;
 
     /**
      * Invokes an editor command by its ID with cursor context and optional arguments.
@@ -644,7 +644,7 @@ export interface Orca {
       id: string,
       cursor: CursorData | null,
       ...args: any[]
-    ): Promise<any>
+    ): Promise<any>;
 
     /**
      * Invokes an editor command (as a top command) by its ID with cursor context and optional arguments.
@@ -668,7 +668,7 @@ export interface Orca {
       id: string,
       cursor: CursorData | null,
       ...args: any[]
-    ): Promise<any>
+    ): Promise<any>;
 
     /**
      * Executes a group of commands as a single undoable operation.
@@ -718,10 +718,10 @@ export interface Orca {
     invokeGroup(
       callback: () => Promise<void>,
       options?: {
-        undoable?: boolean
-        topGroup?: boolean
+        undoable?: boolean;
+        topGroup?: boolean;
       },
-    ): Promise<void>
+    ): Promise<void>;
 
     /**
      * Registers a "before command" hook to conditionally prevent a command from executing.
@@ -749,7 +749,7 @@ export interface Orca {
      * )
      * ```
      */
-    registerBeforeCommand(id: string, pred: BeforeHookPred): void
+    registerBeforeCommand(id: string, pred: BeforeHookPred): void;
 
     /**
      * Unregisters a previously registered "before command" hook.
@@ -766,7 +766,7 @@ export interface Orca {
      * )
      * ```
      */
-    unregisterBeforeCommand(id: string, pred: BeforeHookPred): void
+    unregisterBeforeCommand(id: string, pred: BeforeHookPred): void;
 
     /**
      * Registers an "after command" hook to execute code after a command completes.
@@ -790,7 +790,7 @@ export interface Orca {
      * )
      * ```
      */
-    registerAfterCommand(id: string, fn: AfterHook): void
+    registerAfterCommand(id: string, fn: AfterHook): void;
 
     /**
      * Unregisters a previously registered "after command" hook.
@@ -807,8 +807,8 @@ export interface Orca {
      * )
      * ```
      */
-    unregisterAfterCommand(id: string, fn: AfterHook): void
-  }
+    unregisterAfterCommand(id: string, fn: AfterHook): void;
+  };
 
   /**
    * Keyboard shortcuts management API, used to assign, reset and reload keyboard shortcuts.
@@ -829,7 +829,7 @@ export interface Orca {
      *
      * @returns A Promise that resolves when shortcuts are reloaded
      */
-    reload(): Promise<void>
+    reload(): Promise<void>;
 
     /**
      * Assigns a keyboard shortcut to a command.
@@ -848,7 +848,7 @@ export interface Orca {
      * await orca.shortcuts.assign("", "myplugin.myCommand")
      * ```
      */
-    assign(shortcut: string, command: string): Promise<void>
+    assign(shortcut: string, command: string): Promise<void>;
 
     /**
      * Resets a command to its default keyboard shortcut.
@@ -861,8 +861,8 @@ export interface Orca {
      * await orca.shortcuts.reset("core.toggleThemeMode")
      * ```
      */
-    reset(command: string): Promise<void>
-  }
+    reset(command: string): Promise<void>;
+  };
 
   /**
    * Navigation API, used to control Orca's panel navigation and layout.
@@ -896,7 +896,7 @@ export interface Orca {
       id: string,
       dir: "top" | "bottom" | "left" | "right",
       src?: Pick<ViewPanel, "view" | "viewArgs" | "viewState">,
-    ): string | null
+    ): string | null;
 
     /**
      * Moves a panel from one location to another in the specified direction.
@@ -915,7 +915,7 @@ export interface Orca {
       from: string,
       to: string,
       dir: "top" | "bottom" | "left" | "right",
-    ): void
+    ): void;
 
     /**
      * Closes a panel by its ID.
@@ -928,7 +928,7 @@ export interface Orca {
      * orca.nav.close(orca.state.activePanel)
      * ```
      */
-    close(id: string): void
+    close(id: string): void;
 
     /**
      * Closes all panels except the specified one.
@@ -941,7 +941,7 @@ export interface Orca {
      * orca.nav.closeAllBut(orca.state.activePanel)
      * ```
      */
-    closeAllBut(id: string): void
+    closeAllBut(id: string): void;
 
     /**
      * Changes the sizes of panels starting from the specified panel.
@@ -955,7 +955,7 @@ export interface Orca {
      * orca.nav.changeSizes(orca.state.activePanel, [300, 700])
      * ```
      */
-    changeSizes(startPanelId: string, values: number[]): void
+    changeSizes(startPanelId: string, values: number[]): void;
 
     /**
      * Switches focus to the specified panel.
@@ -967,7 +967,7 @@ export interface Orca {
      * orca.nav.switchFocusTo("panel1")
      * ```
      */
-    switchFocusTo(id: string): void
+    switchFocusTo(id: string): void;
 
     /**
      * Navigates back to the previous panel state in history.
@@ -980,7 +980,7 @@ export interface Orca {
      * orca.nav.goBack(true)
      * ```
      */
-    goBack(withRedo?: boolean): void
+    goBack(withRedo?: boolean): void;
 
     /**
      * Navigates forward to the next panel state in history.
@@ -990,7 +990,7 @@ export interface Orca {
      * orca.nav.goForward()
      * ```
      */
-    goForward(): void
+    goForward(): void;
 
     /**
      * Navigates to a specific view in the specified panel or current active panel.
@@ -1012,7 +1012,7 @@ export interface Orca {
       view: PanelView,
       viewArgs?: Record<string, any>,
       panelId?: string,
-    ): void
+    ): void;
 
     /**
      * Replace the view of a panel without recording history.
@@ -1041,7 +1041,7 @@ export interface Orca {
       view: PanelView,
       viewArgs?: Record<string, any>,
       panelId?: string,
-    ): void
+    ): void;
 
     /**
      * Opens a view in the last used panel or creates a new one if needed.
@@ -1056,7 +1056,7 @@ export interface Orca {
      * orca.nav.openInLastPanel("block", { blockId: 123 })
      * ```
      */
-    openInLastPanel(view: PanelView, viewArgs?: Record<string, any>): void
+    openInLastPanel(view: PanelView, viewArgs?: Record<string, any>): void;
 
     /**
      * Finds a view panel by its ID within the panel structure.
@@ -1073,7 +1073,7 @@ export interface Orca {
      * }
      * ```
      */
-    findViewPanel(id: string, panels: RowPanel): ViewPanel | null
+    findViewPanel(id: string, panels: RowPanel): ViewPanel | null;
 
     /**
      * Checks if there is more than one view panel open.
@@ -1087,7 +1087,7 @@ export interface Orca {
      * }
      * ```
      */
-    isThereMoreThanOneViewPanel(): boolean
+    isThereMoreThanOneViewPanel(): boolean;
 
     /**
      * Focuses the next panel in the tab order.
@@ -1097,7 +1097,7 @@ export interface Orca {
      * orca.nav.focusNext()
      * ```
      */
-    focusNext(): void
+    focusNext(): void;
 
     /**
      * Focuses the previous panel in the tab order.
@@ -1107,8 +1107,8 @@ export interface Orca {
      * orca.nav.focusPrev()
      * ```
      */
-    focusPrev(): void
-  }
+    focusPrev(): void;
+  };
 
   /**
    * Plugin management API, used to register, enable, disable, and manage plugin data and settings.
@@ -1141,7 +1141,7 @@ export interface Orca {
      * await orca.plugins.register("my-plugin")
      * ```
      */
-    register(name: string): Promise<void>
+    register(name: string): Promise<void>;
 
     /**
      * Unregisters a plugin from Orca.
@@ -1155,7 +1155,7 @@ export interface Orca {
      * await orca.plugins.unregister("my-plugin")
      * ```
      */
-    unregister(name: string): Promise<void>
+    unregister(name: string): Promise<void>;
 
     /**
      * Enables a previously disabled plugin.
@@ -1168,7 +1168,7 @@ export interface Orca {
      * await orca.plugins.enable("my-plugin")
      * ```
      */
-    enable(name: string): Promise<void>
+    enable(name: string): Promise<void>;
 
     /**
      * Disables a plugin without unregistering it.
@@ -1182,7 +1182,7 @@ export interface Orca {
      * await orca.plugins.disable("my-plugin")
      * ```
      */
-    disable(name: string): Promise<void>
+    disable(name: string): Promise<void>;
 
     /**
      * Sets the settings schema for a plugin, defining what settings are available
@@ -1209,7 +1209,10 @@ export interface Orca {
      * })
      * ```
      */
-    setSettingsSchema(name: string, schema: PluginSettingsSchema): Promise<void>
+    setSettingsSchema(
+      name: string,
+      schema: PluginSettingsSchema,
+    ): Promise<void>;
 
     /**
      * Sets settings for a plugin at either the application or repository level.
@@ -1237,7 +1240,7 @@ export interface Orca {
       to: "app" | "repo",
       name: string,
       settings: Record<string, any>,
-    ): Promise<void>
+    ): Promise<void>;
 
     /**
      * Loads a plugin with the given schema and settings.
@@ -1252,7 +1255,7 @@ export interface Orca {
       name: string,
       schema: PluginSettingsSchema,
       settings: Record<string, any>,
-    ): Promise<void>
+    ): Promise<void>;
 
     /**
      * Unloads a plugin. This is called when disabling or unregistering a plugin.
@@ -1261,7 +1264,7 @@ export interface Orca {
      * @param name - The name of the plugin to unload
      * @returns A Promise that resolves when the plugin is unloaded
      */
-    unload(name: string): Promise<void>
+    unload(name: string): Promise<void>;
 
     /**
      * Gets all data keys stored by a plugin.
@@ -1275,7 +1278,7 @@ export interface Orca {
      * console.log("Stored data keys:", keys)
      * ```
      */
-    getDataKeys(name: string): Promise<string[]>
+    getDataKeys(name: string): Promise<string[]>;
 
     /**
      * Retrieves data stored by a plugin.
@@ -1290,7 +1293,7 @@ export interface Orca {
      * console.log("User preferences:", userData)
      * ```
      */
-    getData(name: string, key: string): Promise<any>
+    getData(name: string, key: string): Promise<any>;
 
     /**
      * Stores data for a plugin.
@@ -1313,7 +1316,7 @@ export interface Orca {
       name: string,
       key: string,
       value: string | number | ArrayBuffer | null,
-    ): Promise<void>
+    ): Promise<void>;
 
     /**
      * Removes a specific piece of data stored by a plugin.
@@ -1327,7 +1330,7 @@ export interface Orca {
      * await orca.plugins.removeData("my-plugin", "cached-results")
      * ```
      */
-    removeData(name: string, key: string): Promise<void>
+    removeData(name: string, key: string): Promise<void>;
 
     /**
      * Removes all data stored by a plugin.
@@ -1340,7 +1343,7 @@ export interface Orca {
      * await orca.plugins.clearData("my-plugin")
      * ```
      */
-    clearData(name: string): Promise<void>
+    clearData(name: string): Promise<void>;
 
     /**
      * Reads a file from the plugin's data directory in the current repository.
@@ -1363,7 +1366,7 @@ export interface Orca {
       name: string,
       filePath: string,
       type?: "string" | "buffer",
-    ): Promise<string | ArrayBuffer | null>
+    ): Promise<string | ArrayBuffer | null>;
 
     /**
      * Writes a file to the plugin's data directory in the current repository.
@@ -1383,7 +1386,7 @@ export interface Orca {
       name: string,
       filePath: string,
       data: string | ArrayBuffer,
-    ): Promise<void>
+    ): Promise<void>;
 
     /**
      * Removes a file from the plugin's data directory.
@@ -1397,7 +1400,7 @@ export interface Orca {
      * await orca.plugins.removeFile("my-plugin", "temp-log.txt")
      * ```
      */
-    removeFile(name: string, filePath: string): Promise<void>
+    removeFile(name: string, filePath: string): Promise<void>;
 
     /**
      * Lists all files in the plugin's data directory recursively.
@@ -1411,7 +1414,7 @@ export interface Orca {
      * console.log("Plugin files:", files)
      * ```
      */
-    listFiles(name: string): Promise<string[]>
+    listFiles(name: string): Promise<string[]>;
 
     /**
      * Checks if a file exists in the plugin's data directory.
@@ -1425,8 +1428,8 @@ export interface Orca {
      * const exists = await orca.plugins.existsFile("my-plugin", "data.json")
      * ```
      */
-    existsFile(name: string, filePath: string): Promise<boolean>
-  }
+    existsFile(name: string, filePath: string): Promise<boolean>;
+  };
 
   /**
    * Theme management API, used to register, unregister, and manage visual themes.
@@ -1450,7 +1453,11 @@ export interface Orca {
      * orca.themes.register("my-plugin", "Dark Ocean", "themes/dark-ocean.css")
      * ```
      */
-    register(pluginName: string, themeName: string, themeFileName: string): void
+    register(
+      pluginName: string,
+      themeName: string,
+      themeFileName: string,
+    ): void;
 
     /**
      * Unregisters a theme.
@@ -1462,7 +1469,7 @@ export interface Orca {
      * orca.themes.unregister("Dark Ocean")
      * ```
      */
-    unregister(themeName: string): void
+    unregister(themeName: string): void;
 
     /**
      * Injects a CSS resource into the application.
@@ -1476,7 +1483,7 @@ export interface Orca {
      * orca.themes.injectCSSResource("styles/my-plugin-styles.css", "my-plugin-ui")
      * ```
      */
-    injectCSSResource(url: string, role: string): void
+    injectCSSResource(url: string, role: string): void;
 
     /**
      * Removes previously injected CSS resources with the specified role.
@@ -1488,21 +1495,21 @@ export interface Orca {
      * orca.themes.removeCSSResources("my-plugin-ui")
      * ```
      */
-    removeCSSResources(role: string): void
+    removeCSSResources(role: string): void;
 
     /**
      * 将 CSS 字符串注入到文档头部，并指定一个角色标识。
      * @param css - 要注入的 CSS 字符串。
      * @param role - 样式元素的角色标识，用于后续删除。
      */
-    injectCSS(css: string, role: string): void
+    injectCSS(css: string, role: string): void;
 
     /**
      * 从文档中删除所有具有指定角色标识的样式元素。
      * @param role - 要删除的样式元素的角色标识。
      */
-    removeCSS(role: string): void
-  }
+    removeCSS(role: string): void;
+  };
 
   /**
    * Renderer management API, used to register custom block and inline content renderers.
@@ -1537,7 +1544,7 @@ export interface Orca {
      * )
      * ```
      */
-    registerInline(type: string, isEditable: boolean, renderer: any): void
+    registerInline(type: string, isEditable: boolean, renderer: any): void;
 
     /**
      * Unregisters a previously registered inline content renderer.
@@ -1549,7 +1556,7 @@ export interface Orca {
      * orca.renderers.unregisterInline("myplugin.special")
      * ```
      */
-    unregisterInline(type: string): void
+    unregisterInline(type: string): void;
 
     /**
      * Registers a custom block renderer.
@@ -1600,7 +1607,7 @@ export interface Orca {
       renderer: any,
       assetFields?: string[],
       useChildren: boolean = false,
-    ): void
+    ): void;
 
     /**
      * Unregisters a previously registered block renderer.
@@ -1612,8 +1619,8 @@ export interface Orca {
      * orca.renderers.unregisterBlock("myplugin.diagram")
      * ```
      */
-    unregisterBlock(type: string): void
-  }
+    unregisterBlock(type: string): void;
+  };
 
   /**
    * Panel renderer API, used to register custom panel types.
@@ -1646,7 +1653,7 @@ export interface Orca {
      * )
      * ```
      */
-    registerPanel(type: string, renderer: any): void
+    registerPanel(type: string, renderer: any): void;
 
     /**
      * Unregisters a previously registered panel renderer.
@@ -1658,8 +1665,8 @@ export interface Orca {
      * orca.panels.unregisterPanel("myplugin.timeline")
      * ```
      */
-    unregisterPanel(type: string): void
-  }
+    unregisterPanel(type: string): void;
+  };
 
   /**
    * Content converter API, used to register converters for transforming blocks and inline content
@@ -1711,7 +1718,7 @@ export interface Orca {
         forExport?: boolean,
         context?: ConvertContext,
       ) => string | Promise<string>,
-    ): void
+    ): void;
 
     /**
      * Registers an inline content converter for transforming inline content to a specific format.
@@ -1748,7 +1755,7 @@ export interface Orca {
         content: ContentFragment,
         forExport?: boolean,
       ) => string | Promise<string>,
-    ): void
+    ): void;
 
     /**
      * Unregisters a block converter.
@@ -1761,7 +1768,7 @@ export interface Orca {
      * orca.converters.unregisterBlock("html", "myplugin.countdown")
      * ```
      */
-    unregisterBlock(format: string, type: string): void
+    unregisterBlock(format: string, type: string): void;
 
     /**
      * Unregisters an inline content converter.
@@ -1774,7 +1781,7 @@ export interface Orca {
      * orca.converters.unregisterInline("markdown", "myplugin.highlight")
      * ```
      */
-    unregisterInline(format: string, type: string): void
+    unregisterInline(format: string, type: string): void;
 
     /**
      * Converts a block to a specific format.
@@ -1807,7 +1814,7 @@ export interface Orca {
       block?: Block,
       forExport?: boolean,
       context?: ConvertContext,
-    ): Promise<string>
+    ): Promise<string>;
 
     /**
      * Converts an inline content fragment to a specific format.
@@ -1832,8 +1839,8 @@ export interface Orca {
       type: string,
       content: ContentFragment,
       forExport?: boolean,
-    ): Promise<string>
-  }
+    ): Promise<string>;
+  };
 
   /**
    * Broadcasts API, used for application-wide event messaging between different windows of Orca.
@@ -1865,7 +1872,7 @@ export interface Orca {
      * }
      * ```
      */
-    isHandlerRegistered(type: string): boolean
+    isHandlerRegistered(type: string): boolean;
 
     /**
      * Registers a handler function for a specific broadcast type.
@@ -1881,7 +1888,7 @@ export interface Orca {
      * })
      * ```
      */
-    registerHandler(type: string, handler: CommandFn): void
+    registerHandler(type: string, handler: CommandFn): void;
 
     /**
      * Unregisters a previously registered handler for a specific broadcast type.
@@ -1895,7 +1902,7 @@ export interface Orca {
      * orca.broadcasts.unregisterHandler("core.themeChanged", handleThemeChange)
      * ```
      */
-    unregisterHandler(type: string, handler: CommandFn): void
+    unregisterHandler(type: string, handler: CommandFn): void;
 
     /**
      * Broadcasts an event of a specific type with optional arguments to all registered handlers.
@@ -1915,8 +1922,8 @@ export interface Orca {
      * })
      * ```
      */
-    broadcast(type: string, ...args: any[]): void
-  }
+    broadcast(type: string, ...args: any[]): void;
+  };
 
   /**
    * Pre-built UI components from Orca that can be used in plugin development.
@@ -1969,31 +1976,31 @@ export interface Orca {
      */
     AliasEditor: (
       props: {
-        blockId: DbId
+        blockId: DbId;
       } & Partial<{
-        className?: string
-        style?: CSSProperties
-        menu: (close: () => void, state?: any) => ReactNode
+        className?: string;
+        style?: CSSProperties;
+        menu: (close: () => void, state?: any) => ReactNode;
         children: (
           openMenu: (e: React.UIEvent, state?: any) => void,
           closeMenu: () => void,
-        ) => ReactNode
-        container?: RefObject<HTMLElement>
-        alignment?: "left" | "top" | "center" | "bottom" | "right"
-        placement?: "vertical" | "horizontal"
-        defaultPlacement?: "top" | "bottom" | "left" | "right"
-        allowBeyondContainer?: boolean
-        noPointerLogic?: boolean
-        keyboardNav?: boolean
-        navDirection?: "vertical" | "both"
-        menuAttr?: Record<string, any>
-        offset?: number
-        crossOffset?: number
-        escapeToClose?: boolean
-        onOpened?: () => void
-        onClosed?: () => void
+        ) => ReactNode;
+        container?: RefObject<HTMLElement>;
+        alignment?: "left" | "top" | "center" | "bottom" | "right";
+        placement?: "vertical" | "horizontal";
+        defaultPlacement?: "top" | "bottom" | "left" | "right";
+        allowBeyondContainer?: boolean;
+        noPointerLogic?: boolean;
+        keyboardNav?: boolean;
+        navDirection?: "vertical" | "both";
+        menuAttr?: Record<string, any>;
+        offset?: number;
+        crossOffset?: number;
+        escapeToClose?: boolean;
+        onOpened?: () => void;
+        onClosed?: () => void;
       }>,
-    ) => JSX.Element | null
+    ) => JSX.Element | null;
     /**
      * Renders a block with all its content and children
      *
@@ -2010,14 +2017,14 @@ export interface Orca {
      */
     Block: (
       props: {
-        panelId: string
-        blockId: DbId
-        blockLevel: number
-        indentLevel: number
-        initiallyCollapsed?: boolean
-        renderingMode?: BlockRenderingMode
+        panelId: string;
+        blockId: DbId;
+        blockLevel: number;
+        indentLevel: number;
+        initiallyCollapsed?: boolean;
+        renderingMode?: BlockRenderingMode;
       } & React.HTMLAttributes<HTMLDivElement>,
-    ) => JSX.Element | null
+    ) => JSX.Element | null;
     /**
      * Renders a breadcrumb trail for a block's ancestors
      *
@@ -2035,10 +2042,10 @@ export interface Orca {
      * ```
      */
     BlockBreadcrumb: (props: {
-      blockId: DbId
-      className?: string
-      style?: React.CSSProperties
-    }) => JSX.Element | null
+      blockId: DbId;
+      className?: string;
+      style?: React.CSSProperties;
+    }) => JSX.Element | null;
     /**
      * Renders a block's children
      *
@@ -2063,12 +2070,12 @@ export interface Orca {
      * ```
      */
     BlockChildren: (props: {
-      block: Block
-      panelId: string
-      blockLevel: number
-      indentLevel: number
-      renderingMode?: BlockRenderingMode
-    }) => JSX.Element | null
+      block: Block;
+      panelId: string;
+      blockLevel: number;
+      indentLevel: number;
+      renderingMode?: BlockRenderingMode;
+    }) => JSX.Element | null;
     /**
      * Provides block selection functionality
      *
@@ -2094,10 +2101,10 @@ export interface Orca {
      */
     BlockSelect: (
       props: {
-        mode: "block" | "ref"
-        scope?: string
-        selected: DbId[]
-        onChange?: (selected: string[]) => void | Promise<void>
+        mode: "block" | "ref";
+        scope?: string;
+        selected: DbId[];
+        onChange?: (selected: string[]) => void | Promise<void>;
       } & Omit<
         SelectProps,
         | "options"
@@ -2107,7 +2114,7 @@ export interface Orca {
         | "filterFunction"
         | "onChange"
       >,
-    ) => JSX.Element | null
+    ) => JSX.Element | null;
     /**
      * Core component for block rendering with common UI elements.
      * It provides the standard block structure including the handle, folding caret, tags, and back-references.
@@ -2163,27 +2170,27 @@ export interface Orca {
      * ```
      */
     BlockShell: (props: {
-      panelId: string
-      blockId: DbId
-      rndId: string
-      mirrorId?: DbId
-      blockLevel: number
-      indentLevel: number
-      initiallyCollapsed?: boolean
-      renderingMode?: BlockRenderingMode
-      reprClassName?: string
-      reprStyle?: React.CSSProperties
-      reprAttrs?: Record<string, any>
-      contentTag?: any
-      contentClassName?: string
-      contentStyle?: React.CSSProperties
-      contentAttrs?: Record<string, any>
-      contentJsx: React.ReactNode
-      childrenJsx: React.ReactNode
-      editable?: boolean
-      droppable?: boolean
-      selfFoldable?: boolean
-    }) => JSX.Element | null
+      panelId: string;
+      blockId: DbId;
+      rndId: string;
+      mirrorId?: DbId;
+      blockLevel: number;
+      indentLevel: number;
+      initiallyCollapsed?: boolean;
+      renderingMode?: BlockRenderingMode;
+      reprClassName?: string;
+      reprStyle?: React.CSSProperties;
+      reprAttrs?: Record<string, any>;
+      contentTag?: any;
+      contentClassName?: string;
+      contentStyle?: React.CSSProperties;
+      contentAttrs?: Record<string, any>;
+      contentJsx: React.ReactNode;
+      childrenJsx: React.ReactNode;
+      editable?: boolean;
+      droppable?: boolean;
+      selfFoldable?: boolean;
+    }) => JSX.Element | null;
     /**
      * Displays a block preview in a popup on hover
      *
@@ -2221,25 +2228,25 @@ export interface Orca {
     BlockPreviewPopup: (
       props: {
         /** The ID of the block to display in the preview */
-        blockId: DbId
+        blockId: DbId;
         /** Delay in milliseconds before showing the preview on hover (default: 200) */
-        delay?: number
+        delay?: number;
         /** Reference element to anchor the popup positioning */
-        refElement?: React.RefObject<HTMLElement>
+        refElement?: React.RefObject<HTMLElement>;
         /** Whether the preview popup is visible (controlled mode) */
-        visible?: boolean
+        visible?: boolean;
         /** Callback fired when the preview should close */
-        onClose?: () => void
+        onClose?: () => void;
         /** Callback fired after the preview has finished closing animation */
-        onClosed?: () => void
+        onClosed?: () => void;
         /** CSS class name for the popup container */
-        className?: string
+        className?: string;
         /** Inline styles for the popup container */
-        style?: React.CSSProperties
+        style?: React.CSSProperties;
         /** The child element that triggers the preview on hover */
-        children?: React.ReactElement
+        children?: React.ReactElement;
       } & React.HTMLAttributes<HTMLDivElement>,
-    ) => JSX.Element | null
+    ) => JSX.Element | null;
     /**
      * Renders a generic breadcrumb navigation
      *
@@ -2262,10 +2269,10 @@ export interface Orca {
      * ```
      */
     Breadcrumb: (props: {
-      items: React.ReactNode[]
-      className?: string
-      style?: React.CSSProperties
-    }) => JSX.Element | null
+      items: React.ReactNode[];
+      className?: string;
+      style?: React.CSSProperties;
+    }) => JSX.Element | null;
     /**
      * Standard button component with multiple variants
      *
@@ -2294,9 +2301,9 @@ export interface Orca {
      */
     Button: (
       props: React.HTMLAttributes<HTMLButtonElement> & {
-        variant: "solid" | "soft" | "dangerous" | "outline" | "plain"
+        variant: "solid" | "soft" | "dangerous" | "outline" | "plain";
       },
-    ) => JSX.Element | null
+    ) => JSX.Element | null;
     /**
      * Checkbox form element
      *
@@ -2320,12 +2327,12 @@ export interface Orca {
      */
     Checkbox: (
       props: {
-        checked?: boolean
-        indeterminate?: boolean
-        disabled?: boolean
-        onChange?: (e: { checked: boolean }) => void | Promise<void>
+        checked?: boolean;
+        indeterminate?: boolean;
+        disabled?: boolean;
+        onChange?: (e: { checked: boolean }) => void | Promise<void>;
       } & Omit<React.HTMLAttributes<HTMLSpanElement>, "onChange">,
-    ) => JSX.Element | null
+    ) => JSX.Element | null;
     /**
      * Input that handles IME composition events properly
      *
@@ -2354,12 +2361,12 @@ export interface Orca {
      * ```
      */
     CompositionInput: (
-      props: React.HTMLAttributes<HTMLInputElement> & {
-        pre?: React.ReactElement
-        post?: React.ReactElement
-        error?: React.ReactNode
+      props: React.InputHTMLAttributes<HTMLInputElement> & {
+        pre?: React.ReactElement;
+        post?: React.ReactElement;
+        error?: React.ReactNode;
       },
-    ) => JSX.Element | null
+    ) => JSX.Element | null;
     /**
      * Textarea that handles IME composition events properly
      *
@@ -2381,8 +2388,8 @@ export interface Orca {
      * ```
      */
     CompositionTextArea: (
-      props: React.HTMLAttributes<HTMLTextAreaElement>,
-    ) => JSX.Element | null
+      props: React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+    ) => JSX.Element | null;
     /**
      * Displays a confirmation dialog
      *
@@ -2424,40 +2431,40 @@ export interface Orca {
      */
     ConfirmBox: (
       props: {
-        text: string
+        text: string;
         onConfirm: (
           e: React.UIEvent,
           close: () => void,
           state?: any,
-        ) => void | Promise<void>
+        ) => void | Promise<void>;
         children: (
           openMenu: (e: React.UIEvent, state?: any) => void,
           closeMenu: () => void,
-        ) => ReactNode
+        ) => ReactNode;
       } & Partial<{
-        className?: string
-        style?: CSSProperties
-        menu: (close: () => void, state?: any) => ReactNode
+        className?: string;
+        style?: CSSProperties;
+        menu: (close: () => void, state?: any) => ReactNode;
         children: (
           openMenu: (e: React.UIEvent, state?: any) => void,
           closeMenu: () => void,
-        ) => ReactNode
-        container?: RefObject<HTMLElement>
-        alignment?: "left" | "top" | "center" | "bottom" | "right"
-        placement?: "vertical" | "horizontal"
-        defaultPlacement?: "top" | "bottom" | "left" | "right"
-        allowBeyondContainer?: boolean
-        noPointerLogic?: boolean
-        keyboardNav?: boolean
-        navDirection?: "vertical" | "both"
-        menuAttr?: Record<string, any>
-        offset?: number
-        crossOffset?: number
-        escapeToClose?: boolean
-        onOpened?: () => void
-        onClosed?: () => void
+        ) => ReactNode;
+        container?: RefObject<HTMLElement>;
+        alignment?: "left" | "top" | "center" | "bottom" | "right";
+        placement?: "vertical" | "horizontal";
+        defaultPlacement?: "top" | "bottom" | "left" | "right";
+        allowBeyondContainer?: boolean;
+        noPointerLogic?: boolean;
+        keyboardNav?: boolean;
+        navDirection?: "vertical" | "both";
+        menuAttr?: Record<string, any>;
+        offset?: number;
+        crossOffset?: number;
+        escapeToClose?: boolean;
+        onOpened?: () => void;
+        onClosed?: () => void;
       }>,
-    ) => JSX.Element | null
+    ) => JSX.Element | null;
     /**
      * Creates a context menu attached to an element
      *
@@ -2505,28 +2512,28 @@ export interface Orca {
      * ```
      */
     ContextMenu: (props: {
-      className?: string
-      style?: React.CSSProperties
-      menu: (close: () => void, state?: any) => React.ReactNode
+      className?: string;
+      style?: React.CSSProperties;
+      menu: (close: () => void, state?: any) => React.ReactNode;
       children: (
         openMenu: (e: React.UIEvent, state?: any) => void,
         closeMenu: () => void,
-      ) => React.ReactNode
-      container?: React.RefObject<HTMLElement>
-      alignment?: "left" | "top" | "center" | "bottom" | "right"
-      placement?: "vertical" | "horizontal"
-      defaultPlacement?: "top" | "bottom" | "left" | "right"
-      allowBeyondContainer?: boolean
-      noPointerLogic?: boolean
-      keyboardNav?: boolean
-      navDirection?: "vertical" | "both"
-      menuAttr?: Record<string, any>
-      offset?: number
-      crossOffset?: number
-      escapeToClose?: boolean
-      onOpened?: () => void
-      onClosed?: () => void
-    }) => JSX.Element | null
+      ) => React.ReactNode;
+      container?: React.RefObject<HTMLElement>;
+      alignment?: "left" | "top" | "center" | "bottom" | "right";
+      placement?: "vertical" | "horizontal";
+      defaultPlacement?: "top" | "bottom" | "left" | "right";
+      allowBeyondContainer?: boolean;
+      noPointerLogic?: boolean;
+      keyboardNav?: boolean;
+      navDirection?: "vertical" | "both";
+      menuAttr?: Record<string, any>;
+      offset?: number;
+      crossOffset?: number;
+      escapeToClose?: boolean;
+      onOpened?: () => void;
+      onClosed?: () => void;
+    }) => JSX.Element | null;
     /**
      * Calendar date picker
      *
@@ -2556,20 +2563,20 @@ export interface Orca {
      * ```
      */
     DatePicker: (props: {
-      mode?: "date" | "time" | "datetime"
-      range?: boolean
-      value: Date | [Date, Date]
-      onChange: (v: Date | [Date, Date]) => void | Promise<void>
-      alignment?: "left" | "center" | "right"
-      menuContainer?: React.RefObject<HTMLElement>
-      visible?: boolean
-      refElement?: React.RefObject<HTMLElement>
-      rect?: DOMRect
-      onClose?: () => void | Promise<void>
-      onClosed?: () => void | Promise<void>
-      className?: string
-      style?: React.CSSProperties
-    }) => JSX.Element | null
+      mode?: "date" | "time" | "datetime";
+      range?: boolean;
+      value: Date | [Date, Date];
+      onChange: (v: Date | [Date, Date]) => void | Promise<void>;
+      alignment?: "left" | "center" | "right";
+      menuContainer?: React.RefObject<HTMLElement>;
+      visible?: boolean;
+      refElement?: React.RefObject<HTMLElement>;
+      rect?: DOMRect;
+      onClose?: () => void | Promise<void>;
+      onClosed?: () => void | Promise<void>;
+      className?: string;
+      style?: React.CSSProperties;
+    }) => JSX.Element | null;
     /**
      * Context menu that appears on hover
      *
@@ -2615,9 +2622,9 @@ export interface Orca {
      */
     HoverContextMenu: (
       props: {
-        children: React.ReactElement
+        children: React.ReactElement;
       } & Omit<ContextMenuProps, "children">,
-    ) => JSX.Element | null
+    ) => JSX.Element | null;
     /**
      * Image component with loading states
      *
@@ -2646,7 +2653,9 @@ export interface Orca {
      * />
      * ```
      */
-    Image: (props: React.HTMLAttributes<HTMLImageElement>) => JSX.Element | null
+    Image: (
+      props: React.HTMLAttributes<HTMLImageElement>,
+    ) => JSX.Element | null;
     /**
      * Standard text input component
      *
@@ -2676,11 +2685,11 @@ export interface Orca {
      */
     Input: (
       props: React.HTMLAttributes<HTMLInputElement> & {
-        pre?: React.ReactElement
-        post?: React.ReactElement
-        error?: React.ReactNode
+        pre?: React.ReactElement;
+        post?: React.ReactElement;
+        error?: React.ReactNode;
       },
-    ) => JSX.Element | null
+    ) => JSX.Element | null;
     /**
      * Input dialog with label and actions
      *
@@ -2727,42 +2736,42 @@ export interface Orca {
      */
     InputBox: (
       props: {
-        label: string
+        label: string;
         onConfirm: (
           value: string | undefined,
           e: React.UIEvent,
           close: () => void,
-        ) => void | Promise<void>
-        defaultValue?: string
-        error?: React.ReactNode
+        ) => void | Promise<void>;
+        defaultValue?: string;
+        error?: React.ReactNode;
         children: (
           openMenu: (e: React.UIEvent, state?: any) => void,
           closeMenu: () => void,
-        ) => ReactNode
+        ) => ReactNode;
       } & Partial<{
-        className?: string
-        style?: CSSProperties
-        menu: (close: () => void, state?: any) => ReactNode
+        className?: string;
+        style?: CSSProperties;
+        menu: (close: () => void, state?: any) => ReactNode;
         children: (
           openMenu: (e: React.UIEvent, state?: any) => void,
           closeMenu: () => void,
-        ) => ReactNode
-        container?: RefObject<HTMLElement>
-        alignment?: "left" | "top" | "center" | "bottom" | "right"
-        placement?: "vertical" | "horizontal"
-        defaultPlacement?: "top" | "bottom" | "left" | "right"
-        allowBeyondContainer?: boolean
-        noPointerLogic?: boolean
-        keyboardNav?: boolean
-        navDirection?: "vertical" | "both"
-        menuAttr?: Record<string, any>
-        offset?: number
-        crossOffset?: number
-        escapeToClose?: boolean
-        onOpened?: () => void
-        onClosed?: () => void
+        ) => ReactNode;
+        container?: RefObject<HTMLElement>;
+        alignment?: "left" | "top" | "center" | "bottom" | "right";
+        placement?: "vertical" | "horizontal";
+        defaultPlacement?: "top" | "bottom" | "left" | "right";
+        allowBeyondContainer?: boolean;
+        noPointerLogic?: boolean;
+        keyboardNav?: boolean;
+        navDirection?: "vertical" | "both";
+        menuAttr?: Record<string, any>;
+        offset?: number;
+        crossOffset?: number;
+        escapeToClose?: boolean;
+        onOpened?: () => void;
+        onClosed?: () => void;
       }>,
-    ) => JSX.Element | null
+    ) => JSX.Element | null;
     /**
      * Component for loading more items in paginated lists
      *
@@ -2786,11 +2795,11 @@ export interface Orca {
      */
     LoadMore: (
       props: {
-        message?: string
-        onLoadMore: () => void | Promise<void>
-        debounceTime?: number
+        message?: string;
+        onLoadMore: () => void | Promise<void>;
+        debounceTime?: number;
       } & React.HTMLAttributes<HTMLDivElement>,
-    ) => JSX.Element | null
+    ) => JSX.Element | null;
     /**
      * Efficient view container for switching between components
      *
@@ -2822,13 +2831,13 @@ export interface Orca {
      * ```
      */
     MemoizedViews: (props: {
-      name: string
-      active: string
-      views: { [key: string]: React.ReactElement | null }
-      orientation?: "horizontal" | "vertical"
-      className?: string
-      style?: React.CSSProperties
-    }) => JSX.Element | null
+      name: string;
+      active: string;
+      views: { [key: string]: React.ReactElement | null };
+      orientation?: "horizontal" | "vertical";
+      className?: string;
+      style?: React.CSSProperties;
+    }) => JSX.Element | null;
     /**
      * Standard menu container
      *
@@ -2862,14 +2871,14 @@ export interface Orca {
      */
     Menu: (
       props: {
-        children?: React.ReactNode
-        keyboardNav?: boolean
-        navDirection?: "vertical" | "both"
-        onKeyboardNav?: (el: HTMLElement) => void | Promise<void>
-        refocus?: boolean
-        container?: React.RefObject<HTMLElement>
+        children?: React.ReactNode;
+        keyboardNav?: boolean;
+        navDirection?: "vertical" | "both";
+        onKeyboardNav?: (el: HTMLElement) => void | Promise<void>;
+        refocus?: boolean;
+        container?: React.RefObject<HTMLElement>;
       } & React.HTMLAttributes<HTMLDivElement>,
-    ) => JSX.Element | null
+    ) => JSX.Element | null;
     /**
      * Menu item component
      *
@@ -2903,13 +2912,13 @@ export interface Orca {
      */
     MenuItem: (
       props: {
-        jsx: React.ReactElement
-        children?: React.ReactElement
-        onClick?: (e: React.MouseEvent) => void | Promise<void>
-        className?: string
-        style?: React.CSSProperties
+        jsx: React.ReactElement;
+        children?: React.ReactElement;
+        onClick?: (e: React.MouseEvent) => void | Promise<void>;
+        className?: string;
+        style?: React.CSSProperties;
       } & React.HTMLAttributes<HTMLDivElement>,
-    ) => JSX.Element | null
+    ) => JSX.Element | null;
     /**
      * Visual separator for menus
      *
@@ -2928,7 +2937,7 @@ export interface Orca {
      * </orca.components.Menu>
      * ```
      */
-    MenuSeparator: (props: {}) => JSX.Element | null
+    MenuSeparator: (props: {}) => JSX.Element | null;
     /**
      * Text-based menu item
      *
@@ -2980,22 +2989,22 @@ export interface Orca {
      */
     MenuText: (
       props: {
-        title: string
-        subtitle?: string
-        raw?: boolean
-        centered?: boolean
-        preIcon?: string
-        postIcon?: string
-        shortcut?: string
-        disabled?: boolean
-        dangerous?: boolean
-        children?: React.ReactElement
-        onClick?: (e: React.MouseEvent) => void | Promise<void>
-        contextMenu?: (close: () => void) => React.ReactNode
-        className?: string
-        style?: React.CSSProperties
+        title: string;
+        subtitle?: string;
+        raw?: boolean;
+        centered?: boolean;
+        preIcon?: string;
+        postIcon?: string;
+        shortcut?: string;
+        disabled?: boolean;
+        dangerous?: boolean;
+        children?: React.ReactElement;
+        onClick?: (e: React.MouseEvent) => void | Promise<void>;
+        contextMenu?: (close: () => void) => React.ReactNode;
+        className?: string;
+        style?: React.CSSProperties;
       } & Omit<React.HTMLAttributes<HTMLDivElement>, "contextMenu">,
-    ) => JSX.Element | null
+    ) => JSX.Element | null;
     /**
      * Menu section title
      *
@@ -3029,11 +3038,11 @@ export interface Orca {
      * ```
      */
     MenuTitle: (props: {
-      title: string
-      info?: React.ReactNode
-      className?: string
-      style?: React.CSSProperties
-    }) => JSX.Element | null
+      title: string;
+      info?: React.ReactNode;
+      className?: string;
+      style?: React.CSSProperties;
+    }) => JSX.Element | null;
     /**
      * Full-screen modal overlay
      *
@@ -3083,16 +3092,16 @@ export interface Orca {
      */
     ModalOverlay: (
       props: {
-        className?: string
-        style?: React.CSSProperties
-        blurred?: boolean
-        visible: boolean
-        canClose?: boolean
-        onClose?: () => void | Promise<void>
-        onClosed?: () => void
-        children: React.ReactNode
+        className?: string;
+        style?: React.CSSProperties;
+        blurred?: boolean;
+        visible: boolean;
+        canClose?: boolean;
+        onClose?: () => void | Promise<void>;
+        onClosed?: () => void;
+        children: React.ReactNode;
       } & React.HTMLAttributes<HTMLDivElement>,
-    ) => JSX.Element | null
+    ) => JSX.Element | null;
     /**
      * Popup panel attached to an element.
      *
@@ -3153,102 +3162,102 @@ export interface Orca {
          * Container element to render the popup into. If omitted, the popup will be
          * appended to the `refElement`'s offsetParent.
          */
-        container?: React.RefObject<HTMLElement>
+        container?: React.RefObject<HTMLElement>;
         /**
          * Optional boundary element used to constrain popup placement. Defaults to the container.
          */
-        boundary?: React.RefObject<HTMLElement>
+        boundary?: React.RefObject<HTMLElement>;
         /**
          * Additional offsets to adjust the boundary used for placement.
          * Useful when you need to keep the popup away from fixed elements (e.g. headers).
          */
-        boundaryTopOffset?: number
-        boundaryBottomOffset?: number
-        boundaryLeftOffset?: number
-        boundaryRightOffset?: number
+        boundaryTopOffset?: number;
+        boundaryBottomOffset?: number;
+        boundaryLeftOffset?: number;
+        boundaryRightOffset?: number;
         /**
          * The target element to anchor the popup to.
          */
-        refElement?: React.RefObject<HTMLElement>
+        refElement?: React.RefObject<HTMLElement>;
         /**
          * Alternative explicit rect to anchor to. If provided, `refElement` will be ignored.
          */
-        rect?: DOMRect
+        rect?: DOMRect;
         /**
          * Directly set CSS properties for positioning using top/left/bottom/right strings
          * (e.g. `"8px"`, `"1rem"`). When present, `relativePosition` takes precedence
          * over automatic placement.
          */
         relativePosition?: {
-          top?: string
-          left?: string
-          bottom?: string
-          right?: string
-        }
+          top?: string;
+          left?: string;
+          bottom?: string;
+          right?: string;
+        };
         /**
          * Controls whether the popup is visible (must be controlled externally).
          */
-        visible: boolean
+        visible: boolean;
         /**
          * Called when the popup should request to close (e.g. clicking outside or pressing Escape).
          * Return a Promise if asynchronous cleanup is required.
          */
-        onClose?: () => void | Promise<void>
+        onClose?: () => void | Promise<void>;
         /**
          * Called after the popup finished its exit animation and has been removed.
          */
-        onClosed?: () => void
+        onClosed?: () => void;
         /**
          * When true, the popup will not toggle container pointer logic. Use for specialized UIs.
          * Default: false
          */
-        noPointerLogic?: boolean
+        noPointerLogic?: boolean;
         /**
          * Popup content. The child should be a single React element.
          */
-        children?: React.ReactElement
+        children?: React.ReactElement;
         /**
          * Whether the popup places vertically (top/bottom) or horizontally (left/right). Default: "vertical"
          */
-        placement?: "vertical" | "horizontal"
+        placement?: "vertical" | "horizontal";
         /**
          * Preferred placement direction when there is space (top/bottom/left/right). Default: "bottom"
          */
-        defaultPlacement?: "top" | "bottom" | "left" | "right"
+        defaultPlacement?: "top" | "bottom" | "left" | "right";
         /**
          * Alignment relative to the anchor when placed (e.g. center/left/right for vertical placement).
          * Default: "center"
          */
-        alignment?: "left" | "top" | "center" | "bottom" | "right"
+        alignment?: "left" | "top" | "center" | "bottom" | "right";
         /**
          * If true, the popup is allowed to extend beyond the container/boundary.
          */
-        allowBeyondContainer?: boolean
+        allowBeyondContainer?: boolean;
         /**
          * When true, the Escape key will close the popup (controlled via onClose).
          * Also supports proper IME composition handling to avoid accidental closes.
          */
-        escapeToClose?: boolean
+        escapeToClose?: boolean;
         /**
          * CSS class names to pass to the popup container.
          */
-        className?: string
-        style?: React.CSSProperties
+        className?: string;
+        style?: React.CSSProperties;
         /**
          * Distance (in px) between anchor and the popup. Default: 4
          */
-        offset?: number
+        offset?: number;
         /**
          * Cross-axis offset (in px) to shift popup relative to anchor. Default: 0
          */
-        crossOffset?: number
+        crossOffset?: number;
         /**
          * If set to true (default), the popup will observe content size changes and
          * update its placement accordingly. Set to false for performance-sensitive use-cases.
          */
-        replacement?: boolean
+        replacement?: boolean;
       } & React.HTMLAttributes<HTMLDivElement>,
-    ) => JSX.Element | null
+    ) => JSX.Element | null;
     /**
      * Segmented control for selecting from options
      *
@@ -3281,13 +3290,13 @@ export interface Orca {
      */
     Segmented: (
       props: {
-        selected: string
-        options: { label?: string; value: string; jsx?: React.ReactElement }[]
-        onChange: (value: string) => void | Promise<void>
-        className?: string
-        style?: React.CSSProperties
+        selected: string;
+        options: { label?: string; value: string; jsx?: React.ReactElement }[];
+        onChange: (value: string) => void | Promise<void>;
+        className?: string;
+        style?: React.CSSProperties;
       } & Omit<React.HTMLAttributes<HTMLDivElement>, "onChange">,
-    ) => JSX.Element | null
+    ) => JSX.Element | null;
     /**
      * Dropdown select component
      *
@@ -3333,31 +3342,31 @@ export interface Orca {
      * ```
      */
     Select: (props: {
-      selected: string[]
-      options: { value: string; label: string; group?: string }[]
+      selected: string[];
+      options: { value: string; label: string; group?: string }[];
       onChange?: (
         selected: string[],
         filterKeyword?: string,
-      ) => void | Promise<void>
-      menuContainer?: React.RefObject<HTMLElement>
-      width?: number | string
-      placeholder?: string
-      multiSelection?: boolean
-      withClear?: boolean
-      filter?: boolean
-      filterPlaceholder?: string
+      ) => void | Promise<void>;
+      menuContainer?: React.RefObject<HTMLElement>;
+      width?: number | string;
+      placeholder?: string;
+      multiSelection?: boolean;
+      withClear?: boolean;
+      filter?: boolean;
+      filterPlaceholder?: string;
       filterFunction?: (
         keyword: string,
-      ) => Promise<{ value: string; label: string; group?: string }[]>
-      alignment?: "left" | "center" | "right"
-      pre?: React.ReactElement
-      buttonClassName?: string
-      menuClassName?: string
-      disabled?: boolean
-      readOnly?: boolean
-      onMouseEnter?: (e: React.MouseEvent) => void
-      onMouseLeave?: (e: React.MouseEvent) => void
-    }) => JSX.Element | null
+      ) => Promise<{ value: string; label: string; group?: string }[]>;
+      alignment?: "left" | "center" | "right";
+      pre?: React.ReactElement;
+      buttonClassName?: string;
+      menuClassName?: string;
+      disabled?: boolean;
+      readOnly?: boolean;
+      onMouseEnter?: (e: React.MouseEvent) => void;
+      onMouseLeave?: (e: React.MouseEvent) => void;
+    }) => JSX.Element | null;
     /**
      * Loading placeholder
      *
@@ -3387,7 +3396,7 @@ export interface Orca {
      * </div>
      * ```
      */
-    Skeleton: (props: {}) => JSX.Element | null
+    Skeleton: (props: {}) => JSX.Element | null;
     /**
      * Toggle switch component
      *
@@ -3424,12 +3433,12 @@ export interface Orca {
      */
     Switch: (
       props: {
-        on?: boolean
-        unset?: boolean
-        onChange?: (on: boolean) => void | Promise<void>
-        readonly?: boolean
+        on?: boolean;
+        unset?: boolean;
+        onChange?: (on: boolean) => void | Promise<void>;
+        readonly?: boolean;
       } & Omit<React.HTMLAttributes<HTMLButtonElement>, "onChange">,
-    ) => JSX.Element | null
+    ) => JSX.Element | null;
     /**
      * Data table component
      *
@@ -3479,18 +3488,18 @@ export interface Orca {
      */
     Table: (
       props: {
-        columns: { name: string; icon?: string }[]
-        items: { _type: string; [key: string]: any }[]
+        columns: { name: string; icon?: string }[];
+        items: { _type: string; [key: string]: any }[];
         rowRenderer: (
           item: { _type: string; [key: string]: any },
           className: string,
           index: number,
-        ) => React.ReactNode
-        initialColumnSizes: string
-        pinColumn?: boolean
-        onColumnResize?: (value: string) => void | Promise<void>
+        ) => React.ReactNode;
+        initialColumnSizes: string;
+        pinColumn?: boolean;
+        onColumnResize?: (value: string) => void | Promise<void>;
       } & React.HTMLAttributes<HTMLDivElement>,
-    ) => JSX.Element | null
+    ) => JSX.Element | null;
     /**
      * Provides a popup menu for tag selection and creation.
      * Allows users to search, select existing tags, or create new ones.
@@ -3526,38 +3535,38 @@ export interface Orca {
      */
     TagPopup: (
       props: {
-        blockId: DbId
-        closeMenu: () => void
-        onTagClick: (alias: string) => void | Promise<void>
-        placeholder?: string
+        blockId: DbId;
+        closeMenu: () => void;
+        onTagClick: (alias: string) => void | Promise<void>;
+        placeholder?: string;
         children: (
           openMenu: (e: React.UIEvent, state?: any) => void,
           closeMenu: () => void,
-        ) => ReactNode
+        ) => ReactNode;
       } & Partial<{
-        className?: string
-        style?: CSSProperties
-        menu: (close: () => void, state?: any) => ReactNode
+        className?: string;
+        style?: CSSProperties;
+        menu: (close: () => void, state?: any) => ReactNode;
         children: (
           openMenu: (e: React.UIEvent, state?: any) => void,
           closeMenu: () => void,
-        ) => ReactNode
-        container?: RefObject<HTMLElement>
-        alignment?: "left" | "top" | "center" | "bottom" | "right"
-        placement?: "vertical" | "horizontal"
-        defaultPlacement?: "top" | "bottom" | "left" | "right"
-        allowBeyondContainer?: boolean
-        noPointerLogic?: boolean
-        keyboardNav?: boolean
-        navDirection?: "vertical" | "both"
-        menuAttr?: Record<string, any>
-        offset?: number
-        crossOffset?: number
-        escapeToClose?: boolean
-        onOpened?: () => void
-        onClosed?: () => void
+        ) => ReactNode;
+        container?: RefObject<HTMLElement>;
+        alignment?: "left" | "top" | "center" | "bottom" | "right";
+        placement?: "vertical" | "horizontal";
+        defaultPlacement?: "top" | "bottom" | "left" | "right";
+        allowBeyondContainer?: boolean;
+        noPointerLogic?: boolean;
+        keyboardNav?: boolean;
+        navDirection?: "vertical" | "both";
+        menuAttr?: Record<string, any>;
+        offset?: number;
+        crossOffset?: number;
+        escapeToClose?: boolean;
+        onOpened?: () => void;
+        onClosed?: () => void;
       }>,
-    ) => JSX.Element | null
+    ) => JSX.Element | null;
     /**
      * Provides an editor interface for managing and configuring tag properties.
      * Allows users to add, edit, and delete tag properties, set property types and values.
@@ -3603,35 +3612,35 @@ export interface Orca {
      */
     TagPropsEditor: (
       props: {
-        blockId: DbId
+        blockId: DbId;
         children: (
           openMenu: (e: React.UIEvent, state?: any) => void,
           closeMenu: () => void,
-        ) => ReactNode
+        ) => ReactNode;
       } & Partial<{
-        className?: string
-        style?: CSSProperties
-        menu: (close: () => void, state?: any) => ReactNode
+        className?: string;
+        style?: CSSProperties;
+        menu: (close: () => void, state?: any) => ReactNode;
         children: (
           openMenu: (e: React.UIEvent, state?: any) => void,
           closeMenu: () => void,
-        ) => ReactNode
-        container?: RefObject<HTMLElement>
-        alignment?: "left" | "top" | "center" | "bottom" | "right"
-        placement?: "vertical" | "horizontal"
-        defaultPlacement?: "top" | "bottom" | "left" | "right"
-        allowBeyondContainer?: boolean
-        noPointerLogic?: boolean
-        keyboardNav?: boolean
-        navDirection?: "vertical" | "both"
-        menuAttr?: Record<string, any>
-        offset?: number
-        crossOffset?: number
-        escapeToClose?: boolean
-        onOpened?: () => void
-        onClosed?: () => void
+        ) => ReactNode;
+        container?: RefObject<HTMLElement>;
+        alignment?: "left" | "top" | "center" | "bottom" | "right";
+        placement?: "vertical" | "horizontal";
+        defaultPlacement?: "top" | "bottom" | "left" | "right";
+        allowBeyondContainer?: boolean;
+        noPointerLogic?: boolean;
+        keyboardNav?: boolean;
+        navDirection?: "vertical" | "both";
+        menuAttr?: Record<string, any>;
+        offset?: number;
+        crossOffset?: number;
+        escapeToClose?: boolean;
+        onOpened?: () => void;
+        onClosed?: () => void;
       }>,
-    ) => JSX.Element | null
+    ) => JSX.Element | null;
     /**
      * Tooltip component
      *
@@ -3668,19 +3677,19 @@ export interface Orca {
      * ```
      */
     Tooltip: (props: {
-      text: React.ReactNode
-      shortcut?: string
-      image?: string
-      children: React.ReactElement
-      placement?: "vertical" | "horizontal"
-      alignment?: "left" | "top" | "center" | "bottom" | "right"
-      defaultPlacement?: "top" | "bottom" | "left" | "right"
-      allowBeyondContainer?: boolean
-      modifier?: "shift" | "ctrl" | "alt" | "meta"
-      delay?: number
-      [key: string]: any
-    }) => JSX.Element | null
-  }
+      text: React.ReactNode;
+      shortcut?: string;
+      image?: string;
+      children: React.ReactElement;
+      placement?: "vertical" | "horizontal";
+      alignment?: "left" | "top" | "center" | "bottom" | "right";
+      defaultPlacement?: "top" | "bottom" | "left" | "right";
+      allowBeyondContainer?: boolean;
+      modifier?: "shift" | "ctrl" | "alt" | "meta";
+      delay?: number;
+      [key: string]: any;
+    }) => JSX.Element | null;
+  };
 
   /**
    * React contexts exposed for use in plugins.
@@ -3706,9 +3715,9 @@ export interface Orca {
        * @param images - An array of image URLs to display in the viewer.
        * @param thumbnail - The source image element used for transition animation.
        */
-      viewImages(images: string[], thumbnail: HTMLImageElement): void
-    }
-  }
+      viewImages(images: string[], thumbnail: HTMLImageElement): void;
+    };
+  };
 
   /**
    * Headbar API for registering custom buttons in the application's header bar.
@@ -3745,7 +3754,7 @@ export interface Orca {
      * ))
      * ```
      */
-    registerHeadbarButton(id: string, render: () => React.ReactElement): void
+    registerHeadbarButton(id: string, render: () => React.ReactElement): void;
 
     /**
      * Unregisters a previously registered headbar button.
@@ -3758,8 +3767,8 @@ export interface Orca {
      * orca.headbar.unregisterHeadbarButton("myplugin.settingsButton")
      * ```
      */
-    unregisterHeadbarButton(id: string): void
-  }
+    unregisterHeadbarButton(id: string): void;
+  };
 
   /**
    * Toolbar API for registering custom buttons in the block editor toolbar.
@@ -3833,7 +3842,7 @@ export interface Orca {
     registerToolbarButton(
       id: string,
       button: ToolbarButton | ToolbarButton[],
-    ): void
+    ): void;
 
     /**
      * Unregisters a previously registered toolbar button or button group.
@@ -3846,8 +3855,8 @@ export interface Orca {
      * orca.toolbar.unregisterToolbarButton("myplugin.formatButton")
      * ```
      */
-    unregisterToolbarButton(id: string): void
-  }
+    unregisterToolbarButton(id: string): void;
+  };
 
   /**
    * Slash commands API for registering custom commands that appear when a user types '/' in the editor.
@@ -3881,7 +3890,7 @@ export interface Orca {
      * })
      * ```
      */
-    registerSlashCommand(id: string, command: SlashCommand): void
+    registerSlashCommand(id: string, command: SlashCommand): void;
 
     /**
      * Unregisters a previously registered slash command.
@@ -3894,8 +3903,8 @@ export interface Orca {
      * orca.slashCommands.unregisterSlashCommand("myplugin.insertChart")
      * ```
      */
-    unregisterSlashCommand(id: string): void
-  }
+    unregisterSlashCommand(id: string): void;
+  };
   /**
    * Block menu commands API for adding custom commands to block context menus.
    * This allows plugins to add custom actions that appear when users right-click on blocks' handle.
@@ -3958,7 +3967,7 @@ export interface Orca {
      * })
      * ```
      */
-    registerBlockMenuCommand(id: string, command: BlockMenuCommand): void
+    registerBlockMenuCommand(id: string, command: BlockMenuCommand): void;
 
     /**
      * Unregisters a previously registered block menu command.
@@ -3971,8 +3980,8 @@ export interface Orca {
      * orca.blockMenuCommands.unregisterBlockMenuCommand("myplugin.exportBlock")
      * ```
      */
-    unregisterBlockMenuCommand(id: string): void
-  }
+    unregisterBlockMenuCommand(id: string): void;
+  };
   /**
    * Tag menu commands API for adding custom commands to tag context menus.
    * This allows plugins to add custom actions that appear when users open the tag's context menu.
@@ -4018,7 +4027,7 @@ export interface Orca {
      * })
      * ```
      */
-    registerTagMenuCommand(id: string, command: TagMenuCommand): void
+    registerTagMenuCommand(id: string, command: TagMenuCommand): void;
 
     /**
      * Unregisters a previously registered tag menu command.
@@ -4031,8 +4040,8 @@ export interface Orca {
      * orca.tagMenuCommands.unregisterTagMenuCommand("myplugin.exportTaggedBlocks")
      * ```
      */
-    unregisterTagMenuCommand(id: string): void
-  }
+    unregisterTagMenuCommand(id: string): void;
+  };
   /**
    * Editor sidetools API for adding custom tools to the block editor's sidebar.
    * This allows plugins to add custom utilities and functionality in the editor sidebar.
@@ -4088,7 +4097,7 @@ export interface Orca {
      * })
      * ```
      */
-    registerEditorSidetool(id: string, tool: EditorSidetool): void
+    registerEditorSidetool(id: string, tool: EditorSidetool): void;
 
     /**
      * Unregisters a previously registered editor sidetool.
@@ -4101,8 +4110,8 @@ export interface Orca {
      * orca.editorSidetools.unregisterEditorSidetool("myplugin.outlineViewer")
      * ```
      */
-    unregisterEditorSidetool(id: string): void
-  }
+    unregisterEditorSidetool(id: string): void;
+  };
 
   /**
    * Utility functions.
@@ -4128,7 +4137,7 @@ export interface Orca {
      */
     getCursorDataFromSelection: (
       selection: Selection | null,
-    ) => CursorData | null
+    ) => CursorData | null;
 
     /**
      * Converts a DOM Range object into Orca's internal CursorData format.
@@ -4145,7 +4154,7 @@ export interface Orca {
      * }
      * ```
      */
-    getCursorDataFromRange: (range: Range | undefined) => CursorData | null
+    getCursorDataFromRange: (range: Range | undefined) => CursorData | null;
 
     /**
      * Sets the editor's selection and caret position based on Orca's CursorData.
@@ -4159,7 +4168,7 @@ export interface Orca {
      * await orca.utils.setSelectionFromCursorData(cursorData);
      * ```
      */
-    setSelectionFromCursorData: (cursorData: CursorData) => Promise<void>
+    setSelectionFromCursorData: (cursorData: CursorData) => Promise<void>;
 
     /**
      * Resolves the absolute URL or file path for an asset used by a plugin or the application.
@@ -4177,8 +4186,8 @@ export interface Orca {
      * <img src={orca.utils.getAssetPath(iconSrc)} alt="Logo" />
      * ```
      */
-    getAssetPath: (assetPath: string) => string
-  }
+    getAssetPath: (assetPath: string) => string;
+  };
 
   /**
    * Display a notification to the user. Notifications appear in the bottom right corner of the application
@@ -4211,10 +4220,10 @@ export interface Orca {
     type: "info" | "success" | "warn" | "error",
     message: string,
     options?: {
-      title?: string
-      action?: () => void | Promise<void>
+      title?: string;
+      action?: () => void | Promise<void>;
     },
-  ) => void
+  ) => void;
 }
 
 // Backend API
