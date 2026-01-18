@@ -23,7 +23,7 @@ else
 	git commit -m "upgrade#$new_version $comment"
 	git push
 	git tag $new_version
-	git push origin $new_version
+	git push my $new_version
 fi
 
 
