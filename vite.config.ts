@@ -22,8 +22,9 @@ export default defineConfig(({ command, mode }) => {
     },
     build: {
       emptyOutDir: true, // 强制清空输出目录
-      outDir:
-        "/Users/hqweay/Documents/orca/plugins/orca-hwqeay-go/dist",
+      outDir: isDev
+        ? "/Users/hqweay/Documents/orca/plugins/orca-hwqeay-go/dist"
+        : "./dist",
       lib: {
         entry: "src/main.tsx",
         fileName: "index",
