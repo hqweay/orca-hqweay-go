@@ -26,12 +26,15 @@ export default class FormatPlugin extends BasePlugin {
         const panel = orca.state.activePanel;
         if (!panel) return;
 
+        this.logger.debug("Active panel:", panel);
         const viewPanel = orca.nav.findViewPanel(panel, orca.state.panels);
         if (!viewPanel) return;
 
+        this.logger.debug("View panel:", viewPanel);
         const { viewArgs } = viewPanel;
         if (!viewArgs) return;
 
+        this.logger.debug("View args:", viewArgs);
         let rootBlockId: number | null = null;
 
         // 2. Determine root block ID
@@ -49,6 +52,7 @@ export default class FormatPlugin extends BasePlugin {
           rootBlockId = viewArgs.blockId;
         }
 
+        this.logger.debug("Root block ID:", rootBlockId);
         if (rootBlockId === null) return;
 
         // 3. Fetch block tree
@@ -59,26 +63,37 @@ export default class FormatPlugin extends BasePlugin {
           rootBlockId,
         );
 
+        this.logger.debug("Block tree:", blockTree);
         if (!blockTree) return;
-        const rootBlock = orca.state.blocks[rootBlockId];
+
         const updates: { id: number; content: any[] }[] = [];
 
         // Helper to process a block
         const processBlock = (block: any) => {
-          // 只格式化文本块，且纯文本块。代码块、包含富文本元素等块都不格式化
+          // 只格式化纯文本块，不格式化代码块
           if (
             block.content &&
-            block.content.length === 1 &&
-            block.content[0].t === "t" &&
-            block.properties?.[0].value?.type === "text"
+            (block.properties?.every(
+              (p: any) =>
+                p.value?.type !== "code" || p.value?.lang === "Markdown",
+            ) ??
+              true)
           ) {
-            const originalText = block.content[0].v;
-            const formattedText = formatUtil.formatContent(originalText);
-
-            if (formattedText !== originalText) {
+            let hasChanged = false;
+            const newContent = block.content.map((fragment: any) => {
+              if (fragment.t === "t" && typeof fragment.v === "string") {
+                const formattedText = formatUtil.formatContent(fragment.v);
+                if (formattedText !== fragment.v) {
+                  hasChanged = true;
+                  return { ...fragment, v: formattedText };
+                }
+              }
+              return fragment;
+            });
+            if (hasChanged) {
               updates.push({
                 id: block.id,
-                content: [{ t: "t", v: formattedText }],
+                content: newContent,
               });
             }
           }
@@ -86,6 +101,8 @@ export default class FormatPlugin extends BasePlugin {
 
         // 4. Traverse tree (Root + Children + Grandchildren)
         // Level 0: Root
+        const rootBlock = orca.state.blocks[rootBlockId];
+        this.logger.debug("Root block:", rootBlock);
         processBlock(rootBlock);
 
         // if (rootBlock.childrenBlocks) {
