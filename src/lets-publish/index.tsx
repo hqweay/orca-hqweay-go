@@ -169,8 +169,6 @@ export default class PublishPlugin extends BasePlugin {
     let mdContent = await this.generateMarkdown(block);
 
     // Add Frontmatter
-    const now = format(new Date(), "yyyy-MM-dd HH:mm:ss");
-
     // Extract tags from refs
     let tagList: string[] = [];
     if (block.refs && block.refs.length > 0) {
@@ -216,14 +214,14 @@ export default class PublishPlugin extends BasePlugin {
             break;
           }
         }
-      }
+      } 
     }
 
     const frontmatter = `---
 permalink: /${slug}-${block.id}/
 title: ${title}
-date: ${format(new Date(), "yyyy-MM-dd HH:mm:ss")}
-updated: ${format(new Date(), "yyyy-MM-dd HH:mm:ss")}
+date: "${format(new Date(), "yyyy-MM-dd HH:mm:ss")}"
+updated: "${format(new Date(), "yyyy-MM-dd HH:mm:ss")}"
 ${tagStr}
 comments: true
 toc: true
