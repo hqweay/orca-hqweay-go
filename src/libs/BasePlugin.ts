@@ -1,4 +1,5 @@
 import { Logger } from "./logger";
+import { t } from "./l10n";
 
 export abstract class BasePlugin {
   protected mainPluginName: string;
@@ -17,5 +18,16 @@ export abstract class BasePlugin {
 
   public getSettingsSchema(): any {
     return {};
+  }
+
+  protected defineSetting(key: string, label: string, desc: string, def = "") {
+    return {
+      [`${this.name}.${key}`]: {
+        label: t(`${this.name}.${label}`),
+        description: t(desc),
+        type: "string",
+        defaultValue: def,
+      },
+    };
   }
 }

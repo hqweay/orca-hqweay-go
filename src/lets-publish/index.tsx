@@ -15,67 +15,84 @@ const PropType = {
 
 export default class PublishPlugin extends BasePlugin {
   public getSettingsSchema(): any {
-    const s = (key: string, label: string, desc: string, def = "") => ({
-      [`${this.name}.${key}`]: {
-        label: t(`${this.name}.${label}`),
-        description: t(desc),
-        type: "string",
-        defaultValue: def,
-      },
-    });
-
     return {
       // Image Bed Settings
-      ...s(
+      ...this.defineSetting(
         "imageBed.owner",
         "Image Bed Owner",
         "GitHub Username/Org for Image Bed",
       ),
-      ...s("imageBed.repo", "Image Bed Repo", "Repository Name for Image Bed"),
-      ...s(
+      ...this.defineSetting(
+        "imageBed.repo",
+        "Image Bed Repo",
+        "Repository Name for Image Bed",
+      ),
+      ...this.defineSetting(
         "imageBed.branch",
         "Image Bed Branch",
         "Branch for Image Bed",
         "master",
       ),
-      ...s(
+      ...this.defineSetting(
         "imageBed.path",
         "Image Bed Path",
         "Path prefix (e.g. img/)",
         "img/",
       ),
-      ...s("imageBed.token", "Image Bed Token", "GitHub Token for Image Bed"),
+      ...this.defineSetting(
+        "imageBed.token",
+        "Image Bed Token",
+        "GitHub Token for Image Bed",
+      ),
 
       // Blog Settings
-      ...s("blog.owner", "Blog Owner", "GitHub Username/Org for Blog"),
-      ...s("blog.repo", "Blog Repo", "Repository Name for Blog"),
-      ...s("blog.branch", "Blog Branch", "Branch for Blog", "main"),
-      ...s(
+      ...this.defineSetting(
+        "blog.owner",
+        "Blog Owner",
+        "GitHub Username/Org for Blog",
+      ),
+      ...this.defineSetting(
+        "blog.repo",
+        "Blog Repo",
+        "Repository Name for Blog",
+      ),
+      ...this.defineSetting(
+        "blog.branch",
+        "Blog Branch",
+        "Branch for Blog",
+        "main",
+      ),
+      ...this.defineSetting(
         "blog.path",
         "Blog Path",
         "Path prefix (e.g. source/_posts/)",
         "source/_posts/",
       ),
-      ...s(
+      ...this.defineSetting(
         "blog.domain",
         "Blog Domain",
         "Domain for Blog URL (e.g. https://leay.net)",
       ),
-      ...s("tagLabel", "Tag Label", "Tag Label for Published Blocks", "已发布"),
-      ...s(
+      ...this.defineSetting(
+        "tagLabel",
+        "Tag Label",
+        "Tag Label for Published Blocks",
+        "已发布",
+      ),
+      ...this.defineSetting(
         "blog.token",
         "Blog Token",
         "GitHub Token for Blog (can be same as Image Bed)",
       ),
 
       // Committer Info
-      ...s(
+      ...this.defineSetting(
         "committer.name",
         "Committer Name",
         "Name for git commits",
         "orca-hqweay-go-bot",
       ),
-      ...s(
+      ...this.defineSetting(
         "committer.email",
         "Committer Email",
         "Email for git commits",
