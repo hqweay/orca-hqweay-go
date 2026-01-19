@@ -135,7 +135,7 @@ export default class PublishPlugin extends BasePlugin {
       t("Publish Block to GitHub"),
     );
 
-    this.logger.info(`${this.name} loaded.`);
+    this.logger.debug(`${this.name} loaded.`);
   }
 
   public async onUnload(): Promise<void> {
@@ -143,7 +143,7 @@ export default class PublishPlugin extends BasePlugin {
       `${this.name}.publish-block`,
     );
     orca.commands.unregisterCommand(`${this.name}.publish-block`);
-    this.logger.info(`${this.name} unloaded.`);
+    this.logger.debug(`${this.name} unloaded.`);
   }
 
   private async publishWorkflow(block: Block) {
@@ -215,11 +215,22 @@ export default class PublishPlugin extends BasePlugin {
       for (const ref of block.refs) {
         if (ref.data) {
           // Check if this ref is our "Published" tag
-          const sp = ref.data.find((p) => p.name === "slug");
-          if (sp && sp.value) {
-            slug = sp.value;
-            // Reconstruct path from slug for update check
-            existingPath = `${blogPath}${slug}-${block.id}.md`;
+          // We prioritize finding 'github_url'
+          const urlProp = ref.data.find((p) => p.name === "github_url");
+          if (urlProp && urlProp.value) {
+            const githubUrl = urlProp.value;
+            // Parse path from GitHub URL
+            // Format: https://github.com/owner/repo/blob/branch/path/to/file.md
+            // We need to extract the part after `blob/{branch}/`
+            // But strict parsing might be fragile if branch has slashes.
+            // Alternative: remove the prefix `https://github.com/{owner}/{repo}/blob/{branch}/`
+            const prefix = `https://github.com/${blogOwner}/${blogRepo}/blob/${blogBranch}/`;
+            if (githubUrl.startsWith(prefix)) {
+              existingPath = githubUrl.slice(prefix.length);
+              const filename = existingPath.split("/").pop() || "";
+              // Standard format: {slug}.md
+              slug = filename.replace(".md", "");
+            }
 
             // Try to find existing publish_date
             const dateProp = ref.data.find((p) => p.name === "publish_date");
@@ -239,7 +250,7 @@ export default class PublishPlugin extends BasePlugin {
     }
 
     const frontmatter = `---
-permalink: /${slug}-${block.id}/
+permalink: /${slug}/
 title: ${title}
 date: "${format(publishDate, "yyyy-MM-dd HH:mm:ss")}"
 updated: "${format(new Date(), "yyyy-MM-dd HH:mm:ss")}"
@@ -282,7 +293,7 @@ toc: true
 
     // If not found or new, construct filename
     if (!existingSha) {
-      filename = `${blogPath}${slug}-${block.id}.md`;
+      filename = `${blogPath}${slug}.md`;
     }
 
     // Upload
@@ -297,7 +308,7 @@ toc: true
       existingSha,
     );
 
-    this.logger.info("Published Article:", res);
+    this.logger.debug("Published Article:", res);
 
     // 5. Update Block Properties
 
@@ -307,11 +318,11 @@ toc: true
     if (blogDomain) {
       // Ensure domain doesn't end with slash and slug doesn't start with one?
       // Usually safe to just template.
-      // Format: domain/${slug}-${id}/
+      // Format: domain/${slug}/
       const domain = blogDomain.endsWith("/")
         ? blogDomain.slice(0, -1)
         : blogDomain;
-      blogUrl = `${domain}/${slug}-${block.id}/`;
+      blogUrl = `${domain}/${slug}/`;
     }
 
     // Properties to be stored on the tag reference
@@ -342,7 +353,7 @@ toc: true
     const latestBlock =
       (await orca.invokeBackend("get-block", block.id)) || block;
 
-    this.logger.info("Latest Block:", latestBlock);
+    this.logger.debug("Latest Block:", latestBlock);
     // Verify if tag already exists on this block
     let existingRef = null;
     if (latestBlock.refs) {
@@ -378,7 +389,7 @@ toc: true
 
     if (existingRef) {
       // Explicitly update ref data
-      this.logger.info("Updating existing tag properties...", existingRef);
+      this.logger.debug("Updating existing tag properties...", existingRef);
       await orca.commands.invokeEditorCommand(
         "core.editor.setRefData",
         null,
@@ -444,17 +455,13 @@ toc: true
         tagProperties,
       );
 
-      this.logger.info("Tag Block ID:", tagBlockId);
+      this.logger.debug("Tag Block ID:", tagBlockId);
       // Ensure the Tag Block schema
       const tagBlock = await orca.invokeBackend("get-block", tagBlockId);
-      this.logger.info("Tag Block:", tagBlock);
+      this.logger.debug("Tag Block:", tagBlock);
       if (tagBlock) {
         const propsToAdd = [];
         const existingProps = tagBlock.properties || [];
-
-        if (!existingProps.some((p: any) => p.name === "slug")) {
-          propsToAdd.push({ name: "slug", type: PropType.Text });
-        }
 
         const githubProp = existingProps.find(
           (p: any) => p.name === "github_url",
@@ -491,11 +498,11 @@ toc: true
       }
     }
 
-    this.logger.info("Updated block tags/properties.");
+    this.logger.debug("Updated block tags/properties.");
   }
 
   private async generateMarkdown(block: Block): Promise<string> {
-    this.logger.info("Generating Markdown via blockConvert for root block...");
+    this.logger.debug("Generating Markdown via blockConvert for root block...");
 
     try {
       // Use the block from state to ensure it has the correct structure (children IDs) expected by the converter
@@ -596,7 +603,7 @@ toc: true
         if (existingFile && existingFile.download_url) {
           // Already exists, use it
           downloadUrl = existingFile.download_url;
-          this.logger.info(`Image ${filename} exists, reusing.`);
+          this.logger.debug(`Image ${filename} exists, reusing.`);
         } else {
           // Upload
           const res = await this.uploadFile(
