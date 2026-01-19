@@ -150,3 +150,21 @@ settings[`${this.name}.option`]
 *   **优化**：移除 `slug` 存储。直接把 `github_url` 作为 Source of Truth，从中解析出文件名和 Slug。减少维护成本，属性更清爽。
 *   **ID 处理**：为了 URL 洁癖，文件名和 Permalink 去掉 ID 后缀 (`slug.md` vs `slug-id.md`)，虽然牺牲了一点点重名安全性，但 URL 更美观且利于 SEO。
 
+### 8. 菜单显隐控制 (Conditional Menu Rendering)
+*   **场景**：某些菜单项只在特定上下文有效（如“排序”仅对多选有效，“发布”仅对页面块有效）。
+*   **方法**：在 `registerBlockMenuCommand` 的 `render` 函数中，根据条件直接返回 `null`。
+*   **参数差异**：`render` 函数的第一个参数取决于 `worksOnMultipleBlocks` 配置。
+    *   `worksOnMultipleBlocks: false` -> 参数为 `blockId` (number)
+    *   `worksOnMultipleBlocks: true` -> 参数为 `blockIds` (number[])
+
+    ```typescript
+    // 配置示例
+    worksOnMultipleBlocks: true,
+    render: (blockIds, rootBlockId, close) => {
+        // 场景: 仅多选时显示
+        if (Array.isArray(blockIds) && blockIds.length <= 1) return null;
+        
+        // ... return Component
+    }
+    ```
+

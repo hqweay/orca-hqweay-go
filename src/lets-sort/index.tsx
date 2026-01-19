@@ -29,6 +29,8 @@ export default class SortPlugin extends BasePlugin {
             const MenuText = orca.components.MenuText;
             if (!MenuText) return null;
 
+            if (!blockIds || blockIds.length <= 1) return null;
+
             return (
               <MenuText
                 title={t("Sort Selected Blocks")}
