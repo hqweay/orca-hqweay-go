@@ -56,6 +56,7 @@ export default class PublishPlugin extends BasePlugin {
         "Path prefix (e.g. source/_posts/)",
         "source/_posts/",
       ),
+      ...s("tagLabel", "Tag Label", "Tag Label for Published Blocks", "已发布"),
       ...s(
         "blog.token",
         "Blog Token",
@@ -157,6 +158,7 @@ export default class PublishPlugin extends BasePlugin {
     const blogPath = settings[`${this.name}.blog.path`] || "source/_posts/";
     const blogToken = (settings[`${this.name}.blog.token`] || "").trim();
     const ibToken = (settings[`${this.name}.imageBed.token`] || "").trim();
+    const tagLabel = settings[`${this.name}.tagLabel`] || "已发布";
 
     if (!ibToken || !blogToken) {
       throw new Error("Missing GitHub tokens in settings.");
@@ -183,7 +185,7 @@ export default class PublishPlugin extends BasePlugin {
 
       const resolvedTags = await Promise.all(tagPromises);
       tagList = resolvedTags
-        .filter((t) => t && t !== "已发布")
+        .filter((t) => t && t !== tagLabel)
         .map((t) => t.trim());
     }
 
@@ -196,7 +198,6 @@ export default class PublishPlugin extends BasePlugin {
       tagList.length > 0
         ? `tags:\n${tagList.map((t: string) => `  - ${t}`).join("\n")}`
         : "";
-    // 4. Upload Article
     // 4. Upload Article
     // Default slug to timestamp
     let slug = format(new Date(), "yyyyMMddHHmmss");
@@ -279,8 +280,7 @@ toc: true
     this.logger.info("Published Article:", res);
 
     // 5. Update Block Properties
-    // Store only 'slug' in '已发布' tag properties
-    const tagLabel = "已发布";
+    // Store only 'slug' in 'tagLabel' tag properties
 
     // Properties to be stored on the tag reference
     const tagProperties = [
@@ -291,7 +291,7 @@ toc: true
       },
     ];
 
-    // Insert '已发布' tag with properties
+    // Insert tag with properties
     const tagBlockId = await orca.commands.invokeEditorCommand(
       "core.editor.insertTag",
       null,
@@ -300,7 +300,7 @@ toc: true
       tagProperties,
     );
 
-    // Ensure the Tag Block ("已发布") has these properties defined in its schema
+    // Ensure the Tag Block ("已发布" or custom) has these properties defined in its schema
     const tagBlock = await orca.invokeBackend("get-block", tagBlockId);
     if (tagBlock) {
       const propsToAdd = [];
