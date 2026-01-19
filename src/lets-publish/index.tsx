@@ -95,6 +95,9 @@ export default class PublishPlugin extends BasePlugin {
             const MenuText = orca.components.MenuText;
             if (!MenuText) return null;
 
+            const block = orca.state.blocks[blockId];
+            if (!block || block.parent) return null;
+
             return (
               <MenuText
                 title={t("Publish to GitHub")}
