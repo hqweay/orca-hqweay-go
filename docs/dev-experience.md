@@ -86,4 +86,34 @@ settings[`${this.name}.option`]
 ## 5. 开发流程建议
 
 1.  **查阅 `plugin-docs`**：遇到 API 问题（如命令名称），优先在 `orca-plugin-template/plugin-docs/documents` 下搜索（如 `grep` 搜索 `Core-Editor-Commands.md`）。
-2.  **验证数据结构**：不要凭直觉猜测 Block 结构，可以使用 `console.log(JSON.stringify(block))` 打印真实数据进行确认。
+
+## 6. 发布插件踩坑总结 (Publish Plugin Lessons)
+
+### GitHub API 与 缓存
+*   **问题**：`fetch` 获取 GitHub 文件信息（如 `getFileSha`）时，如果之前请求过一次 404（文件不存在），浏览器或代理可能会缓存这个 404 响应。导致后续即使文件上传成功，再次查询 SHA 依然返回 404，引发重复创建或更新失败。
+*   **解决**：
+    1.  API URL 添加时间戳参数：`?t=${Date.now()}`。
+    2.  `fetch` 选项设置 `cache: "no-store"`。
+
+### Token 处理
+*   **坑**：用户复制 Token 时很容易带上首尾空格，导致认证失败。
+*   **解决**：使用 Token 前务必 `.trim()`。
+
+### 属性存储 (Property Storage)
+*   **概念区分**：
+    *   `block.properties`: 块自身的属性（如 type, checked status 等）。
+    *   `block.refs[].data`: 挂在块上的标签（引用）所携带的属性。
+*   **最佳实践**：元数据（如 `slug`, `blog_path`）建议存储在特定的 Tag（如“已发布”）的 `ref.data` 中，而不是污染块本身的属性。
+*   **Tag 属性过滤**：获取文章 Tags 时，记得排除用于标记状态的功能性 Tag（如 "已发布"）。
+
+### 时间格式 (Date Formatting)
+*   **date-fns 坑**：format 字符串中 `XXX` 会输出时区偏移（如 `+08:00`）。
+*   **Frontmatter**：某些静态网站生成器（或 YAML 解析器）对时区格式支持不一。最稳妥的方式是输出 **双引号包裹的** 标准时间字符串 `"yyyy-MM-dd HH:mm:ss"` (本地时间)，避免自动解析出错了。
+
+### 图片上传与去重
+*   **策略**：不要每次都重新生成随机文件名上传。
+*   **优化**：
+    1.  提取图片文件名（解码 URL）。
+    2.  检查 Image Bed 是否已存在同名文件 (HEAD request or getFileSha)。
+    3.  如果存在，直接复用 `download_url`，节省流量和仓库空间。
+
