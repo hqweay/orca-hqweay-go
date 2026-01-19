@@ -117,3 +117,36 @@ settings[`${this.name}.option`]
     2.  检查 Image Bed 是否已存在同名文件 (HEAD request or getFileSha)。
     3.  如果存在，直接复用 `download_url`，节省流量和仓库空间。
 
+### 7. 元数据管理与标签更新 (Metadata & Tag Updates) (Update)
+
+#### Tag 属性更新的坑
+*   **误区**：使用 `core.editor.insertTag` 可以直接更新已存在 Tag 的属性。
+*   **真相**：`insertTag` 似乎只会添加或更新基础引用，**不会** 更新 `ref.data` 中的属性值（如果 Tag 已存在）。
+*   **解决**：必须先找到现有的 `ref` 对象，然后使用 **`core.editor.setRefData`** 来显式更新属性。
+    ```typescript
+    await orca.commands.invokeEditorCommand(
+        "core.editor.setRefData",
+        null,
+        existingRef,
+        updatedProperties
+    );
+    ```
+
+#### 链接类型 (Link Property Type)
+*   **需求**：希望存储的 URL 在属性视图中可以点击跳转。
+*   **实现**：Orca 的 `PropType` 中并没有独立的 `URL` 类型。
+*   **方法**：使用 `PropType.Text` 并配合 `typeArgs`：
+    ```typescript
+    {
+        name: "github_url",
+        value: "https://github.com/...",
+        type: PropType.Text,
+        typeArgs: { subType: "link" } // 关键
+    }
+    ```
+
+#### Slug 存储 vs 解析
+*   **演进**：最初在 Tag 属性中存储 `slug`，导致数据冗余。
+*   **优化**：移除 `slug` 存储。直接把 `github_url` 作为 Source of Truth，从中解析出文件名和 Slug。减少维护成本，属性更清爽。
+*   **ID 处理**：为了 URL 洁癖，文件名和 Permalink 去掉 ID 后缀 (`slug.md` vs `slug-id.md`)，虽然牺牲了一点点重名安全性，但 URL 更美观且利于 SEO。
+

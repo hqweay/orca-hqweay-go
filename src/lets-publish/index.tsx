@@ -59,7 +59,7 @@ export default class PublishPlugin extends BasePlugin {
       ...s(
         "blog.domain",
         "Blog Domain",
-        "Domain for Blog URL (e.g. https://myblog.com)",
+        "Domain for Blog URL (e.g. https://leay.net)",
       ),
       ...s("tagLabel", "Tag Label", "Tag Label for Published Blocks", "已发布"),
       ...s(
@@ -73,13 +73,13 @@ export default class PublishPlugin extends BasePlugin {
         "committer.name",
         "Committer Name",
         "Name for git commits",
-        "orca-bot",
+        "orca-hqweay-go-bot",
       ),
       ...s(
         "committer.email",
         "Committer Email",
         "Email for git commits",
-        "bot@orca.note",
+        "bot@leay.net",
       ),
     };
   }
