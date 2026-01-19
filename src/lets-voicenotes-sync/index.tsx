@@ -4,7 +4,7 @@ import React from "react";
 import { VoiceNotesApi } from "@/api/voicenotes";
 import { setupL10N, t } from "@/libs/l10n";
 import { ensureInbox } from "@/libs/utils";
-import { formatUtil } from "@/utils/format";
+import { formatUtil } from "@/libs/format";
 // import { Block, DbId, QueryDescription } from "../orca.d.ts" // orca is global
 import type { Block, DbId, QueryDescription } from "../orca";
 import zhCN from "@/translations/zhCN";

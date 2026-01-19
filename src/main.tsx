@@ -38,7 +38,8 @@ export async function load(_name: string) {
         // Load
         const settings = orca.state.plugins[_name]?.settings;
         if (!settings?.[`${pluginName}`]) {
-          return;
+          console.log(`Skipping sub-plugin (class) from ${path}`);
+          continue;
         }
 
         await pluginInstance.onLoad(_name);
