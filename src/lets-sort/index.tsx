@@ -5,8 +5,8 @@ import { Block, DbId } from "../orca";
 export default class SortPlugin extends BasePlugin {
   public getSettingsSchema(): any {
     return {
-      "sort.order": {
-        label: t("Sort Order"),
+      [`${this.name}.order`]: {
+        label: t(this.name + ".Sort Order"),
         description: t(
           "Define the sort order. Available types: 'empty', 'other', 'task_checked', 'task_unchecked'.",
         ),
@@ -84,7 +84,7 @@ export default class SortPlugin extends BasePlugin {
         const settings =
           orca.state.plugins[this.mainPluginName]?.settings || {};
         const sortOrderStr =
-          settings["sort.order"] ||
+          settings[`${this.name}.order`] ||
           "empty, other, task_checked, task_unchecked";
         const sortOrder = sortOrderStr
           .split(/[,，]/)
