@@ -1,12 +1,47 @@
 import { t } from "./libs/l10n";
 import { BasePlugin } from "./libs/BasePlugin";
+import { PropType } from "./lets-import/csv/csvImporter";
 
 // Auto-scan all sub-plugins in lets-* folders
 const pluginModules = import.meta.glob("./lets-*/index.tsx", { eager: true });
 
 const pluginInstances: BasePlugin[] = [];
 
+const test = async () => {
+  // const tagProperties = [
+  //   {
+  //     name: "github_url",
+  //     value: "https://github.com/hqweay/orca-notes",
+  //     typeArgs: {
+  //       subType: "link",
+  //     },
+  //   },
+  // ];
+  const tagBlockId = await orca.commands.invokeEditorCommand(
+    "core.editor.insertTag",
+    null,
+    2579,
+    "快乐",
+  );
+
+  await orca.commands.invokeEditorCommand(
+    "core.editor.setProperties",
+    null,
+    [tagBlockId],
+    [
+      {
+        name: "linkss",
+        typeArgs: {
+          subType: "link",
+        },
+        pos: null,
+        type: 1,
+      },
+    ],
+  );
+};
 export async function load(_name: string) {
+  // test();
   let settingsSchema: any = {};
 
   for (const path in pluginModules) {

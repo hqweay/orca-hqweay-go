@@ -56,6 +56,11 @@ export default class PublishPlugin extends BasePlugin {
         "Path prefix (e.g. source/_posts/)",
         "source/_posts/",
       ),
+      ...s(
+        "blog.domain",
+        "Blog Domain",
+        "Domain for Blog URL (e.g. https://myblog.com)",
+      ),
       ...s("tagLabel", "Tag Label", "Tag Label for Published Blocks", "已发布"),
       ...s(
         "blog.token",
@@ -156,6 +161,7 @@ export default class PublishPlugin extends BasePlugin {
     const blogRepo = settings[`${this.name}.blog.repo`];
     const blogBranch = settings[`${this.name}.blog.branch`] || "main";
     const blogPath = settings[`${this.name}.blog.path`] || "source/_posts/";
+    const blogDomain = settings[`${this.name}.blog.domain`] || "";
     const blogToken = (settings[`${this.name}.blog.token`] || "").trim();
     const ibToken = (settings[`${this.name}.imageBed.token`] || "").trim();
     const tagLabel = settings[`${this.name}.tagLabel`] || "已发布";
@@ -202,16 +208,30 @@ export default class PublishPlugin extends BasePlugin {
     // Default slug to timestamp
     let slug = format(new Date(), "yyyyMMddHHmmss");
     let existingPath = "";
+    let publishDate = new Date(); // Default to now if not found
 
-    // Search for 'slug' in refs (tag properties)
+    // Search for metadata in refs (tag properties)
     if (block.refs) {
       for (const ref of block.refs) {
         if (ref.data) {
+          // Check if this ref is our "Published" tag
           const sp = ref.data.find((p) => p.name === "slug");
           if (sp && sp.value) {
             slug = sp.value;
             // Reconstruct path from slug for update check
             existingPath = `${blogPath}${slug}-${block.id}.md`;
+
+            // Try to find existing publish_date
+            const dateProp = ref.data.find((p) => p.name === "publish_date");
+            if (dateProp && dateProp.value) {
+              try {
+                publishDate = new Date(dateProp.value);
+              } catch (e) {
+                this.logger.warn(
+                  "Invalid publish_date found, resetting to now.",
+                );
+              }
+            }
             break;
           }
         }
@@ -221,7 +241,7 @@ export default class PublishPlugin extends BasePlugin {
     const frontmatter = `---
 permalink: /${slug}-${block.id}/
 title: ${title}
-date: "${format(new Date(), "yyyy-MM-dd HH:mm:ss")}"
+date: "${format(publishDate, "yyyy-MM-dd HH:mm:ss")}"
 updated: "${format(new Date(), "yyyy-MM-dd HH:mm:ss")}"
 ${tagStr}
 comments: true
@@ -280,7 +300,19 @@ toc: true
     this.logger.info("Published Article:", res);
 
     // 5. Update Block Properties
-    // Store only 'slug' in 'tagLabel' tag properties
+
+    // Construct URLs
+    const githubUrl = `https://github.com/${blogOwner}/${blogRepo}/blob/${blogBranch}/${filename}`;
+    let blogUrl = "";
+    if (blogDomain) {
+      // Ensure domain doesn't end with slash and slug doesn't start with one?
+      // Usually safe to just template.
+      // Format: domain/${slug}-${id}/
+      const domain = blogDomain.endsWith("/")
+        ? blogDomain.slice(0, -1)
+        : blogDomain;
+      blogUrl = `${domain}/${slug}-${block.id}/`;
+    }
 
     // Properties to be stored on the tag reference
     const tagProperties = [
@@ -289,34 +321,173 @@ toc: true
         value: slug,
         type: PropType.Text,
       },
+      {
+        name: "github_url",
+        value: githubUrl,
+        type: PropType.Text,
+      },
+      {
+        name: "blog_url",
+        value: blogUrl,
+        type: PropType.Text,
+      },
+      {
+        name: "publish_date",
+        value: publishDate, // Store as timestamp for PropType.DateTime
+        type: PropType.DateTime,
+      },
     ];
 
-    // Insert tag with properties
-    const tagBlockId = await orca.commands.invokeEditorCommand(
-      "core.editor.insertTag",
-      null,
-      block.id,
-      tagLabel,
-      tagProperties,
-    );
+    // Reload block to ensure we have latest refs
+    const latestBlock =
+      (await orca.invokeBackend("get-block", block.id)) || block;
 
-    // Ensure the Tag Block ("已发布" or custom) has these properties defined in its schema
-    const tagBlock = await orca.invokeBackend("get-block", tagBlockId);
-    if (tagBlock) {
-      const propsToAdd = [];
-      const existingProps = tagBlock.properties || [];
+    this.logger.info("Latest Block:", latestBlock);
+    // Verify if tag already exists on this block
+    let existingRef = null;
+    if (latestBlock.refs) {
+      // We need to resolve refs to check alias or text matching tagLabel
+      // But checking alias on ref is fastest if it exists
+      // If ref.alias is not set, we might need to resolve the block.
+      // For simplicity/perf, we assume 'insertTag' sets the alias on the ref usually?
+      // Actually, insertTag sets ref.alias? Or just points to a block with that text?
+      // Let's rely on finding a ref that points to a block named `tagLabel`.
 
-      if (!existingProps.some((p: any) => p.name === "slug")) {
-        propsToAdd.push({ name: "slug", type: PropType.Text });
+      // This is async work to verify aliases if not directly present.
+      // Or we can just try to insertTag first, get the ID, then update its data on the ref?
+      // No, insertTag returns tagId, not refId.
+
+      // Let's iterate and resolve
+      for (const ref of latestBlock.refs) {
+        if (ref.alias === tagLabel) {
+          existingRef = ref;
+          break;
+        }
+        // Resolve if unknown
+        if (!ref.alias) {
+          const refBlock =
+            orca.state.blocks[ref.to] ||
+            (await orca.invokeBackend("get-block", ref.to));
+          if (refBlock && refBlock.text.trim() === tagLabel) {
+            existingRef = ref;
+            break;
+          }
+        }
       }
+    }
 
-      if (propsToAdd.length > 0) {
-        await orca.commands.invokeEditorCommand(
-          "core.editor.setProperties",
-          null,
-          [tagBlockId],
-          propsToAdd,
+    if (existingRef) {
+      // Explicitly update ref data
+      this.logger.info("Updating existing tag properties...", existingRef);
+      await orca.commands.invokeEditorCommand(
+        "core.editor.setRefData",
+        null,
+        existingRef,
+        tagProperties,
+      );
+      // We also need to ensure the Schema properties exist on the tag definition block
+      const tagBlockId = existingRef.to;
+      // Ensure the Tag Block schema
+      const tagBlock = await orca.invokeBackend("get-block", tagBlockId);
+      if (tagBlock) {
+        const propsToAdd = [];
+        const existingProps = tagBlock.properties || [];
+
+        if (!existingProps.some((p: any) => p.name === "slug")) {
+          propsToAdd.push({ name: "slug", type: PropType.Text });
+        }
+
+        const githubProp = existingProps.find(
+          (p: any) => p.name === "github_url",
         );
+        if (!githubProp || githubProp.typeArgs?.subType !== "link") {
+          propsToAdd.push({
+            name: "github_url",
+            type: PropType.Text,
+            typeArgs: { subType: "link" },
+          });
+        }
+
+        const blogProp = existingProps.find((p: any) => p.name === "blog_url");
+        if (!blogProp || blogProp.typeArgs?.subType !== "link") {
+          propsToAdd.push({
+            name: "blog_url",
+            type: PropType.Text,
+            typeArgs: { subType: "link" },
+          });
+        }
+
+        if (!existingProps.some((p: any) => p.name === "publish_date")) {
+          propsToAdd.push({ name: "publish_date", type: PropType.DateTime });
+        }
+
+        if (propsToAdd.length > 0) {
+          await orca.commands.invokeEditorCommand(
+            "core.editor.setProperties",
+            null,
+            [tagBlockId],
+            propsToAdd,
+          );
+        }
+      }
+    } else {
+      this.logger.debug("Inserting new tag...");
+      this.logger.debug("Block ID:", block.id);
+      this.logger.debug("Tag Label:", tagLabel);
+      this.logger.debug("Tag Properties:", tagProperties);
+      // Insert new tag
+      const tagBlockId = await orca.commands.invokeEditorCommand(
+        "core.editor.insertTag",
+        null,
+        block.id,
+        tagLabel,
+        tagProperties,
+      );
+
+      this.logger.info("Tag Block ID:", tagBlockId);
+      // Ensure the Tag Block schema
+      const tagBlock = await orca.invokeBackend("get-block", tagBlockId);
+      this.logger.info("Tag Block:", tagBlock);
+      if (tagBlock) {
+        const propsToAdd = [];
+        const existingProps = tagBlock.properties || [];
+
+        if (!existingProps.some((p: any) => p.name === "slug")) {
+          propsToAdd.push({ name: "slug", type: PropType.Text });
+        }
+
+        const githubProp = existingProps.find(
+          (p: any) => p.name === "github_url",
+        );
+        if (!githubProp || githubProp.typeArgs?.subType !== "link") {
+          propsToAdd.push({
+            name: "github_url",
+            type: PropType.Text,
+            typeArgs: { subType: "link" },
+          });
+        }
+
+        const blogProp = existingProps.find((p: any) => p.name === "blog_url");
+        if (!blogProp || blogProp.typeArgs?.subType !== "link") {
+          propsToAdd.push({
+            name: "blog_url",
+            type: PropType.Text,
+            typeArgs: { subType: "link" },
+          });
+        }
+
+        if (!existingProps.some((p: any) => p.name === "publish_date")) {
+          propsToAdd.push({ name: "publish_date", type: PropType.DateTime });
+        }
+
+        if (propsToAdd.length > 0) {
+          await orca.commands.invokeEditorCommand(
+            "core.editor.setProperties",
+            null,
+            [tagBlockId],
+            propsToAdd,
+          );
+        }
       }
     }
 
