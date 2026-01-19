@@ -7,7 +7,9 @@ export enum LogLevel {
 
 export class Logger {
   private namespace: string;
-  private static globalLevel: LogLevel = LogLevel.DEBUG;
+  private static globalLevel: LogLevel = import.meta.env.DEV
+    ? LogLevel.DEBUG
+    : LogLevel.ERROR;
 
   constructor(namespace: string) {
     this.namespace = namespace;
