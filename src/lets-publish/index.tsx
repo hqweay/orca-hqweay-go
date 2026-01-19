@@ -214,7 +214,7 @@ export default class PublishPlugin extends BasePlugin {
             break;
           }
         }
-      } 
+      }
     }
 
     const frontmatter = `---
@@ -246,16 +246,16 @@ toc: true
 
     if (existingPath) {
       filename = existingPath;
-      const sha = await this.getFileSha(
+      const fileData = await this.getFileSha(
         blogToken,
         blogOwner,
         blogRepo,
         filename,
         blogBranch,
       );
-      if (sha) {
+      if (fileData && fileData.sha) {
         isUpdate = true;
-        existingSha = sha;
+        existingSha = fileData.sha;
       }
     }
 
@@ -398,21 +398,47 @@ toc: true
         const base64 = this.arrayBufferToBase64(blob);
 
         const ext = url.split(".").pop() || "png";
-        const filename = `image-${format(new Date(), "yyyyMMddHHmmss")}-${Math.random()
-          .toString(36)
-          .substring(7)}.${ext}`;
+        // Convert to filename: use original filename but decode it
+        // and replace spaces with dashes to avoid URL issues
+        let originalName = url.split("/").pop() || "image";
+        originalName = decodeURIComponent(originalName).replace(/\s+/g, "-");
+
+        // Ensure extension
+        if (!originalName.endsWith(`.${ext}`)) {
+          originalName += `.${ext}`;
+        }
+
+        const filename = originalName;
         const filePath = `${path}${filename}`;
 
-        const res = await this.uploadFile(
+        // Check if file exists
+        const existingFile = await this.getFileSha(
           token,
           owner,
           repo,
           filePath,
           branch,
-          base64,
-          `Upload via orca-publish: ${filename}`,
         );
-        const downloadUrl = res.content.download_url;
+
+        let downloadUrl = "";
+
+        if (existingFile && existingFile.download_url) {
+          // Already exists, use it
+          downloadUrl = existingFile.download_url;
+          this.logger.info(`Image ${filename} exists, reusing.`);
+        } else {
+          // Upload
+          const res = await this.uploadFile(
+            token,
+            owner,
+            repo,
+            filePath,
+            branch,
+            base64,
+            `Upload via orca-publish: ${filename}`,
+          );
+          downloadUrl = res.content.download_url;
+        }
 
         urlMap.set(url, downloadUrl);
         // Replace ALL occurrences of this exact `![alt](url)` string.
@@ -434,7 +460,7 @@ toc: true
     repo: string,
     path: string,
     branch: string,
-  ): Promise<string | null> {
+  ): Promise<any | null> {
     // Add timestamp to prevent caching
     const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}&t=${Date.now()}`;
     try {
@@ -451,8 +477,7 @@ toc: true
         this.logger.warn(`getFileSha failed: ${res.status} ${res.statusText}`);
         return null;
       }
-      const data = await res.json();
-      return data.sha;
+      return await res.json();
     } catch (e) {
       this.logger.warn("getFileSha error:", e);
       return null;
