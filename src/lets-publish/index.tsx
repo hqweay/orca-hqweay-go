@@ -171,37 +171,59 @@ export default class PublishPlugin extends BasePlugin {
     // Add Frontmatter
     const now = format(new Date(), "yyyy-MM-dd HH:mm:ss");
 
-    // Extract tags
-    const tagsProp = block.properties?.find((p) => p.name === "tags");
+    // Extract tags from refs
     let tagList: string[] = [];
-    if (tagsProp) {
-      if (
-        tagsProp.type === PropType.TextChoices &&
-        Array.isArray(tagsProp.value)
-      ) {
-        tagList = [...tagsProp.value];
-      } else if (
-        tagsProp.type === PropType.Text &&
-        typeof tagsProp.value === "string"
-      ) {
-        tagList = tagsProp.value.split(",").map((s) => s.trim());
-      }
+    if (block.refs && block.refs.length > 0) {
+      const tagPromises = block.refs.map(async (ref) => {
+        if (ref.alias) return ref.alias;
+        // If no alias, try to get block text from state or backend
+        const refBlock =
+          orca.state.blocks[ref.to] ||
+          (await orca.invokeBackend("get-block", ref.to));
+        return refBlock?.text || "";
+      });
+
+      const resolvedTags = await Promise.all(tagPromises);
+      tagList = resolvedTags
+        .filter((t) => t && t !== "已发布")
+        .map((t) => t.trim());
     }
 
     // Ensure "博客" tag is present for the blog post
-    if (!tagList.includes("博客")) {
-      tagList.push("博客");
-    }
+    // if (!tagList.includes("博客")) {
+    //   tagList.push("博客");
+    // }
 
     const tagStr =
       tagList.length > 0
         ? `tags:\n${tagList.map((t: string) => `  - ${t}`).join("\n")}`
         : "";
+    // 4. Upload Article
+    // 4. Upload Article
+    // Default slug to timestamp
+    let slug = format(new Date(), "yyyyMMddHHmmss");
+    let existingPath = "";
+
+    // Search for 'slug' in refs (tag properties)
+    if (block.refs) {
+      for (const ref of block.refs) {
+        if (ref.data) {
+          const sp = ref.data.find((p) => p.name === "slug");
+          if (sp && sp.value) {
+            slug = sp.value;
+            // Reconstruct path from slug for update check
+            existingPath = `${blogPath}${slug}-${block.id}.md`;
+            break;
+          }
+        }
+      }
+    }
 
     const frontmatter = `---
+permalink: /${slug}-${block.id}/
 title: ${title}
-date: ${now}
-updated: ${now}
+date: ${format(new Date(), "yyyy-MM-dd HH:mm:ss")}
+updated: ${format(new Date(), "yyyy-MM-dd HH:mm:ss")}
 ${tagStr}
 comments: true
 toc: true
@@ -220,32 +242,12 @@ toc: true
       ibBranch,
     );
 
-    // 4. Upload Article
-    const slugProp = block.properties?.find(
-      (p) => p.type === PropType.Text && p.name === "slug",
-    );
-    const slug = slugProp?.value || block.id;
-
-    // Search for blog_path in refs (tag properties)
-    let blogPathProp;
-    if (block.refs) {
-        for (const ref of block.refs) {
-            if (ref.data) {
-                const found = ref.data.find(p => p.name === "blog_path");
-                if (found) {
-                    blogPathProp = found;
-                    break;
-                }
-            }
-        }
-    }
-
     let filename = "";
     let isUpdate = false;
     let existingSha: string | undefined;
 
-    if (blogPathProp && blogPathProp.value) {
-      filename = blogPathProp.value;
+    if (existingPath) {
+      filename = existingPath;
       const sha = await this.getFileSha(
         blogToken,
         blogOwner,
@@ -257,11 +259,10 @@ toc: true
         isUpdate = true;
         existingSha = sha;
       }
-    } else {
-      filename = `${blogPath}${slug}-${block.id}.md`;
     }
 
-    if (!filename) {
+    // If not found or new, construct filename
+    if (!existingSha) {
       filename = `${blogPath}${slug}-${block.id}.md`;
     }
 
@@ -280,22 +281,14 @@ toc: true
     this.logger.info("Published Article:", res);
 
     // 5. Update Block Properties
-    // Store 'blog_path' and 'blog_url' in '已发布' tag properties
-    // GitHub API returns 'content.html_url' or 'content.download_url'.
-    const htmlUrl = res.content?.html_url || "";
-
+    // Store only 'slug' in '已发布' tag properties
     const tagLabel = "已发布";
 
     // Properties to be stored on the tag reference
     const tagProperties = [
       {
-        name: "blog_path",
-        value: filename,
-        type: PropType.Text,
-      },
-      {
-        name: "blog_url",
-        value: htmlUrl,
+        name: "slug",
+        value: slug,
         type: PropType.Text,
       },
     ];
@@ -310,17 +303,13 @@ toc: true
     );
 
     // Ensure the Tag Block ("已发布") has these properties defined in its schema
-    // so they are valid properties for the tag reference.
     const tagBlock = await orca.invokeBackend("get-block", tagBlockId);
     if (tagBlock) {
       const propsToAdd = [];
       const existingProps = tagBlock.properties || [];
 
-      if (!existingProps.some((p: any) => p.name === "blog_path")) {
-        propsToAdd.push({ name: "blog_path", type: PropType.Text });
-      }
-      if (!existingProps.some((p: any) => p.name === "blog_url")) {
-        propsToAdd.push({ name: "blog_url", type: PropType.Text });
+      if (!existingProps.some((p: any) => p.name === "slug")) {
+        propsToAdd.push({ name: "slug", type: PropType.Text });
       }
 
       if (propsToAdd.length > 0) {
@@ -462,7 +451,7 @@ toc: true
       if (!res.ok) {
         // Log status text if not 200 or 404
         this.logger.warn(`getFileSha failed: ${res.status} ${res.statusText}`);
-        return null; 
+        return null;
       }
       const data = await res.json();
       return data.sha;
