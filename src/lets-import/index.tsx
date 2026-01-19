@@ -5,7 +5,7 @@ import { FolderSelector } from "./markdown/importUI";
 import React from "react";
 import { setupL10N, t } from "@/libs/l10n";
 import { BasePlugin } from "@/libs/BasePlugin";
-import { formatUtil } from "@/utils/format";
+import { formatUtil } from "@/libs/format";
 
 export default class ImportPlugin extends BasePlugin {
   private isFolderSelectorOpen = false;

@@ -1,4 +1,4 @@
-import { formatUtil } from "@/utils/format";
+import { formatUtil } from "@/libs/format";
 import { setupL10N, t } from "@/libs/l10n";
 import { BasePlugin } from "@/libs/BasePlugin";
 
