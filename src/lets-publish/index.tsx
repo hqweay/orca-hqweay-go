@@ -101,7 +101,7 @@ export default class PublishPlugin extends BasePlugin {
     };
   }
 
-  public async onLoad(): Promise<void> {
+  public async load(): Promise<void> {
     // Register Block Menu Command
     if (orca.blockMenuCommands.registerBlockMenuCommand) {
       orca.blockMenuCommands.registerBlockMenuCommand(
@@ -158,7 +158,7 @@ export default class PublishPlugin extends BasePlugin {
     this.logger.debug(`${this.name} loaded.`);
   }
 
-  public async onUnload(): Promise<void> {
+  public async unload(): Promise<void> {
     orca.blockMenuCommands.unregisterBlockMenuCommand(
       `${this.name}.publish-block`,
     );

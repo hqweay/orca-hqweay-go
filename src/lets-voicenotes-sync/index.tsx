@@ -132,7 +132,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
     }
   }
 
-  public async onLoad(): Promise<void> {
+  public async load(): Promise<void> {
     setupL10N(orca.state.locale, { "zh-CN": zhCN });
 
     const Button = orca.components.Button;
@@ -183,7 +183,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
     this.logger.info(`${this.name} loaded.`);
   }
 
-  public async onUnload(): Promise<void> {
+  public async unload(): Promise<void> {
     orca.headbar.unregisterHeadbarButton(`${this.name}.voicenotes-sync`);
     orca.commands.unregisterCommand(`${this.name}.voicenotes-sync`);
     this.logger.info(`${this.name} unloaded.`);

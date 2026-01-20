@@ -12,9 +12,9 @@ export abstract class BasePlugin {
     this.logger = new Logger(name);
   }
 
-  public abstract onLoad(): Promise<void>;
+  public abstract load(): Promise<void>;
 
-  public abstract onUnload(): Promise<void>;
+  public abstract unload(): Promise<void>;
 
   public getSettingsSchema(): any {
     return {};

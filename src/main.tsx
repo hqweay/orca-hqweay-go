@@ -77,19 +77,7 @@ export async function load(_name: string) {
           continue;
         }
 
-        await pluginInstance.onLoad(_name);
-      } else {
-        // Fallback to legacy functional style
-        if (module.getSettingsSchema) {
-          settingsSchema = {
-            ...settingsSchema,
-            ...module.getSettingsSchema(),
-          };
-        }
-        if (module.load) {
-          console.log(`Loading sub-plugin (legacy) from ${path}`);
-          await module.load(_name);
-        }
+        await pluginInstance.load(_name);
       }
     } catch (e) {
       console.error(`Failed to load sub-plugin from ${path}`, e);
@@ -104,7 +92,7 @@ export async function unload() {
   for (const plugin of pluginInstances) {
     try {
       console.log(`Unloading sub-plugin (class) ${plugin["name"]}`);
-      await plugin.onUnload();
+      await plugin.unload();
     } catch (e) {
       console.error(`Failed to unload sub-plugin ${plugin["name"]}`, e);
     }

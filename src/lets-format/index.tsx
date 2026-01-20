@@ -3,7 +3,7 @@ import { setupL10N, t } from "@/libs/l10n";
 import { BasePlugin } from "@/libs/BasePlugin";
 
 export default class FormatPlugin extends BasePlugin {
-  public async onLoad(): Promise<void> {
+  public async load(): Promise<void> {
     const Button = orca.components.Button;
 
     if (orca.state.headbarButtons[`${this.name}.format-block`] == null) {
@@ -148,7 +148,7 @@ export default class FormatPlugin extends BasePlugin {
     this.logger.info(`${this.name} loaded.`);
   }
 
-  public async onUnload(): Promise<void> {
+  public async unload(): Promise<void> {
     orca.commands.unregisterCommand(`${this.name}.format-block`);
     this.logger.info(`${this.name} unloaded.`);
   }
