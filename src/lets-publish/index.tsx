@@ -535,6 +535,8 @@ toc: true
         rootBlock,
         repr,
         // rootBlock
+        undefined,
+        true,
       );
 
       return content || "";
