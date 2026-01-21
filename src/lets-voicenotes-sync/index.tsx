@@ -533,35 +533,50 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
 
     // Attachments
     if (note.attachments?.length) {
-      for (const attachment of note.attachments) {
-        // Basic check if it is an image or we just try to download everything?
-        // VoiceNotes attachments seem to be images usually.
-        if (attachment.url) {
-          try {
-            const response = await fetch(attachment.url);
-            if (response.ok) {
-              const arrayBuffer = await response.arrayBuffer();
+      const attachmentsBlockId = await orca.commands.invokeEditorCommand(
+        "core.editor.insertBlock",
+        null,
+        noteBlock,
+        "firstChild",
+        // [{ t: "t", v: `## ${title}` }],
+        // { type: "text" },
+        [{ t: "t", v: `Attachments` }],
+        { type: "heading", level: 2 },
+        new Date(note.created_at),
+        new Date(note.updated_at),
+      );
+      const attachmentsBlock = orca.state.blocks[attachmentsBlockId];
+      if (attachmentsBlock) {
+        for (const attachment of note.attachments) {
+          // Basic check if it is an image or we just try to download everything?
+          // VoiceNotes attachments seem to be images usually.
+          if (attachment.url) {
+            try {
+              const response = await fetch(attachment.url);
+              if (response.ok) {
+                const arrayBuffer = await response.arrayBuffer();
 
-              const assetPath = await orca.invokeBackend(
-                "upload-asset-binary",
-                "image/png",
-                arrayBuffer,
-              );
-
-              if (assetPath) {
-                // Insert Image block
-                await orca.commands.invokeEditorCommand(
-                  "core.editor.insertBlock",
-                  null,
-                  noteBlock,
-                  "firstChild",
-                  null,
-                  { type: "image", src: assetPath },
+                const assetPath = await orca.invokeBackend(
+                  "upload-asset-binary",
+                  "image/png",
+                  arrayBuffer,
                 );
+
+                if (assetPath) {
+                  // Insert Image block
+                  await orca.commands.invokeEditorCommand(
+                    "core.editor.insertBlock",
+                    null,
+                    attachmentsBlock,
+                    "firstChild",
+                    null,
+                    { type: "image", src: assetPath },
+                  );
+                }
               }
+            } catch (e) {
+              console.error("Failed to sync attachment", e);
             }
-          } catch (e) {
-            console.error("Failed to sync attachment", e);
           }
         }
       }
