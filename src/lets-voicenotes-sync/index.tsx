@@ -482,15 +482,53 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
       }
     }
 
-    // Content: Transcript first
-    if (note.transcript) {
+    note.transcript = this.cleanText(note.transcript);
+    // 如果包含多行
+    if (note.transcript.includes("\n")) {
+      // Set as long form display
       await orca.commands.invokeEditorCommand(
-        "core.editor.batchInsertText",
-        null,
-        noteBlock,
-        "firstChild",
-        this.cleanText(note.transcript),
+        "core.editor.toggleShowAsLongForm",
+        null, // cursor can be null for this operation
+        noteBlock.id,
       );
+    }
+
+    // Creations: Append after transcript
+    if (note.creations?.length) {
+      for (const creation of note.creations) {
+        if (creation.markdown_content) {
+          const title =
+            this.cleanText(creation.title!) ||
+            (creation as any).name ||
+            creation.type ||
+            "Summary";
+
+          // Insert Title Block
+          const titleBlockId = await orca.commands.invokeEditorCommand(
+            "core.editor.insertBlock",
+            null,
+            noteBlock,
+            "firstChild",
+            // [{ t: "t", v: `## ${title}` }],
+            // { type: "text" },
+            [{ t: "t", v: `${title}` }],
+            { type: "heading", level: 2 },
+            new Date(note.created_at),
+            new Date(note.updated_at),
+          );
+
+          const titleBlock = orca.state.blocks[titleBlockId];
+          if (titleBlock) {
+            await orca.commands.invokeEditorCommand(
+              "core.editor.batchInsertText",
+              null,
+              titleBlock,
+              "firstChild", // Insert as child of title
+              this.cleanText(creation.markdown_content),
+            );
+          }
+        }
+      }
     }
 
     // Attachments
@@ -529,42 +567,34 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
       }
     }
 
-    // Creations: Append after transcript
-    if (note.creations?.length) {
-      for (const creation of note.creations) {
-        if (creation.markdown_content) {
-          const title =
-            this.cleanText(creation.title!) ||
-            (creation as any).name ||
-            creation.type ||
-            "Summary";
+    // Content: Transcript first
+    if (note.transcript) {
+      const transcriptBlockId = await orca.commands.invokeEditorCommand(
+        "core.editor.insertBlock",
+        null,
+        noteBlock,
+        "firstChild",
+        // [{ t: "t", v: `## ${title}` }],
+        // { type: "text" },
+        [{ t: "t", v: `Transcript` }],
+        { type: "heading", level: 2 },
+        new Date(note.created_at),
+        new Date(note.updated_at),
+      );
 
-          // Insert Title Block
-          const titleBlockId = await orca.commands.invokeEditorCommand(
-            "core.editor.insertBlock",
-            null,
-            noteBlock,
-            "firstChild",
-            [{ t: "t", v: `${title}` }],
-            { type: "text" },
-            new Date(note.created_at),
-            new Date(note.updated_at),
-          );
-
-          const titleBlock = orca.state.blocks[titleBlockId];
-          if (titleBlock) {
-            await orca.commands.invokeEditorCommand(
-              "core.editor.batchInsertText",
-              null,
-              titleBlock,
-              "firstChild", // Insert as child of title
-              this.cleanText(creation.markdown_content),
-            );
-          }
-        }
+      const transcriptBlock = orca.state.blocks[transcriptBlockId];
+      if (transcriptBlock) {
+        await orca.commands.invokeEditorCommand(
+          "core.editor.batchInsertText",
+          null,
+          transcriptBlock,
+          "firstChild",
+          note.transcript,
+        );
       }
     }
 
+    // subnotes 先不同步了
     // Subnotes
     // if (note.subnotes?.length) {
     //   // Header
@@ -652,6 +682,8 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
     let t = text;
     // Replace <br> with newline
     t = t.replace(/(<br\s*\/?>\s*)+/gi, "\n\n");
+    t = this.convertHtmlToMarkdown(t).replace(/\n+\s+/g, "\n\n");
+
     // Remove space between Chinese characters
     t = formatUtil.cleanSpacesBetweenChineseCharacters(t);
 
@@ -661,5 +693,30 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
     // t = formatUtil.insertSpace(t);
 
     return t;
+  }
+
+  private convertHtmlToMarkdown(text: string): string {
+    const htmlEntities: { [key: string]: string } = {
+      "&lt;": "<",
+      "&gt;": ">",
+      "&amp;": "&",
+      "&quot;": '"',
+      "&#39;": "'",
+      "&nbsp;": " ",
+    };
+
+    // Convert HTML entities
+    let markdown = text.replace(
+      /&[a-zA-Z0-9#]+;/g,
+      (entity) => htmlEntities[entity] || entity,
+    );
+
+    // Convert <br/> tags to newlines
+    markdown = markdown.replace(/<br\s*\/?>/gi, "\n");
+
+    // Remove other HTML tags
+    markdown = markdown.replace(/<\/?[^>]+(>|$)/g, "");
+
+    return markdown.trim();
   }
 }
