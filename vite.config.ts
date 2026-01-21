@@ -1,4 +1,5 @@
 import { resolve, dirname } from "path";
+import { viteStaticCopy } from "vite-plugin-static-copy";
 import { fileURLToPath } from "url";
 import react from "@vitejs/plugin-react-swc";
 
@@ -27,7 +28,7 @@ export default defineConfig(({ command, mode }) => {
     },
     build: {
       emptyOutDir: true, // 强制清空输出目录
-      outDir: isDev ? devDistDir : "./dist",
+      outDir: isDev ? devDistDir : "./build/dist",
       minify: !isDev,
       lib: {
         entry: "src/main.tsx",
@@ -39,10 +40,10 @@ export default defineConfig(({ command, mode }) => {
         plugins: !isDev
           ? [
               zipPack({
-                inDir: "./dist",
+                inDir: "build",
                 outDir: "./",
                 outFileName: "package.zip",
-                pathPrefix: "orca-hwqeay-go/dist",
+                pathPrefix: "orca-hwqeay-go",
               }),
             ]
           : [],
@@ -58,6 +59,22 @@ export default defineConfig(({ command, mode }) => {
     plugins: [
       react(),
       externalGlobals({ react: "React", valtio: "Valtio" }),
+      viteStaticCopy({
+        targets: [
+          {
+            src: "icon.png",
+            dest: "..",
+          },
+          {
+            src: "README.md",
+            dest: "..",
+          },
+          {
+            src: "LICENSE",
+            dest: "..",
+          },
+        ],
+      }),
       // 仅在开发模式下启用livereload
       ...(isDev
         ? [
