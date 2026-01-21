@@ -1,3 +1,6 @@
 [submodule "orca-plugin-template"]
 	path = orca-plugin-template
 	url = git@github.com:sethyuan/orca-plugin-template.git
+[submodule "voicenotes-sync"]
+	path = voicenotes-sync
+	url = git@github.com:voicenotes-community/voicenotes-sync.git
