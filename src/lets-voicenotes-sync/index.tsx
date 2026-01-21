@@ -1,12 +1,9 @@
-import { formatDate } from "date-fns";
-import LogoImg from "#/icon.png";
-import React from "react";
 import { VoiceNotesApi } from "@/api/voicenotes";
 import { setupL10N, t } from "@/libs/l10n";
 import { ensureInbox } from "@/libs/utils";
 import { formatUtil } from "@/libs/format";
 // import { Block, DbId, QueryDescription } from "../orca.d.ts" // orca is global
-import type { Block, DbId, QueryDescription } from "../orca";
+import type { Block, DbId, QueryDescription2 } from "../orca";
 import zhCN from "@/translations/zhCN";
 import type { VoiceNote } from "../types";
 import { BasePlugin } from "@/libs/BasePlugin";
@@ -97,7 +94,6 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
       }
       allNotes = allNotes.slice(0, 2);
 
-      this.logger.debug("Syncing notes:", allNotes);
       if (allNotes.length === 0) {
         orca.notify("info", t("Nothing to sync."));
         return;
@@ -126,12 +122,13 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
           const [y, m, d] = dateStr.split("-").map(Number);
           const createdAt = new Date(y, m - 1, d); // safe local date construction
 
+          console.log("Syncing notes for date:", createdAt);
           const journal: Block = await orca.invokeBackend(
             "get-journal-block",
             createdAt,
           );
           if (journal == null) continue;
-          this.logger.debug("Syncing notes for date:", createdAt);
+
           const inbox = await ensureInbox(journal, inboxName);
 
           for (const note of notes) {
@@ -147,7 +144,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
                 continue;
               }
             }
-            this.logger.debug("Syncing note:", note);
+
             await this.syncNote(note, inbox, noteTag);
           }
         }
@@ -241,9 +238,8 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
 
                   const recordingId = this.getRecordingId(block);
 
-                  this.logger.debug("Syncing block to VoiceNotes:", block);
                   const repr = this.getRepr(block);
-                  this.logger.debug("Repr:", repr);
+
                   let content = await orca.converters.blockConvert(
                     "markdown",
                     block,
@@ -381,28 +377,27 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
     // Check existence
     const resultIds = (await orca.invokeBackend("query", {
       q: {
-        kind: 1,
+        kind: 100,
         conditions: [
           {
             kind: 4,
             name: noteTag,
             properties: [{ name: "ID", op: 1, value: note.id }],
+            selfOnly: true,
           },
         ],
       },
-      pageSize: 1,
-    } as QueryDescription)) as DbId[];
+      pageSize: 12,
+    } as QueryDescription2)) as DbId[];
 
-    this.logger.debug("Found existing note:", resultIds);
-
-    note.title = cleanText(note.title);
+    note.title = this.cleanText(note.title);
 
     if (resultIds.length > 0) {
       const noteBlockId = resultIds[0];
       noteBlock = orca.state.blocks[noteBlockId]!;
       if (noteBlock == null) {
         const loadedBlock = await orca.invokeBackend("get-block", noteBlockId);
-        if (loadedBlock == null) return;
+        if (loadedBlock == null) return undefined;
         noteBlock = loadedBlock;
         orca.state.blocks[noteBlock.id] = noteBlock;
       }
@@ -494,7 +489,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
         null,
         noteBlock,
         "firstChild",
-        cleanText(note.transcript),
+        this.cleanText(note.transcript),
       );
     }
 
@@ -539,7 +534,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
       for (const creation of note.creations) {
         if (creation.markdown_content) {
           const title =
-            cleanText(creation.title!) ||
+            this.cleanText(creation.title!) ||
             (creation as any).name ||
             creation.type ||
             "Summary";
@@ -563,27 +558,108 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
               null,
               titleBlock,
               "firstChild", // Insert as child of title
-              cleanText(creation.markdown_content),
+              this.cleanText(creation.markdown_content),
             );
           }
         }
       }
     }
+
+    // Subnotes
+    // if (note.subnotes?.length) {
+    //   // Header
+    //   await orca.commands.invokeEditorCommand(
+    //     "core.editor.insertBlock",
+    //     null,
+    //     noteBlock,
+    //     "lastChild",
+    //     [{ t: "t", v: "Subnotes" }],
+    //     { type: "heading", level: 2 },
+    //   );
+
+    //   for (const subnote of note.subnotes) {
+    //     const subBlockId = await this.syncNote(subnote, inbox, noteTag);
+    //     if (subBlockId) {
+    //       // Link to it using reference
+    //       await orca.commands.invokeEditorCommand(
+    //         "core.editor.insertBlock",
+    //         null,
+    //         noteBlock,
+    //         "lastChild",
+    //         [
+    //           { t: "t", v: "- " },
+    //           { t: "r", v: subnote.title || "Untitled", id: subBlockId },
+    //         ],
+    //       );
+    //     }
+    //   }
+    // }
+
+    // Related Notes
+    // if (note.related_notes?.length) {
+    //   await orca.commands.invokeEditorCommand(
+    //     "core.editor.insertBlock",
+    //     null,
+    //     noteBlock,
+    //     "lastChild",
+    //     [{ t: "t", v: "Related Notes" }],
+    //     { type: "heading", level: 2 },
+    //   );
+
+    // for (const related of note.related_notes) {
+    //   const relIds = (await orca.invokeBackend("query", {
+    //     q: {
+    //       kind: 1,
+    //       conditions: [
+    //         {
+    //           kind: 4,
+    //           name: noteTag,
+    //           properties: [{ name: "ID", op: 1, value: related.id }],
+    //         },
+    //       ],
+    //     },
+    //     pageSize: 1,
+    //   } as QueryDescription)) as DbId[];
+
+    //   if (relIds.length > 0) {
+    //     await orca.commands.invokeEditorCommand(
+    //       "core.editor.insertBlock",
+    //       null,
+    //       noteBlock,
+    //       "lastChild",
+    //       [
+    //         { t: "t", v: "- " },
+    //         { t: "r", v: related.title || "Untitled", id: relIds[0] },
+    //       ],
+    //     );
+    //   } else {
+    //     await orca.commands.invokeEditorCommand(
+    //       "core.editor.insertBlock",
+    //       null,
+    //       noteBlock,
+    //       "lastChild",
+    //       [{ t: "t", v: `- ${related.title || "Untitled"} (Not synced)` }],
+    //     );
+    //   }
+    // }
+    // }
+
+    return noteBlock.id;
+  }
+
+  // Helper to clean text
+  private cleanText(text: string) {
+    let t = text;
+    // Replace <br> with newline
+    t = t.replace(/(<br\s*\/?>\s*)+/gi, "\n\n");
+    // Remove space between Chinese characters
+    t = formatUtil.cleanSpacesBetweenChineseCharacters(t);
+
+    // Use formatUtil
+    t = formatUtil.formatContent(t);
+    // t = formatUtil.deleteSpaces(t);
+    // t = formatUtil.insertSpace(t);
+
+    return t;
   }
 }
-
-// Helper to clean text
-const cleanText = (text: string) => {
-  let t = text;
-  // Replace <br> with newline
-  t = t.replace(/(<br\s*\/?>\s*)+/gi, "\n\n");
-  // Remove space between Chinese characters
-  t = formatUtil.cleanSpacesBetweenChineseCharacters(t);
-
-  // Use formatUtil
-  t = formatUtil.formatContent(t);
-  // t = formatUtil.deleteSpaces(t);
-  // t = formatUtil.insertSpace(t);
-
-  return t;
-};

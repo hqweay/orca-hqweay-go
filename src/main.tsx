@@ -1,6 +1,7 @@
 import { t } from "./libs/l10n";
 import { BasePlugin } from "./libs/BasePlugin";
 import { PropType } from "./lets-import/csv/csvImporter";
+import { DbId, QueryDescription, QueryDescription2 } from "./orca";
 
 // Auto-scan all sub-plugins in lets-* folders
 const pluginModules = import.meta.glob("./lets-*/index.tsx", { eager: true });
@@ -8,37 +9,22 @@ const pluginModules = import.meta.glob("./lets-*/index.tsx", { eager: true });
 const pluginInstances: BasePlugin[] = [];
 
 const test = async () => {
-  // const tagProperties = [
-  //   {
-  //     name: "github_url",
-  //     value: "https://github.com/hqweay/orca-notes",
-  //     typeArgs: {
-  //       subType: "link",
-  //     },
-  //   },
-  // ];
-  const tagBlockId = await orca.commands.invokeEditorCommand(
-    "core.editor.insertTag",
-    null,
-    2579,
-    "快乐",
-  );
-
-  await orca.commands.invokeEditorCommand(
-    "core.editor.setProperties",
-    null,
-    [tagBlockId],
-    [
-      {
-        name: "linkss",
-        typeArgs: {
-          subType: "link",
+  const resultIds = (await orca.invokeBackend("query", {
+    q: {
+      kind: 100,
+      conditions: [
+        {
+          kind: 4,
+          name: "VoiceNote",
+          properties: [{ name: "ID", op: 1, value: "H24u0iyL" }],
+          selfOnly: true,
         },
-        pos: null,
-        type: 1,
-      },
-    ],
-  );
+      ],
+    },
+    pageSize: 12,
+  } as QueryDescription2)) as DbId[];
+
+  console.log(resultIds);
 };
 export async function load(_name: string) {
   // test();
