@@ -112,8 +112,9 @@ export default class PublishPlugin extends BasePlugin {
             const MenuText = orca.components.MenuText;
             if (!MenuText) return null;
 
-            const block = orca.state.blocks[blockId];
-            if (!block || block.parent) return null;
+            // 为块也启用吧
+            // const block = orca.state.blocks[blockId];
+            // if (!block || block.parent) return null;
 
             return (
               <MenuText
@@ -191,7 +192,10 @@ export default class PublishPlugin extends BasePlugin {
     }
 
     // 2. MD Generation
-    const title = block.aliases?.[0] || "Untitled";
+    const title =
+      block.aliases?.[0] ||
+      block.text?.replace(/#[^\s]+/g, "").trim() ||
+      "Untitled";
 
     // Pass root block to generator
     let mdContent = await this.generateMarkdown(block);
@@ -448,8 +452,18 @@ toc: true
           });
         }
 
-        if (!existingProps.some((p: any) => p.name === "publish_date")) {
-          propsToAdd.push({ name: "publish_date", type: PropType.DateTime });
+        const publishDateProp = existingProps.find(
+          (p: any) => p.name === "publish_date",
+        );
+        if (
+          !publishDateProp ||
+          publishDateProp.typeArgs?.subType !== "datetime"
+        ) {
+          propsToAdd.push({
+            name: "publish_date",
+            type: PropType.DateTime,
+            typeArgs: { subType: "datetime" },
+          });
         }
 
         if (propsToAdd.length > 0) {
