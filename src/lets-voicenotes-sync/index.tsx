@@ -11,6 +11,16 @@ import zhCN from "@/translations/zhCN";
 import type { VoiceNote } from "../types";
 import { BasePlugin } from "@/libs/BasePlugin";
 
+const PropType = {
+  JSON: 0,
+  Text: 1,
+  BlockRefs: 2,
+  Number: 3,
+  Boolean: 4,
+  DateTime: 5,
+  TextChoices: 6,
+} as const;
+
 export default class VoiceNotesSyncPlugin extends BasePlugin {
   public getSettingsSchema() {
     return {
@@ -29,9 +39,17 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
       },
       [`${this.name}.noteTag`]: {
         label: t(this.name + ".Note tag"),
-        description: t(".The tag applied to imported notes."),
+        description: t("The tag applied to imported notes."),
         type: "string",
         defaultValue: "VoiceNote",
+      },
+      [`${this.name}.excludeTags`]: {
+        label: t(this.name + ".Exclude Tag"),
+        description: t(
+          "Tag used to exclude notes from syncing (comma separated).",
+        ),
+        type: "string",
+        defaultValue: "orca",
       },
     };
   }
@@ -68,7 +86,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
 
       while (recordingsResponse && recordingsResponse.data) {
         allNotes.push(...recordingsResponse.data);
-        // if (allNotes.length >= 2) break;
+        if (allNotes.length >= 2) break;
         if (recordingsResponse.links && recordingsResponse.links.next) {
           recordingsResponse = await api.getRecordingsFromLink(
             recordingsResponse.links.next,
@@ -77,8 +95,9 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
           break;
         }
       }
-      // allNotes = allNotes.slice(0, 2);
+      allNotes = allNotes.slice(0, 2);
 
+      this.logger.debug("Syncing notes:", allNotes);
       if (allNotes.length === 0) {
         orca.notify("info", t("Nothing to sync."));
         return;
@@ -87,7 +106,13 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
       // Group notes by date (created_at)
       const notesByDate: Record<string, VoiceNote[]> = {};
       for (const note of allNotes) {
-        const dateStr = note.created_at.split("T")[0]; // YYYY-MM-DD
+        // Convert to Local Time
+        const date = new Date(note.created_at);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const dateStr = `${year}-${month}-${day}`;
+
         if (!notesByDate[dateStr]) {
           notesByDate[dateStr] = [];
         }
@@ -97,16 +122,33 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
       await orca.commands.invokeGroup(async () => {
         for (const [dateStr, notes] of Object.entries(notesByDate)) {
           // dateStr is YYYY-MM-DD
-          const createdAt = new Date(`${dateStr} 00:00:00`);
+          // Construct local date
+          const [y, m, d] = dateStr.split("-").map(Number);
+          const createdAt = new Date(y, m - 1, d); // safe local date construction
+
           const journal: Block = await orca.invokeBackend(
             "get-journal-block",
             createdAt,
           );
           if (journal == null) continue;
+          this.logger.debug("Syncing notes for date:", createdAt);
           const inbox = await ensureInbox(journal, inboxName);
 
           for (const note of notes) {
-            await syncNote(note, inbox, noteTag);
+            // Check exclusion
+            if (settings[`${this.name}.excludeTags`]) {
+              const excludeTags = settings[`${this.name}.excludeTags`]
+                .split(",")
+                .map((t: string) => t.trim());
+              if (
+                note.tags &&
+                note.tags.some((t) => excludeTags.includes(t.name))
+              ) {
+                continue;
+              }
+            }
+            this.logger.debug("Syncing note:", note);
+            await this.syncNote(note, inbox, noteTag);
           }
         }
       });
@@ -180,13 +222,353 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
       ));
     }
 
+    if (orca.state.blockMenuCommands[`${this.name}.sync-to-vn`] == null) {
+      orca.blockMenuCommands.registerBlockMenuCommand(
+        `${this.name}.sync-to-vn`,
+        {
+          worksOnMultipleBlocks: false,
+          render: (blockId, rootBlockId, close) => {
+            const MenuText = orca.components.MenuText;
+            if (!MenuText) return null;
+            return (
+              <MenuText
+                preIcon="ti ti-refresh"
+                title={t("Sync to VoiceNotes")}
+                onClick={async () => {
+                  close();
+                  const block = orca.state.blocks[blockId];
+                  if (!block || !block.text) return;
+
+                  const recordingId = this.getRecordingId(block);
+
+                  this.logger.debug("Syncing block to VoiceNotes:", block);
+                  const repr = this.getRepr(block);
+                  this.logger.debug("Repr:", repr);
+                  let content = await orca.converters.blockConvert(
+                    "markdown",
+                    block,
+                    repr,
+                    undefined,
+                    true,
+                  );
+
+                  await this.addOrUpdate(recordingId, blockId, content || "");
+                }}
+              />
+            );
+          },
+        },
+      );
+    }
+
     this.logger.info(`${this.name} loaded.`);
   }
 
   public async unload(): Promise<void> {
     orca.headbar.unregisterHeadbarButton(`${this.name}.voicenotes-sync`);
     orca.commands.unregisterCommand(`${this.name}.voicenotes-sync`);
+    orca.blockMenuCommands.unregisterBlockMenuCommand(
+      `${this.name}.sync-to-vn`,
+    );
     this.logger.info(`${this.name} unloaded.`);
+  }
+
+  private async addOrUpdate(
+    recordingid: string | undefined,
+    nodeId: string | number,
+    text: string,
+    tags: string[] = [],
+  ) {
+    const settings = orca.state.plugins[this.mainPluginName]?.settings;
+    if (!settings?.[`${this.name}.token`]) {
+      orca.notify("error", t("Please provide a Voicenotes API token."));
+      return;
+    }
+
+    const api = new VoiceNotesApi({
+      token: settings[`${this.name}.token`],
+    });
+
+    try {
+      if (recordingid) {
+        orca.notify("info", t("Updating VoiceNote..."));
+        if (tags.length <= 0) {
+          // TODO: Load recording to get existing tags if needed?
+          // For now just update text
+        }
+        await api.updateVoiceNote(recordingid, {
+          transcript: text,
+          // tags: tags.length > 0 ? tags : ["orca"],
+          tags: ["orca"],
+        });
+
+        orca.notify("success", t("VoiceNote updated."));
+      } else {
+        orca.notify("info", t("Creating VoiceNote..."));
+        const response = await api.createVoiceNote(text);
+        if (response && response.recording && response.recording.id) {
+          const newId = response.recording.id;
+          orca.notify("success", t("VoiceNote created."));
+
+          // Tag as siyuan (or orca)
+          await api.tagVoiceNote(newId, ["orca"]);
+
+          const noteTag = settings[`${this.name}.noteTag`] || "VoiceNote";
+
+          // Store ID in a Tag, consistent with syncNote
+          const tagBlockId = await orca.commands.invokeEditorCommand(
+            "core.editor.insertTag",
+            null,
+            nodeId,
+            noteTag,
+            [{ name: "ID", type: 1, value: newId }],
+          );
+          // Ensure ID property exists on tag
+          const tagBlock = orca.state.blocks[tagBlockId];
+          if (tagBlock && !tagBlock.properties?.some((p) => p.name === "ID")) {
+            await orca.commands.invokeEditorCommand(
+              "core.editor.setProperties",
+              null,
+              [newId],
+              [{ name: "ID", type: 1 }],
+            );
+          }
+        } else {
+          orca.notify("error", t("Failed to create VoiceNote."));
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      orca.notify("error", t("Error syncing to VoiceNotes."));
+    }
+  }
+
+  private getRecordingId(block: Block): string | undefined {
+    const settings = orca.state.plugins[this.mainPluginName]?.settings;
+    const noteTag = settings?.[`${this.name}.noteTag`] || "VoiceNote";
+
+    // Check refs for ID property (tags are often refs with data)
+    if (block.refs && block.refs.length > 0) {
+      for (const ref of block.refs) {
+        if (ref.alias === noteTag && ref.data && ref.data.length > 0) {
+          const idProp = ref.data.find((p) => p.name === "ID");
+          if (idProp) {
+            return idProp.value;
+          }
+        }
+      }
+    }
+    return undefined;
+  }
+
+  private getRepr(block: Block): any {
+    // Return type: Repr
+    // Default
+    let repr: any = { type: "text" };
+
+    if (block.properties) {
+      const reprProp = block.properties.find((p) => p.name === "_repr");
+      if (reprProp && reprProp.type === PropType.JSON && reprProp.value) {
+        repr = reprProp.value;
+      }
+    }
+    return repr;
+  }
+
+  private async syncNote(note: VoiceNote, inbox: Block, noteTag: string) {
+    let noteBlock: Block;
+
+    // Check existence
+    const resultIds = (await orca.invokeBackend("query", {
+      q: {
+        kind: 1,
+        conditions: [
+          {
+            kind: 4,
+            name: noteTag,
+            properties: [{ name: "ID", op: 1, value: note.id }],
+          },
+        ],
+      },
+      pageSize: 1,
+    } as QueryDescription)) as DbId[];
+
+    this.logger.debug("Found existing note:", resultIds);
+
+    note.title = cleanText(note.title);
+
+    if (resultIds.length > 0) {
+      const noteBlockId = resultIds[0];
+      noteBlock = orca.state.blocks[noteBlockId]!;
+      if (noteBlock == null) {
+        const loadedBlock = await orca.invokeBackend("get-block", noteBlockId);
+        if (loadedBlock == null) return;
+        noteBlock = loadedBlock;
+        orca.state.blocks[noteBlock.id] = noteBlock;
+      }
+
+      // Update existing?
+      // VoiceNotes are immutable usually? Or editable?
+      // If updated_at changed, we sync.
+      // For simplicity, we overwrite content like dinox-sync.
+
+      // Clear tags
+      await orca.commands.invokeEditorCommand(
+        "core.editor.setProperties",
+        null,
+        [noteBlock.id],
+        [{ name: "_tags", type: 2, value: [] }],
+      );
+
+      // Clear children
+      if (noteBlock.children.length > 0) {
+        await orca.commands.invokeEditorCommand(
+          "core.editor.deleteBlocks",
+          null,
+          [...noteBlock.children],
+        );
+      }
+
+      // Update title
+      await orca.commands.invokeEditorCommand(
+        "core.editor.setBlocksContent",
+        null,
+        [
+          {
+            id: noteBlock.id,
+            content: [{ t: "t", v: note.title || "Untitled" }],
+          },
+        ],
+      );
+    } else {
+      // New block
+      const noteBlockId = await orca.commands.invokeEditorCommand(
+        "core.editor.insertBlock",
+        null,
+        inbox,
+        "lastChild",
+        [{ t: "t", v: note.title || "Untitled" }],
+        { type: "text" },
+        new Date(note.created_at),
+        new Date(note.updated_at),
+      );
+      noteBlock = orca.state.blocks[noteBlockId]!;
+    }
+
+    // ID Tag
+    const tagBlockId = await orca.commands.invokeEditorCommand(
+      "core.editor.insertTag",
+      null,
+      noteBlock.id,
+      noteTag,
+      [{ name: "ID", type: 1, value: note.id }],
+    );
+
+    // Ensure ID property exists on tag
+    const tagBlock = orca.state.blocks[tagBlockId];
+    if (tagBlock && !tagBlock.properties?.some((p) => p.name === "ID")) {
+      await orca.commands.invokeEditorCommand(
+        "core.editor.setProperties",
+        null,
+        [tagBlock.id],
+        [{ name: "ID", type: 1 }],
+      );
+    }
+
+    // Tags
+    if (note.tags?.length) {
+      for (const tag of note.tags) {
+        await orca.commands.invokeEditorCommand(
+          "core.editor.insertTag",
+          null,
+          noteBlock.id,
+          tag.name,
+        );
+      }
+    }
+
+    // Content: Transcript first
+    if (note.transcript) {
+      await orca.commands.invokeEditorCommand(
+        "core.editor.batchInsertText",
+        null,
+        noteBlock,
+        "firstChild",
+        cleanText(note.transcript),
+      );
+    }
+
+    // Attachments
+    if (note.attachments?.length) {
+      for (const attachment of note.attachments) {
+        // Basic check if it is an image or we just try to download everything?
+        // VoiceNotes attachments seem to be images usually.
+        if (attachment.url) {
+          try {
+            const response = await fetch(attachment.url);
+            if (response.ok) {
+              const arrayBuffer = await response.arrayBuffer();
+
+              const assetPath = await orca.invokeBackend(
+                "upload-asset-binary",
+                "image/png",
+                arrayBuffer,
+              );
+
+              if (assetPath) {
+                // Insert Image block
+                await orca.commands.invokeEditorCommand(
+                  "core.editor.insertBlock",
+                  null,
+                  noteBlock,
+                  "firstChild",
+                  null,
+                  { type: "image", src: assetPath },
+                );
+              }
+            }
+          } catch (e) {
+            console.error("Failed to sync attachment", e);
+          }
+        }
+      }
+    }
+
+    // Creations: Append after transcript
+    if (note.creations?.length) {
+      for (const creation of note.creations) {
+        if (creation.markdown_content) {
+          const title =
+            cleanText(creation.title!) ||
+            (creation as any).name ||
+            creation.type ||
+            "Summary";
+
+          // Insert Title Block
+          const titleBlockId = await orca.commands.invokeEditorCommand(
+            "core.editor.insertBlock",
+            null,
+            noteBlock,
+            "firstChild",
+            [{ t: "t", v: `${title}` }],
+            { type: "text" },
+            new Date(note.created_at),
+            new Date(note.updated_at),
+          );
+
+          const titleBlock = orca.state.blocks[titleBlockId];
+          if (titleBlock) {
+            await orca.commands.invokeEditorCommand(
+              "core.editor.batchInsertText",
+              null,
+              titleBlock,
+              "firstChild", // Insert as child of title
+              cleanText(creation.markdown_content),
+            );
+          }
+        }
+      }
+    }
   }
 }
 
@@ -205,197 +587,3 @@ const cleanText = (text: string) => {
 
   return t;
 };
-
-async function syncNote(note: VoiceNote, inbox: Block, noteTag: string) {
-  let noteBlock: Block;
-
-  // Check existence
-  const resultIds = (await orca.invokeBackend("query", {
-    q: {
-      kind: 1,
-      conditions: [
-        {
-          kind: 4,
-          name: noteTag,
-          properties: [{ name: "ID", op: 1, value: note.id }],
-        },
-      ],
-    },
-    pageSize: 1,
-  } as QueryDescription)) as DbId[];
-
-  note.title = cleanText(note.title);
-
-  if (resultIds.length > 0) {
-    const noteBlockId = resultIds[0];
-    noteBlock = orca.state.blocks[noteBlockId]!;
-    if (noteBlock == null) {
-      const loadedBlock = await orca.invokeBackend("get-block", noteBlockId);
-      if (loadedBlock == null) return;
-      noteBlock = loadedBlock;
-      orca.state.blocks[noteBlock.id] = noteBlock;
-    }
-
-    // Update existing?
-    // VoiceNotes are immutable usually? Or editable?
-    // If updated_at changed, we sync.
-    // For simplicity, we overwrite content like dinox-sync.
-
-    // Clear tags
-    await orca.commands.invokeEditorCommand(
-      "core.editor.setProperties",
-      null,
-      [noteBlock.id],
-      [{ name: "_tags", type: 2, value: [] }],
-    );
-
-    // Clear children
-    if (noteBlock.children.length > 0) {
-      await orca.commands.invokeEditorCommand(
-        "core.editor.deleteBlocks",
-        null,
-        [...noteBlock.children],
-      );
-    }
-
-    // Update title
-    await orca.commands.invokeEditorCommand(
-      "core.editor.setBlocksContent",
-      null,
-      [
-        {
-          id: noteBlock.id,
-          content: [{ t: "t", v: note.title || "Untitled" }],
-        },
-      ],
-    );
-  } else {
-    // New block
-    const noteBlockId = await orca.commands.invokeEditorCommand(
-      "core.editor.insertBlock",
-      null,
-      inbox,
-      "lastChild",
-      [{ t: "t", v: note.title || "Untitled" }],
-      { type: "text" },
-      new Date(note.created_at),
-      new Date(note.updated_at),
-    );
-    noteBlock = orca.state.blocks[noteBlockId]!;
-  }
-
-  // ID Tag
-  const tagBlockId = await orca.commands.invokeEditorCommand(
-    "core.editor.insertTag",
-    null,
-    noteBlock.id,
-    noteTag,
-    [{ name: "ID", type: 1, value: note.id }],
-  );
-
-  // Ensure ID property exists on tag
-  const tagBlock = orca.state.blocks[tagBlockId];
-  if (tagBlock && !tagBlock.properties?.some((p) => p.name === "ID")) {
-    await orca.commands.invokeEditorCommand(
-      "core.editor.setProperties",
-      null,
-      [tagBlock.id],
-      [{ name: "ID", type: 1 }],
-    );
-  }
-
-  // Tags
-  if (note.tags?.length) {
-    for (const tag of note.tags) {
-      await orca.commands.invokeEditorCommand(
-        "core.editor.insertTag",
-        null,
-        noteBlock.id,
-        tag.name,
-      );
-    }
-  }
-
-  // Content: Transcript first
-  if (note.transcript) {
-    await orca.commands.invokeEditorCommand(
-      "core.editor.batchInsertText",
-      null,
-      noteBlock,
-      "firstChild",
-      cleanText(note.transcript),
-    );
-  }
-
-  // Attachments
-  if (note.attachments?.length) {
-    for (const attachment of note.attachments) {
-      // Basic check if it is an image or we just try to download everything?
-      // VoiceNotes attachments seem to be images usually.
-      if (attachment.url) {
-        try {
-          const response = await fetch(attachment.url);
-          if (response.ok) {
-            const arrayBuffer = await response.arrayBuffer();
-
-            const assetPath = await orca.invokeBackend(
-              "upload-asset-binary",
-              "image/png",
-              arrayBuffer,
-            );
-
-            if (assetPath) {
-              // Insert Image block
-              await orca.commands.invokeEditorCommand(
-                "core.editor.insertBlock",
-                null,
-                noteBlock,
-                "firstChild",
-                null,
-                { type: "image", src: assetPath },
-              );
-            }
-          }
-        } catch (e) {
-          console.error("Failed to sync attachment", e);
-        }
-      }
-    }
-  }
-
-  // Creations: Append after transcript
-  if (note.creations?.length) {
-    for (const creation of note.creations) {
-      if (creation.markdown_content) {
-        const title =
-          cleanText(creation.title!) ||
-          (creation as any).name ||
-          creation.type ||
-          "Summary";
-
-        // Insert Title Block
-        const titleBlockId = await orca.commands.invokeEditorCommand(
-          "core.editor.insertBlock",
-          null,
-          noteBlock,
-          "firstChild",
-          [{ t: "t", v: `${title}` }],
-          { type: "text" },
-          new Date(note.created_at),
-          new Date(note.updated_at),
-        );
-
-        const titleBlock = orca.state.blocks[titleBlockId];
-        if (titleBlock) {
-          await orca.commands.invokeEditorCommand(
-            "core.editor.batchInsertText",
-            null,
-            titleBlock,
-            "firstChild", // Insert as child of title
-            cleanText(creation.markdown_content),
-          );
-        }
-      }
-    }
-  }
-}
