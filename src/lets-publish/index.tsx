@@ -5,8 +5,6 @@ import { Block } from "../orca";
 import { format } from "date-fns";
 import { getRepr } from "@/libs/utils";
 
-
-
 export default class PublishPlugin extends BasePlugin {
   public getSettingsSchema(): any {
     return {
@@ -350,11 +348,11 @@ toc: true
 
     // Properties to be stored on the tag reference
     const tagProperties = [
-      {
-        name: "slug",
-        value: slug,
-        type: PropType.Text,
-      },
+      // {
+      //   name: "slug",
+      //   value: slug,
+      //   type: PropType.Text,
+      // },
       {
         name: "github_url",
         value: githubUrl,
@@ -427,9 +425,9 @@ toc: true
         const propsToAdd = [];
         const existingProps = tagBlock.properties || [];
 
-        if (!existingProps.some((p: any) => p.name === "slug")) {
-          propsToAdd.push({ name: "slug", type: PropType.Text });
-        }
+        // if (!existingProps.some((p: any) => p.name === "slug")) {
+        //   propsToAdd.push({ name: "slug", type: PropType.Text });
+        // }
 
         const githubProp = existingProps.find(
           (p: any) => p.name === "github_url",
@@ -558,8 +556,6 @@ toc: true
       return "";
     }
   }
-
-
 
   private async processImages(
     content: string,
