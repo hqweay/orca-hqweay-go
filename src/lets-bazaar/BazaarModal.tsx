@@ -14,6 +14,7 @@ export function BazaarModal({ onClose }: BazaarModalProps) {
   const [plugins, setPlugins] = useState<PluginInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [installing, setInstalling] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
 
   useEffect(() => {
     fetchPlugins();
@@ -74,6 +75,7 @@ export function BazaarModal({ onClose }: BazaarModalProps) {
   const handleInstall = async (repo: string) => {
     if (installing) return;
     setInstalling(repo);
+    setDownloadProgress(0);
     try {
       await installPlugin(repo);
       orca.notify("success", t(`Installed ${repo} successfully!`));
@@ -84,6 +86,7 @@ export function BazaarModal({ onClose }: BazaarModalProps) {
       orca.notify("error", t(`Installation failed: ${msg}`));
     } finally {
       setInstalling(null);
+      setDownloadProgress(null);
     }
   };
 
@@ -110,8 +113,36 @@ export function BazaarModal({ onClose }: BazaarModalProps) {
     // 2. Download
     const downloadRes = await fetch(asset.browser_download_url);
     if (!downloadRes.ok) throw new Error("Failed to download package");
-    // Get arrayBuffer
-    const arrayBuffer = await downloadRes.arrayBuffer();
+    
+    const contentLength = downloadRes.headers.get("content-length");
+    const total = contentLength ? parseInt(contentLength, 10) : 0;
+    let loaded = 0;
+
+    const reader = downloadRes.body?.getReader();
+    if (!reader) throw new Error("Failed to read response stream");
+
+    const chunks = [];
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      chunks.push(value);
+      loaded += value.length;
+
+      if (total > 0) {
+        setDownloadProgress(Math.min(99, Math.round((loaded / total) * 100)));
+      }
+    }
+
+    // Combine chunks
+    const arrayBuffer = new Uint8Array(loaded);
+    let offset = 0;
+    for (const chunk of chunks) {
+      arrayBuffer.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    setDownloadProgress(100);
 
     // 3. Select Plugins Directory
     orca.notify(
@@ -381,7 +412,11 @@ export function BazaarModal({ onClose }: BazaarModalProps) {
                   onClick={() => handleInstall(p.repo)}
                   disabled={!!installing}
                 >
-                  {installing === p.repo ? t("Installing...") : t("Install")}
+                  {installing === p.repo
+                    ? downloadProgress !== null && downloadProgress < 100
+                      ? `${t("Downloading")} ${downloadProgress}%`
+                      : t("Installing...")
+                    : t("Install")}
                 </Button>
               </div>
             ))
