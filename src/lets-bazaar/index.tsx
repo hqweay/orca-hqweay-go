@@ -42,7 +42,12 @@ export default class BazaarPlugin extends BasePlugin {
       container.remove();
     };
 
-    root.render(React.createElement(BazaarModal, { onClose: handleClose }));
+    root.render(
+      React.createElement(BazaarModal, {
+        onClose: handleClose,
+        pluginName: this.name,
+      }),
+    );
   }
 
   public async unload(): Promise<void> {

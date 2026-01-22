@@ -8,17 +8,37 @@ interface PluginInfo {
 
 interface BazaarModalProps {
   onClose: () => void;
+  pluginName: string;
 }
 
-export function BazaarModal({ onClose }: BazaarModalProps) {
+export function BazaarModal({ onClose, pluginName }: BazaarModalProps) {
   const [plugins, setPlugins] = useState<PluginInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [installing, setInstalling] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
 
   useEffect(() => {
-    fetchPlugins();
+    loadPlugins();
   }, []);
+
+  const loadPlugins = async () => {
+    setLoading(true);
+    // Try to load from cache first
+    try {
+      const cached = await orca.plugins.getData(pluginName, "cached_plugins");
+      if (cached && typeof cached === "string") {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          setPlugins(parsed);
+          setLoading(false);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to parse cached plugins", e);
+    }
+    await fetchPlugins();
+  };
 
   const fetchPlugins = async () => {
     try {
@@ -29,6 +49,12 @@ export function BazaarModal({ onClose }: BazaarModalProps) {
       const text = await response.text();
       const parsed = parsePluginsJson(text);
       setPlugins(parsed);
+      // Cache the result
+      await orca.plugins.setData(
+        pluginName,
+        "cached_plugins",
+        JSON.stringify(parsed),
+      );
     } catch (e) {
       console.error("Failed to fetch plugins", e);
       orca.notify("error", t("Failed to fetch plugins list"));
@@ -113,7 +139,7 @@ export function BazaarModal({ onClose }: BazaarModalProps) {
     // 2. Download
     const downloadRes = await fetch(asset.browser_download_url);
     if (!downloadRes.ok) throw new Error("Failed to download package");
-    
+
     const contentLength = downloadRes.headers.get("content-length");
     const total = contentLength ? parseInt(contentLength, 10) : 0;
     let loaded = 0;
@@ -331,7 +357,45 @@ export function BazaarModal({ onClose }: BazaarModalProps) {
             marginBottom: "16px",
           }}
         >
-          <h2 style={{ margin: 0, flex: 1 }}>{t("Orca Bazaar")}</h2>
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            <h2 style={{ margin: 0 }}>{t("Orca Bazaar")}</h2>
+            <a
+              href="https://github.com/hqweay/orca-bazaar"
+              target="_blank"
+              rel="noopener noreferrer"
+              title={t("Contribute to Bazaar")}
+              style={{
+                color: "var(--b3-theme-text)",
+                opacity: 0.6,
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <i
+                className="ti ti-brand-github"
+                style={{ fontSize: "18px" }}
+              ></i>
+            </a>
+            <Button
+              variant="plain"
+              onClick={fetchPlugins}
+              title={t("Refresh")}
+              style={{ marginLeft: "8px", padding: "4px", minWidth: "auto" }}
+              disabled={loading}
+            >
+              <i
+                className={`ti ti-refresh ${loading ? "fa-spin" : ""}`}
+                style={{ fontSize: "18px" }}
+              ></i>
+            </Button>
+          </div>
           <Button
             variant="plain"
             onClick={onClose}
