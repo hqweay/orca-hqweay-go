@@ -2300,7 +2300,7 @@ export interface Orca {
      * ```
      */
     Button: (
-      props: React.HTMLAttributes<HTMLButtonElement> & {
+      props: React.ButtonHTMLAttributes<HTMLButtonElement> & {
         variant: "solid" | "soft" | "dangerous" | "outline" | "plain";
       },
     ) => JSX.Element | null;
