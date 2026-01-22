@@ -99,11 +99,11 @@ export function BazaarModal({ onClose }: BazaarModalProps) {
     const releaseData = await releaseRes.json();
 
     const asset = releaseData.assets.find(
-      (a: any) =>
-        a.name === "package.zip" ||
-        a.name === "dist.zip" ||
-        a.name === `${repoName}.zip` ||
-        a.name.includes(`${repoName.replace("orca-", "")}`),
+      (a: any) => a.name.includes(".zip"),
+      // a.name === "package.zip" ||
+      // a.name === "dist.zip" ||
+      // a.name === `${repoName}.zip` ||
+      // a.name.includes(`${repoName.replace("orca-", "")}`),
     );
     if (!asset) throw new Error("package not found in latest release");
 
@@ -207,6 +207,13 @@ export function BazaarModal({ onClose }: BazaarModalProps) {
 
       if (!relativePath) continue;
 
+      // Filter out system files that might cause "Name is not allowed" errors
+      if (
+        relativePath.includes(".DS_Store") ||
+        relativePath.includes("__MACOSX")
+      )
+        continue;
+
       // If the root content doesn't have a 'dist' folder, wrap everything in 'dist'
       if (!contentHasDist) {
         relativePath = "dist/" + relativePath;
@@ -215,22 +222,32 @@ export function BazaarModal({ onClose }: BazaarModalProps) {
       // Handle nested folders
       const parts = relativePath.split("/");
       const fileName = parts.pop();
+
+      // Skip if filename is empty or invalid (e.g. trailing slash on dir)
+      if (!fileName || fileName.trim() === "") continue;
+
       let currentDirHandle = targetDirHandle;
 
-      for (const part of parts) {
-        currentDirHandle = await currentDirHandle.getDirectoryHandle(part, {
-          create: true,
-        });
-      }
+      try {
+        for (const part of parts) {
+          if (!part || part.trim() === "") continue; // Skip empty parts
+          currentDirHandle = await currentDirHandle.getDirectoryHandle(part, {
+            create: true,
+          });
+        }
 
-      if (fileName) {
-        const content = await zip.files[filename].async("arraybuffer");
-        const fileHandle = await currentDirHandle.getFileHandle(fileName, {
-          create: true,
-        });
-        const writable = await fileHandle.createWritable();
-        await writable.write(content);
-        await writable.close();
+        if (fileName) {
+          const content = await zip.files[filename].async("arraybuffer");
+          const fileHandle = await currentDirHandle.getFileHandle(fileName, {
+            create: true,
+          });
+          const writable = await fileHandle.createWritable();
+          await writable.write(content);
+          await writable.close();
+        }
+      } catch (err) {
+        console.warn(`Failed to write file ${relativePath}:`, err);
+        // Don't fail the entire installation for one file
       }
     }
 
