@@ -22,7 +22,9 @@ Easily publish your Orca Notes page blocks as Markdown articles to a GitHub repo
     *   **Two Repos**: Separate configurations for **Blog Repository** (md files) and **Image Bed Repository** (images).
     *   **Custom Domain**: Set your blog's `base domain` for generating preview links.
     *   **Tag Label**: Customize the name of the tag used to mark published posts (default: "已发布").
-
+*   **Intelligent Title Generation**:
+    *   Automatically extracts the title from the **first line** of the generated markdown content.
+    *   Removes the first line from the body to ensure clean, non-repetitive publishing.
 ## Usage
 
 1.  **Configure**:
