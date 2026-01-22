@@ -33,6 +33,7 @@ export default class SortPlugin extends BasePlugin {
 
             return (
               <MenuText
+                preIcon="ti ti-sort-ascending-letters"
                 title={t("Sort Selected Blocks")}
                 onClick={() => {
                   close();

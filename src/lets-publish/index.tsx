@@ -118,6 +118,7 @@ export default class PublishPlugin extends BasePlugin {
 
             return (
               <MenuText
+                preIcon="ti ti-book-upload"
                 title={t("Publish to GitHub")}
                 onClick={() => {
                   close();
