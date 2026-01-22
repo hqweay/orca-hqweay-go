@@ -11,8 +11,22 @@ export default class BazaarPlugin extends BasePlugin {
       t("Open Bazaar"),
     );
 
-    // Optional: Register a headbar button if desired
-    // orca.headbar.registerHeadbarButton(...)
+    // Register headbar button
+    const Button = orca.components.Button;
+    orca.headbar.registerHeadbarButton("bazaar-open", () =>
+      React.createElement(
+        Button,
+        {
+          variant: "plain",
+          onClick: () => this.openBazaar(),
+          title: t("Open Bazaar"),
+        },
+        React.createElement("i", {
+          className: "ti ti-shopping-bag",
+          style: { fontSize: "16px" },
+        })
+      )
+    );
   }
 
   private openBazaar() {
@@ -37,5 +51,6 @@ export default class BazaarPlugin extends BasePlugin {
       container.remove();
     }
     orca.commands.unregisterCommand("open-bazaar");
+    orca.headbar.unregisterHeadbarButton("bazaar-open");
   }
 }

@@ -341,8 +341,35 @@ export function BazaarModal({ onClose }: BazaarModalProps) {
                 }}
               >
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: "bold", marginBottom: "4px" }}>
-                    {p.repo}
+                  <div
+                    style={{
+                      fontWeight: "bold",
+                      marginBottom: "4px",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span>{p.repo}</span>
+                    <a
+                      href={`https://github.com/${p.repo}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        marginLeft: "8px",
+                        color: "var(--b3-theme-primary)",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        textDecoration: "none",
+                      }}
+                      title={t("Open Repository")}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <i
+                        className="ti ti-external-link"
+                        style={{ fontSize: "14px" }}
+                      ></i>
+                    </a>
                   </div>
                   <div style={{ fontSize: "0.9em", opacity: 0.8 }}>
                     {p.description}
