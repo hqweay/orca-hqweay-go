@@ -1,7 +1,6 @@
 import { t } from "./libs/l10n";
 import { BasePlugin } from "./libs/BasePlugin";
-import { PropType } from "./lets-import/csv/csvImporter";
-import { DbId, QueryDescription, QueryDescription2 } from "./orca";
+import { DbId, QueryDescription2 } from "./orca";
 
 // Auto-scan all sub-plugins in lets-* folders
 const pluginModules = import.meta.glob("./lets-*/index.tsx", { eager: true });

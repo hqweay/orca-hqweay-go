@@ -1,15 +1,6 @@
 import { CSVImportConfig } from "./CSVImportModal";
 
-// 定义属性类型常量
-export const PropType = {
-  JSON: 0,
-  Text: 1,
-  BlockRefs: 2,
-  Number: 3,
-  Boolean: 4,
-  DateTime: 5,
-  TextChoices: 6,
-} as const;
+import { PropType } from "@/libs/consts";
 
 export interface CSVRowData {
   [key: string]: string;

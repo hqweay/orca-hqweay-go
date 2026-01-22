@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { t } from "@/libs/l10n";
-import { PropType } from "./csvImporter";
+import { PropType } from "@/libs/consts";
 import "./csv-import.css";
 
 interface CSVImportModalProps {

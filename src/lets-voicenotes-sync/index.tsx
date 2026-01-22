@@ -4,19 +4,12 @@ import { ensureInbox } from "@/libs/utils";
 import { formatUtil } from "@/libs/format";
 // import { Block, DbId, QueryDescription } from "../orca.d.ts" // orca is global
 import type { Block, DbId, QueryDescription2 } from "../orca";
+import { PropType } from "@/libs/consts";
 import zhCN from "@/translations/zhCN";
 import type { VoiceNote } from "../types";
 import { BasePlugin } from "@/libs/BasePlugin";
 
-const PropType = {
-  JSON: 0,
-  Text: 1,
-  BlockRefs: 2,
-  Number: 3,
-  Boolean: 4,
-  DateTime: 5,
-  TextChoices: 6,
-} as const;
+
 
 export default class VoiceNotesSyncPlugin extends BasePlugin {
   public getSettingsSchema() {
