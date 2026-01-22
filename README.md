@@ -1,45 +1,66 @@
-# Orca HQWEAY Go
+# 虎鲸笔记插件：恐龙工具箱
 
-[English](./README_en.md) | **中文**
+这是一个为 Orca Note (虎鲸笔记) 开发的增强插件集合，提供了一系列实用的工具来提升笔记体验。
 
-[Orca Notes](https://github.com/hqweay/orca-notes) 的高级用户插件合集，采用模块化架构构建。
+## 使用
 
-## 包含的插件
+1. 下载 Release 包，package.zip。
+2. 解压后，将文件夹复制到 Orca Note 的插件目录。
 
-### 1. 语音笔记同步 (`lets-voicenotes-sync`)
-与 [VoiceNotes.com](https://voicenotes.com) 双向同步。
-- **功能**: 同步录音到每日日记，处理子笔记/附件，将区块推送到 VoiceNotes。
-- [阅读文档](./src/lets-voicenotes-sync/README.md)
+## 功能列表
 
-### 2. 发布到 GitHub (`lets-publish`)
-将你的笔记变成博客。
-- **功能**: 一键发布到 Jekyll/Hexo/Hugo 仓库，自动图床托管，智能增量更新。
-- [阅读文档](./src/lets-publish/README.md)
+此插件集包含以下子插件，均可在设置中单独开启或是使用：
 
-### 3. 导入工具 (`lets-import`)
-- **功能**:CSV 导入支持，用于批量数据迁移。
+### 1. 📝 一键格式化 (Format Block)
+标准化当前块及其子块的文本格式：
+- 自动修正中英文标点符号。
+- 优化中英文混排空格。
+- 规范化全角/半角字符。
 
-### 4. 格式化工具 (`lets-format`)
-- **功能**: 文本清理，中英文混排自动空格处理。
+### 2. 🎙️ VoiceNotes 同步
+将 [VoiceNotes](https://voicenotes.com/) 的录音笔记同步到虎鲸笔记中：
+- 支持增量同步和全量同步。
+- 自动归档到指定的 "VoiceNotes Inbox"。
 
-### 5. 排序工具 (`lets-sort`)
-- **功能**: 按字母顺序对子区块进行排序。
+### 3. 📂 导入工具 (Import)
+- **文件夹导入**：支持批量导入文件夹中的 Markdown 文件。
+- **CSV 导入**：支持将 CSV 数据导入为笔记块。
 
-### 6. Orca 市场 (`lets-bazaar`)
-- **功能**: 社区插件市场。在 Orca 内直接浏览、安装和更新插件。
-- [阅读文档](./src/lets-bazaar/README.md)
+### 4. 🧹 样式清除 (Remove Style)
+快速清理笔记内容的格式：
+- **移除行内样式**：清除加粗、高亮等富文本样式。
+- **移除链接**：将链接转换为纯文本。
+- **移除空格**：将空行（且无子节点）删除。
 
-## 开发
+### 5. 🔃 块排序 (Sort Blocks)
+对选中的多个块进行智能排序：
+- **可配置顺序**：支持自定义排序规则（默认：空块 -> 普通块 -> 已完成任务 -> 未完成任务）。
+- **字典序排列**：同类块内部按文本内容字典序排列。
+- **多选触发**：仅当选中 2 个及以上块时才显示菜单。
 
-查看 [开发心得](./docs/dev-learnings.md) 了解开发过程中遇到的技术细节和 API 陷阱。
+### 6. 📤 发布到 GitHub (Publish)
+将 Orca 笔记一键发布为 Markdown 博客文章：
+- **图床集成**：自动提取文中图片并上传到指定的 GitHub 仓库（支持去重复用）。
+- **博客部署**：将 Markdown 内容推送到博客仓库（适配 Hexo/Jekyll/Hugo 等）。
+- **智能元数据**：
+    - 自动生成 Frontmatter。
+    - 记录 `github_url` 和 `blog_url`（可点击）。
+    - 自动维护 `publish_date` 创建时间。
+    - 仅对页面块（Page Block）生效。
 
-## 安装
+### 7. 🏪 插件市集 (Bazaar)
+Orca 的社区插件市场，发现更多可能：
+- **浏览与安装**：直接在应用内浏览并一键安装社区插件。
+- **自动管理**：支持插件的更新与卸载。
+- **贡献生态**：欢迎开发者提交自己的插件到市集。
 
-将此仓库克隆到你的 Orca Notes 插件目录中。
+## 开发说明
 
-```bash
-cd /path/to/orca/plugins
-git clone <repo-url> orca-hqweay-go
-pnpm install
-pnpm build
-```
+本项目采用模块化架构：
+- `src/lets-*`：每个目录对应一个子插件。
+- `BasePlugin`：所有插件继承自基类，统一管理加载、卸载和日志。
+- `main.tsx`：负责动态加载所有子插件。
+
+## License
+
+WTFPL

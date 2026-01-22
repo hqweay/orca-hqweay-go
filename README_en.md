@@ -1,45 +1,68 @@
-# Orca HQWEAY Go
+# Orca HQWEAY Go: Dino Toolbox
 
 **English** | [中文](./README.md)
 
-A collection of power-user plugins for [Orca Notes](https://github.com/hqweay/orca-notes), built with a modular architecture.
+This is a collection of enhanced plugins for Orca Note, providing a suite of practical tools to improve your note-taking experience.
 
-## Included Plugins
+## Usage
 
-### 1. VoiceNotes Sync (`lets-voicenotes-sync`)
-Two-way synchronization with [VoiceNotes.com](https://voicenotes.com).
-- **Features**: Sync recordings to Daily Journal, handle Subnotes/Attachments, push blocks to VoiceNotes.
-- [Read documentation](./src/lets-voicenotes-sync/README.md)
+1.  Download the Release package, `package.zip`.
+2.  Unzip it and copy the folder to the `plugins` directory of Orca Note.
 
-### 2. Publish to GitHub (`lets-publish`)
-Turn your notes into a blog.
-- **Features**: One-click publish to Jekyll/Hexo/Hugo repos, auto image hosting, smart updates.
-- [Read documentation](./src/lets-publish/README.md)
+## Features
 
-### 3. Import Tools (`lets-import`)
-- **Features**: CSV Import support for bulk data migration.
+This plugin collection includes the following sub-plugins, which can be individually enabled or used in settings:
 
-### 4. Format Tools (`lets-format`)
-- **Features**: Text cleaner, space handling for Chinese/English mixing.
+### 1. 📝 Format Block
+Standardize the text format of the current block and its children:
+- Automatically correct Chinese/English punctuation.
+- Optimize spacing between Chinese and English text.
+- Normalize full-width/half-width characters.
 
-### 5. Sort Tools (`lets-sort`)
-- **Features**: Sort child blocks alphabetically.
+### 2. 🎙️ VoiceNotes Sync
+Synchronize recordings from [VoiceNotes](https://voicenotes.com/) to Orca Note:
+- Supports incremental and full synchronization.
+- Automatically archives to a specified "VoiceNotes Inbox".
 
-### 6. Orca Bazaar (`lets-bazaar`)
-- **Features**: Community plugin marketplace. Browse, install, and update plugins directly within Orca.
-- [Read documentation](./src/lets-bazaar/README.md)
+### 3. 📂 Import Tools
+- **Folder Import**: Bulk import Markdown files from folders.
+- **CSV Import**: Import CSV data as note blocks.
+
+### 4. 🧹 Remove Style
+Quickly clean up note content formatting:
+- **Remove Inline Styles**: Clear rich text styles like bold, highlight, etc.
+- **Remove Links**: Convert links to plain text.
+- **Remove Spaces**: Delete empty lines (without children).
+
+### 5. 🔃 Sort Blocks
+Intelligently sort selected multiple blocks:
+- **Configurable Order**: Support custom sorting rules (Default: Empty -> Normal -> Completed -> Uncompleted).
+- **Dictionary Sort**: Sort items of the same type alphabetically by text content.
+- **Multi-select Trigger**: Context menu appears only when 2 or more blocks are selected.
+
+### 6. 📤 Publish to GitHub
+One-click publish Orca notes as Markdown blog posts:
+- **Image Hosting Integration**: Automatically extract images and upload to a specified GitHub repo (supports deduplication).
+- **Blog Deployment**: Push Markdown content to blog repositories (compatible with Hexo/Jekyll/Hugo, etc.).
+- **Smart Metadata**:
+    - Automatically generates Frontmatter.
+    - Records `github_url` and `blog_url` (clickable).
+    - Automatically maintains `publish_date` creation time.
+    - Only effective for Page Blocks.
+
+### 7. 🏪 Plugin Bazaar
+The community plugin marketplace for Orca, discover more possibilities:
+- **Browse & Install**: Browse and one-click install community plugins directly within the app.
+- **Auto Management**: Supports plugin updates and uninstallation.
+- **Contribute**: Developers are welcome to submit their plugins to the bazaar.
 
 ## Development
 
-See [Development Learnings](./docs/dev-learnings.md) for technical details and API pitfalls encountered during development.
+This project uses a modular architecture:
+- `src/lets-*`: Each directory corresponds to a sub-plugin.
+- `BasePlugin`: All plugins inherit from a base class, managing loading, unloading, and logging uniformly.
+- `main.tsx`: Responsible for dynamically loading all sub-plugins.
 
-## Installation
+## License
 
-Clone this repository into your Orca Notes plugins directory.
-
-```bash
-cd /path/to/orca/plugins
-git clone <repo-url> orca-hqweay-go
-pnpm install
-pnpm build
-```
+WTFPL

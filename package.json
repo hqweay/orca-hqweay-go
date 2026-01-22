@@ -1,6 +1,6 @@
 {
   "name": "orca-hwqeay-go",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "虎鲸笔记插件：恐龙工具箱",
   "type": "module",
   "scripts": {
