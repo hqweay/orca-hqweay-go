@@ -192,13 +192,17 @@ export default class PublishPlugin extends BasePlugin {
     }
 
     // 2. MD Generation
-    const title =
-      block.aliases?.[0] ||
-      block.text?.replace(/#[^\s]+/g, "").trim() ||
-      "Untitled";
-
     // Pass root block to generator
     let mdContent = await this.generateMarkdown(block);
+
+    const lines = mdContent.split("\n");
+    const firstLine = lines[0] || "";
+    const title = firstLine.replace(/#+\s*/, "").trim() || "Untitled";
+
+    if (lines.length > 0) {
+      lines.shift();
+      mdContent = lines.join("\n").trim();
+    }
 
     // Add Frontmatter
     // Extract tags from refs
