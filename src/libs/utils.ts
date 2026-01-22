@@ -1,5 +1,7 @@
 import { Block } from "../orca";
 
+import { PropType } from "./consts";
+
 export async function ensureInbox(
   container: Block,
   inboxName: string,
@@ -35,4 +37,18 @@ export async function ensureInbox(
   }
 
   return inbox!;
+}
+
+export function getRepr(block: Block): any {
+  // Return type: Repr
+  // Default
+  let repr: any = { type: "text" };
+
+  if (block.properties) {
+    const reprProp = block.properties.find((p) => p.name === "_repr");
+    if (reprProp && reprProp.type === PropType.JSON && reprProp.value) {
+      repr = reprProp.value;
+    }
+  }
+  return repr;
 }

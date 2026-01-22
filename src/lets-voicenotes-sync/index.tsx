@@ -1,6 +1,6 @@
 import { VoiceNotesApi } from "@/api/voicenotes";
 import { setupL10N, t } from "@/libs/l10n";
-import { ensureInbox } from "@/libs/utils";
+import { ensureInbox, getRepr } from "@/libs/utils";
 import { formatUtil } from "@/libs/format";
 // import { Block, DbId, QueryDescription } from "../orca.d.ts" // orca is global
 import type { Block, DbId, QueryDescription2 } from "../orca";
@@ -231,7 +231,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
 
                   const recordingId = this.getRecordingId(block);
 
-                  const repr = this.getRepr(block);
+                  const repr = getRepr(block);
 
                   let content = await orca.converters.blockConvert(
                     "markdown",
@@ -350,19 +350,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
     return undefined;
   }
 
-  private getRepr(block: Block): any {
-    // Return type: Repr
-    // Default
-    let repr: any = { type: "text" };
 
-    if (block.properties) {
-      const reprProp = block.properties.find((p) => p.name === "_repr");
-      if (reprProp && reprProp.type === PropType.JSON && reprProp.value) {
-        repr = reprProp.value;
-      }
-    }
-    return repr;
-  }
 
   private async syncNote(note: VoiceNote, inbox: Block, noteTag: string) {
     let noteBlock: Block;

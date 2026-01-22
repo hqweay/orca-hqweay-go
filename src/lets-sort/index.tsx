@@ -1,6 +1,7 @@
 import { BasePlugin } from "@/libs/BasePlugin";
 import { setupL10N, t } from "@/libs/l10n";
 import { Block, DbId } from "../orca";
+import { getRepr } from "@/libs/utils";
 
 export default class SortPlugin extends BasePlugin {
   public getSettingsSchema(): any {
@@ -96,8 +97,7 @@ export default class SortPlugin extends BasePlugin {
         const sortedBlocks = [...blocks].sort((a: any, b: any) => {
           const getType = (blk: any): string => {
             // 1. Get _repr to check for Task
-            const prop = blk.properties?.find((p: any) => p.name === "_repr");
-            const repr = prop ? prop.value : null;
+            const repr = getRepr(blk);
 
             if (repr?.type === "task") {
               const isChecked = repr.state === 1;

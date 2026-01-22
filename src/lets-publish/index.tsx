@@ -3,6 +3,7 @@ import { PropType } from "@/libs/consts";
 import { setupL10N, t } from "@/libs/l10n";
 import { Block } from "../orca";
 import { format } from "date-fns";
+import { getRepr } from "@/libs/utils";
 
 
 
@@ -540,7 +541,7 @@ toc: true
       // Use the block from state to ensure it has the correct structure (children IDs) expected by the converter
       // if converting recursively.
       const rootBlock = orca.state.blocks[block.id] || block;
-      const repr = this.getRepr(rootBlock);
+      const repr = getRepr(rootBlock);
 
       let content = await orca.converters.blockConvert(
         "markdown",
@@ -558,19 +559,7 @@ toc: true
     }
   }
 
-  private getRepr(block: Block): any {
-    // Return type: Repr
-    // Default
-    let repr: any = { type: "text" };
 
-    if (block.properties) {
-      const reprProp = block.properties.find((p) => p.name === "_repr");
-      if (reprProp && reprProp.type === PropType.JSON && reprProp.value) {
-        repr = reprProp.value;
-      }
-    }
-    return repr;
-  }
 
   private async processImages(
     content: string,
