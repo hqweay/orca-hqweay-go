@@ -741,7 +741,7 @@ function VoiceNotesSettings({ plugin }: { plugin: VoiceNotesSyncPlugin }) {
         >
           <Input
             // @ts-ignore
-            value={config.excludeTags || ""}
+            value={config.excludeTags || "orca"}
             onChange={(e: any) => updateConfig("excludeTags", e.target.value)}
           />
         </SettingsItem>
