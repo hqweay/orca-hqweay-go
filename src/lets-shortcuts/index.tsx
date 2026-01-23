@@ -112,7 +112,6 @@ function ShortcutsSettings({ plugin }: { plugin: TagShortcutsPlugin }) {
   const handleSave = async (newTags: TagShortcutConfig[]) => {
     setTags(newTags);
     await plugin["updateSettings"]({ tags: newTags });
-    orca.notify("success", t("Settings saved."));
   };
 
   const addTag = () => {
