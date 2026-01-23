@@ -28,12 +28,30 @@ export abstract class BasePlugin {
     };
   }
 
+  protected _config: any = {};
+
+  /**
+   * Loaded settings from persistent storage
+   */
+  public async initializeSettings(): Promise<void> {
+    const rawData = await orca.plugins.getData(this.mainPluginName, this.name);
+    if (rawData && typeof rawData === "string") {
+      try {
+        this._config = JSON.parse(rawData);
+      } catch (e) {
+        this.logger.error("Failed to parse settings", e);
+        this._config = {};
+      }
+    } else {
+      this._config = rawData || {};
+    }
+  }
+
   /**
    * Get the settings scoped to this sub-plugin
    */
   protected getSettings(): any {
-    const allSettings = orca.state.plugins[this.mainPluginName]?.settings || {};
-    return allSettings[`${this.name}_config`] || {};
+    return this._config;
   }
 
   /**
@@ -41,26 +59,47 @@ export abstract class BasePlugin {
    * Supports partial object update OR (key, value) for deep properties (e.g. "imageBed.owner").
    */
   public async updateSettings(pathOrPartial: any, value?: any) {
-    const allSettings = orca.state.plugins[this.mainPluginName]?.settings || {};
-    const configKey = `${this.name}_config`;
-    const currentSubSettings = allSettings[configKey] || {};
-
     let nextSubSettings;
     if (typeof pathOrPartial === "string") {
       nextSubSettings = this.setDeepProperty(
-        currentSubSettings,
+        this._config,
         pathOrPartial,
         value,
       );
     } else {
-      nextSubSettings = { ...currentSubSettings, ...pathOrPartial };
+      nextSubSettings = { ...this._config, ...pathOrPartial };
     }
 
-    const newSettings = {
-      ...allSettings,
-      [configKey]: nextSubSettings,
-    };
-    await orca.plugins.setSettings("app", this.mainPluginName, newSettings);
+    this._config = nextSubSettings;
+
+    this.logger.info("Settings updated", this._config);
+    await orca.plugins.setData(
+      this.mainPluginName,
+      this.name,
+      JSON.stringify(this._config),
+    );
+  }
+
+  /**
+   * Generic data storage for sub-plugins.
+   * Uses mainPluginName as namespace and prefixes key with sub-plugin name.
+   */
+  public async setData(key: string, value: any): Promise<void> {
+    await orca.plugins.setData(
+      this.mainPluginName,
+      `${this.name}.${key}`,
+      value,
+    );
+  }
+
+  /**
+   * Generic data retrieval for sub-plugins.
+   */
+  public async getData(key: string): Promise<any> {
+    return await orca.plugins.getData(
+      this.mainPluginName,
+      `${this.name}.${key}`,
+    );
   }
 
   private setDeepProperty(obj: any, path: string, value: any): any {

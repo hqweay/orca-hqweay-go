@@ -30,7 +30,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
     const inboxName = settings.inboxName || "VoiceNotes Inbox";
     const noteTag = settings.noteTag || "VoiceNote";
 
-    let lastSyncTime = await orca.plugins.getData(this.name, "syncKey");
+    let lastSyncTime = await this.getData("syncKey");
     if (fullSync) {
       lastSyncTime = undefined;
     }
@@ -124,7 +124,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
 
       if (maxUpdatedAt) {
         // 子插件的存储
-        await orca.plugins.setData(this.name, "syncKey", maxUpdatedAt);
+        await this.setData("syncKey", maxUpdatedAt);
       }
 
       orca.notify("success", t("VoiceNotes synced successfully."));

@@ -41,6 +41,7 @@ export default class TagShortcutsPlugin extends BasePlugin {
     this.registeredCommands.clear();
 
     const settings = this.getSettings();
+    this.logger.debug("Settings loaded", settings);
     const tags: TagShortcutConfig[] = settings.tags || [
       {
         tag: "碎碎念",
@@ -81,6 +82,8 @@ export default class TagShortcutsPlugin extends BasePlugin {
         () => {},
         { label: `插入标签: ${config.tag}` },
       );
+      this.logger.debug(`Registered command ${commandId}`);
+      this.logger.debug(`Assigning shortcut ${config.shortcut}`);
 
       try {
         await orca.shortcuts.assign(config.shortcut, commandId);

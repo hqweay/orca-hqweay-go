@@ -78,7 +78,10 @@ export async function load(_name: string) {
           ...pluginInstance.getSettingsSchema(),
         };
 
-        // Load
+        // Initialize settings for all plugins (for the settings board to work even if not enabled)
+        await pluginInstance.initializeSettings();
+
+        // Load if enabled
         const settings = orca.state.plugins[_name]?.settings;
         if (!settings?.[`${pluginName}`]) {
           console.log(`Skipping sub-plugin (class) from ${path}`);
