@@ -1,65 +1,16 @@
 import { setupL10N, t } from "@/libs/l10n";
 import { BasePlugin } from "@/libs/BasePlugin";
-import React from "react";
+import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
+import React, { useState } from "react";
 
 export default class FormatPlugin extends BasePlugin {
-  public async load(): Promise<void> {
-    const Button = orca.components.Button;
-    const HoverContextMenu = orca.components.HoverContextMenu;
-    const MenuText = orca.components.MenuText;
+  protected settingsComponent = RemoveStyleSettings;
 
-    if (orca.state.headbarButtons[`${this.name}.remove-style`] == null) {
-      orca.headbar.registerHeadbarButton(`${this.name}.remove-style`, () => (
-        <HoverContextMenu
-          menu={(closeMenu: () => void) => (
-            <>
-              <MenuText
-                title={t("remove inline style")}
-                onClick={async () => {
-                  closeMenu();
-                  await orca.commands.invokeCommand(
-                    `${this.name}.remove-style`,
-                    ["inline"],
-                  );
-                }}
-              />
-              <MenuText
-                title={t("remove link style")}
-                onClick={async () => {
-                  closeMenu();
-                  await orca.commands.invokeCommand(
-                    `${this.name}.remove-style`,
-                    ["link"],
-                  );
-                }}
-              />
-              <MenuText
-                title={t("remove empty lines")}
-                onClick={async () => {
-                  closeMenu();
-                  await orca.commands.invokeCommand(
-                    `${this.name}.remove-style`,
-                    ["emptyLine"],
-                  );
-                }}
-              />
-            </>
-          )}
-        >
-          <Button
-            title={t("remove all styles")}
-            variant="plain"
-            onClick={async () =>
-              orca.commands.invokeCommand(`${this.name}.remove-style`, [
-                "inline",
-                "link",
-              ])
-            }
-          >
-            <i className="ti ti-brackets-angle-off" />
-          </Button>
-        </HoverContextMenu>
-      ));
+  public async load(): Promise<void> {
+    const settings = this.getSettings();
+    const headbarMode = settings.headbarMode || "actions";
+    if (headbarMode === "standalone" || headbarMode === "both") {
+      this.registerHeadbar();
     }
 
     orca.commands.registerCommand(
@@ -219,7 +170,83 @@ export default class FormatPlugin extends BasePlugin {
     this.logger.info(`${this.name} unloaded.`);
   }
 
+  private registerHeadbar() {
+    const Button = orca.components.Button;
+    const HoverContextMenu = orca.components.HoverContextMenu;
+    const MenuText = orca.components.MenuText;
+
+    if (orca.state.headbarButtons[`${this.name}.remove-style`] == null) {
+      orca.headbar.registerHeadbarButton(`${this.name}.remove-style`, () => (
+        <HoverContextMenu
+          menu={(closeMenu: () => void) => (
+            <>
+              <MenuText
+                title={t("remove inline style")}
+                onClick={async () => {
+                  closeMenu();
+                  await orca.commands.invokeCommand(
+                    `${this.name}.remove-style`,
+                    ["inline"],
+                  );
+                }}
+              />
+              <MenuText
+                title={t("remove link style")}
+                onClick={async () => {
+                  closeMenu();
+                  await orca.commands.invokeCommand(
+                    `${this.name}.remove-style`,
+                    ["link"],
+                  );
+                }}
+              />
+              <MenuText
+                title={t("remove empty lines")}
+                onClick={async () => {
+                  closeMenu();
+                  await orca.commands.invokeCommand(
+                    `${this.name}.remove-style`,
+                    ["emptyLine"],
+                  );
+                }}
+              />
+            </>
+          )}
+        >
+          <Button
+            title={t("remove all styles")}
+            variant="plain"
+            onClick={async () =>
+              orca.commands.invokeCommand(`${this.name}.remove-style`, [
+                "inline",
+                "link",
+              ])
+            }
+          >
+            <i className="ti ti-brackets-angle-off" />
+          </Button>
+        </HoverContextMenu>
+      ));
+    }
+  }
+
+  protected async onConfigChanged(newConfig: any): Promise<void> {
+    const headbarMode = newConfig.headbarMode || "actions";
+    if (headbarMode === "standalone" || headbarMode === "both") {
+      this.registerHeadbar();
+    } else {
+      orca.headbar.unregisterHeadbarButton(`${this.name}.remove-style`);
+    }
+  }
+
   public getHeadbarMenuItems(closeMenu: () => void): React.ReactNode[] {
+    // Only return items if mode is 'actions' or 'both'
+    const settings = this.getSettings();
+    const headbarMode = settings.headbarMode || "actions";
+    if (headbarMode === "standalone") {
+      return [];
+    }
+
     const MenuText = orca.components.MenuText;
     return [
       React.createElement(MenuText, {
@@ -266,4 +293,34 @@ export default class FormatPlugin extends BasePlugin {
       }),
     ];
   }
+}
+
+function RemoveStyleSettings({ plugin }: { plugin: FormatPlugin }) {
+  const settings = plugin["getSettings"]();
+  const [headbarMode, setHeadbarMode] = useState(
+    settings.headbarMode || "actions",
+  );
+
+  const updateMode = async (value: string) => {
+    setHeadbarMode(value);
+    await plugin.updateSettings({ headbarMode: value });
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      <SettingsSection title={t("Headbar Display Mode")}>
+        <SettingsItem label={t("Display Mode")}>
+          <orca.components.Select
+            selected={[headbarMode]}
+            options={[
+              { value: "actions", label: t("Actions Menu") },
+              { value: "standalone", label: t("Standalone Button") },
+              { value: "both", label: t("Both") },
+            ]}
+            onChange={(selected) => updateMode(selected[0])}
+          />
+        </SettingsItem>
+      </SettingsSection>
+    </div>
+  );
 }

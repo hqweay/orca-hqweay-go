@@ -1,23 +1,17 @@
 import { formatUtil } from "@/libs/format";
 import { setupL10N, t } from "@/libs/l10n";
 import { BasePlugin } from "@/libs/BasePlugin";
-import React from "react";
+import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
+import React, { useState } from "react";
 
 export default class FormatPlugin extends BasePlugin {
-  public async load(): Promise<void> {
-    const Button = orca.components.Button;
+  protected settingsComponent = FormatSettings;
 
-    if (orca.state.headbarButtons[`${this.name}.format-block`] == null) {
-      orca.headbar.registerHeadbarButton(`${this.name}.format-block`, () => (
-        <Button
-          variant="plain"
-          onClick={async () =>
-            orca.commands.invokeCommand(`${this.name}.format-block`)
-          }
-        >
-          <i className="ti ti-refresh" />
-        </Button>
-      ));
+  public async load(): Promise<void> {
+    const settings = this.getSettings();
+    const headbarMode = settings.headbarMode || "actions";
+    if (headbarMode === "standalone" || headbarMode === "both") {
+      this.registerHeadbar();
     }
 
     orca.commands.registerCommand(
@@ -168,4 +162,73 @@ export default class FormatPlugin extends BasePlugin {
       }),
     ];
   }
+
+  public renderHeadbarButton(): React.ReactNode {
+    const Button = orca.components.Button;
+    return (
+      <Button
+        variant="plain"
+        onClick={async () =>
+          orca.commands.invokeCommand(`${this.name}.format-block`)
+        }
+      >
+        <i className="ti ti-refresh" />
+      </Button>
+    );
+  }
+
+  private registerHeadbar() {
+    const Button = orca.components.Button;
+    if (orca.state.headbarButtons[`${this.name}.format-block`] == null) {
+      orca.headbar.registerHeadbarButton(`${this.name}.format-block`, () => (
+        <Button
+          variant="plain"
+          onClick={async () =>
+            orca.commands.invokeCommand(`${this.name}.format-block`)
+          }
+        >
+          <i className="ti ti-refresh" />
+        </Button>
+      ));
+    }
+  }
+
+  protected async onConfigChanged(newConfig: any): Promise<void> {
+    const headbarMode = newConfig.headbarMode || "actions";
+    if (headbarMode === "standalone" || headbarMode === "both") {
+      this.registerHeadbar();
+    } else {
+      orca.headbar.unregisterHeadbarButton(`${this.name}.format-block`);
+    }
+  }
+}
+
+function FormatSettings({ plugin }: { plugin: FormatPlugin }) {
+  const settings = plugin["getSettings"]();
+  const [headbarMode, setHeadbarMode] = useState(
+    settings.headbarMode || "actions",
+  );
+
+  const updateMode = async (value: string) => {
+    setHeadbarMode(value);
+    await plugin.updateSettings({ headbarMode: value });
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      <SettingsSection title={t("Headbar Display Mode")}>
+        <SettingsItem label={t("Display Mode")}>
+          <orca.components.Select
+            selected={[headbarMode]}
+            options={[
+              { value: "actions", label: t("Actions Menu") },
+              { value: "standalone", label: t("Standalone Button") },
+              { value: "both", label: t("Both") },
+            ]}
+            onChange={(selected) => updateMode(selected[0])}
+          />
+        </SettingsItem>
+      </SettingsSection>
+    </div>
+  );
 }
