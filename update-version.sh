@@ -1,30 +1,71 @@
 #!/bin/bash
 
-# 从终端获取的参数值
+# Usage Examples:
+#
+# 1. Simple commit and push (no version update):
+#    ./update-version.sh a "fix: meaningful commit message"
+#
+# 2. release version (Update package.json, tag, and push):
+#    ./update-version.sh 1.0.1 "feat: release description"
 
-type="$1"
+# Exit on error
+set -e
 
-# 检查变量是否等于特定值
-if [ "$type" = "a" ]; then
-	comment="$2"
-	echo "comment: $comment"
-  git add .
-	git commit -m "$comment"
-	git push
-else
-  new_version="$1"
-	comment="$2"
-	echo "new_version: $new_version"
-	jq --arg new_version "$new_version" '.version = $new_version' package.json > tmpfile && mv tmpfile package.json
+# Function to display usage
+usage() {
+    echo "Usage:"
+    echo "  $0 a <comment>              # Simple commit and push"
+    echo "  $0 <version> <comment>      # Update version, tag, and release"
+    exit 1
+}
 
-	# git add package.json
-	# git add plugin.json
-	git add .
-	git commit -m "upgrade#$new_version $comment"
-	git push
-	git tag $new_version
-	git push my $new_version
+# Check if jq is installed
+if ! command -v jq &> /dev/null; then
+    echo "Error: jq is not installed."
+    exit 1
 fi
 
+# Ensure at least one argument is provided
+if [ -z "$1" ]; then
+    usage
+fi
 
+TYPE="$1"
+COMMENT="$2"
 
+if [ "$TYPE" = "a" ]; then
+    if [ -z "$COMMENT" ]; then
+        echo "Error: Comment is required for 'a' command."
+        exit 1
+    fi
+    echo "Performing simple commit..."
+    echo "Comment: $COMMENT"
+    
+    git add .
+    git commit -m "$COMMENT"
+    git push
+else
+    NEW_VERSION="$TYPE"
+    if [ -z "$COMMENT" ]; then
+        # Handle case where comment might be optional or default
+        COMMENT="Update to $NEW_VERSION"
+    fi
+    
+    echo "Releasing version: $NEW_VERSION"
+    echo "Comment: $COMMENT"
+
+    # Safely update package.json using a temp file
+    TMP_FILE=$(mktemp)
+    jq --arg new_version "$NEW_VERSION" '.version = $new_version' package.json > "$TMP_FILE"
+    mv "$TMP_FILE" package.json
+
+    git add .
+    git commit -m "release: $NEW_VERSION $COMMENT"
+    git push
+    
+    git tag "$NEW_VERSION"
+    # Keeping the original logic of pushing to 'my' remote for tags
+    git push my "$NEW_VERSION" || echo "Warning: Failed to push tag to 'my' remote. Trying origin..." && git push origin "$NEW_VERSION"
+fi
+
+echo "Done."
