@@ -95,6 +95,12 @@ export default class TagShortcutsPlugin extends BasePlugin {
   }
 
   protected settingsComponent = ShortcutsSettings;
+
+  protected async onConfigChanged(_newConfig: any): Promise<void> {
+    if (this.isLoaded) {
+      await this.reloadShortcuts();
+    }
+  }
 }
 
 function ShortcutsSettings({ plugin }: { plugin: TagShortcutsPlugin }) {
@@ -106,10 +112,7 @@ function ShortcutsSettings({ plugin }: { plugin: TagShortcutsPlugin }) {
   const handleSave = async (newTags: TagShortcutConfig[]) => {
     setTags(newTags);
     await plugin["updateSettings"]({ tags: newTags });
-    orca.notify(
-      "success",
-      t("Settings saved. Please reload sub-plugin to take effect."),
-    );
+    orca.notify("success", t("Settings saved."));
   };
 
   const addTag = () => {

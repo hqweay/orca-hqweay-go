@@ -93,6 +93,17 @@ export abstract class BasePlugin {
       this.name,
       JSON.stringify(this._config),
     );
+
+    // Trigger real-time configuration change hook
+    await this.onConfigChanged(this._config);
+  }
+
+  /**
+   * Hook called when configuration is updated via updateSettings.
+   * Default implementation does nothing.
+   */
+  protected async onConfigChanged(_newConfig: any): Promise<void> {
+    // Override in sub-plugins
   }
 
   /**
