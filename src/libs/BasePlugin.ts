@@ -44,6 +44,7 @@ export abstract class BasePlugin {
   }
 
   protected _config: any = {};
+  private _saveTimer: any = null;
 
   /**
    * Loaded settings from persistent storage
@@ -72,6 +73,7 @@ export abstract class BasePlugin {
   /**
    * Update settings for this sub-plugin.
    * Supports partial object update OR (key, value) for deep properties (e.g. "imageBed.owner").
+   * This method uses debouncing (default 500ms) for persistence and hook triggering.
    */
   public async updateSettings(pathOrPartial: any, value?: any) {
     let nextSubSettings;
@@ -85,17 +87,30 @@ export abstract class BasePlugin {
       nextSubSettings = { ...this._config, ...pathOrPartial };
     }
 
+    // 1. Update in-memory state immediately for UI responsiveness
     this._config = nextSubSettings;
 
-    this.logger.info("Settings updated", this._config);
-    await orca.plugins.setData(
-      this.mainPluginName,
-      this.name,
-      JSON.stringify(this._config),
-    );
+    // 2. Debounce persistence and side-effects
+    if (this._saveTimer) {
+      clearTimeout(this._saveTimer);
+    }
 
-    // Trigger real-time configuration change hook
-    await this.onConfigChanged(this._config);
+    this._saveTimer = setTimeout(async () => {
+      this.logger.info("Persisting settings after debounce", this._config);
+
+      // Persistence
+      await orca.plugins.setData(
+        this.mainPluginName,
+        this.name,
+        JSON.stringify(this._config),
+      );
+
+      // Trigger real-time configuration change hook
+      await this.onConfigChanged(this._config);
+
+      this._saveTimer = null;
+      // 防抖时间长点，性能好些，没必要太快
+    }, 3000);
   }
 
   /**
