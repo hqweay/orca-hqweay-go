@@ -442,6 +442,7 @@ export default class ImportPlugin extends BasePlugin {
     const MenuText = orca.components.MenuText;
     return [
       React.createElement(MenuText, {
+        preIcon: "ti ti-folder",
         key: "import-markdown",
         title: t("Import Markdown from Folder"),
         onClick: async () => {
@@ -452,6 +453,7 @@ export default class ImportPlugin extends BasePlugin {
         },
       }),
       React.createElement(MenuText, {
+        preIcon: "ti ti-file-spreadsheet",
         key: "import-csv",
         title: t("Import CSV"),
         onClick: async () => {

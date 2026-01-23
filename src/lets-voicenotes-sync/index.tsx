@@ -212,6 +212,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
     const MenuText = orca.components.MenuText;
     return [
       React.createElement(MenuText, {
+        preIcon: "ti ti-microphone",
         key: "voicenotes-sync",
         title: t("Sync VoiceNotes"),
         onClick: async () => {
