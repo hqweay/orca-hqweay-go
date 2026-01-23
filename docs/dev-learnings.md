@@ -47,3 +47,15 @@
 - **Tag Insertion API**:
   - **`core.editor.insertTag`**: This API is preferred for inserting tags. It takes `(cursor, blockId, tagName)` and handles the internal tag referencing and formatting more reliably than manual fragment insertion.
   - **Note**: `tagName` should ideally start with `#`.
+
+### 插件设置管理架构 (Custom Settings Architecture)
+
+随着子插件增多，Orca 原生的 `setSettingsSchema` 在处理复杂配置（如嵌套对象、动态列表）时显得局限。我们实现了一套“主插件管理开关，子插件自绘面板”的架构：
+
+1.  **分层管理**：
+    *   主插件设置：仅保留 `Enable Sub-plugin` 布尔开关。
+    *   独立面板：通过 `orca.commands` 或头栏按钮打开 `SettingsBoard` 弹窗。
+2.  **BasePlugin 抽象**：
+    *   `renderSettings()`: 子插件通过 React 定义自己的配置 UI。
+    *   `getSettings()` / `updateSettings()`: 自动处理作用域内的设置存储，避免键名冲突（自动嵌套在子配置对象下）。
+3.  **UI 一致性**：在 `src/components/SettingsItem.tsx` 中提供了通用的布局组件，确保各子插件配置风格统一。

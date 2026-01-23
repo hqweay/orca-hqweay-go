@@ -1,12 +1,14 @@
+import React from "react";
 import { t, setupL10N } from "./libs/l10n";
 import zhCN from "./translations/zhCN";
 import { BasePlugin } from "./libs/BasePlugin";
+import { SettingsBoard } from "./components/SettingsBoard";
 import { DbId, QueryDescription2 } from "./orca";
 
 // Auto-scan all sub-plugins in lets-* folders
 const pluginModules = import.meta.glob("./lets-*/index.tsx", { eager: true });
 
-const pluginInstances: BasePlugin[] = [];
+export const pluginInstances: BasePlugin[] = [];
 
 const test = async () => {
   const resultIds = (await orca.invokeBackend("query", {
@@ -27,8 +29,33 @@ const test = async () => {
   console.log(resultIds);
 };
 export async function load(_name: string) {
-  setupL10N(orca.state.locale, { "zh-CN": zhCN });
   // test();
+
+  setupL10N(orca.state.locale, { "zh-CN": zhCN });
+
+  orca.commands.registerCommand(
+    "subplugins.settings",
+    () => openSettingsBoard(_name),
+    t("Open Sub-plugin Settings"),
+  );
+
+  // Register headbar button
+  const Button = orca.components.Button;
+  orca.headbar.registerHeadbarButton("subplugins-settings", () =>
+    React.createElement(
+      Button,
+      {
+        variant: "plain",
+        onClick: () => openSettingsBoard(_name),
+        title: t("Open Sub-plugin Settings"),
+      },
+      React.createElement("i", {
+        className: "ti ti-settings",
+        style: { fontSize: "16px" },
+      }),
+    ),
+  );
+
   let settingsSchema: any = {};
 
   for (const path in pluginModules) {
@@ -45,14 +72,8 @@ export async function load(_name: string) {
 
         console.log(`Loading sub-plugin (class) from ${path}`);
 
-        // Collect settings
+        // Collect settings from plugin instance
         settingsSchema = {
-          [pluginName]: {
-            label: t("Enable ${name}", { name: pluginName }),
-            description: t("Enable ${name}", { name: pluginName }),
-            type: "boolean",
-            defaultValue: false,
-          },
           ...settingsSchema,
           ...pluginInstance.getSettingsSchema(),
         };
@@ -85,4 +106,35 @@ export async function unload() {
     }
   }
   pluginInstances.length = 0; // Clear instances
+  orca.commands.unregisterCommand("subplugins.settings");
+  orca.headbar.unregisterHeadbarButton("subplugins-settings");
+
+  const container = document.getElementById("sub-plugin-settings-container");
+  if (container) {
+    container.remove();
+  }
+}
+
+function openSettingsBoard(mainPluginName: string) {
+  let container = document.getElementById("sub-plugin-settings-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "sub-plugin-settings-container";
+    document.body.appendChild(container);
+  }
+
+  const { createRoot } = window as any;
+  const root = createRoot(container);
+
+  const handleClose = () => {
+    root.unmount();
+    container?.remove();
+  };
+
+  root.render(
+    React.createElement(SettingsBoard, {
+      onClose: handleClose,
+      mainPluginName: mainPluginName,
+    }),
+  );
 }

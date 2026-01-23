@@ -1,5 +1,7 @@
+import React, { useState } from "react";
 import { BasePlugin } from "@/libs/BasePlugin";
 import { t } from "@/libs/l10n";
+import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 
 interface TagShortcutConfig {
   tag: string;
@@ -8,22 +10,6 @@ interface TagShortcutConfig {
 
 export default class TagShortcutsPlugin extends BasePlugin {
   private registeredCommands: Set<string> = new Set();
-
-  public getSettingsSchema(): any {
-    return {
-      ...this.defineSetting(
-        "tags",
-        "Tag Shortcuts Config",
-        'JSON array of tag configurations. Format: [{"tag":"碎碎念","shortcut":"ctrl+shift+t"}]',
-        JSON.stringify([
-          {
-            tag: "碎碎念",
-            shortcut: "ctrl+shift+t",
-          },
-        ]),
-      ),
-    };
-  }
 
   public async load(): Promise<void> {
     await this.reloadShortcuts();
@@ -54,28 +40,13 @@ export default class TagShortcutsPlugin extends BasePlugin {
     }
     this.registeredCommands.clear();
 
-    const settings = orca.state.plugins[this.mainPluginName]?.settings || {};
-    const tagsConfigStr =
-      settings[`${this.name}.tags`] ||
-      JSON.stringify([
-        {
-          tag: "碎碎念",
-          shortcut: "ctrl+shift+t",
-        },
-      ]);
-
-    let tags: TagShortcutConfig[] = [];
-    try {
-      tags = JSON.parse(tagsConfigStr);
-      if (!Array.isArray(tags)) {
-        this.logger.error("Tags config must be an array");
-        return;
-      }
-    } catch (e) {
-      this.logger.error("Failed to parse tags config", e);
-      orca.notify("error", t("Failed to parse tags configuration."));
-      return;
-    }
+    const settings = this.getSettings();
+    const tags: TagShortcutConfig[] = settings.tags || [
+      {
+        tag: "碎碎念",
+        shortcut: "ctrl+shift+t",
+      },
+    ];
 
     for (const config of tags) {
       if (!config.tag || !config.shortcut) continue;
@@ -91,12 +62,12 @@ export default class TagShortcutsPlugin extends BasePlugin {
           }
 
           const { anchor } = cursor;
-          const tags = config.tag
+          const tagNames = config.tag
             .split(",")
             .map((t) => t.trim())
             .filter((t) => t.length > 0);
 
-          for (const tag of tags) {
+          for (const tag of tagNames) {
             await orca.commands.invokeEditorCommand(
               "core.editor.insertTag",
               null,
@@ -119,4 +90,105 @@ export default class TagShortcutsPlugin extends BasePlugin {
       }
     }
   }
+
+  public renderSettings(): React.ReactNode {
+    return <ShortcutsSettings plugin={this} />;
+  }
+}
+
+function ShortcutsSettings({ plugin }: { plugin: TagShortcutsPlugin }) {
+  const settings = plugin["getSettings"]();
+  const [tags, setTags] = useState<TagShortcutConfig[]>(
+    settings.tags || [{ tag: "碎碎念", shortcut: "ctrl+shift+t" }],
+  );
+
+  const handleSave = async (newTags: TagShortcutConfig[]) => {
+    setTags(newTags);
+    await plugin["updateSettings"]({ tags: newTags });
+    orca.notify(
+      "success",
+      t("Settings saved. Please reload sub-plugin to take effect."),
+    );
+  };
+
+  const addTag = () => {
+    handleSave([...tags, { tag: "", shortcut: "" }]);
+  };
+
+  const removeTag = (index: number) => {
+    const newTags = [...tags];
+    newTags.splice(index, 1);
+    handleSave(newTags);
+  };
+
+  const updateTag = (
+    index: number,
+    field: keyof TagShortcutConfig,
+    value: string,
+  ) => {
+    const newTags = [...tags];
+    newTags[index] = { ...newTags[index], [field]: value };
+    handleSave(newTags);
+  };
+
+  const Button = orca.components.Button;
+  const Input = orca.components.Input;
+
+  return (
+    <SettingsSection title={t("Tag Shortcuts")}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        {tags.map((config, index) => (
+          <div
+            key={index}
+            style={{ display: "flex", gap: "12px", alignItems: "flex-end" }}
+          >
+            <div style={{ flex: 1 }}>
+              <div
+                style={{ fontSize: "0.8em", marginBottom: "4px", opacity: 0.6 }}
+              >
+                {t("Tag(s)")}
+              </div>
+              <Input
+                // @ts-ignore
+                value={config.tag}
+                onChange={(e: any) => updateTag(index, "tag", e.target.value)}
+                placeholder="e.g. tag1, tag2"
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div
+                style={{ fontSize: "0.8em", marginBottom: "4px", opacity: 0.6 }}
+              >
+                {t("Shortcut")}
+              </div>
+              <Input
+                // @ts-ignore
+                value={config.shortcut}
+                onChange={(e: any) =>
+                  updateTag(index, "shortcut", e.target.value)
+                }
+                placeholder="e.g. Alt+t"
+              />
+            </div>
+            <Button
+              variant="dangerous"
+              onClick={() => removeTag(index)}
+              style={{ padding: "8px", minWidth: "auto" }}
+            >
+              <i className="ti ti-trash"></i>
+            </Button>
+          </div>
+        ))}
+        <Button variant="soft" onClick={addTag} style={{ marginTop: "8px" }}>
+          <i className="ti ti-plus" style={{ marginRight: "4px" }}></i>
+          {t("Add Shortcut")}
+        </Button>
+      </div>
+      <p style={{ marginTop: "20px", fontSize: "0.9em", opacity: 0.6 }}>
+        {t(
+          "Tip: Separate multiple tags with commas. Shortcut format examples: 'ctrl+shift+t', 'Alt+i'.",
+        )}
+      </p>
+    </SettingsSection>
+  );
 }

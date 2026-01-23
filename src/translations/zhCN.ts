@@ -176,6 +176,18 @@ const zhCN = {
     "请先将光标放置在编辑器中。",
   "shortcuts.Insert: {text}": "插入: {text}",
   "Enable ${name}": "启用 ${name}",
+  "Sub-plugin Settings": "子插件设置",
+  "Open Sub-plugin Settings": "打开子插件设置",
+  "No enabled plugins": "没有已启用的插件",
+  "Select a plugin from the sidebar": "从侧边栏选择一个插件",
+  "Tag Shortcuts": "标签快捷键",
+  "Add Shortcut": "添加快捷键",
+  "Tag(s)": "标签",
+  Shortcut: "快捷键",
+  "Settings saved. Please reload sub-plugin to take effect.":
+    "设置已保存。请重启/重新加载子插件以生效。",
+  "Tip: Separate multiple tags with commas. Shortcut format examples: 'ctrl+shift+t', 'Alt+i'.":
+    "提示：多个标签用逗号分隔。快捷键格式示例：'ctrl+shift+t', 'Alt+i'。",
 };
 
 export default zhCN;
