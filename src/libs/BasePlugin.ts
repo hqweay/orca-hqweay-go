@@ -33,31 +33,61 @@ export abstract class BasePlugin {
    */
   protected getSettings(): any {
     const allSettings = orca.state.plugins[this.mainPluginName]?.settings || {};
-    return allSettings[this.name] || {};
+    return allSettings[`${this.name}_config`] || {};
   }
 
   /**
-   * Update settings for this sub-plugin
+   * Update settings for this sub-plugin.
+   * Supports partial object update OR (key, value) for deep properties (e.g. "imageBed.owner").
    */
-  protected async updateSettings(partial: any) {
+  public async updateSettings(pathOrPartial: any, value?: any) {
     const allSettings = orca.state.plugins[this.mainPluginName]?.settings || {};
-    const currentSubSettings = allSettings[this.name] || {};
+    const configKey = `${this.name}_config`;
+    const currentSubSettings = allSettings[configKey] || {};
+
+    let nextSubSettings;
+    if (typeof pathOrPartial === "string") {
+      nextSubSettings = this.setDeepProperty(
+        currentSubSettings,
+        pathOrPartial,
+        value,
+      );
+    } else {
+      nextSubSettings = { ...currentSubSettings, ...pathOrPartial };
+    }
+
     const newSettings = {
       ...allSettings,
-      [this.name]: {
-        ...currentSubSettings,
-        ...partial,
-      },
+      [configKey]: nextSubSettings,
     };
     await orca.plugins.setSettings("app", this.mainPluginName, newSettings);
   }
 
+  private setDeepProperty(obj: any, path: string, value: any): any {
+    const keys = path.split(".");
+    const newObj = { ...obj };
+    let current = newObj;
+    for (let i = 0; i < keys.length - 1; i++) {
+      current[keys[i]] = { ...current[keys[i]] };
+      current = current[keys[i]];
+    }
+    current[keys[keys.length - 1]] = value;
+    return newObj;
+  }
+
+  /**
+   * Override this property to return the React component for the settings UI.
+   */
+  protected settingsComponent: React.ComponentType<{ plugin: any }> | null =
+    null;
+
   /**
    * Render the settings for this sub-plugin.
-   * Override this to provide a custom settings UI.
+   * Default implementation uses this.settingsComponent.
    */
   public renderSettings(): React.ReactNode | null {
-    return null;
+    if (!this.settingsComponent) return null;
+    return React.createElement(this.settingsComponent, { plugin: this });
   }
 
   protected defineSetting(key: string, label: string, desc: string, def = "") {

@@ -11,16 +11,8 @@ import { BasePlugin } from "@/libs/BasePlugin";
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import React, { useState } from "react";
 
-
-
 export default class VoiceNotesSyncPlugin extends BasePlugin {
-  public getSettingsSchema() {
-    return super.getSettingsSchema();
-  }
-
-  public renderSettings() {
-    return <VoiceNotesSettings plugin={this} />;
-  }
+  protected settingsComponent = VoiceNotesSettings;
 
   private async syncVoiceNotes(fullSync: boolean = false) {
     const settings = this.getSettings();
@@ -327,8 +319,6 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
     }
     return undefined;
   }
-
-
 
   private async syncNote(note: VoiceNote, inbox: Block, noteTag: string) {
     let noteBlock: Block;

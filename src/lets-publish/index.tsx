@@ -8,13 +8,7 @@ import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import React, { useState } from "react";
 
 export default class PublishPlugin extends BasePlugin {
-  public getSettingsSchema(): any {
-    return super.getSettingsSchema();
-  }
-
-  public renderSettings(): React.ReactNode {
-    return <PublishSettings plugin={this} />;
-  }
+  protected settingsComponent = PublishSettings;
 
   public async load(): Promise<void> {
     // Register Block Menu Command

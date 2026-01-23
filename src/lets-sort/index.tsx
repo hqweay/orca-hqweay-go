@@ -6,13 +6,7 @@ import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import React, { useState } from "react";
 
 export default class SortPlugin extends BasePlugin {
-  public getSettingsSchema(): any {
-    return super.getSettingsSchema();
-  }
-
-  public renderSettings() {
-    return <SortSettings plugin={this} />;
-  }
+  protected settingsComponent = SortSettings;
 
   public async load(): Promise<void> {
     // Register Block Menu Command

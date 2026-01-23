@@ -91,9 +91,7 @@ export default class TagShortcutsPlugin extends BasePlugin {
     }
   }
 
-  public renderSettings(): React.ReactNode {
-    return <ShortcutsSettings plugin={this} />;
-  }
+  protected settingsComponent = ShortcutsSettings;
 }
 
 function ShortcutsSettings({ plugin }: { plugin: TagShortcutsPlugin }) {
