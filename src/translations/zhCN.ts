@@ -214,13 +214,21 @@ const zhCN = {
 
   // Sub-plugin Names
   bazaar: "插件市场",
+  "bazaar.description": "浏览并安装由社区提供的 Orca 插件。",
   format: "文本格式化",
+  "format.description": "快速清理文本格式，修复标点符号，移除多余空格。",
   import: "数据导入",
+  "import.description": "从 CSV 或 Markdown 文件夹中批量导入内容。",
   publish: "GitHub 发布",
+  "publish.description": "将笔记内容一键发布到您的 GitHub 博客或图床。",
   "remove-style": "清除样式",
+  "remove-style.description": "递归清除块树中的所有内联样式。",
   shortcuts: "标签快捷键",
+  "shortcuts.description": "为常用标签设置全局快捷键，一键打标。",
   sort: "块排序",
+  "sort.description": "根据状态（已完成、未完成等）对块进行自动排序。",
   "voicenotes-sync": "VoiceNotes 同步",
+  "voicenotes-sync.description": "自动从 VoiceNotes.com 同步您的语音笔记。",
 };
 
 export default zhCN;

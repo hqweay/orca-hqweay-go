@@ -18,6 +18,10 @@ export abstract class BasePlugin {
     return t(this.name);
   }
 
+  public getDescription(): string {
+    return t(`${this.name}.description`);
+  }
+
   public abstract load(): Promise<void>;
 
   public abstract unload(): Promise<void>;
@@ -37,10 +41,15 @@ export abstract class BasePlugin {
   }
 
   public getSettingsSchema(): any {
+    const displayName = this.getDisplayName();
+    const description = this.getDescription();
     return {
       [this.name]: {
-        label: t("Enable ${name}", { name: this.getDisplayName() }),
-        description: t("Enable ${name}", { name: this.name }),
+        label: t("Enable ${name}", { name: displayName }),
+        description:
+          description !== `${this.name}.description`
+            ? description
+            : t("Enable ${name}", { name: displayName }),
         type: "boolean",
         defaultValue: false,
       },
