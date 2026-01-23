@@ -6,6 +6,14 @@ interface PluginInfo {
   description: string;
 }
 
+interface ReleaseData {
+  version: string;
+  published_at: string;
+  body: string;
+  assetUrl: string;
+  repo: string;
+}
+
 interface BazaarModalProps {
   onClose: () => void;
   pluginName: string;
@@ -17,6 +25,9 @@ export function BazaarModal({ onClose, pluginName }: BazaarModalProps) {
   const [installing, setInstalling] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [pendingRelease, setPendingRelease] = useState<ReleaseData | null>(
+    null,
+  );
 
   useEffect(() => {
     loadPlugins();
@@ -99,13 +110,54 @@ export function BazaarModal({ onClose, pluginName }: BazaarModalProps) {
     return plugins;
   };
 
-  const handleInstall = async (repo: string) => {
+  const handleInstallClick = async (repo: string) => {
     if (installing) return;
     try {
+      setInstalling(repo);
+      // 1. Fetch Release Info
+      const [owner, repoName] = repo.split("/");
+      const releaseUrl = `https://api.github.com/repos/${owner}/${repoName}/releases/latest`;
+      const releaseRes = await fetch(releaseUrl);
+      if (!releaseRes.ok) throw new Error("Failed to fetch release info");
+      const releaseData = await releaseRes.json();
+
+      const asset = releaseData.assets.find(
+        (a: any) => a.name.includes(".zip"),
+        // a.name === "package.zip" ||
+        // a.name === "dist.zip" ||
+        // a.name === `${repoName}.zip` ||
+        // a.name.includes(`${repoName.replace("orca-", "")}`),
+      );
+      if (!asset) throw new Error("package not found in latest release");
+
+      setPendingRelease({
+        version: releaseData.tag_name,
+        published_at: releaseData.published_at,
+        body: releaseData.body,
+        assetUrl: asset.browser_download_url,
+        repo: repo,
+      });
+    } catch (e) {
+      console.error(e);
+      let msg = String(e);
+      if (e instanceof Error) msg = e.message;
+      orca.notify("error", t(`Failed to fetch release info: ${msg}`));
+    } finally {
+      setInstalling(null);
+    }
+  };
+
+  const confirmInstall = async () => {
+    if (!pendingRelease) return;
+    const { repo, assetUrl } = pendingRelease;
+    const [owner, repoName] = repo.split("/");
+
+    setInstalling(repo);
+    setPendingRelease(null); // Clear pending release interface
+
+    try {
       // IMPORTANT: showDirectoryPicker must be triggered by a user gesture.
-      // If we call it after awaited network/download steps, Chromium may throw:
-      // "SecurityError: Must be handling a user gesture..."
-      
+
       // Try to get the default plugins directory path
       let defaultPath = "";
       try {
@@ -125,14 +177,12 @@ export function BazaarModal({ onClose, pluginName }: BazaarModalProps) {
       const notifyMsg = defaultPath
         ? t(`Please select plugins folder (default: ${defaultPath})...`)
         : t("Please select your 'Orca Note/data/plugins' folder to install...");
-      
+
       orca.notify("info", notifyMsg);
-      
+
       let pluginsDirHandle;
       try {
         // @ts-ignore
-        // The 'id' parameter helps the browser remember the last selected directory
-        // Browser will automatically navigate to the previously selected folder
         pluginsDirHandle = await window.showDirectoryPicker({
           id: "orca-plugins-dir",
           mode: "readwrite",
@@ -145,9 +195,8 @@ export function BazaarModal({ onClose, pluginName }: BazaarModalProps) {
       }
       if (!pluginsDirHandle) throw new Error("No folder selected.");
 
-      setInstalling(repo);
       setDownloadProgress(0);
-      await installPlugin(repo, pluginsDirHandle);
+      await performInstall(repoName, assetUrl, pluginsDirHandle);
       orca.notify("success", t(`Installed ${repo} successfully!`));
     } catch (e) {
       console.error(e);
@@ -161,28 +210,16 @@ export function BazaarModal({ onClose, pluginName }: BazaarModalProps) {
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const installPlugin = async (repo: string, pluginsDirHandle: any) => {
+  const performInstall = async (
+    repoName: string,
+    assetUrl: string,
+    pluginsDirHandle: any,
+  ) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const JSZip = (window as any).JSZip || (await import("jszip")).default;
 
-    // 1. Get Latest Release
-    const [owner, repoName] = repo.split("/");
-    const releaseUrl = `https://api.github.com/repos/${owner}/${repoName}/releases/latest`;
-    const releaseRes = await fetch(releaseUrl);
-    if (!releaseRes.ok) throw new Error("Failed to fetch release info");
-    const releaseData = await releaseRes.json();
-
-    const asset = releaseData.assets.find(
-      (a: any) => a.name.includes(".zip"),
-      // a.name === "package.zip" ||
-      // a.name === "dist.zip" ||
-      // a.name === `${repoName}.zip` ||
-      // a.name.includes(`${repoName.replace("orca-", "")}`),
-    );
-    if (!asset) throw new Error("package not found in latest release");
-
     // 2. Download
-    const downloadRes = await fetch(asset.browser_download_url);
+    const downloadRes = await fetch(assetUrl);
     if (!downloadRes.ok) throw new Error("Failed to download package");
 
     const contentLength = downloadRes.headers.get("content-length");
@@ -219,7 +256,6 @@ export function BazaarModal({ onClose, pluginName }: BazaarModalProps) {
     const zip = await JSZip.loadAsync(arrayBuffer);
 
     // Create plugin specific folder
-    // Check if zip contains a root folder
     // Check if zip contains a root folder
     const files = Object.keys(zip.files);
     const rootFolders = new Set(
@@ -399,36 +435,46 @@ export function BazaarModal({ onClose, pluginName }: BazaarModalProps) {
               gap: "8px",
             }}
           >
-            <h2 style={{ margin: 0 }}>{t("Orca Bazaar")}</h2>
-            <a
-              href="https://github.com/hqweay/orca-bazaar"
-              target="_blank"
-              rel="noopener noreferrer"
-              title={t("Contribute to Bazaar")}
-              style={{
-                color: "var(--b3-theme-text)",
-                opacity: 0.6,
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              <i
-                className="ti ti-brand-github"
-                style={{ fontSize: "18px" }}
-              ></i>
-            </a>
-            <Button
-              variant="plain"
-              onClick={fetchPlugins}
-              title={t("Refresh")}
-              style={{ marginLeft: "8px", padding: "4px", minWidth: "auto" }}
-              disabled={loading}
-            >
-              <i
-                className={`ti ti-refresh ${loading ? "fa-spin" : ""}`}
-                style={{ fontSize: "18px" }}
-              ></i>
-            </Button>
+            <h2 style={{ margin: 0 }}>
+              {pendingRelease ? t("Release Notes") : t("Orca Bazaar")}
+            </h2>
+            {!pendingRelease && (
+              <>
+                <a
+                  href="https://github.com/hqweay/orca-bazaar"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={t("Contribute to Bazaar")}
+                  style={{
+                    color: "var(--b3-theme-text)",
+                    opacity: 0.6,
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  <i
+                    className="ti ti-brand-github"
+                    style={{ fontSize: "18px" }}
+                  ></i>
+                </a>
+                <Button
+                  variant="plain"
+                  onClick={fetchPlugins}
+                  title={t("Refresh")}
+                  style={{
+                    marginLeft: "8px",
+                    padding: "4px",
+                    minWidth: "auto",
+                  }}
+                  disabled={loading}
+                >
+                  <i
+                    className={`ti ti-refresh ${loading ? "fa-spin" : ""}`}
+                    style={{ fontSize: "18px" }}
+                  ></i>
+                </Button>
+              </>
+            )}
           </div>
           <Button
             variant="plain"
@@ -439,110 +485,163 @@ export function BazaarModal({ onClose, pluginName }: BazaarModalProps) {
           </Button>
         </div>
 
-        <div
-          style={{
-            marginBottom: "12px",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
-          <div>
-            <CompositionInput
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t("Search plugins...")}
-              pre={<i className="ti ti-search" />}
-            />
-          </div>
-        </div>
-
-        <div
-          style={{
-            flex: 1,
-            minHeight: 0,
-            overflowY: "auto",
-            display: "flex",
-            flexDirection: "column",
-            gap: "10px",
-          }}
-        >
-          {loading ? (
-            <div style={{ padding: "20px", textAlign: "center" }}>
-              {t("Loading...")}
+        {pendingRelease ? (
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+              minHeight: 0,
+            }}
+          >
+            <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+              <div>
+                <strong>{t("Version")}: </strong>
+                {pendingRelease.version}
+              </div>
+              <div style={{ opacity: 0.7, fontSize: "0.9em" }}>
+                <strong>{t("Published at")}: </strong>
+                {new Date(pendingRelease.published_at).toLocaleString()}
+              </div>
             </div>
-          ) : plugins.length === 0 ? (
-            <div style={{ padding: "20px", textAlign: "center" }}>
-              {t("No plugins found.")}
+            <div
+              style={{
+                background: "var(--b3-theme-surface-lighter)",
+                padding: "16px",
+                borderRadius: "6px",
+                overflowY: "auto",
+                flex: 1,
+                whiteSpace: "pre-wrap",
+                fontFamily: "monospace",
+                lineHeight: "1.5",
+              }}
+            >
+              {pendingRelease.body}
             </div>
-          ) : filteredPlugins.length === 0 ? (
-            <div style={{ padding: "20px", textAlign: "center" }}>
-              {t("No plugins match your search.")}
-            </div>
-          ) : (
-            filteredPlugins.map((p) => (
-              <div
-                key={p.repo}
-                style={{
-                  border: "1px solid var(--b3-theme-surface-lighter)",
-                  padding: "16px",
-                  borderRadius: "6px",
-                  display: "flex",
-                  alignItems: "center",
-                  background: "var(--b3-theme-surface)",
-                }}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "12px",
+              }}
+            >
+              <Button variant="outline" onClick={() => setPendingRelease(null)}>
+                {t("Back")}
+              </Button>
+              <Button
+                variant="solid"
+                onClick={confirmInstall}
+                disabled={!!installing}
               >
-                <div style={{ flex: 1 }}>
+                {t("Install")}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div
+              style={{
+                marginBottom: "12px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              <div>
+                <CompositionInput
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t("Search plugins...")}
+                  pre={<i className="ti ti-search" />}
+                />
+              </div>
+            </div>
+
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                overflowY: "auto",
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+              }}
+            >
+              {loading ? (
+                <div style={{ padding: "20px", textAlign: "center" }}>
+                  {t("Loading...")}
+                </div>
+              ) : plugins.length === 0 ? (
+                <div style={{ padding: "20px", textAlign: "center" }}>
+                  {t("No plugins found.")}
+                </div>
+              ) : filteredPlugins.length === 0 ? (
+                <div style={{ padding: "20px", textAlign: "center" }}>
+                  {t("No plugins match your search.")}
+                </div>
+              ) : (
+                filteredPlugins.map((p) => (
                   <div
+                    key={p.repo}
                     style={{
-                      fontWeight: "bold",
-                      marginBottom: "4px",
+                      border: "1px solid var(--b3-theme-surface-lighter)",
+                      padding: "16px",
+                      borderRadius: "6px",
                       display: "flex",
                       alignItems: "center",
+                      background: "var(--b3-theme-surface)",
                     }}
                   >
-                    <span>{p.repo}</span>
-                    <a
-                      href={`https://github.com/${p.repo}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        marginLeft: "8px",
-                        color: "var(--b3-theme-primary)",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        textDecoration: "none",
-                      }}
-                      title={t("Open Repository")}
-                      onClick={(e) => e.stopPropagation()}
+                    <div style={{ flex: 1 }}>
+                      <div
+                        style={{
+                          fontWeight: "bold",
+                          marginBottom: "4px",
+                          display: "flex",
+                          alignItems: "center",
+                        }}
+                      >
+                        <span>{p.repo}</span>
+                        <a
+                          href={`https://github.com/${p.repo}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            marginLeft: "8px",
+                            color: "var(--b3-theme-primary)",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            textDecoration: "none",
+                          }}
+                          title={t("Open Repository")}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <i
+                            className="ti ti-external-link"
+                            style={{ fontSize: "14px" }}
+                          ></i>
+                        </a>
+                      </div>
+                      <div style={{ fontSize: "0.9em", opacity: 0.8 }}>
+                        {p.description}
+                      </div>
+                    </div>
+                    {/* @ts-ignore */}
+                    <Button
+                      variant="outline"
+                      onClick={() => handleInstallClick(p.repo)}
+                      disabled={!!installing}
                     >
-                      <i
-                        className="ti ti-external-link"
-                        style={{ fontSize: "14px" }}
-                      ></i>
-                    </a>
+                      {installing === p.repo ? t("Fetching...") : t("Install")}
+                    </Button>
                   </div>
-                  <div style={{ fontSize: "0.9em", opacity: 0.8 }}>
-                    {p.description}
-                  </div>
-                </div>
-                {/* @ts-ignore */}
-                <Button
-                  variant="outline"
-                  onClick={() => handleInstall(p.repo)}
-                  disabled={!!installing}
-                >
-                  {installing === p.repo
-                    ? downloadProgress !== null && downloadProgress < 100
-                      ? `${t("Downloading")} ${downloadProgress}%`
-                      : t("Installing...")
-                    : t("Install")}
-                </Button>
-              </div>
-            ))
-          )}
-        </div>
+                ))
+              )}
+            </div>
+          </>
+        )}
       </div>
     </orca.components.ModalOverlay>
   );

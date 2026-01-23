@@ -271,6 +271,11 @@ const zhCN = {
   "Import Markdown from Folder": "从文件夹导入 Markdown",
   "Import CSV": "导入 CSV",
   "Open Bazaar": "打开插件市场",
+  "Release Notes": "版本说明",
+  Version: "版本",
+  "Fetching...": "获取中...",
+  Back: "返回",
+  "Published at": "发布时间",
 };
 
 export default zhCN;
