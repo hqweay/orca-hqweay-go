@@ -270,6 +270,7 @@ const zhCN = {
     "用于排除同步笔记的标签（用逗号分隔）。",
   "Import Markdown from Folder": "从文件夹导入 Markdown",
   "Import CSV": "导入 CSV",
+  "Open Bazaar": "打开插件市场",
 };
 
 export default zhCN;

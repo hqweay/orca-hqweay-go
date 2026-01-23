@@ -160,6 +160,9 @@ export default class FormatPlugin extends BasePlugin {
           await orca.commands.invokeCommand(`${this.name}.format-block`);
         },
       }),
+      React.createElement(orca.components.MenuSeparator, {
+        key: "sep-settings",
+      }),
     ];
   }
 
@@ -206,7 +209,7 @@ export default class FormatPlugin extends BasePlugin {
 function FormatSettings({ plugin }: { plugin: FormatPlugin }) {
   const settings = plugin["getSettings"]();
   const [headbarMode, setHeadbarMode] = useState(
-    settings.headbarMode || "actions",
+    settings.headbarMode || "both",
   );
 
   const updateMode = async (value: string) => {

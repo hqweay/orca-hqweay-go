@@ -231,7 +231,7 @@ export default class FormatPlugin extends BasePlugin {
   }
 
   protected async onConfigChanged(newConfig: any): Promise<void> {
-    const headbarMode = newConfig.headbarMode || "actions";
+    const headbarMode = newConfig.headbarMode || "both";
     if (headbarMode === "standalone" || headbarMode === "both") {
       this.registerHeadbar();
     } else {
@@ -251,7 +251,7 @@ export default class FormatPlugin extends BasePlugin {
     return [
       React.createElement(MenuText, {
         key: "remove-all-styles",
-        preIcon: "ti ti-brackets-angle-off",
+        preIcon: "ti ti-clear-all",
         title: t("remove all styles"),
         onClick: async () => {
           closeMenu();
@@ -263,6 +263,7 @@ export default class FormatPlugin extends BasePlugin {
       }),
       React.createElement(MenuText, {
         key: "remove-inline-style",
+        preIcon: "ti ti-brackets-angle-off",
         title: t("remove inline style"),
         onClick: async () => {
           closeMenu();
@@ -273,6 +274,7 @@ export default class FormatPlugin extends BasePlugin {
       }),
       React.createElement(MenuText, {
         key: "remove-link-style",
+        preIcon: "ti ti-brackets-angle-off",
         title: t("remove link style"),
         onClick: async () => {
           closeMenu();
@@ -283,6 +285,7 @@ export default class FormatPlugin extends BasePlugin {
       }),
       React.createElement(MenuText, {
         key: "remove-empty-lines",
+        preIcon: "ti ti-brackets-angle-off",
         title: t("remove empty lines"),
         onClick: async () => {
           closeMenu();
@@ -290,6 +293,9 @@ export default class FormatPlugin extends BasePlugin {
             "emptyLine",
           ]);
         },
+      }),
+      React.createElement(orca.components.MenuSeparator, {
+        key: "sep-settings",
       }),
     ];
   }

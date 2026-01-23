@@ -123,7 +123,7 @@ export abstract class BasePlugin {
 
       this._saveTimer = null;
       // 防抖时间长点，性能好些，没必要太快
-    }, 3000);
+    }, 2000);
   }
 
   /**
