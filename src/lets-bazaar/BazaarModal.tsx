@@ -105,13 +105,34 @@ export function BazaarModal({ onClose, pluginName }: BazaarModalProps) {
       // IMPORTANT: showDirectoryPicker must be triggered by a user gesture.
       // If we call it after awaited network/download steps, Chromium may throw:
       // "SecurityError: Must be handling a user gesture..."
-      orca.notify(
-        "info",
-        t("Please select your 'Orca Note/data/plugins' folder to install..."),
-      );
+      
+      // Try to get the default plugins directory path
+      let defaultPath = "";
+      try {
+        // Get data directory from Orca state
+        const dataDir = orca.state.dataDir;
+        if (dataDir) {
+          // Plugins are typically in {dataDir}/plugins
+          defaultPath = `${dataDir}/plugins`;
+        } else if (orca.state.repoDir) {
+          // Fallback: try repository directory structure
+          defaultPath = `${orca.state.repoDir}/data/plugins`;
+        }
+      } catch (e) {
+        console.warn("Failed to get default plugins directory path", e);
+      }
+
+      const notifyMsg = defaultPath
+        ? t(`Please select plugins folder (default: ${defaultPath})...`)
+        : t("Please select your 'Orca Note/data/plugins' folder to install...");
+      
+      orca.notify("info", notifyMsg);
+      
       let pluginsDirHandle;
       try {
         // @ts-ignore
+        // The 'id' parameter helps the browser remember the last selected directory
+        // Browser will automatically navigate to the previously selected folder
         pluginsDirHandle = await window.showDirectoryPicker({
           id: "orca-plugins-dir",
           mode: "readwrite",
