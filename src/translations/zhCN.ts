@@ -175,6 +175,7 @@ const zhCN = {
   "shortcuts.Please place cursor in editor first.":
     "请先将光标放置在编辑器中。",
   "shortcuts.Insert: {text}": "插入: {text}",
+  "Enable ${name}": "启用 ${name}",
 };
 
 export default zhCN;

@@ -1,4 +1,5 @@
-import { t } from "./libs/l10n";
+import { t, setupL10N } from "./libs/l10n";
+import zhCN from "./translations/zhCN";
 import { BasePlugin } from "./libs/BasePlugin";
 import { DbId, QueryDescription2 } from "./orca";
 
@@ -26,6 +27,7 @@ const test = async () => {
   console.log(resultIds);
 };
 export async function load(_name: string) {
+  setupL10N(orca.state.locale, { "zh-CN": zhCN });
   // test();
   let settingsSchema: any = {};
 
@@ -46,8 +48,8 @@ export async function load(_name: string) {
         // Collect settings
         settingsSchema = {
           [pluginName]: {
-            label: t(`Enable ${pluginName}`),
-            description: t(`Enable ${pluginName}`),
+            label: t("Enable ${name}", { name: pluginName }),
+            description: t("Enable ${name}", { name: pluginName }),
             type: "boolean",
             defaultValue: false,
           },
