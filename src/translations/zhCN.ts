@@ -211,6 +211,16 @@ const zhCN = {
   "Sort Order": "排序规则",
   "Separate types with commas. Types: 'empty', 'other', 'task_checked', 'task_unchecked'.":
     "多种类型用逗号分隔。可用类型：'empty' (空白), 'other' (其他), 'task_checked' (已完成任务), 'task_unchecked' (未完成任务)。",
+
+  // Sub-plugin Names
+  bazaar: "插件市场",
+  format: "文本格式化",
+  import: "数据导入",
+  publish: "GitHub 发布",
+  "remove-style": "清除样式",
+  shortcuts: "标签快捷键",
+  sort: "块排序",
+  "voicenotes-sync": "VoiceNotes 同步",
 };
 
 export default zhCN;

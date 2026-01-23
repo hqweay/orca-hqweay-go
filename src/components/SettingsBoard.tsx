@@ -122,7 +122,7 @@ export function SettingsBoard({ onClose, mainPluginName }: SettingsBoardProps) {
                     transition: "all 0.2s ease",
                   }}
                 >
-                  {p["name"]}
+                  {p.getDisplayName()}
                 </div>
               ))
             )}
@@ -139,7 +139,7 @@ export function SettingsBoard({ onClose, mainPluginName }: SettingsBoardProps) {
                     fontSize: "1.5em",
                   }}
                 >
-                  {activePlugin}
+                  {currentPlugin.getDisplayName()}
                 </h1>
                 {currentPlugin.renderSettings()}
               </div>

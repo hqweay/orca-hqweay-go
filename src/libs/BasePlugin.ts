@@ -14,6 +14,10 @@ export abstract class BasePlugin {
     this.logger = new Logger(name);
   }
 
+  public getDisplayName(): string {
+    return t(this.name);
+  }
+
   public abstract load(): Promise<void>;
 
   public abstract unload(): Promise<void>;
