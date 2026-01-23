@@ -1,6 +1,7 @@
 import { formatUtil } from "@/libs/format";
 import { setupL10N, t } from "@/libs/l10n";
 import { BasePlugin } from "@/libs/BasePlugin";
+import React from "react";
 
 export default class FormatPlugin extends BasePlugin {
   public async load(): Promise<void> {
@@ -151,5 +152,20 @@ export default class FormatPlugin extends BasePlugin {
   public async unload(): Promise<void> {
     orca.commands.unregisterCommand(`${this.name}.format-block`);
     this.logger.info(`${this.name} unloaded.`);
+  }
+
+  public getHeadbarMenuItems(closeMenu: () => void): React.ReactNode[] {
+    const MenuText = orca.components.MenuText;
+    return [
+      React.createElement(MenuText, {
+        key: "format-block",
+        preIcon: "ti ti-refresh",
+        title: t("Format Block"),
+        onClick: async () => {
+          closeMenu();
+          await orca.commands.invokeCommand(`${this.name}.format-block`);
+        },
+      }),
+    ];
   }
 }

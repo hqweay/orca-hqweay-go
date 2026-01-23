@@ -1,6 +1,6 @@
-import { formatUtil } from "@/libs/format";
 import { setupL10N, t } from "@/libs/l10n";
 import { BasePlugin } from "@/libs/BasePlugin";
+import React from "react";
 
 export default class FormatPlugin extends BasePlugin {
   public async load(): Promise<void> {
@@ -217,5 +217,53 @@ export default class FormatPlugin extends BasePlugin {
   public async unload(): Promise<void> {
     orca.commands.unregisterCommand(`${this.name}.remove-style`);
     this.logger.info(`${this.name} unloaded.`);
+  }
+
+  public getHeadbarMenuItems(closeMenu: () => void): React.ReactNode[] {
+    const MenuText = orca.components.MenuText;
+    return [
+      React.createElement(MenuText, {
+        key: "remove-all-styles",
+        preIcon: "ti ti-brackets-angle-off",
+        title: t("remove all styles"),
+        onClick: async () => {
+          closeMenu();
+          await orca.commands.invokeCommand(`${this.name}.remove-style`, [
+            "inline",
+            "link",
+          ]);
+        },
+      }),
+      React.createElement(MenuText, {
+        key: "remove-inline-style",
+        title: t("remove inline style"),
+        onClick: async () => {
+          closeMenu();
+          await orca.commands.invokeCommand(`${this.name}.remove-style`, [
+            "inline",
+          ]);
+        },
+      }),
+      React.createElement(MenuText, {
+        key: "remove-link-style",
+        title: t("remove link style"),
+        onClick: async () => {
+          closeMenu();
+          await orca.commands.invokeCommand(`${this.name}.remove-style`, [
+            "link",
+          ]);
+        },
+      }),
+      React.createElement(MenuText, {
+        key: "remove-empty-lines",
+        title: t("remove empty lines"),
+        onClick: async () => {
+          closeMenu();
+          await orca.commands.invokeCommand(`${this.name}.remove-style`, [
+            "emptyLine",
+          ]);
+        },
+      }),
+    ];
   }
 }
