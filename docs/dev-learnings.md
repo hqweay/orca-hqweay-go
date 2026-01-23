@@ -39,3 +39,11 @@
   - Generated Markdown often includes the block's text as the first line/heading.
   - **Title Extraction**: Reliable extraction involves taking the first line of the generated markdown (stripping `#`), rather than relying on `block.text` or `aliases` which might be out of sync.
   - **Content Cleanup**: After extracting the title from line 1, line 1 should be removed from the body to prevent title duplication in the published post.
+
+### Quick Tag Shortcuts & API
+- **Valtio Subscription**:
+  - **Pitfall**: In the current plugin architecture, subscribing to `orca.state.plugins[name].settings` via Valtio may become unstable if the settings object is completely replaced by the system during save. This can cause the subscription to stop triggering.
+  - **Solution**: For critical/stable settings updates, consider manual triggers or ensuring the subscription target remains stable.
+- **Tag Insertion API**:
+  - **`core.editor.insertTag`**: This API is preferred for inserting tags. It takes `(cursor, blockId, tagName)` and handles the internal tag referencing and formatting more reliably than manual fragment insertion.
+  - **Note**: `tagName` should ideally start with `#`.

@@ -56,6 +56,12 @@ The community plugin marketplace for Orca, discover more possibilities:
 - **Auto Management**: Supports plugin updates and uninstallation.
 - **Contribute**: Developers are welcome to submit their plugins to the bazaar.
 
+### 8. 🏷️ Quick Tag Shortcuts
+Boost your tagging efficiency with custom shortcuts:
+- **Smart Tagging**: Use placeholders or multiple tags in a single shortcut.
+- **Native Integration**: Leverages Orca's native tag API for reliability.
+- **Auto Formatting**: Ensures tags are correctly formatted with leading `#`.
+
 ## Development
 
 This project uses a modular architecture:

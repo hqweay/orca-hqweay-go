@@ -167,6 +167,14 @@ const zhCN = {
   "common.automatic": "自动",
   "common.semiAutomatic": "半自动",
   "common.auto": "自动",
+
+  // Shortcuts plugin
+  "shortcuts.Shortcuts Config": "快捷键配置",
+  "shortcuts.Failed to parse shortcuts configuration. Please check the format.":
+    "解析快捷键配置失败，请检查格式。",
+  "shortcuts.Please place cursor in editor first.":
+    "请先将光标放置在编辑器中。",
+  "shortcuts.Insert: {text}": "插入: {text}",
 };
 
 export default zhCN;
