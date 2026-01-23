@@ -41,21 +41,6 @@ export async function load(_name: string) {
   );
 
   // Register headbar button
-  const Button = orca.components.Button;
-  orca.headbar.registerHeadbarButton("subplugins-settings", () =>
-    React.createElement(
-      Button,
-      {
-        variant: "plain",
-        onClick: () => openSettingsBoard(_name),
-        title: t("Open Sub-plugin Settings"),
-      },
-      React.createElement("i", {
-        className: "ti ti-settings",
-        style: { fontSize: "16px" },
-      }),
-    ),
-  );
 
   let settingsSchema: any = {};
 
@@ -125,28 +110,43 @@ export async function load(_name: string) {
 
     if (!hasItems) return React.createElement(React.Fragment);
 
-    return React.createElement(
-      orca.components.HoverContextMenu,
-      {
-        menu: (closeMenu: () => void) => {
-          const items = activePlugins.flatMap((p) =>
-            p.getHeadbarMenuItems(closeMenu),
-          );
-          return React.createElement(React.Fragment, null, ...items);
-        },
-        children: React.createElement(
-          orca.components.Button,
-          {
-            variant: "plain",
-            title: t("Actions"),
-          },
-          React.createElement("i", {
-            className: "ti ti-apps",
-            style: { fontSize: "16px" },
+    return React.createElement(orca.components.HoverContextMenu, {
+      menu: (closeMenu: () => void) => {
+        // Add settings at the top
+        const items: React.ReactNode[] = [
+          React.createElement(orca.components.MenuText, {
+            key: "sub-plugin-settings",
+            preIcon: "ti ti-settings",
+            title: t("Sub-plugin Settings"),
+            onClick: () => {
+              closeMenu();
+              openSettingsBoard(_name);
+            },
           }),
-        ),
-      }
-    );
+          React.createElement(orca.components.MenuSeparator, {
+            key: "sep-settings",
+          }),
+        ];
+
+        activePlugins.forEach((p) => {
+          items.push(...p.getHeadbarMenuItems(closeMenu));
+        });
+
+        return React.createElement(React.Fragment, null, ...items);
+      },
+      children: React.createElement(
+        orca.components.Button,
+        {
+          variant: "plain",
+          title: t("Actions"),
+          onClick: () => openSettingsBoard(_name),
+        },
+        React.createElement("i", {
+          className: "ti ti-apps",
+          style: { fontSize: "16px" },
+        }),
+      ),
+    });
   });
 
   await orca.plugins.setSettingsSchema(_name, settingsSchema);
@@ -168,7 +168,6 @@ export async function unload() {
     unsubscribeSettings = null;
   }
   orca.commands.unregisterCommand("subplugins.settings");
-  orca.headbar.unregisterHeadbarButton("subplugins-settings");
   orca.headbar.unregisterHeadbarButton("subplugins-actions");
 
   const container = document.getElementById("sub-plugin-settings-container");

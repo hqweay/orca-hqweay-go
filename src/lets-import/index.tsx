@@ -461,6 +461,9 @@ export default class ImportPlugin extends BasePlugin {
           await orca.commands.invokeCommand(`${this.name}.importCSV`);
         },
       }),
+      React.createElement(orca.components.MenuSeparator, {
+        key: "sep-settings",
+      }),
     ];
   }
 }
