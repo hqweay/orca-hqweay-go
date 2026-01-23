@@ -16,6 +16,7 @@ export function BazaarModal({ onClose, pluginName }: BazaarModalProps) {
   const [loading, setLoading] = useState(true);
   const [installing, setInstalling] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     loadPlugins();
@@ -324,6 +325,16 @@ export function BazaarModal({ onClose, pluginName }: BazaarModalProps) {
   };
 
   const Button = orca.components.Button;
+  const CompositionInput = orca.components.CompositionInput;
+
+  const filteredPlugins = plugins.filter((p) => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return true;
+    return (
+      p.repo.toLowerCase().includes(query) ||
+      p.description.toLowerCase().includes(query)
+    );
+  });
 
   return (
     <orca.components.ModalOverlay
@@ -344,7 +355,7 @@ export function BazaarModal({ onClose, pluginName }: BazaarModalProps) {
           padding: "20px",
           borderRadius: "8px",
           width: "600px",
-          maxHeight: "80vh",
+          height: "80vh",
           display: "flex",
           flexDirection: "column",
           boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
@@ -354,7 +365,7 @@ export function BazaarModal({ onClose, pluginName }: BazaarModalProps) {
           style={{
             display: "flex",
             alignItems: "center",
-            marginBottom: "16px",
+            marginBottom: "12px",
           }}
         >
           <div
@@ -407,7 +418,26 @@ export function BazaarModal({ onClose, pluginName }: BazaarModalProps) {
 
         <div
           style={{
+            marginBottom: "12px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          <div>
+            <CompositionInput
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t("Search plugins...")}
+              pre={<i className="ti ti-search" />}
+            />
+          </div>
+        </div>
+
+        <div
+          style={{
             flex: 1,
+            minHeight: 0,
             overflowY: "auto",
             display: "flex",
             flexDirection: "column",
@@ -422,8 +452,12 @@ export function BazaarModal({ onClose, pluginName }: BazaarModalProps) {
             <div style={{ padding: "20px", textAlign: "center" }}>
               {t("No plugins found.")}
             </div>
+          ) : filteredPlugins.length === 0 ? (
+            <div style={{ padding: "20px", textAlign: "center" }}>
+              {t("No plugins match your search.")}
+            </div>
           ) : (
-            plugins.map((p) => (
+            filteredPlugins.map((p) => (
               <div
                 key={p.repo}
                 style={{
