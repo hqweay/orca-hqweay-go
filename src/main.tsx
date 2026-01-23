@@ -9,6 +9,7 @@ import { DbId, QueryDescription2 } from "./orca";
 const pluginModules = import.meta.glob("./lets-*/index.tsx", { eager: true });
 
 export const pluginInstances: BasePlugin[] = [];
+let unsubscribeSettings: (() => void) | null = null;
 
 const test = async () => {
   const resultIds = (await orca.invokeBackend("query", {
@@ -78,21 +79,37 @@ export async function load(_name: string) {
           ...pluginInstance.getSettingsSchema(),
         };
 
-        // Initialize settings for all plugins (for the settings board to work even if not enabled)
         await pluginInstance.initializeSettings();
 
         // Load if enabled
         const settings = orca.state.plugins[_name]?.settings;
-        if (!settings?.[`${pluginName}`]) {
-          console.log(`Skipping sub-plugin (class) from ${path}`);
-          continue;
+        if (settings?.[`${pluginName}`]) {
+          await pluginInstance.safeLoad();
         }
-
-        await pluginInstance.load(_name);
       }
     } catch (e) {
       console.error(`Failed to load sub-plugin from ${path}`, e);
     }
+  }
+
+  // Subscribe to settings changes for dynamic load/unload
+  const pluginState = orca.state.plugins[_name];
+  if (pluginState) {
+    const { subscribe } = (window as any).Valtio;
+    unsubscribeSettings = subscribe(pluginState, async () => {
+      const settings = orca.state.plugins[_name]?.settings;
+      if (!settings) return;
+
+      for (const plugin of pluginInstances) {
+        const pluginName = plugin["name"];
+        const isEnabled = !!settings[pluginName];
+        if (isEnabled) {
+          await plugin.safeLoad();
+        } else {
+          await plugin.safeUnload();
+        }
+      }
+    });
   }
 
   await orca.plugins.setSettingsSchema(_name, settingsSchema);
@@ -103,12 +120,16 @@ export async function unload() {
   for (const plugin of pluginInstances) {
     try {
       console.log(`Unloading sub-plugin (class) ${plugin["name"]}`);
-      await plugin.unload();
+      await plugin.safeUnload();
     } catch (e) {
       console.error(`Failed to unload sub-plugin ${plugin["name"]}`, e);
     }
   }
   pluginInstances.length = 0; // Clear instances
+  if (unsubscribeSettings) {
+    unsubscribeSettings();
+    unsubscribeSettings = null;
+  }
   orca.commands.unregisterCommand("subplugins.settings");
   orca.headbar.unregisterHeadbarButton("subplugins-settings");
 

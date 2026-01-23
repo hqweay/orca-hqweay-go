@@ -6,6 +6,7 @@ export abstract class BasePlugin {
   protected mainPluginName: string;
   protected logger: Logger;
   protected name: string;
+  protected isLoaded: boolean = false;
 
   constructor(mainPluginName: string, name: string) {
     this.mainPluginName = mainPluginName;
@@ -16,6 +17,20 @@ export abstract class BasePlugin {
   public abstract load(): Promise<void>;
 
   public abstract unload(): Promise<void>;
+
+  public async safeLoad() {
+    if (this.isLoaded) return;
+    await this.load();
+    this.isLoaded = true;
+    this.logger.info("Sub-plugin loaded");
+  }
+
+  public async safeUnload() {
+    if (!this.isLoaded) return;
+    await this.unload();
+    this.isLoaded = false;
+    this.logger.info("Sub-plugin unloaded");
+  }
 
   public getSettingsSchema(): any {
     return {
