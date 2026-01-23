@@ -85,20 +85,4 @@ export async function unload() {
     }
   }
   pluginInstances.length = 0; // Clear instances
-
-  // Unload legacy plugins
-  for (const path in pluginModules) {
-    const module: any = pluginModules[path];
-    // If it was NOT a class plugin, try legacy unload (rough check, strictly we should track legacy separately too but this might be enough for migration)
-    if (!(module.default && module.default.prototype instanceof BasePlugin)) {
-      try {
-        if (module.unload) {
-          console.log(`Unloading sub-plugin (legacy) from ${path}`);
-          module.unload();
-        }
-      } catch (e) {
-        console.error(`Failed to unload sub-plugin from ${path}`, e);
-      }
-    }
-  }
 }
