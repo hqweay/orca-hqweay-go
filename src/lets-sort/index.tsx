@@ -2,19 +2,16 @@ import { BasePlugin } from "@/libs/BasePlugin";
 import { setupL10N, t } from "@/libs/l10n";
 import { Block, DbId } from "../orca";
 import { getRepr } from "@/libs/utils";
+import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
+import React, { useState } from "react";
 
 export default class SortPlugin extends BasePlugin {
   public getSettingsSchema(): any {
-    return {
-      [`${this.name}.order`]: {
-        label: t(this.name + ".Sort Order"),
-        description: t(
-          "Define the sort order. Available types: 'empty', 'other', 'task_checked', 'task_unchecked'.",
-        ),
-        type: "string",
-        defaultValue: "empty, other, task_checked, task_unchecked",
-      },
-    };
+    return super.getSettingsSchema();
+  }
+
+  public renderSettings() {
+    return <SortSettings plugin={this} />;
   }
 
   public async load(): Promise<void> {
@@ -85,11 +82,9 @@ export default class SortPlugin extends BasePlugin {
         }
 
         // Get sort order from settings
-        const settings =
-          orca.state.plugins[this.mainPluginName]?.settings || {};
+        const settings = this.getSettings();
         const sortOrderStr =
-          settings[`${this.name}.order`] ||
-          "empty, other, task_checked, task_unchecked";
+          settings.order || "empty, other, task_checked, task_unchecked";
         const sortOrder = sortOrderStr
           .split(/[,，]/)
           .map((s: string) => s.trim());
@@ -214,7 +209,6 @@ export default class SortPlugin extends BasePlugin {
             // Fallback or ignore
           }
         }
-
         orca.notify("success", t("Blocks sorted."));
       },
       t("Sort Selection"),
@@ -229,4 +223,37 @@ export default class SortPlugin extends BasePlugin {
     orca.commands.unregisterCommand(`${this.name}.sort-selection`);
     this.logger.info(`${this.name} unloaded.`);
   }
+}
+
+function SortSettings({ plugin }: { plugin: SortPlugin }) {
+  const settings = plugin["getSettings"]();
+  const [order, setOrder] = useState(
+    settings.order || "empty, other, task_checked, task_unchecked",
+  );
+
+  const updateOrder = async (value: string) => {
+    setOrder(value);
+    await plugin["updateSettings"]({ order: value });
+  };
+
+  const Input = orca.components.Input;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      <SettingsSection title={t("Sort Settings")}>
+        <SettingsItem
+          label={t("Sort Order")}
+          description={t(
+            "Separate types with commas. Types: 'empty', 'other', 'task_checked', 'task_unchecked'.",
+          )}
+        >
+          <Input
+            // @ts-ignore
+            value={order}
+            onChange={(e: any) => updateOrder(e.target.value)}
+          />
+        </SettingsItem>
+      </SettingsSection>
+    </div>
+  );
 }

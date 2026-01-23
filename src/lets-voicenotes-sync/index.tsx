@@ -8,46 +8,24 @@ import { PropType } from "@/libs/consts";
 import zhCN from "@/translations/zhCN";
 import type { VoiceNote } from "../types";
 import { BasePlugin } from "@/libs/BasePlugin";
+import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
+import React, { useState } from "react";
 
 
 
 export default class VoiceNotesSyncPlugin extends BasePlugin {
   public getSettingsSchema() {
-    return {
-      [`${this.name}.token`]: {
-        label: t(this.name + ".Token"),
-        description: t("The Voicenotes API token."),
-        type: "string",
-      },
-      [`${this.name}.inboxName`]: {
-        label: t(this.name + ".Inbox name"),
-        description: t(
-          "The text used for the block where imported notes are placed under.",
-        ),
-        type: "string",
-        defaultValue: "VoiceNotes Inbox",
-      },
-      [`${this.name}.noteTag`]: {
-        label: t(this.name + ".Note tag"),
-        description: t("The tag applied to imported notes."),
-        type: "string",
-        defaultValue: "VoiceNote",
-      },
-      [`${this.name}.excludeTags`]: {
-        label: t(this.name + ".Exclude Tag"),
-        description: t(
-          "Tag used to exclude notes from syncing (comma separated).",
-        ),
-        type: "string",
-        defaultValue: "orca",
-      },
-    };
+    return super.getSettingsSchema();
+  }
+
+  public renderSettings() {
+    return <VoiceNotesSettings plugin={this} />;
   }
 
   private async syncVoiceNotes(fullSync: boolean = false) {
-    const settings = orca.state.plugins[this.mainPluginName]?.settings;
+    const settings = this.getSettings();
 
-    if (!settings?.[`${this.name}.token`]) {
+    if (!settings.token) {
       orca.notify(
         "error",
         t("Please provide a Voicenotes API token in plugin settings."),
@@ -57,8 +35,8 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
 
     orca.notify("info", t("Starting to sync VoiceNotes, please wait..."));
 
-    const inboxName = settings[`${this.name}.inboxName`] || "VoiceNotes Inbox";
-    const noteTag = settings[`${this.name}.noteTag`] || "VoiceNote";
+    const inboxName = settings.inboxName || "VoiceNotes Inbox";
+    const noteTag = settings.noteTag || "VoiceNote";
 
     let lastSyncTime = await orca.plugins.getData(this.name, "syncKey");
     if (fullSync) {
@@ -66,7 +44,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
     }
 
     const api = new VoiceNotesApi({
-      token: settings[`${this.name}.token`],
+      token: settings.token,
       lastSyncedNoteUpdatedAt: lastSyncTime,
     });
 
@@ -126,8 +104,8 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
 
           for (const note of notes) {
             // Check exclusion
-            if (settings[`${this.name}.excludeTags`]) {
-              const excludeTags = settings[`${this.name}.excludeTags`]
+            if (settings.excludeTags) {
+              const excludeTags = settings.excludeTags
                 .split(",")
                 .map((t: string) => t.trim());
               if (
@@ -268,14 +246,14 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
     text: string,
     tags: string[] = [],
   ) {
-    const settings = orca.state.plugins[this.mainPluginName]?.settings;
-    if (!settings?.[`${this.name}.token`]) {
+    const settings = this.getSettings();
+    if (!settings.token) {
       orca.notify("error", t("Please provide a Voicenotes API token."));
       return;
     }
 
     const api = new VoiceNotesApi({
-      token: settings[`${this.name}.token`],
+      token: settings.token,
     });
 
     try {
@@ -302,7 +280,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
           // Tag as siyuan (or orca)
           await api.tagVoiceNote(newId, ["orca"]);
 
-          const noteTag = settings[`${this.name}.noteTag`] || "VoiceNote";
+          const noteTag = settings.noteTag || "VoiceNote";
 
           // Store ID in a Tag, consistent with syncNote
           const tagBlockId = await orca.commands.invokeEditorCommand(
@@ -333,8 +311,8 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
   }
 
   private getRecordingId(block: Block): string | undefined {
-    const settings = orca.state.plugins[this.mainPluginName]?.settings;
-    const noteTag = settings?.[`${this.name}.noteTag`] || "VoiceNote";
+    const settings = this.getSettings();
+    const noteTag = settings.noteTag || "VoiceNote";
 
     // Check refs for ID property (tags are often refs with data)
     if (block.refs && block.refs.length > 0) {
@@ -715,4 +693,69 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
 
     return markdown.trim();
   }
+}
+
+function VoiceNotesSettings({ plugin }: { plugin: VoiceNotesSyncPlugin }) {
+  const settings = plugin["getSettings"]();
+  const [config, setConfig] = useState(settings);
+
+  const updateConfig = async (key: string, value: any) => {
+    const newConfig = { ...config, [key]: value };
+    setConfig(newConfig);
+    await plugin["updateSettings"](newConfig);
+  };
+
+  const Input = orca.components.Input;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      <SettingsSection title={t("Voicenotes Settings")}>
+        <SettingsItem
+          label={t("Voicenotes API Token")}
+          description={t("The Voicenotes API token.")}
+        >
+          <Input
+            // @ts-ignore
+            type="password"
+            value={config.token || ""}
+            onChange={(e: any) => updateConfig("token", e.target.value)}
+          />
+        </SettingsItem>
+        <SettingsItem
+          label={t("Inbox Block Name")}
+          description={t(
+            "The text used for the block where imported notes are placed under.",
+          )}
+        >
+          <Input
+            // @ts-ignore
+            value={config.inboxName || "VoiceNotes Inbox"}
+            onChange={(e: any) => updateConfig("inboxName", e.target.value)}
+          />
+        </SettingsItem>
+        <SettingsItem
+          label={t("Imported Note Tag")}
+          description={t("The tag applied to imported notes.")}
+        >
+          <Input
+            // @ts-ignore
+            value={config.noteTag || "VoiceNote"}
+            onChange={(e: any) => updateConfig("noteTag", e.target.value)}
+          />
+        </SettingsItem>
+        <SettingsItem
+          label={t("Exclude Tags (comma separated)")}
+          description={t(
+            "Tag used to exclude notes from syncing (comma separated).",
+          )}
+        >
+          <Input
+            // @ts-ignore
+            value={config.excludeTags || ""}
+            onChange={(e: any) => updateConfig("excludeTags", e.target.value)}
+          />
+        </SettingsItem>
+      </SettingsSection>
+    </div>
+  );
 }

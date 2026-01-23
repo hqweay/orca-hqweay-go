@@ -4,93 +4,16 @@ import { setupL10N, t } from "@/libs/l10n";
 import { Block } from "../orca";
 import { format } from "date-fns";
 import { getRepr } from "@/libs/utils";
+import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
+import React, { useState } from "react";
 
 export default class PublishPlugin extends BasePlugin {
   public getSettingsSchema(): any {
-    return {
-      // Image Bed Settings
-      ...this.defineSetting(
-        "imageBed.owner",
-        "Image Bed Owner",
-        "GitHub Username/Org for Image Bed",
-      ),
-      ...this.defineSetting(
-        "imageBed.repo",
-        "Image Bed Repo",
-        "Repository Name for Image Bed",
-      ),
-      ...this.defineSetting(
-        "imageBed.branch",
-        "Image Bed Branch",
-        "Branch for Image Bed",
-        "master",
-      ),
-      ...this.defineSetting(
-        "imageBed.path",
-        "Image Bed Path",
-        "Path prefix (e.g. img/)",
-        "img/",
-      ),
-      ...this.defineSetting(
-        "imageBed.token",
-        "Image Bed Token",
-        "GitHub Token for Image Bed",
-      ),
+    return super.getSettingsSchema();
+  }
 
-      // Blog Settings
-      ...this.defineSetting(
-        "blog.owner",
-        "Blog Owner",
-        "GitHub Username/Org for Blog",
-      ),
-      ...this.defineSetting(
-        "blog.repo",
-        "Blog Repo",
-        "Repository Name for Blog",
-      ),
-      ...this.defineSetting(
-        "blog.branch",
-        "Blog Branch",
-        "Branch for Blog",
-        "main",
-      ),
-      ...this.defineSetting(
-        "blog.path",
-        "Blog Path",
-        "Path prefix (e.g. source/_posts/)",
-        "source/_posts/",
-      ),
-      ...this.defineSetting(
-        "blog.domain",
-        "Blog Domain",
-        "Domain for Blog URL (e.g. https://leay.net)",
-      ),
-      ...this.defineSetting(
-        "tagLabel",
-        "Tag Label",
-        "Tag Label for Published Blocks",
-        "已发布",
-      ),
-      ...this.defineSetting(
-        "blog.token",
-        "Blog Token",
-        "GitHub Token for Blog (can be same as Image Bed)",
-      ),
-
-      // Committer Info
-      ...this.defineSetting(
-        "committer.name",
-        "Committer Name",
-        "Name for git commits",
-        "orca-hqweay-go-bot",
-      ),
-      ...this.defineSetting(
-        "committer.email",
-        "Committer Email",
-        "Email for git commits",
-        "bot@leay.net",
-      ),
-    };
+  public renderSettings(): React.ReactNode {
+    return <PublishSettings plugin={this} />;
   }
 
   public async load(): Promise<void> {
@@ -161,24 +84,23 @@ export default class PublishPlugin extends BasePlugin {
   }
 
   private async publishWorkflow(block: Block) {
-    const settings = orca.state.plugins[this.mainPluginName]?.settings || {};
+    const settings = this.getSettings();
 
     // Image Bed Config
-    const ibOwner = settings[`${this.name}.imageBed.owner`];
-    const ibRepo = settings[`${this.name}.imageBed.repo`];
-    const ibBranch = settings[`${this.name}.imageBed.branch`] || "master";
-    const ibPath = settings[`${this.name}.imageBed.path`] || "img/";
-    // Removed duplicate ibToken declaration here
+    const ibOwner = settings.imageBed?.owner;
+    const ibRepo = settings.imageBed?.repo;
+    const ibBranch = settings.imageBed?.branch || "master";
+    const ibPath = settings.imageBed?.path || "img/";
 
     // Blog Config
-    const blogOwner = settings[`${this.name}.blog.owner`];
-    const blogRepo = settings[`${this.name}.blog.repo`];
-    const blogBranch = settings[`${this.name}.blog.branch`] || "main";
-    const blogPath = settings[`${this.name}.blog.path`] || "source/_posts/";
-    const blogDomain = settings[`${this.name}.blog.domain`] || "";
-    const blogToken = (settings[`${this.name}.blog.token`] || "").trim();
-    const ibToken = (settings[`${this.name}.imageBed.token`] || "").trim();
-    const tagLabel = settings[`${this.name}.tagLabel`] || "已发布";
+    const blogOwner = settings.blog?.owner;
+    const blogRepo = settings.blog?.repo;
+    const blogBranch = settings.blog?.branch || "main";
+    const blogPath = settings.blog?.path || "source/_posts/";
+    const blogDomain = settings.blog?.domain || "";
+    const blogToken = (settings.blog?.token || "").trim();
+    const ibToken = (settings.imageBed?.token || "").trim();
+    const tagLabel = settings.tagLabel || "已发布";
 
     if (!ibToken || !blogToken) {
       throw new Error("Missing GitHub tokens in settings.");
@@ -692,9 +614,9 @@ toc: true
     sha?: string,
   ) {
     const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
-    const settings = orca.state.plugins[this.mainPluginName]?.settings || {};
-    const name = settings[`${this.name}.committer.name`] || "orca-bot";
-    const email = settings[`${this.name}.committer.email`] || "bot@orca.note";
+    const settings = this.getSettings();
+    const name = settings.committer?.name || "orca-bot";
+    const email = settings.committer?.email || "bot@orca.note";
 
     const body: any = {
       message,
@@ -736,4 +658,190 @@ toc: true
     }
     return window.btoa(binary);
   }
+}
+
+function PublishSettings({ plugin }: { plugin: PublishPlugin }) {
+  const settings = plugin["getSettings"]();
+  const [config, setConfig] = useState(settings);
+
+  const updateConfig = async (path: string, value: any) => {
+    const keys = path.split(".");
+    const newConfig = { ...config };
+    let current = newConfig;
+    for (let i = 0; i < keys.length - 1; i++) {
+      current[keys[i]] = { ...current[keys[i]] };
+      current = current[keys[i]];
+    }
+    current[keys[keys.length - 1]] = value;
+
+    setConfig(newConfig);
+    await plugin["updateSettings"](newConfig);
+  };
+
+  const Input = orca.components.Input;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
+      <SettingsSection title={t("Image Bed")}>
+        <SettingsItem
+          label={t("Owner")}
+          description={t("GitHub Username/Org for Image Bed")}
+        >
+          <Input
+            // @ts-ignore
+            value={config.imageBed?.owner || ""}
+            onChange={(e: any) =>
+              updateConfig("imageBed.owner", e.target.value)
+            }
+          />
+        </SettingsItem>
+        <SettingsItem
+          label={t("Repository")}
+          description={t("Repository Name for Image Bed")}
+        >
+          <Input
+            // @ts-ignore
+            value={config.imageBed?.repo || ""}
+            onChange={(e: any) => updateConfig("imageBed.repo", e.target.value)}
+          />
+        </SettingsItem>
+        <SettingsItem
+          label={t("Branch")}
+          description={t("Branch for Image Bed")}
+        >
+          <Input
+            // @ts-ignore
+            value={config.imageBed?.branch || "master"}
+            onChange={(e: any) =>
+              updateConfig("imageBed.branch", e.target.value)
+            }
+          />
+        </SettingsItem>
+        <SettingsItem
+          label={t("Path")}
+          description={t("Path prefix (e.g. img/)")}
+        >
+          <Input
+            // @ts-ignore
+            value={config.imageBed?.path || "img/"}
+            onChange={(e: any) => updateConfig("imageBed.path", e.target.value)}
+          />
+        </SettingsItem>
+        <SettingsItem
+          label={t("Token")}
+          description={t("GitHub Token for Image Bed")}
+        >
+          <Input
+            // @ts-ignore
+            type="password"
+            value={config.imageBed?.token || ""}
+            onChange={(e: any) =>
+              updateConfig("imageBed.token", e.target.value)
+            }
+          />
+        </SettingsItem>
+      </SettingsSection>
+
+      <SettingsSection title={t("Blog")}>
+        <SettingsItem
+          label={t("Owner")}
+          description={t("GitHub Username/Org for Blog")}
+        >
+          <Input
+            // @ts-ignore
+            value={config.blog?.owner || ""}
+            onChange={(e: any) => updateConfig("blog.owner", e.target.value)}
+          />
+        </SettingsItem>
+        <SettingsItem
+          label={t("Repository")}
+          description={t("Repository Name for Blog")}
+        >
+          <Input
+            // @ts-ignore
+            value={config.blog?.repo || ""}
+            onChange={(e: any) => updateConfig("blog.repo", e.target.value)}
+          />
+        </SettingsItem>
+        <SettingsItem label={t("Branch")} description={t("Branch for Blog")}>
+          <Input
+            // @ts-ignore
+            value={config.blog?.branch || "main"}
+            onChange={(e: any) => updateConfig("blog.branch", e.target.value)}
+          />
+        </SettingsItem>
+        <SettingsItem
+          label={t("Path")}
+          description={t("Path prefix (e.g. source/_posts/)")}
+        >
+          <Input
+            // @ts-ignore
+            value={config.blog?.path || "source/_posts/"}
+            onChange={(e: any) => updateConfig("blog.path", e.target.value)}
+          />
+        </SettingsItem>
+        <SettingsItem
+          label={t("Domain")}
+          description={t("Domain for Blog URL (e.g. https://leay.net)")}
+        >
+          <Input
+            // @ts-ignore
+            value={config.blog?.domain || ""}
+            onChange={(e: any) => updateConfig("blog.domain", e.target.value)}
+          />
+        </SettingsItem>
+        <SettingsItem
+          label={t("Token")}
+          description={t("GitHub Token (Can be same as Image Bed)")}
+        >
+          <Input
+            // @ts-ignore
+            type="password"
+            value={config.blog?.token || ""}
+            onChange={(e: any) => updateConfig("blog.token", e.target.value)}
+          />
+        </SettingsItem>
+      </SettingsSection>
+
+      <SettingsSection title={t("Other")}>
+        <SettingsItem
+          label={t("Tag Label")}
+          description={t("Tag Label for Published Blocks")}
+        >
+          <Input
+            // @ts-ignore
+            value={config.tagLabel || "已发布"}
+            onChange={(e: any) => updateConfig("tagLabel", e.target.value)}
+          />
+        </SettingsItem>
+      </SettingsSection>
+
+      <SettingsSection title={t("Committer")}>
+        <SettingsItem
+          label={t("Committer Name")}
+          description={t("Name for git commits")}
+        >
+          <Input
+            // @ts-ignore
+            value={config.committer?.name || "orca-hqweay-go-bot"}
+            onChange={(e: any) =>
+              updateConfig("committer.name", e.target.value)
+            }
+          />
+        </SettingsItem>
+        <SettingsItem
+          label={t("Committer Email")}
+          description={t("Email for git commits")}
+        >
+          <Input
+            // @ts-ignore
+            value={config.committer?.email || "bot@leay.net"}
+            onChange={(e: any) =>
+              updateConfig("committer.email", e.target.value)
+            }
+          />
+        </SettingsItem>
+      </SettingsSection>
+    </div>
+  );
 }
