@@ -23,6 +23,10 @@
 
 ## Orca Plugin Development
 
+### File System Access API (`showDirectoryPicker`)
+- **Pitfall**: `window.showDirectoryPicker()` 在 Chromium 中要求**必须由用户手势触发**（点击/键盘等）。如果在一串 `await`（例如网络下载、解压）之后再调用，会偶发/稳定报错：`SecurityError: Must be handling a user gesture to show a file picker.`
+- **Fix**: 把目录选择放到用户点击行为的最开始（同一个点击回调里立刻调用），拿到 `DirectoryHandle` 后再执行后续异步下载/写入流程。
+
 ### Queries (Backend)
 - **Tag Queries (`kind: 4`)**:
   - By default, tag queries might include **descendants** (children of the tagged block).

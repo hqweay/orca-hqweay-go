@@ -101,10 +101,32 @@ export function BazaarModal({ onClose, pluginName }: BazaarModalProps) {
 
   const handleInstall = async (repo: string) => {
     if (installing) return;
-    setInstalling(repo);
-    setDownloadProgress(0);
     try {
-      await installPlugin(repo);
+      // IMPORTANT: showDirectoryPicker must be triggered by a user gesture.
+      // If we call it after awaited network/download steps, Chromium may throw:
+      // "SecurityError: Must be handling a user gesture..."
+      orca.notify(
+        "info",
+        t("Please select your 'Orca Note/data/plugins' folder to install..."),
+      );
+      let pluginsDirHandle;
+      try {
+        // @ts-ignore
+        pluginsDirHandle = await window.showDirectoryPicker({
+          id: "orca-plugins-dir",
+          mode: "readwrite",
+        });
+      } catch (err) {
+        if ((err as Error).name === "AbortError") {
+          throw new Error("Installation cancelled (folder selection aborted).");
+        }
+        throw err;
+      }
+      if (!pluginsDirHandle) throw new Error("No folder selected.");
+
+      setInstalling(repo);
+      setDownloadProgress(0);
+      await installPlugin(repo, pluginsDirHandle);
       orca.notify("success", t(`Installed ${repo} successfully!`));
     } catch (e) {
       console.error(e);
@@ -117,7 +139,8 @@ export function BazaarModal({ onClose, pluginName }: BazaarModalProps) {
     }
   };
 
-  const installPlugin = async (repo: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const installPlugin = async (repo: string, pluginsDirHandle: any) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const JSZip = (window as any).JSZip || (await import("jszip")).default;
 
@@ -171,28 +194,7 @@ export function BazaarModal({ onClose, pluginName }: BazaarModalProps) {
 
     setDownloadProgress(100);
 
-    // 3. Select Plugins Directory
-    orca.notify(
-      "info",
-      t("Please select your 'Orca Note/data/plugins' folder to install..."),
-    );
-    let pluginsDirHandle;
-    try {
-      // @ts-ignore
-      pluginsDirHandle = await window.showDirectoryPicker({
-        id: "orca-plugins-dir",
-        mode: "readwrite",
-      });
-    } catch (err) {
-      if ((err as Error).name === "AbortError") {
-        throw new Error("Installation cancelled (folder selection aborted).");
-      }
-      throw err;
-    }
-
-    if (!pluginsDirHandle) throw new Error("No folder selected.");
-
-    // 4. Unzip and Write
+    // 3. Unzip and Write
     const zip = await JSZip.loadAsync(arrayBuffer);
 
     // Create plugin specific folder
@@ -309,7 +311,7 @@ export function BazaarModal({ onClose, pluginName }: BazaarModalProps) {
       }
     }
 
-    // 5. Register and Enable
+    // 4. Register and Enable
     try {
       await orca.plugins.register(repoName);
       await orca.plugins.enable(repoName);
