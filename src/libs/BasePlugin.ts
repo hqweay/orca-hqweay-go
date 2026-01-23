@@ -39,7 +39,7 @@ export abstract class BasePlugin {
   public getSettingsSchema(): any {
     return {
       [this.name]: {
-        label: t("Enable ${name}", { name: this.name }),
+        label: t("Enable ${name}", { name: this.getDisplayName() }),
         description: t("Enable ${name}", { name: this.name }),
         type: "boolean",
         defaultValue: false,
