@@ -4,24 +4,38 @@ export interface SettingsItemProps {
   label: string;
   description?: string;
   children: React.ReactNode;
+  vertical?: boolean;
 }
 
-export function SettingsItem({ label, description, children }: SettingsItemProps) {
+export function SettingsItem({
+  label,
+  description,
+  children,
+  vertical = false,
+}: SettingsItemProps) {
   return (
-    <div style={{
-      marginBottom: "20px",
-      display: "flex",
-      flexDirection: "column",
-      gap: "8px"
-    }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <div
+      style={{
+        marginBottom: "20px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "8px",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          flexDirection: vertical ? "column" : "row",
+          justifyContent: "space-between",
+          alignItems: vertical ? "flex-start" : "center",
+          gap: vertical ? "12px" : "8px",
+        }}
+      >
         <div style={{ fontWeight: "bold" }}>{label}</div>
-        <div>{children}</div>
+        <div style={{ width: vertical ? "100%" : "auto" }}>{children}</div>
       </div>
       {description && (
-        <div style={{ fontSize: "0.85em", opacity: 0.7 }}>
-          {description}
-        </div>
+        <div style={{ fontSize: "0.85em", opacity: 0.7 }}>{description}</div>
       )}
     </div>
   );

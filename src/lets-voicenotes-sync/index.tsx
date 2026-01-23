@@ -695,6 +695,7 @@ function VoiceNotesSettings({ plugin }: { plugin: VoiceNotesSyncPlugin }) {
     await plugin["updateSettings"](newConfig);
   };
 
+  const TextArea = orca.components.CompositionTextArea;
   const Input = orca.components.Input;
 
   return (
@@ -702,6 +703,7 @@ function VoiceNotesSettings({ plugin }: { plugin: VoiceNotesSyncPlugin }) {
       <SettingsSection title={t("Voicenotes Settings")}>
         <SettingsItem
           label={t("Voicenotes API Token")}
+          vertical
           description={t("The Voicenotes API token.")}
         >
           <Input
@@ -713,6 +715,7 @@ function VoiceNotesSettings({ plugin }: { plugin: VoiceNotesSyncPlugin }) {
         </SettingsItem>
         <SettingsItem
           label={t("Inbox Block Name")}
+          vertical
           description={t(
             "The text used for the block where imported notes are placed under.",
           )}
@@ -725,6 +728,7 @@ function VoiceNotesSettings({ plugin }: { plugin: VoiceNotesSyncPlugin }) {
         </SettingsItem>
         <SettingsItem
           label={t("Imported Note Tag")}
+          vertical
           description={t("The tag applied to imported notes.")}
         >
           <Input
@@ -735,14 +739,16 @@ function VoiceNotesSettings({ plugin }: { plugin: VoiceNotesSyncPlugin }) {
         </SettingsItem>
         <SettingsItem
           label={t("Exclude Tags (comma separated)")}
+          vertical
           description={t(
             "Tag used to exclude notes from syncing (comma separated).",
           )}
         >
-          <Input
+          <TextArea
             // @ts-ignore
             value={config.excludeTags || "orca"}
             onChange={(e: any) => updateConfig("excludeTags", e.target.value)}
+            style={{ width: "100%", minHeight: "60px" }}
           />
         </SettingsItem>
       </SettingsSection>

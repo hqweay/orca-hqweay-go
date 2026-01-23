@@ -230,21 +230,23 @@ function SortSettings({ plugin }: { plugin: SortPlugin }) {
     await plugin["updateSettings"]({ order: value });
   };
 
-  const Input = orca.components.Input;
+  const TextArea = orca.components.CompositionTextArea;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <SettingsSection title={t("Sort Settings")}>
         <SettingsItem
           label={t("Sort Order")}
+          vertical
           description={t(
             "Separate types with commas. Types: 'empty', 'other', 'task_checked', 'task_unchecked'.",
           )}
         >
-          <Input
+          <TextArea
             // @ts-ignore
             value={order}
             onChange={(e: any) => updateOrder(e.target.value)}
+            style={{ width: "100%", minHeight: "80px" }}
           />
         </SettingsItem>
       </SettingsSection>
