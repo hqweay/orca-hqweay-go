@@ -112,6 +112,43 @@ export async function load(_name: string) {
     });
   }
 
+  orca.headbar.registerHeadbarButton("subplugins-actions", () => {
+    const isEnabled = (pName: string) =>
+      orca.state.plugins[_name]?.settings?.[pName];
+    const activePlugins = pluginInstances.filter((p) => isEnabled(p["name"]));
+
+    // If no active plugins have menu items, we still show the button but with an empty or limited menu?
+    // Actually, let's just render the button and the menu will show active items.
+    const hasItems = activePlugins.some(
+      (p) => p.getHeadbarMenuItems(() => {}).length > 0,
+    );
+
+    if (!hasItems) return React.createElement(React.Fragment);
+
+    return React.createElement(
+      orca.components.HoverContextMenu,
+      {
+        menu: (closeMenu: () => void) => {
+          const items = activePlugins.flatMap((p) =>
+            p.getHeadbarMenuItems(closeMenu),
+          );
+          return React.createElement(React.Fragment, null, ...items);
+        },
+        children: React.createElement(
+          orca.components.Button,
+          {
+            variant: "plain",
+            title: t("Actions"),
+          },
+          React.createElement("i", {
+            className: "ti ti-apps",
+            style: { fontSize: "16px" },
+          }),
+        ),
+      }
+    );
+  });
+
   await orca.plugins.setSettingsSchema(_name, settingsSchema);
 }
 
@@ -132,6 +169,7 @@ export async function unload() {
   }
   orca.commands.unregisterCommand("subplugins.settings");
   orca.headbar.unregisterHeadbarButton("subplugins-settings");
+  orca.headbar.unregisterHeadbarButton("subplugins-actions");
 
   const container = document.getElementById("sub-plugin-settings-container");
   if (container) {

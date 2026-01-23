@@ -156,6 +156,14 @@ export abstract class BasePlugin {
     );
   }
 
+  /**
+   * Return an array of menu items to be displayed in the global Actions menu.
+   * Default implementation returns an empty array.
+   */
+  public getHeadbarMenuItems(_closeMenu: () => void): React.ReactNode[] {
+    return [];
+  }
+
   private setDeepProperty(obj: any, path: string, value: any): any {
     const keys = path.split(".");
     const newObj = { ...obj };

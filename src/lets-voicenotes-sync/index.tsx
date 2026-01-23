@@ -158,30 +158,6 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
       );
     }
 
-    if (orca.state.headbarButtons[`${this.name}.voicenotes-sync`] == null) {
-      orca.headbar.registerHeadbarButton(`${this.name}.voicenotes-sync`, () => (
-        <Button
-          variant="plain"
-          onClick={async () =>
-            orca.commands.invokeCommand(`${this.name}.voicenotes-sync`)
-          }
-        >
-          <svg
-            viewBox="0 0 1024 1024"
-            version="1.1"
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-          >
-            <path
-              d="M487.648 240a16 16 0 0 1 16-16h16a16 16 0 0 1 16 16v546.784a16 16 0 0 1-16 16h-16a16 16 0 0 1-16-16V240z m155.84 89.04a16 16 0 0 1 16-16h16a16 16 0 0 1 16 16v346.432a16 16 0 0 1-16 16h-16a16 16 0 0 1-16-16V329.04z m155.824 144.704a16 16 0 0 1 16-16h16a16 16 0 0 1 16 16v123.824a16 16 0 0 1-16 16h-16a16 16 0 0 1-16-16v-123.84z m-467.488-144.704a16 16 0 0 1 16-16h16a16 16 0 0 1 16 16v346.432a16 16 0 0 1-16 16h-16a16 16 0 0 1-16-16V329.04zM176 473.76a16 16 0 0 1 16-16h16a16 16 0 0 1 16 16v112.688a16 16 0 0 1-16 16h-16a16 16 0 0 1-16-16V473.76z"
-              fill="#000000"
-            ></path>
-          </svg>
-        </Button>
-      ));
-    }
-
     if (orca.state.blockMenuCommands[`${this.name}.sync-to-vn`] == null) {
       orca.blockMenuCommands.registerBlockMenuCommand(
         `${this.name}.sync-to-vn`,
@@ -224,12 +200,26 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
   }
 
   public async unload(): Promise<void> {
-    orca.headbar.unregisterHeadbarButton(`${this.name}.voicenotes-sync`);
     orca.commands.unregisterCommand(`${this.name}.voicenotes-sync`);
+    orca.commands.unregisterCommand(`${this.name}.voicenotes-sync-full`);
     orca.blockMenuCommands.unregisterBlockMenuCommand(
       `${this.name}.sync-to-vn`,
     );
     this.logger.info(`${this.name} unloaded.`);
+  }
+
+  public getHeadbarMenuItems(closeMenu: () => void): React.ReactNode[] {
+    const MenuText = orca.components.MenuText;
+    return [
+      React.createElement(MenuText, {
+        key: "voicenotes-sync",
+        title: t("Sync VoiceNotes"),
+        onClick: async () => {
+          closeMenu();
+          await orca.commands.invokeCommand(`${this.name}.voicenotes-sync`);
+        },
+      }),
+    ];
   }
 
   private async addOrUpdate(

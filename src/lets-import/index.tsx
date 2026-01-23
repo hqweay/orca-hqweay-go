@@ -304,41 +304,8 @@ export default class ImportPlugin extends BasePlugin {
       orca.commands.registerCommand(
         `${this.name}.importMarkdownFromFolder`,
         () => this.openFolderSelector(),
-        "Import Markdown from Folder",
+        t("Import Markdown from Folder"),
       );
-
-      const Button = orca.components.Button;
-      const HoverContextMenu = orca.components.HoverContextMenu;
-      const MenuText = orca.components.MenuText;
-
-      orca.headbar.registerHeadbarButton("import", () => (
-        <HoverContextMenu
-          menu={(closeMenu: () => void) => (
-            <>
-              <MenuText
-                title={t("Import Markdown from Folder")}
-                onClick={async () => {
-                  closeMenu();
-                  await orca.commands.invokeCommand(
-                    `${this.name}.importMarkdownFromFolder`,
-                  );
-                }}
-              />
-              <MenuText
-                title={t("Import CSV")}
-                onClick={async () => {
-                  closeMenu();
-                  await orca.commands.invokeCommand(`${this.name}.importCSV`);
-                }}
-              />
-            </>
-          )}
-        >
-          <Button variant="plain">
-            <i className="ti ti-file-import"></i>
-          </Button>
-        </HoverContextMenu>
-      ));
 
       // 方法2：直接创建页面别名
       const aliasName = "项目文档";
@@ -469,5 +436,29 @@ export default class ImportPlugin extends BasePlugin {
     } catch (error) {
       this.logger.error("Error during plugin unload:", error);
     }
+  }
+
+  public getHeadbarMenuItems(closeMenu: () => void): React.ReactNode[] {
+    const MenuText = orca.components.MenuText;
+    return [
+      React.createElement(MenuText, {
+        key: "import-markdown",
+        title: t("Import Markdown from Folder"),
+        onClick: async () => {
+          closeMenu();
+          await orca.commands.invokeCommand(
+            `${this.name}.importMarkdownFromFolder`,
+          );
+        },
+      }),
+      React.createElement(MenuText, {
+        key: "import-csv",
+        title: t("Import CSV"),
+        onClick: async () => {
+          closeMenu();
+          await orca.commands.invokeCommand(`${this.name}.importCSV`);
+        },
+      }),
+    ];
   }
 }
