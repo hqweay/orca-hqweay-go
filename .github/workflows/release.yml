@@ -52,6 +52,13 @@ jobs:
       - name: Build for production
         run: pnpm build
 
+      - name: Get commit message
+        id: get_message
+        run: |
+          echo "message<<EOF" >> $GITHUB_OUTPUT
+          git log -1 --pretty=%B >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Release
         uses: ncipollo/release-action@v1
         with:
@@ -60,3 +67,4 @@ jobs:
           artifacts: "package.zip"
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: false
+          body: ${{ steps.get_message.outputs.message }}
