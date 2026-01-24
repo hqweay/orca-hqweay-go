@@ -5,6 +5,12 @@ description: 该 rule 指定了如何理解并开发该项目，每次进行开�
 
 这是一个 Orca Note 的插件项目，采用 Mono-repo 风格的子插件架构。
 
+## 0. 参考文档 (Documentation)
+*   **在线文档**: [Orca Note Plugin API Documentation](https://www.orca-studio.com/orcanote-docs/index.html)
+*   **本地 API 类型**: `src/orca.d.ts` 是项目内最核心的 API 定义文件，包含详细的代码注释。开发时请优先查阅此文件以获取最新的类型定义和接口说明。
+*   **示例插件文档**: `orca-plugin-template/plugin-docs` 包含了详细的接口说明和示例，也是重要的参考来源。
+*   **开发原则**: 遇到 API 使用问题时，先查阅 `orca.d.ts`，再参考在线文档。如有类型定义缺失（如之前的 Button/Input 属性缺失），应在本地修正 `orca.d.ts` 并记录到 Docs 中。
+
 ## 1. 项目结构
 *   `src/`: 源码根目录。
 *   `src/main.tsx`: 主入口，负责扫描 `src/lets-*` 目录并注册所有子插件。
