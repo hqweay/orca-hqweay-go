@@ -102,13 +102,8 @@ export async function load(_name: string) {
       orca.state.plugins[_name]?.settings?.[pName];
     const activePlugins = pluginInstances.filter((p) => isEnabled(p["name"]));
 
-    // If no active plugins have menu items, we still show the button but with an empty or limited menu?
-    // Actually, let's just render the button and the menu will show active items.
-    const hasItems = activePlugins.some(
-      (p) => p.getHeadbarMenuItems(() => {}).length > 0,
-    );
-
-    if (!hasItems) return React.createElement(React.Fragment);
+    // If no sub-plugins are enabled, do not show the button.
+    if (activePlugins.length === 0) return React.createElement(React.Fragment);
 
     return React.createElement(orca.components.HoverContextMenu, {
       menu: (closeMenu: () => void) => {
@@ -123,9 +118,13 @@ export async function load(_name: string) {
               openSettingsBoard(_name);
             },
           }),
-          React.createElement(orca.components.MenuSeparator, {
-            key: "sep-settings",
-          }),
+          // Add a separator if there are any active plugins with menu items
+          activePlugins.some(
+            (p) => p.getHeadbarMenuItems(() => {}).length > 0,
+          ) &&
+            React.createElement(orca.components.MenuSeparator, {
+              key: "sep-settings",
+            }),
         ];
 
         activePlugins.forEach((p) => {
