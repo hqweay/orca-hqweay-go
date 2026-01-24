@@ -11,6 +11,9 @@
 # Exit on error
 set -e
 
+# Configuration
+GIT_REMOTE="my"
+
 # Function to display usage
 usage() {
     echo "Usage:"
@@ -43,7 +46,7 @@ if [ "$TYPE" = "a" ]; then
     
     git add .
     git commit -m "$COMMENT"
-    git push my
+    git push "$GIT_REMOTE"
 else
     NEW_VERSION="$TYPE"
     if [ -z "$COMMENT" ]; then
@@ -61,11 +64,11 @@ else
 
     git add .
     git commit -m "release: $NEW_VERSION $COMMENT"
-    git push my
+    git push "$GIT_REMOTE"
     
     git tag "$NEW_VERSION"
     # Keeping the original logic of pushing to 'my' remote for tags
-    git push my "$NEW_VERSION"
+    git push "$GIT_REMOTE" "$NEW_VERSION"
 fi
 
 echo "Done."
