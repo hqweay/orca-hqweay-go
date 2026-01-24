@@ -43,7 +43,7 @@ if [ "$TYPE" = "a" ]; then
     
     git add .
     git commit -m "$COMMENT"
-    git push
+    git push my
 else
     NEW_VERSION="$TYPE"
     if [ -z "$COMMENT" ]; then
@@ -65,7 +65,7 @@ else
     
     git tag "$NEW_VERSION"
     # Keeping the original logic of pushing to 'my' remote for tags
-    git push my "$NEW_VERSION" || echo "Warning: Failed to push tag to 'my' remote. Trying origin..." && git push origin "$NEW_VERSION"
+    git push my "$NEW_VERSION"
 fi
 
 echo "Done."
