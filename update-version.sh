@@ -61,7 +61,7 @@ else
 
     git add .
     git commit -m "release: $NEW_VERSION $COMMENT"
-    git push
+    git push my
     
     git tag "$NEW_VERSION"
     # Keeping the original logic of pushing to 'my' remote for tags
