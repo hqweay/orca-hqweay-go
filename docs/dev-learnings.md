@@ -59,3 +59,9 @@
     *   `renderSettings()`: 子插件通过 React 定义自己的配置 UI。
     *   `getSettings()` / `updateSettings()`: 自动处理作用域内的设置存储，避免键名冲突（自动嵌套在子配置对象下）。
 3.  **UI 一致性**：在 `src/components/SettingsItem.tsx` 中提供了通用的布局组件，确保各子插件配置风格统一。
+
+### TypeScript & Type Definitions
+- **Missing Prop Definitions**:
+  - **Pitfall**: When using Orca's built-in components (e.g., `orca.components.Button`), the type definition in `src/orca.d.ts` might be outdated or incomplete compared to the actual implementation.
+  - **Example**: `Button` component was defined as `React.HTMLAttributes`, causing TypeScript to complain about missing `disabled` prop, even though the underlying HTML `<button>` supports it.
+  - **Fix**: Updated definitions to use specific React types (e.g., `React.ButtonHTMLAttributes<HTMLButtonElement>`) instead of generic `HTMLAttributes`. This is a safe and correct local fix until official types are updated.

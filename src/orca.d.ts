@@ -2300,7 +2300,7 @@ export interface Orca {
      * ```
      */
     Button: (
-      props: React.HTMLAttributes<HTMLButtonElement> & {
+      props: React.ButtonHTMLAttributes<HTMLButtonElement> & {
         variant: "solid" | "soft" | "dangerous" | "outline" | "plain";
       },
     ) => JSX.Element | null;
@@ -2361,7 +2361,7 @@ export interface Orca {
      * ```
      */
     CompositionInput: (
-      props: React.HTMLAttributes<HTMLInputElement> & {
+      props: React.InputHTMLAttributes<HTMLInputElement> & {
         pre?: React.ReactElement;
         post?: React.ReactElement;
         error?: React.ReactNode;
@@ -2388,7 +2388,7 @@ export interface Orca {
      * ```
      */
     CompositionTextArea: (
-      props: React.HTMLAttributes<HTMLTextAreaElement>,
+      props: React.TextareaHTMLAttributes<HTMLTextAreaElement>,
     ) => JSX.Element | null;
     /**
      * Displays a confirmation dialog
