@@ -93,22 +93,45 @@ export default class FormatPlugin extends BasePlugin {
 
           // 如果存在fa，说明存在样式，需要删除
           if (block.content) {
-            block.content.forEach((fragment: any) => {
-              //去除行内富文本
+            let hasChanges = false;
+            const newContent = block.content.map((fragment: any) => {
+              let shouldClone = false;
+              const newFragment = { ...fragment };
+
+              // Check and remove inline styles
               if (removeTypes.includes("inline")) {
-                fragment.fa && delete fragment.fa;
-                fragment.f && delete fragment.f;
+                if (newFragment.fa) {
+                  delete newFragment.fa;
+                  shouldClone = true;
+                }
+                if (newFragment.f) {
+                  delete newFragment.f;
+                  shouldClone = true;
+                }
               }
-              //去除链接
+
+              // Check and remove links
               if (removeTypes.includes("link")) {
-                fragment.l && (fragment.t = "t");
-                fragment.l && delete fragment.l;
+                if (newFragment.l) {
+                  newFragment.t = "t";
+                  delete newFragment.l;
+                  shouldClone = true;
+                }
               }
+
+              // Track if any changes occurred in this block
+              if (shouldClone) hasChanges = true;
+
+              // If changes were made, return the new object; otherwise return original
+              return shouldClone ? newFragment : fragment;
             });
-            updates.push({
-              id: block.id,
-              content: block.content,
-            });
+
+            if (hasChanges) {
+              updates.push({
+                id: block.id,
+                content: newContent,
+              });
+            }
           }
         };
 
@@ -181,6 +204,16 @@ export default class FormatPlugin extends BasePlugin {
           menu={(closeMenu: () => void) => (
             <>
               <MenuText
+                title={t("remove all styles")}
+                onClick={async () => {
+                  closeMenu();
+                  await orca.commands.invokeCommand(
+                    `${this.name}.remove-style`,
+                    ["inline", "link"],
+                  );
+                }}
+              />
+              <MenuText
                 title={t("remove inline style")}
                 onClick={async () => {
                   closeMenu();
@@ -214,12 +247,13 @@ export default class FormatPlugin extends BasePlugin {
           )}
         >
           <Button
-            title={t("remove all styles")}
+            title={t("remove all")}
             variant="plain"
             onClick={async () =>
               orca.commands.invokeCommand(`${this.name}.remove-style`, [
                 "inline",
                 "link",
+                "emptyLine",
               ])
             }
           >
