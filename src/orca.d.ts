@@ -1,10 +1,10 @@
 declare global {
-  declare const orca: Orca
+  declare const orca: Orca;
   interface Window {
-    orca: Orca
-    React: React
-    createRoot: Function
-    Valtio: any
+    orca: Orca;
+    React: React;
+    createRoot: Function;
+    Valtio: any;
   }
 }
 
@@ -2300,7 +2300,7 @@ export interface Orca {
      * ```
      */
     Button: (
-      props: React.ButtonHTMLAttributes<HTMLButtonElement> & {
+      props: React.HTMLAttributes<HTMLButtonElement> & {
         variant: "solid" | "soft" | "dangerous" | "outline" | "plain";
       },
     ) => JSX.Element | null;
@@ -2361,7 +2361,7 @@ export interface Orca {
      * ```
      */
     CompositionInput: (
-      props: React.InputHTMLAttributes<HTMLInputElement> & {
+      props: React.HTMLAttributes<HTMLInputElement> & {
         pre?: React.ReactElement;
         post?: React.ReactElement;
         error?: React.ReactNode;
@@ -2388,7 +2388,7 @@ export interface Orca {
      * ```
      */
     CompositionTextArea: (
-      props: React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+      props: React.HTMLAttributes<HTMLTextAreaElement>,
     ) => JSX.Element | null;
     /**
      * Displays a confirmation dialog
@@ -4281,14 +4281,14 @@ export type APIMsg =
   | "upload-assets"
   /** Perform OCR on an image. */
   | "image-ocr"
-  | string
+  | string;
 
 // Panels
 /**
  * Types of views that can be displayed in a panel.
  * Currently supports journal view (for displaying daily notes) and block view (for displaying block content).
  */
-export type PanelView = string
+export type PanelView = string;
 
 /**
  * Represents a panel container that arranges its children in a row.
@@ -4296,13 +4296,13 @@ export type PanelView = string
  */
 export interface RowPanel {
   /** Unique identifier for the row panel */
-  id: string
+  id: string;
   /** Specifies that children are arranged horizontally */
-  direction: "row"
+  direction: "row";
   /** Child panels contained within this row */
-  children: (ColumnPanel | ViewPanel)[]
+  children: (ColumnPanel | ViewPanel)[];
   /** Height of the row panel in pixels */
-  height: number
+  height: number;
 }
 
 /**
@@ -4311,13 +4311,13 @@ export interface RowPanel {
  */
 export interface ColumnPanel {
   /** Unique identifier for the column panel */
-  id: string
+  id: string;
   /** Specifies that children are arranged vertically */
-  direction: "column"
+  direction: "column";
   /** Child panels contained within this column */
-  children: (RowPanel | ViewPanel)[]
+  children: (RowPanel | ViewPanel)[];
   /** Width of the column panel in pixels */
-  width: number
+  width: number;
 }
 
 /**
@@ -4326,21 +4326,21 @@ export interface ColumnPanel {
  */
 export interface ViewPanel {
   /** Unique identifier for the view panel */
-  id: string
+  id: string;
   /** Type of view displayed in this panel (journal or block) */
-  view: PanelView
+  view: PanelView;
   /** Arguments for the view, such as blockId for block views or date for journal views */
-  viewArgs: Record<string, any>
+  viewArgs: Record<string, any>;
   /** State of the view, used to preserve UI state like scroll position or editor selections */
-  viewState: Record<string, any>
+  viewState: Record<string, any>;
   /** Optional width of the panel in pixels */
-  width?: number
+  width?: number;
   /** Optional height of the panel in pixels */
-  height?: number
+  height?: number;
   /** Whether the panel is locked and cannot be closed or resized */
-  locked?: boolean
+  locked?: boolean;
   /** Whether the panel should take up extra space when available */
-  wide?: boolean
+  wide?: boolean;
 }
 
 /**
@@ -4349,11 +4349,11 @@ export interface ViewPanel {
  */
 export interface PanelHistory {
   /** ID of the panel that was active at this history point */
-  activePanel: string
+  activePanel: string;
   /** The view type that was displayed */
-  view: PanelView
+  view: PanelView;
   /** Arguments for the view at this history point */
-  viewArgs?: Record<string, any>
+  viewArgs?: Record<string, any>;
 }
 
 /**
@@ -4362,27 +4362,27 @@ export interface PanelHistory {
  */
 export interface PanelLayouts {
   /** The key of the default layout to use */
-  default: string
+  default: string;
   /** Map of named layouts with their panel configurations */
-  layouts: Record<string, { activePanel: string; panels: RowPanel }>
+  layouts: Record<string, { activePanel: string; panels: RowPanel }>;
 }
 
 /**
  * Properties for rendering a panel component.
  */
 export type PanelProps = {
-  panelId: string
-  active: boolean
-  preview?: "content" | "backRef"
-  customQuery?: BlockCustomQuery
-}
+  panelId: string;
+  active: boolean;
+  preview?: "content" | "backRef";
+  customQuery?: BlockCustomQuery;
+};
 
 // Commands
 /**
  * Basic command function type that defines functions that can be executed as commands.
  * Can be synchronous or asynchronous.
  */
-export type CommandFn = (...args: any[]) => void | Promise<void>
+export type CommandFn = (...args: any[]) => void | Promise<void>;
 
 /**
  * Editor command function type that defines functions that can be executed in the editor context.
@@ -4394,20 +4394,20 @@ export type EditorCommandFn = (
 ) =>
   | { ret?: any; undoArgs: any }
   | null
-  | Promise<{ ret?: any; undoArgs?: any } | null>
+  | Promise<{ ret?: any; undoArgs?: any } | null>;
 
 /**
  * Defines a command's properties including its label, function, and behavioral flags.
  */
 export interface Command {
   /** Human-readable name for the command */
-  label: string
+  label: string;
   /** The function to execute when the command is invoked, or a pair of do/undo functions */
-  fn: CommandFn | [EditorCommandFn, CommandFn]
+  fn: CommandFn | [EditorCommandFn, CommandFn];
   /** Whether the command accepts arguments */
-  hasArgs?: boolean
+  hasArgs?: boolean;
   /** Whether the command can be executed when no panel has focus */
-  noFocusNeeded?: boolean
+  noFocusNeeded?: boolean;
 }
 
 /**
@@ -4415,7 +4415,7 @@ export interface Command {
  */
 export interface CommandWithPinyin extends Command {
   /** Pinyin phonetic representation for improved search in Chinese */
-  pinyin: string
+  pinyin: string;
 }
 
 /**
@@ -4430,19 +4430,19 @@ export type EditorArg = [
   CursorData | null,
   /** Whether this is a redo operation */
   boolean,
-]
+];
 
 /**
  * Predicate function type used for "before command" hooks.
  * Returns true to allow the command to proceed, false to cancel it.
  */
-export type BeforeHookPred = (id: string, ...args: any[]) => boolean
+export type BeforeHookPred = (id: string, ...args: any[]) => boolean;
 
 /**
  * Function type used for "after command" hooks.
  * Called after a command has been executed.
  */
-export type AfterHook = (id: string, ...args: any[]) => void | Promise<void>
+export type AfterHook = (id: string, ...args: any[]) => void | Promise<void>;
 
 /**
  * Represents the current cursor position in the editor.
@@ -4450,15 +4450,15 @@ export type AfterHook = (id: string, ...args: any[]) => void | Promise<void>
  */
 export interface CursorData {
   /** Start position of the selection */
-  anchor: CursorNodeData
+  anchor: CursorNodeData;
   /** End position of the selection */
-  focus: CursorNodeData
+  focus: CursorNodeData;
   /** Whether the selection direction is forward (anchor comes before focus) */
-  isForward: boolean
+  isForward: boolean;
   /** ID of the panel containing the cursor */
-  panelId: string
+  panelId: string;
   /** ID of the root block in the editor */
-  rootBlockId: DbId
+  rootBlockId: DbId;
 }
 
 /**
@@ -4466,13 +4466,13 @@ export interface CursorData {
  */
 export interface CursorNodeData {
   /** ID of the block where the cursor is located */
-  blockId: DbId
+  blockId: DbId;
   /** Whether the cursor is in inline content */
-  isInline: boolean
+  isInline: boolean;
   /** Index within the block's content array */
-  index: number
+  index: number;
   /** Character offset within the content item */
-  offset: number
+  offset: number;
 }
 
 // Notifications
@@ -4482,15 +4482,15 @@ export interface CursorNodeData {
  */
 export interface Notification {
   /** Unique identifier for the notification */
-  id: number
+  id: number;
   /** Type of notification that determines its visual appearance and severity */
-  type: "info" | "success" | "warn" | "error"
+  type: "info" | "success" | "warn" | "error";
   /** Optional title text for the notification */
-  title?: string
+  title?: string;
   /** Main message content of the notification */
-  message: string
+  message: string;
   /** Optional action callback that can be triggered from the notification */
-  action?: () => void | Promise<void>
+  action?: () => void | Promise<void>;
 }
 
 // Plugins
@@ -4500,15 +4500,15 @@ export interface Notification {
  */
 export interface Plugin {
   /** Whether the plugin is currently enabled */
-  enabled: boolean
+  enabled: boolean;
   /** Icon identifier for the plugin */
-  icon: string
+  icon: string;
   /** Optional settings schema defining available configuration options */
-  schema?: PluginSettingsSchema
+  schema?: PluginSettingsSchema;
   /** Current settings values for the plugin */
-  settings?: Record<string, any>
+  settings?: Record<string, any>;
   /** The loaded plugin module when enabled */
-  module?: any
+  module?: any;
 }
 
 /**
@@ -4518,9 +4518,9 @@ export interface Plugin {
 export interface PluginSettingsSchema {
   [key: string]: {
     /** Human-readable label for the setting */
-    label: string
+    label: string;
     /** Optional description explaining the purpose of the setting */
-    description?: string
+    description?: string;
     /** Data type of the setting, which determines how it is edited in the UI */
     type:
       | "string"
@@ -4534,14 +4534,14 @@ export interface PluginSettingsSchema {
       | "color"
       | "singleChoice"
       | "multiChoices"
-      | "array"
+      | "array";
     /** Default value for the setting if not explicitly set */
-    defaultValue?: any
+    defaultValue?: any;
     /** For choice types, the available options */
-    choices?: { label: string; value: string }[]
+    choices?: { label: string; value: string }[];
     /** For array types, the schema for each item in the array */
-    arrayItemSchema?: PluginSettingsSchema
-  }
+    arrayItemSchema?: PluginSettingsSchema;
+  };
 }
 
 // Toolbar
@@ -4551,17 +4551,17 @@ export interface PluginSettingsSchema {
  */
 export interface ToolbarButton {
   /** Icon identifier (usually a Tabler Icons class) */
-  icon: string
+  icon: string;
   /** Tooltip text displayed on hover */
-  tooltip: string
+  tooltip: string;
   /** Optional command ID to execute when clicked */
-  command?: string
+  command?: string;
   /** Optional function to render a dropdown menu when clicked */
-  menu?: (close: () => void, state?: any) => React.ReactNode
+  menu?: (close: () => void, state?: any) => React.ReactNode;
   /** Optional text color for the button */
-  color?: string
+  color?: string;
   /** Optional background color for the button */
-  background?: string
+  background?: string;
 }
 
 // Slash Command
@@ -4571,13 +4571,13 @@ export interface ToolbarButton {
  */
 export interface SlashCommand {
   /** Icon identifier for the command */
-  icon: string
+  icon: string;
   /** Group name for organizing commands in the slash menu */
-  group: string
+  group: string;
   /** Display title for the command */
-  title: string
+  title: string;
   /** Command ID to execute when selected */
-  command: string
+  command: string;
 }
 
 /**
@@ -4585,7 +4585,7 @@ export interface SlashCommand {
  */
 export interface SlashCommandWithPinyin extends SlashCommand {
   /** Pinyin phonetic representation for improved search in Chinese */
-  pinyin: string
+  pinyin: string;
 }
 
 // Block Menu Command
@@ -4596,24 +4596,24 @@ export interface SlashCommandWithPinyin extends SlashCommand {
 export type BlockMenuCommand =
   | {
       /** Indicates this command works only on a single block */
-      worksOnMultipleBlocks: false
+      worksOnMultipleBlocks: false;
       /** Function to render the menu item, receiving the block ID and context */
       render: (
         blockId: DbId,
         rootBlockId: DbId,
         close: () => void,
-      ) => React.ReactNode
+      ) => React.ReactNode;
     }
   | {
       /** Indicates this command works on multiple selected blocks */
-      worksOnMultipleBlocks: true
+      worksOnMultipleBlocks: true;
       /** Function to render the menu item, receiving an array of block IDs and context */
       render: (
         blockIds: DbId[],
         rootBlockId: DbId,
         close: () => void,
-      ) => React.ReactNode
-    }
+      ) => React.ReactNode;
+    };
 
 // Tag Menu Command
 /**
@@ -4629,8 +4629,8 @@ export type TagMenuCommand = {
     tagBlock: Block,
     close: () => void,
     tagRef?: BlockRef,
-  ) => React.ReactElement
-}
+  ) => React.ReactElement;
+};
 
 // Editor Sidetool
 /**
@@ -4641,14 +4641,14 @@ export type EditorSidetool = {
   /**
    * Function to render the sidetool, receiving the root block ID and panel ID.
    */
-  render: (rootBlockId: DbId, panelId: string) => React.ReactNode
-}
+  render: (rootBlockId: DbId, panelId: string) => React.ReactNode;
+};
 
 // Blocks
 /**
  * Database ID type used to uniquely identify blocks and other entities in the database.
  */
-export type DbId = number
+export type DbId = number;
 
 /**
  * Core block data structure that represents a single note, section, or other content unit.
@@ -4656,29 +4656,29 @@ export type DbId = number
  */
 export interface Block {
   /** Unique identifier for the block */
-  id: DbId
+  id: DbId;
   /** Optional array of content fragments for rich text content */
-  content?: ContentFragment[]
+  content?: ContentFragment[];
   /** Optional plain text content, used along with the content array */
-  text?: string
+  text?: string;
   /** Timestamp when the block was created */
-  created: Date
+  created: Date;
   /** Timestamp when the block was last modified */
-  modified: Date
+  modified: Date;
   /** ID of the parent block, if any */
-  parent?: DbId
+  parent?: DbId;
   /** ID of the block to the left in the content flow, used for ordering siblings */
-  left?: DbId
+  left?: DbId;
   /** Array of child block IDs */
-  children: DbId[]
+  children: DbId[];
   /** Array of aliases (alternative names) for the block */
-  aliases: string[]
+  aliases: string[];
   /** Array of named properties attached to the block */
-  properties: BlockProperty[]
+  properties: BlockProperty[];
   /** Array of outgoing references from this block to other blocks */
-  refs: BlockRef[]
+  refs: BlockRef[];
   /** Array of incoming references from other blocks to this block */
-  backRefs: BlockRef[]
+  backRefs: BlockRef[];
 }
 
 /**
@@ -4687,16 +4687,16 @@ export interface Block {
  */
 export type ContentFragment = {
   /** The type of content fragment (e.g., "text", "code", "link") */
-  t: string
+  t: string;
   /** The value of the content fragment */
-  v: any
+  v: any;
   /** Optional formatting information */
-  f?: string
+  f?: string;
   /** Optional formatting arguments */
-  fa?: Record<string, any>
+  fa?: Record<string, any>;
   /** Additional properties can be included based on content type */
-  [key: string]: any
-}
+  [key: string]: any;
+};
 
 /**
  * Represents a block's structure and type information.
@@ -4704,10 +4704,10 @@ export type ContentFragment = {
  */
 export type Repr = {
   /** The type of the block (e.g., "text", "code", "heading") */
-  type: string
+  type: string;
   /** Additional properties specific to the block type */
-  [key: string]: any
-}
+  [key: string]: any;
+};
 
 /**
  * Represents a named property attached to a block.
@@ -4715,15 +4715,15 @@ export type Repr = {
  */
 export interface BlockProperty {
   /** Name of the property */
-  name: string
+  name: string;
   /** Type code for the property (determines how the value is interpreted) */
-  type: number
+  type: number;
   /** Optional arguments specific to the property type */
-  typeArgs?: any
+  typeArgs?: any;
   /** The property value */
-  value?: any
+  value?: any;
   /** Optional position for visual ordering of properties */
-  pos?: number
+  pos?: number;
 }
 
 /**
@@ -4732,45 +4732,45 @@ export interface BlockProperty {
  */
 export interface BlockRef {
   /** Unique identifier for the reference */
-  id: DbId
+  id: DbId;
   /** ID of the block containing the reference */
-  from: DbId
+  from: DbId;
   /** ID of the block being referenced */
-  to: DbId
+  to: DbId;
   /** Type code for the reference */
-  type: number
+  type: number;
   /** Optional alias name used for the reference */
-  alias?: string
+  alias?: string;
   /** Optional additional properties for the reference */
-  data?: BlockProperty[]
+  data?: BlockProperty[];
 }
 
 /**
  * Simplified type for block reference data.
  */
-export type BlockRefData = Pick<BlockProperty, "name" | "type" | "value">
+export type BlockRefData = Pick<BlockProperty, "name" | "type" | "value">;
 
 /**
  * Simplified block structure used when converting blocks to other formats.
  */
 export type BlockForConversion = {
   /** Content fragments in the block */
-  content?: ContentFragment[]
+  content?: ContentFragment[];
   /** IDs of child blocks */
-  children?: DbId[]
-  sub?: [BlockForConversion, Repr, Block][]
-}
+  children?: DbId[];
+  sub?: [BlockForConversion, Repr, Block][];
+};
 
 /**
  * Context for block conversion, used to track export scope.
  */
 export type ConvertContext = {
   /** The root block ID of the export scope */
-  exportRootId?: DbId
-}
+  exportRootId?: DbId;
+};
 
 /** Block rendering modes */
-export type BlockRenderingMode = "normal" | "simple" | "simple-children"
+export type BlockRenderingMode = "normal" | "simple" | "simple-children";
 
 // Query
 /**
@@ -4779,34 +4779,34 @@ export type BlockRenderingMode = "normal" | "simple" | "simple-children"
  */
 export interface QueryDescription {
   /** The main query group with conditions */
-  q?: QueryGroup
+  q?: QueryGroup;
   /** Optional block ID to exclude from results */
-  excludeId?: DbId
+  excludeId?: DbId;
   /** Array of sort specifications for ordering results */
-  sort?: QuerySort[]
+  sort?: QuerySort[];
   /** For paginated results, the page number (0-based) */
-  page?: number
+  page?: number;
   /** For paginated results, the number of items per page */
-  pageSize?: number
+  pageSize?: number;
   /** Filters results to blocks with a specific tag */
-  tagName?: string
+  tagName?: string;
   /** Field to group results by */
-  groupBy?: string
+  groupBy?: string;
   /** Specifies which group to return results for */
-  group?: string
+  group?: string;
   /** Statistical calculations to perform on results */
-  stats?: QueryStat[]
+  stats?: QueryStat[];
   /** Whether to format results as a table */
-  asTable?: boolean
+  asTable?: boolean;
   /** Calendar view configuration if results should be displayed in calendar format */
   asCalendar?: {
     /** Field to use for calendar date (created/modified/journal date) */
-    field: "created" | "modified" | "journal"
+    field: "created" | "modified" | "journal";
     /** Start date for the calendar range */
-    start: Date
+    start: Date;
     /** End date for the calendar range */
-    end: Date
-  }
+    end: Date;
+  };
 }
 
 /**
@@ -4822,7 +4822,7 @@ export type QueryItem =
   | QueryBlock
   | QueryNoText
   | QueryNoTag
-  | QueryNoRef
+  | QueryNoRef;
 
 /**
  * A group of query conditions combined with a logical operator.
@@ -4830,13 +4830,13 @@ export type QueryItem =
  */
 export interface QueryGroup {
   /** Kind of group: 1 for AND, 2 for OR */
-  kind: QueryKindAnd | QueryKindOr
+  kind: QueryKindAnd | QueryKindOr;
   /** Array of conditions within this group */
-  conditions: QueryItem[]
+  conditions: QueryItem[];
   /** Whether to include descendant blocks in results */
-  includeDescendants?: boolean
+  includeDescendants?: boolean;
   /** Optional conditions that apply to descendant blocks */
-  subConditions?: QueryGroup
+  subConditions?: QueryGroup;
 }
 
 /**
@@ -4845,13 +4845,13 @@ export interface QueryGroup {
  */
 export interface QueryTag {
   /** Kind identifier for tag queries (4) */
-  kind: QueryKindTag
+  kind: QueryKindTag;
   /** The tag name to match */
-  name: string
+  name: string;
   /** Optional property conditions for the tag */
-  properties?: QueryTagProperty[]
+  properties?: QueryTagProperty[];
   /** Whether to include descendant blocks in results */
-  includeDescendants?: boolean
+  includeDescendants?: boolean;
 }
 
 /**
@@ -4859,9 +4859,9 @@ export interface QueryTag {
  */
 export interface QueryNoTag {
   /** Kind identifier for no-tag queries (5) */
-  kind: QueryKindNoTag
+  kind: QueryKindNoTag;
   /** The tag name that should not be present */
-  name: string
+  name: string;
 }
 
 /**
@@ -4869,13 +4869,13 @@ export interface QueryNoTag {
  */
 export interface QueryJournal {
   /** Kind identifier for journal queries (3) */
-  kind: QueryKindJournal
+  kind: QueryKindJournal;
   /** Start date for the journal range */
-  start: QueryJournalDate
+  start: QueryJournalDate;
   /** End date for the journal range */
-  end: QueryJournalDate
+  end: QueryJournalDate;
   /** Whether to include descendant blocks in results */
-  includeDescendants?: boolean
+  includeDescendants?: boolean;
 }
 
 /**
@@ -4884,11 +4884,11 @@ export interface QueryJournal {
  */
 export interface QueryJournalDate {
   /** Type of date: 1 for relative, 2 for full/absolute date */
-  t: QueryJournalRelative | QueryJournalFull
+  t: QueryJournalRelative | QueryJournalFull;
   /** For relative dates, the numeric value (e.g., 2 in "2 days ago") */
-  v?: number
+  v?: number;
   /** For relative dates, the unit (s=seconds, m=minutes, h=hours, d=days, w=weeks, M=months, y=years) */
-  u?: "s" | "m" | "h" | "d" | "w" | "M" | "y"
+  u?: "s" | "m" | "h" | "d" | "w" | "M" | "y";
 }
 
 /**
@@ -4896,11 +4896,11 @@ export interface QueryJournalDate {
  */
 export interface QueryRef {
   /** Kind identifier for reference queries (6) */
-  kind: QueryKindRef
+  kind: QueryKindRef;
   /** ID of the block that should be referenced */
-  blockId: DbId
+  blockId: DbId;
   /** Whether to include descendant blocks in results */
-  includeDescendants?: boolean
+  includeDescendants?: boolean;
 }
 
 /**
@@ -4908,9 +4908,9 @@ export interface QueryRef {
  */
 export interface QueryNoRef {
   /** Kind identifier for no-reference queries (7) */
-  kind: QueryKindNoRef
+  kind: QueryKindNoRef;
   /** ID of the block that should not be referenced */
-  blockId: DbId
+  blockId: DbId;
 }
 
 /**
@@ -4918,22 +4918,22 @@ export interface QueryNoRef {
  */
 export interface QueryText {
   /** Kind identifier for text queries (8) */
-  kind: QueryKindText
+  kind: QueryKindText;
   /** The text to search for */
-  text: string
+  text: string;
   /** Whether to perform raw text search (no stemming/normalization) */
-  raw?: boolean
+  raw?: boolean;
   /** Whether to include descendant blocks in results */
-  includeDescendants?: boolean
+  includeDescendants?: boolean;
 }
 
 export interface QueryNoText {
   /** Kind identifier for no-text queries (10) */
-  kind: QueryKindNoText
+  kind: QueryKindNoText;
   /** The text to exclude */
-  text: string
+  text: string;
   /** Whether to perform raw text search */
-  raw?: boolean
+  raw?: boolean;
 }
 
 /**
@@ -4941,42 +4941,42 @@ export interface QueryNoText {
  */
 export interface QueryBlock {
   /** Kind identifier for block queries (9) */
-  kind: QueryKindBlock
+  kind: QueryKindBlock;
   /** The block types to match or not match */
   types?: {
-    op?: QueryHas | QueryNotHas
-    value?: string[]
-  }
+    op?: QueryHas | QueryNotHas;
+    value?: string[];
+  };
   /** Whether to match blocks with a parent */
-  hasParent?: boolean
+  hasParent?: boolean;
   /** Whether to match blocks with a child */
-  hasChild?: boolean
+  hasChild?: boolean;
   /** Whether to match blocks with tags */
-  hasTags?: boolean
+  hasTags?: boolean;
   /** Whether to match blocks with back references */
-  hasBackRefs?: boolean
+  hasBackRefs?: boolean;
   /** Whether to match blocks with aliases */
-  hasAliases?: boolean
+  hasAliases?: boolean;
   /** Whether to match blocks with a specific creation date */
   created?: {
-    op?: QueryEq | QueryNotEq | QueryGt | QueryLt | QueryGe | QueryLe
-    value?: Date | QueryJournalDate
-  }
+    op?: QueryEq | QueryNotEq | QueryGt | QueryLt | QueryGe | QueryLe;
+    value?: Date | QueryJournalDate;
+  };
   /** Whether to match blocks with a specific modification date */
   modified?: {
-    op?: QueryEq | QueryNotEq | QueryGt | QueryLt | QueryGe | QueryLe
-    value?: Date | QueryJournalDate
-  }
+    op?: QueryEq | QueryNotEq | QueryGt | QueryLt | QueryGe | QueryLe;
+    value?: Date | QueryJournalDate;
+  };
   /** Whether to include descendant blocks in results */
-  includeDescendants?: boolean
+  includeDescendants?: boolean;
 }
 
 /** Query condition that matches task blocks */
 export interface QueryTask {
   /** Kind identifier for task queries (11) */
-  kind: QueryKindTask
+  kind: QueryKindTask;
   /** Whether the task is completed */
-  completed?: boolean
+  completed?: boolean;
 }
 
 /**
@@ -4984,11 +4984,11 @@ export interface QueryTask {
  */
 export interface QueryTagProperty {
   /** Name of the tag property */
-  name: string
+  name: string;
   /** Optional type code for the property */
-  type?: number
+  type?: number;
   /** Optional type arguments */
-  typeArgs?: any
+  typeArgs?: any;
   /** Operation to perform (equals, not equals, etc.) */
   op?:
     | QueryEq
@@ -5002,16 +5002,16 @@ export interface QueryTagProperty {
     | QueryGe
     | QueryLe
     | QueryNull
-    | QueryNotNull
+    | QueryNotNull;
   /** Value to compare against */
-  value?: any
+  value?: any;
 }
 
 /**
  * Specifies sorting for query results.
  * A tuple of field name and direction.
  */
-export type QuerySort = [string, "ASC" | "DESC"]
+export type QuerySort = [string, "ASC" | "DESC"];
 
 /**
  * Types of statistical operations that can be performed on query results.
@@ -5026,169 +5026,169 @@ export type QueryStat =
   | "min" // Minimum value
   | "max" // Maximum value
   | "percent_e" // Percentage of items with non-empty values
-  | "percent_ne" // Percentage of items with empty values
+  | "percent_ne"; // Percentage of items with empty values
 
 /**
  * Constant for the AND query group type.
  * All conditions must match for the group to match.
  */
-export type QueryKindAnd = 1
+export type QueryKindAnd = 1;
 
 /**
  * Constant for the OR query group type.
  * At least one condition must match for the group to match.
  */
-export type QueryKindOr = 2
+export type QueryKindOr = 2;
 
 /**
  * Constant for the journal query type.
  * Matches blocks in journal date range.
  */
-export type QueryKindJournal = 3
+export type QueryKindJournal = 3;
 
 /**
  * Constant for the tag query type.
  * Matches blocks with specific tags.
  */
-export type QueryKindTag = 4
+export type QueryKindTag = 4;
 
 /**
  * Constant for the no-tag query type.
  * Matches blocks without specific tags.
  */
-export type QueryKindNoTag = 5
+export type QueryKindNoTag = 5;
 
 /**
  * Constant for the reference query type.
  * Matches blocks referencing other blocks.
  */
-export type QueryKindRef = 6
+export type QueryKindRef = 6;
 
 /**
  * Constant for the no-reference query type.
  * Matches blocks not referencing other blocks.
  */
-export type QueryKindNoRef = 7
+export type QueryKindNoRef = 7;
 
 /**
  * Constant for the text query type.
  * Matches blocks containing specific text.
  */
-export type QueryKindText = 8
+export type QueryKindText = 8;
 
 /**
  * Constant for the block query type.
  * Matches blocks according to their properties.
  */
-export type QueryKindBlock = 9
+export type QueryKindBlock = 9;
 
 /**
  * Constant for the no-text query type.
  * Matches blocks without specific text.
  */
-export type QueryKindNoText = 10
+export type QueryKindNoText = 10;
 
 /**
  * Constant for the task query type.
  * Matches blocks that are tasks, optionally filtering by completion status.
  */
-export type QueryKindTask = 11
+export type QueryKindTask = 11;
 
 /**
  * Constant for the block match query type.
  * Matches specific blocks by their ID.
  */
-export type QueryKindBlockMatch = 12
+export type QueryKindBlockMatch = 12;
 
 /**
  * Constant for the content format query type.
  * Matches blocks containing specific formatting in content.
  */
-export type QueryKindFormat = 13
+export type QueryKindFormat = 13;
 
 /**
  * Operation constant: equals.
  * Matches if a value is equal to the specified value.
  */
-export type QueryEq = 1
+export type QueryEq = 1;
 
 /**
  * Operation constant: not equals.
  * Matches if a value is not equal to the specified value.
  */
-export type QueryNotEq = 2
+export type QueryNotEq = 2;
 
 /**
  * Operation constant: includes.
  * Matches if an array value includes the specified value.
  */
-export type QueryIncludes = 3
+export type QueryIncludes = 3;
 
 /**
  * Operation constant: not includes.
  * Matches if an array value doesn't include the specified value.
  */
-export type QueryNotIncludes = 4
+export type QueryNotIncludes = 4;
 
 /**
  * Operation constant: has property.
  * Matches if an object has the specified property.
  */
-export type QueryHas = 5
+export type QueryHas = 5;
 
 /**
  * Operation constant: doesn't have property.
  * Matches if an object doesn't have the specified property.
  */
-export type QueryNotHas = 6
+export type QueryNotHas = 6;
 
 /**
  * Operation constant: greater than.
  * Matches if a value is greater than the specified value.
  */
-export type QueryGt = 7
+export type QueryGt = 7;
 
 /**
  * Operation constant: less than.
  * Matches if a value is less than the specified value.
  */
-export type QueryLt = 8
+export type QueryLt = 8;
 
 /**
  * Operation constant: greater than or equal to.
  * Matches if a value is greater than or equal to the specified value.
  */
-export type QueryGe = 9
+export type QueryGe = 9;
 
 /**
  * Operation constant: less than or equal to.
  * Matches if a value is less than or equal to the specified value.
  */
-export type QueryLe = 10
+export type QueryLe = 10;
 
 /**
  * Operation constant: is null.
  * Matches if a value is null or undefined.
  */
-export type QueryNull = 11
+export type QueryNull = 11;
 
 /**
  * Operation constant: is not null.
  * Matches if a value is neither null nor undefined.
  */
-export type QueryNotNull = 12
+export type QueryNotNull = 12;
 
 /**
  * Constant for relative date specification in journal queries.
  * Used for dates like "2 days ago" or "next week".
  */
-export type QueryJournalRelative = 1
+export type QueryJournalRelative = 1;
 
 /**
  * Constant for absolute date specification in journal queries.
  * Used for specific dates.
  */
-export type QueryJournalFull = 2
+export type QueryJournalFull = 2;
 
 /**
  * Describes a query for searching and filtering blocks.
@@ -5196,40 +5196,40 @@ export type QueryJournalFull = 2
  */
 export interface QueryDescription2 {
   /** The main query group with conditions */
-  q?: QueryGroup2
+  q?: QueryGroup2;
   /** Optional block ID to exclude from results */
-  excludeId?: DbId
+  excludeId?: DbId;
   /** Array of sort specifications for ordering results */
-  sort?: QuerySort[]
+  sort?: QuerySort[];
   /** For paginated results, the page number (0-based) */
-  page?: number
+  page?: number;
   /** For paginated results, the number of items per page */
-  pageSize?: number
+  pageSize?: number;
   /** Filters results to blocks with a specific tag */
-  tagName?: string
+  tagName?: string;
   /** Field to group results by */
-  groupBy?: string
+  groupBy?: string;
   /** Specifies which group to return results for */
-  group?: string
+  group?: string;
   /** Statistical calculations to perform on results */
-  stats?: QueryStat[]
+  stats?: QueryStat[];
   /** Whether to format results as a table */
-  asTable?: boolean
+  asTable?: boolean;
   /** Calendar view configuration if results should be displayed in calendar format */
   asCalendar?: {
     /** Field to use for calendar date (created/modified/journal date) */
-    field: "created" | "modified" | "journal"
+    field: "created" | "modified" | "journal";
     /** Start date for the calendar range */
-    start: Date
+    start: Date;
     /** End date for the calendar range */
-    end: Date
-  }
+    end: Date;
+  };
   /** Random seed for stable random sorting across pagination */
-  randomSeed?: number
+  randomSeed?: number;
   /** Whether to use the current page's date as the reference for relative dates */
-  useReferenceDate?: boolean
+  useReferenceDate?: boolean;
   /** The reference date for relative dates (Unix timestamp) */
-  referenceDate?: number
+  referenceDate?: number;
 }
 
 /**
@@ -5245,7 +5245,7 @@ export type QueryItem2 =
   | QueryBlock2
   | QueryBlockMatch2
   | QueryTask
-  | QueryFormat2
+  | QueryFormat2;
 
 /**
  * A group of query conditions combined with a logical operator.
@@ -5260,11 +5260,11 @@ export interface QueryGroup2 {
     | QueryKindAncestorOr
     | QueryKindDescendantAnd
     | QueryKindDescendantOr
-    | QueryKindChainAnd
+    | QueryKindChainAnd;
   /** Array of conditions within this group */
-  conditions: QueryItem2[]
+  conditions: QueryItem2[];
   /** Whether to negate the conditions in this group */
-  negate?: boolean
+  negate?: boolean;
 }
 
 /**
@@ -5272,11 +5272,11 @@ export interface QueryGroup2 {
  */
 export interface QueryText2 {
   /** Kind identifier for text queries (8) */
-  kind: QueryKindText
+  kind: QueryKindText;
   /** The text to search for */
-  text: string
+  text: string;
   /** Whether to perform raw text search (no stemming/normalization) */
-  raw?: boolean
+  raw?: boolean;
 }
 
 /**
@@ -5285,13 +5285,13 @@ export interface QueryText2 {
  */
 export interface QueryTag2 {
   /** Kind identifier for tag queries (4) */
-  kind: QueryKindTag
+  kind: QueryKindTag;
   /** The tag name to match */
-  name: string
+  name: string;
   /** Optional property conditions for the tag */
-  properties?: QueryTagProperty[]
+  properties?: QueryTagProperty[];
   /** Only show direct tag references, not references to included tags */
-  selfOnly?: boolean
+  selfOnly?: boolean;
 }
 
 /**
@@ -5299,11 +5299,11 @@ export interface QueryTag2 {
  */
 export interface QueryRef2 {
   /** Kind identifier for reference queries (6) */
-  kind: QueryKindRef
+  kind: QueryKindRef;
   /** ID of the block that should be referenced */
-  blockId?: DbId
+  blockId?: DbId;
   /** Only show direct references, not references to included tags */
-  selfOnly?: boolean
+  selfOnly?: boolean;
 }
 
 /**
@@ -5311,11 +5311,11 @@ export interface QueryRef2 {
  */
 export interface QueryJournal2 {
   /** Kind identifier for journal queries (3) */
-  kind: QueryKindJournal
+  kind: QueryKindJournal;
   /** Start date for the journal range */
-  start: QueryJournalDate
+  start: QueryJournalDate;
   /** End date for the journal range */
-  end: QueryJournalDate
+  end: QueryJournalDate;
 }
 
 /**
@@ -5323,35 +5323,35 @@ export interface QueryJournal2 {
  */
 export interface QueryBlock2 {
   /** Kind identifier for block queries (9) */
-  kind: QueryKindBlock
+  kind: QueryKindBlock;
   /** The block types to match or not match */
   types?: {
-    op?: QueryHas | QueryNotHas
-    value?: string[]
-  }
+    op?: QueryHas | QueryNotHas;
+    value?: string[];
+  };
   /** Whether to match blocks with a parent */
-  hasParent?: boolean
+  hasParent?: boolean;
   /** Whether to match blocks with a child */
-  hasChild?: boolean
+  hasChild?: boolean;
   /** Whether to match blocks with tags */
-  hasTags?: boolean
+  hasTags?: boolean;
   /** Whether to match blocks with aliases */
-  hasAliases?: boolean
+  hasAliases?: boolean;
   /** Whether to match blocks with a specific number of back references */
   backRefs?: {
-    op?: QueryEq | QueryNotEq | QueryGt | QueryLt | QueryGe | QueryLe
-    value?: number
-  }
+    op?: QueryEq | QueryNotEq | QueryGt | QueryLt | QueryGe | QueryLe;
+    value?: number;
+  };
   /** Whether to match blocks with a specific creation date */
   created?: {
-    op?: QueryEq | QueryNotEq | QueryGt | QueryLt | QueryGe | QueryLe
-    value?: Date | QueryJournalDate
-  }
+    op?: QueryEq | QueryNotEq | QueryGt | QueryLt | QueryGe | QueryLe;
+    value?: Date | QueryJournalDate;
+  };
   /** Whether to match blocks with a specific modification date */
   modified?: {
-    op?: QueryEq | QueryNotEq | QueryGt | QueryLt | QueryGe | QueryLe
-    value?: Date | QueryJournalDate
-  }
+    op?: QueryEq | QueryNotEq | QueryGt | QueryLt | QueryGe | QueryLe;
+    value?: Date | QueryJournalDate;
+  };
 }
 
 /**
@@ -5359,9 +5359,9 @@ export interface QueryBlock2 {
  */
 export interface QueryBlockMatch2 {
   /** Kind identifier for block match queries (12) */
-  kind: QueryKindBlockMatch
+  kind: QueryKindBlockMatch;
   /** ID of the specific block to match */
-  blockId?: DbId
+  blockId?: DbId;
 }
 
 /**
@@ -5369,33 +5369,33 @@ export interface QueryBlockMatch2 {
  */
 export interface QueryFormat2 {
   /** Kind identifier for format queries (13) */
-  kind: QueryKindFormat
+  kind: QueryKindFormat;
   /** The format identifier (e.g., 'b', 'i', 'c') */
-  f: string
+  f: string;
   /** The format attributes for precise matching */
-  fa?: Record<string, any>
+  fa?: Record<string, any>;
 }
 
 /** Constant for the self AND group type. */
-export type QueryKindSelfAnd = 100
+export type QueryKindSelfAnd = 100;
 
 /** Constant for the self OR group type. */
-export type QueryKindSelfOr = 101
+export type QueryKindSelfOr = 101;
 
 /** Constant for the ancestor AND group type. */
-export type QueryKindAncestorAnd = 102
+export type QueryKindAncestorAnd = 102;
 
 /** Constant for the ancestor OR group type. */
-export type QueryKindAncestorOr = 103
+export type QueryKindAncestorOr = 103;
 
 /** Constant for the descendant AND group type. */
-export type QueryKindDescendantAnd = 104
+export type QueryKindDescendantAnd = 104;
 
 /** Constant for the descendant OR group type. */
-export type QueryKindDescendantOr = 105
+export type QueryKindDescendantOr = 105;
 
 /** Constant for the chain AND group type. */
-export type QueryKindChainAnd = 106
+export type QueryKindChainAnd = 106;
 
 // Misc
 /**
@@ -5404,23 +5404,23 @@ export type QueryKindChainAnd = 106
  */
 export interface IdContent {
   /** The block ID */
-  id: DbId
+  id: DbId;
   /** The block's content fragments, or null if no content */
-  content: ContentFragment[] | null
+  content: ContentFragment[] | null;
 }
 
 /**
  * Type representing a choice with an optional color.
  * Can be a string or an object with name and optional color.
  */
-export type Choice = { n: string; c?: string } | string
+export type Choice = { n: string; c?: string } | string;
 
 /**
  * Configuration for custom queries (used in block previews primarily).
  */
 export interface BlockCustomQuery {
   /** The query description */
-  q: QueryDescription2
+  q: QueryDescription2;
   /** Optional extra SQL to append to the query defined in `q` */
-  extraSql?: string
+  extraSql?: string;
 }
