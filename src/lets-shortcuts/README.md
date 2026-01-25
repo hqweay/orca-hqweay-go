@@ -32,6 +32,17 @@
 
 - `tag`: 标签内容（如 `碎碎念` 或 `#碎碎念`）。
 - `shortcut`: 快捷键字符串，格式如 `ctrl+shift+k`、`meta+p`（macOS 上 meta 对应 Command 键）。
+- `defaults`: (可选) 默认属性配置数组。
+
+```json
+{
+  "tag": "MyTag",
+  "shortcut": "ctrl+alt+m",
+  "defaults": [
+    { "name": "Status", "value": "Todo", "type": 1 }
+  ]
+}
+```
 
 ### 快捷键格式
 

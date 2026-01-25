@@ -65,3 +65,21 @@
   - **Pitfall**: When using Orca's built-in components (e.g., `orca.components.Button`), the type definition in `src/orca.d.ts` might be outdated or incomplete compared to the actual implementation.
   - **Example**: `Button` component was defined as `React.HTMLAttributes`, causing TypeScript to complain about missing `disabled` prop, even though the underlying HTML `<button>` supports it.
   - **Fix**: Updated definitions to use specific React types (e.g., `React.ButtonHTMLAttributes<HTMLButtonElement>`) instead of generic `HTMLAttributes`. This is a safe and correct local fix until official types are updated.
+
+### Tag Shortcuts Plugin
+- **i18n Support**:
+  - Implemented Localization (L10n) helper `t()` wrapping.
+  - Hardcoded strings in `ShortcutsSettings` and `TagShortcutItem` replaced with keys.
+  - Added new translation keys for Property Types and UI elements in `zhCN.ts`.
+- **Clipboard Integration**:
+  - **`paste-clipboard-tags` Command**: Added a command to parse JSON from clipboard and insert tags.
+  - **JSON Formats**: Supported two formats for flexibility:
+    1.  **Envelope (Recommended)**: `{ "type": "orca-tags", "data": [...] }` - Safer, prevents misinterpretation.
+    2.  **Simple Array**: `[{ "TagName": [...] }]` - Easier for manual construction.
+  - **Validation**: Added heuristic checks (Array of Objects) and explicit type checks.
+- **Configurable Shortcuts**:
+  - Added `pasteTagsShortcut` setting to allow users to bind a global key for the paste command.
+  - Implemented dynamic registration/unregistration of the shortcut based on settings changes.
+- **UX Improvements**:
+  - **Tooltip**: Implemented a custom React-based tooltip (using `onMouseEnter`/`onMouseLeave`) for the shortcut setting to show supported formats.
+  - **Click-to-Copy**: Added interactivity to the help icon to copy an example JSON template to clipboard for easier user onboarding.
