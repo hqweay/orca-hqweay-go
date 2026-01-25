@@ -102,6 +102,7 @@ export class CSVImporter {
       for (const data of dataObjects) {
         try {
           const importData = this.mapRowToBlockData(data, config, headers);
+          console.log("Importing block:", importData);
           await DataImporter.importBlock(importData, {
             type: "block",
             blockId: targetParentId,
@@ -146,7 +147,13 @@ export class CSVImporter {
     headers: string[],
   ): BlockData {
     const contentColumnKey = headers[config.contentColumnIndex];
-    const content = (data[contentColumnKey] || "").trim();
+    let content = (data[contentColumnKey] || "").trim();
+    let contentFragment: any[] = [];
+    if (content.startsWith("http://") || content.startsWith("https://")) {
+      contentFragment = [{ t: "l", v: `${content}`, l: `${content}` }];
+    } else {
+      contentFragment = [{ t: "t", v: `${content}` }];
+    }
 
     const tags: TagData[] = config.tags.map((tagConfig) => {
       return {
@@ -165,7 +172,7 @@ export class CSVImporter {
       };
     });
 
-    return { content, tags };
+    return { content: contentFragment, tags };
   }
 
   private async readFileContent(file: File): Promise<string> {

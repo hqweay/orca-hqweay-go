@@ -73,12 +73,9 @@ export class DataImporter {
         blockId = target.cursor?.anchor?.blockId || null;
       }
     }
-    console.log("Block created with data:", data);
 
     if (!blockId) return null;
 
-    console.log("Block created with ID:", blockId);
-    console.log("Tags:", data.tags);
     // 2. Apply Tags
     if (data.tags && data.tags.length > 0) {
       for (const tag of data.tags) {
@@ -95,7 +92,7 @@ export class DataImporter {
   static async applyTag(blockId: number, tag: TagData) {
     const tagName = tag.name.trim();
     if (!tagName) return;
-    console.log("Applying tag", tagName);
+
     // Format properties for insertTag
     const formattedProperties = tag.properties.map((p) => {
       let val = p.value;
@@ -158,7 +155,6 @@ export class DataImporter {
       };
     });
 
-    console.log("Formatted properties:", formattedProperties);
     // 1. Insert Tag
     const tagBlockId = await orca.commands.invokeEditorCommand(
       "core.editor.insertTag",
@@ -168,7 +164,7 @@ export class DataImporter {
       // Stripping Proxy markers
       formattedProperties,
     );
-    console.log("Tag block ID:", tagBlockId);
+
     // 2. Sync Schema
     if (tagBlockId) {
       await this.syncTagSchema(tagBlockId, formattedProperties);
