@@ -59,10 +59,12 @@ The community plugin marketplace for Orca, discover more possibilities:
 ### 8. 🏷️ Quick Tag Shortcuts
 Boost your tagging efficiency with custom shortcuts:
 - **Efficient Entry**: Configure shortcuts for frequently used tags.
-- **Multi-tag Support**: Insert multiple related tags with a single shortcut (comma separated).
-- **Default Properties**: Configure default property values (e.g., status, category) for specific tags.
-- **Clipboard Import**: Batch insert tags with properties from clipboard JSON (configurable shortcut).
-- **Native Integration**: Deeply integrated with Orca's native tagging system.
+- **Default Properties**: Automatically attach preset properties (e.g., status, date, priority) when inserting tags.
+- **Multi-tag Support**: Insert multiple related tags with a single shortcut.
+- **Paste from Clipboard (Paste Tags)**:
+    - Batch insert tags and complex properties via JSON.
+    - **Rich Text Support**: Insert text fragments (ContentFragment) with links or formatting alongside tags.
+- **Native Integration**: Deeply integrated with Orca's native tagging and property system.
 
 ## Development
 
