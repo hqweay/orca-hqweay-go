@@ -159,7 +159,7 @@ export function CSVImportModal({
             className="ti ti-info-circle"
             style={{ color: "var(--b3-theme-primary)" }}
           ></i>
-          {t("How to Use")}
+          {t("csv.import.howToUse")}
         </h3>
         <p style={{ margin: 0, opacity: 0.8, fontSize: "0.95em" }}>
           {t("csv.import.description")}
@@ -198,7 +198,7 @@ export function CSVImportModal({
             style={{ fontSize: "40px", color: "var(--b3-theme-primary)" }}
           ></i>
         </div>
-        <h4 style={{ margin: "0 0 8px 0" }}>{t("Select CSV File")}</h4>
+        <h4 style={{ margin: "0 0 8px 0" }}>{t("csv.import.selectFile")}</h4>
         <p style={{ margin: "0 0 24px 0", opacity: 0.5, fontSize: "0.9em" }}>
           {t("csv.import.supportedFormat")}
         </p>
@@ -211,7 +211,7 @@ export function CSVImportModal({
         />
         <Button variant="solid">
           <i className="ti ti-plus" style={{ marginRight: "8px" }}></i>
-          {t("Choose File")}
+          {t("csv.import.chooseFile")}
         </Button>
       </div>
     </div>
@@ -236,7 +236,7 @@ export function CSVImportModal({
             opacity: 0.6,
           }}
         >
-          {t("Insertion Destination")}
+          {t("csv.import.targetType")}
         </h4>
         <div style={{ display: "flex", gap: "12px" }}>
           <Button
@@ -246,7 +246,7 @@ export function CSVImportModal({
             }
             style={{ flex: 1 }}
           >
-            {t("To Specific Block")}
+            {t("csv.import.targetTypeBlock")}
           </Button>
           <Button
             variant={config?.targetType === "daily" ? "solid" : "outline"}
@@ -255,7 +255,7 @@ export function CSVImportModal({
             }
             style={{ flex: 1 }}
           >
-            {t("To Daily Notes")}
+            {t("csv.import.targetTypeDaily")}
           </Button>
         </div>
       </div>
@@ -271,7 +271,7 @@ export function CSVImportModal({
               opacity: 0.6,
             }}
           >
-            {t("Target Parent Block")}
+            {t("csv.import.targetBlock")}
           </h4>
           <BlockSelect
             mode="block"
@@ -298,7 +298,7 @@ export function CSVImportModal({
             opacity: 0.6,
           }}
         >
-          {t("Block Text Column")}
+          {t("csv.import.contentColumn")}
         </h4>
         <Select
           selected={[config?.contentColumnIndex.toString() || "0"]}
@@ -316,7 +316,7 @@ export function CSVImportModal({
           width="100%"
         />
         <p style={{ marginTop: "4px", fontSize: "0.8em", opacity: 0.5 }}>
-          {t("Choose which column contains the main text of the block.")}
+          {t("csv.import.contentColumnHint")}
         </p>
       </div>
 
@@ -338,7 +338,7 @@ export function CSVImportModal({
               opacity: 0.6,
             }}
           >
-            {t("Target Tags")}
+            {t("csv.import.tags")}
           </h4>
           <Button
             variant="outline"
@@ -366,7 +366,7 @@ export function CSVImportModal({
             style={{ fontSize: "0.8em", padding: "4px 8px" }}
           >
             <i className="ti ti-plus" style={{ marginRight: "4px" }}></i>
-            {t("Add Tag")}
+            {t("csv.import.addTag")}
           </Button>
         </div>
 
@@ -389,7 +389,7 @@ export function CSVImportModal({
                       setConfig({ ...config, tags: newTags });
                     }
                   }}
-                  placeholder={t("Tag Name (e.g. Movies)")}
+                  placeholder={t("csv.import.tagNamePlaceholder")}
                 />
               </div>
               {config.tags.length > 1 && (
@@ -410,9 +410,7 @@ export function CSVImportModal({
           ))}
         </div>
         <p style={{ marginTop: "8px", fontSize: "0.8em", opacity: 0.5 }}>
-          {t(
-            "Blocks will be tagged with these labels. Each tag can have different property mappings in the next step.",
-          )}
+          {t("csv.import.tagsHint")}
         </p>
       </div>
     </div>
@@ -446,7 +444,7 @@ export function CSVImportModal({
               opacity: 0.6,
             }}
           >
-            {t("Configuring Tag:")}
+            {t("csv.import.configuringTag")}
           </h4>
           <div
             style={{
@@ -471,7 +469,7 @@ export function CSVImportModal({
                       : "1px solid var(--b3-theme-surface-lighter)",
                 }}
               >
-                {tag.name || `${t("Tag")} ${index + 1}`}
+                {tag.name || `${t("common.label")} ${index + 1}`}
               </Button>
             ))}
           </div>
@@ -493,7 +491,7 @@ export function CSVImportModal({
             }}
           />
           <span style={{ fontSize: "0.95em", fontWeight: "600" }}>
-            {t("Skip first row (Header)")}
+            {t("csv.import.skipHeader")}
           </span>
         </div>
 
@@ -524,7 +522,9 @@ export function CSVImportModal({
                 opacity: 0.6,
               }}
             >
-              {t("Column Mappings for")} "{currentTag.name || "..."}"
+              {t("csv.import.columnMappingsFor", {
+                name: currentTag.name || "...",
+              })}
             </h4>
             {config.tags.length > 1 && (
               <Button
@@ -541,13 +541,13 @@ export function CSVImportModal({
                       ),
                     };
                     setConfig({ ...config, tags: nextTags });
-                    orca.notify("success", t("Copied from another tag"));
+                    orca.notify("success", t("csv.import.copySuccess"));
                   }
                 }}
                 style={{ fontSize: "0.8em", opacity: 0.6 }}
               >
                 <i className="ti ti-copy" style={{ marginRight: "4px" }}></i>
-                {t("Copy from others")}
+                {t("csv.import.copyFromOthers")}
               </Button>
             )}
           </div>
@@ -633,12 +633,18 @@ export function CSVImportModal({
                     disabled={!colConfig.enabled}
                     options={[
                       { value: PropType.Text.toString(), label: t("Text") },
-                      { value: PropType.Number.toString(), label: t("Num") },
-                      { value: PropType.Boolean.toString(), label: t("Bool") },
-                      { value: PropType.DateTime.toString(), label: t("Date") },
+                      { value: PropType.Number.toString(), label: t("Number") },
+                      {
+                        value: PropType.Boolean.toString(),
+                        label: t("Checkbox"),
+                      },
+                      {
+                        value: PropType.DateTime.toString(),
+                        label: t("DateTime"),
+                      },
                       {
                         value: PropType.TextChoices.toString(),
-                        label: t("Multi"),
+                        label: t("Select/Multi"),
                       },
                     ]}
                     onChange={(selected) => {
@@ -760,7 +766,7 @@ export function CSVImportModal({
           }}
         />
       </div>
-      <h3 style={{ margin: "0 0 8px 0" }}>{t("Importing Data...")}</h3>
+      <h3 style={{ margin: "0 0 8px 0" }}>{t("csv.import.importing")}</h3>
       <p style={{ opacity: 0.5, fontSize: "0.95em" }}>
         {t("csv.import.importingMessage")}
       </p>

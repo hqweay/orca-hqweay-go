@@ -1,5 +1,6 @@
 import { CSVImportConfig, TagConfig } from "./CSVImportModal";
 import { DataImporter, BlockData, TagData } from "@/libs/DataImporter";
+import { t } from "@/libs/l10n";
 
 export interface CSVRowData {
   [key: string]: string;
@@ -77,7 +78,7 @@ export class CSVImporter {
       const rows = this.parseCSV(fileContent);
 
       if (rows.length === 0) {
-        throw new Error("CSV file is empty");
+        throw new Error(t("csv.import.emptyFile"));
       }
 
       const headers = rows[0];
@@ -90,7 +91,7 @@ export class CSVImporter {
       // 1. Resolve Target Parent Block
       const targetParentId = await this.resolveTargetId(config);
       if (!targetParentId) {
-        throw new Error("Could not resolve target destination");
+        throw new Error(t("csv.import.targetResolveError"));
       }
 
       console.log("Target parent ID:", targetParentId);
