@@ -75,11 +75,11 @@
 ```json
 {
   "type": "orca-tags",
-  "text": [
+  "content": [
     { "t": "t", "v": "Check our " },
     { "t": "l", "v": "Orca Documentation", "l": "https://orca.so/docs" }
   ],
-  "data": [
+  "tags": [
     {
       "任务标签": [
         {

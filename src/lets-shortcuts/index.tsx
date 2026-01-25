@@ -18,6 +18,8 @@ interface TagShortcutConfig {
   defaults?: PropertyDefault[];
 }
 
+import { DataImporter, BlockData, TagData } from "@/libs/DataImporter";
+
 export default class TagShortcutsPlugin extends BasePlugin {
   private registeredCommands: Set<string> = new Set();
 
@@ -38,8 +40,6 @@ export default class TagShortcutsPlugin extends BasePlugin {
 
         try {
           const text = await navigator.clipboard.readText();
-          let data: any[] = [];
-
           let json: any;
           try {
             json = JSON.parse(text);
@@ -48,22 +48,14 @@ export default class TagShortcutsPlugin extends BasePlugin {
             return null;
           }
 
-          // Validation Strategy
-          // 1. Structured Envelope
-          if (json.type === "orca-tags" && Array.isArray(json.data)) {
-            data = json.data;
-          }
-          // 2. Heuristic Schema Match (Array of objects)
-          else if (Array.isArray(json)) {
-            const isValid = json.every(
-              (item: any) => typeof item === "object" && item !== null,
-            );
-            if (isValid) {
-              data = json;
-            }
+          let tags: any[] = [];
+          if (json.type === "orca-tags" && Array.isArray(json.tags)) {
+            tags = json.tags;
+          } else if (Array.isArray(json)) {
+            tags = json;
           }
 
-          if (!data || data.length === 0) {
+          if (tags.length === 0 && !json.content) {
             orca.notify(
               "error",
               t("Clipboard content does not match expected format"),
@@ -71,40 +63,21 @@ export default class TagShortcutsPlugin extends BasePlugin {
             return null;
           }
 
-          if (json.text) {
-            let fragments = [];
-            if (typeof json.text === "string") {
-              fragments = [{ t: "t", v: json.text }];
-            } else if (Array.isArray(json.text)) {
-              fragments = json.text;
-            }
+          // Convert to BlockData
+          const blockData: BlockData = {
+            content: json.content,
+            tags: tags.flatMap((item) =>
+              Object.entries(item).map(([tagName, props]) => ({
+                name: tagName,
+                properties: props as any[],
+              })),
+            ),
+          };
 
-            if (fragments.length > 0) {
-              await orca.commands.invokeEditorCommand(
-                "core.editor.insertFragments",
-                null,
-                fragments,
-              );
-            }
-          }
-
-          const { anchor } = cursor;
-          for (const item of data) {
-            // item is { tagName: Property[] }
-            for (const [tagName, properties] of Object.entries(item)) {
-              if (!Array.isArray(properties)) {
-                this.logger.warn(
-                  `Skipping tag ${tagName}: properties is not an array`,
-                );
-                continue;
-              }
-              await this.insertTagWithProperties(
-                anchor.blockId,
-                tagName,
-                properties as PropertyDefault[],
-              );
-            }
-          }
+          await DataImporter.importBlock(blockData, {
+            type: "cursor",
+            cursor,
+          });
         } catch (e) {
           this.logger.error("Failed to paste tags", e);
           orca.notify("error", t("Failed to paste tags from clipboard"));
@@ -180,17 +153,25 @@ export default class TagShortcutsPlugin extends BasePlugin {
             return null;
           }
 
-          const { anchor } = cursor;
           const tagNames = config.tag
             .split(",")
             .map((t) => t.trim())
             .filter((t) => t.length > 0);
 
           for (const tag of tagNames) {
-            await this.insertTagWithProperties(
-              anchor.blockId,
-              tag,
-              config.defaults,
+            await DataImporter.importBlock(
+              {
+                tags: [
+                  {
+                    name: tag,
+                    properties: config.defaults || [],
+                  },
+                ],
+              },
+              {
+                type: "cursor",
+                cursor,
+              },
             );
           }
 
@@ -199,12 +180,9 @@ export default class TagShortcutsPlugin extends BasePlugin {
         () => {},
         { label: `插入标签: ${config.tag}` },
       );
-      this.logger.debug(`Registered command ${commandId}`);
-      this.logger.debug(`Assigning shortcut ${config.shortcut}`);
-
+      this.registeredCommands.add(commandId);
       try {
         await orca.shortcuts.assign(config.shortcut, commandId);
-        this.registeredCommands.add(commandId);
       } catch (e) {
         this.logger.error(`Failed to assign shortcut ${config.shortcut}`, e);
       }
@@ -216,131 +194,6 @@ export default class TagShortcutsPlugin extends BasePlugin {
   protected async onConfigChanged(_newConfig: any): Promise<void> {
     if (this.isLoaded) {
       await this.reloadShortcuts();
-    }
-  }
-
-  private async insertTagWithProperties(
-    blockId: number,
-    tagName: string,
-    properties: PropertyDefault[] = [],
-  ) {
-    if (!properties || properties.length === 0) {
-      // Simple insert if no defaults
-      await orca.commands.invokeEditorCommand(
-        "core.editor.insertTag",
-        null,
-        blockId,
-        tagName,
-      );
-      return;
-    }
-
-    const formattedProperties = properties.map((p) => {
-      if (p.type === PropType.TextChoices) {
-        // Handle select/multi-select
-        let values: string[] = [];
-        if (Array.isArray(p.value)) {
-          values = p.value;
-        } else if (typeof p.value === "string") {
-          values = p.value
-            .split(",")
-            .map((v) => v.trim())
-            .filter((v) => v);
-        }
-
-        // For formatted properties passed to insertTag, value should be the selected values
-        return {
-          name: p.name,
-          type: p.type,
-          value: values, // Pass as array for multi-select
-          // For TextChoices, Orca usually expects an array of choices in typeArgs
-          // AND the value field to be the selected value(s).
-          typeArgs: {
-            choices: values.map((v) => ({ n: v, c: "" })), // Add these as valid choices
-            subType: "multi",
-          },
-          pos: 0,
-        };
-      }
-      return {
-        name: p.name,
-        value: p.value,
-        type: p.type,
-        typeArgs: p.typeArgs,
-      };
-    });
-
-    // 1. Insert Tag with properties
-    const tagBlockId = await orca.commands.invokeEditorCommand(
-      "core.editor.insertTag",
-      null,
-      blockId,
-      tagName,
-      formattedProperties,
-    );
-
-    // 2. Ensure Schema Exists/Updates on the Tag Block
-    if (tagBlockId) {
-      const tagBlock = await orca.invokeBackend("get-block", tagBlockId);
-      if (tagBlock) {
-        const existingProps = tagBlock.properties || [];
-        const propsToAdd = [];
-
-        for (const prop of formattedProperties) {
-          const existingProp = existingProps.find(
-            (p: any) => p.name === prop.name,
-          );
-
-          if (!existingProp) {
-            // Case 1: Property does not exist -> Add it
-            propsToAdd.push({
-              name: prop.name,
-              type: prop.type,
-              typeArgs: prop.typeArgs,
-            });
-          } else if (
-            prop.type === PropType.TextChoices &&
-            existingProp.type === PropType.TextChoices
-          ) {
-            // Case 2: Property exists -> Merge choices
-            const existingChoices = existingProp.typeArgs?.choices || [];
-            const existingChoiceValues = new Set(
-              existingChoices.map((c: any) => c.n),
-            );
-
-            const newChoices = prop.typeArgs?.choices || [];
-            let hasNew = false;
-
-            for (const choice of newChoices) {
-              if (!existingChoiceValues.has(choice.n)) {
-                existingChoices.push(choice);
-                hasNew = true;
-              }
-            }
-
-            if (hasNew) {
-              propsToAdd.push({
-                name: existingProp.name,
-                type: existingProp.type,
-                typeArgs: {
-                  ...existingProp.typeArgs,
-                  choices: existingChoices,
-                },
-              });
-            }
-          }
-        }
-
-        if (propsToAdd.length > 0) {
-          this.logger.info("Updating tag schema", propsToAdd);
-          await orca.commands.invokeEditorCommand(
-            "core.editor.setProperties",
-            null,
-            [tagBlockId],
-            propsToAdd,
-          );
-        }
-      }
     }
   }
 }
