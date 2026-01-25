@@ -5,6 +5,7 @@ import { LinkMetadataSettings, Rule } from "./types";
 import { extractMetadata } from "./metadataExtractor";
 import { PropType } from "@/libs/consts";
 import { DEFAULT_RULES } from "./defaultRules";
+import { DataImporter } from "@/libs/DataImporter";
 
 export default class LinkMetadataPlugin extends BasePlugin {
   protected settingsComponent = Settings;
@@ -132,9 +133,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
     properties: any[],
     downloadCover: boolean = false,
   ) {
-    // Format properties for insertTag/setProperties
-    // Process properties (Download Check)
-    const formattedProperties = [];
+    const finalProperties = [];
     for (const prop of properties) {
       let finalValue = prop.value;
 
@@ -150,7 +149,6 @@ export default class LinkMetadataPlugin extends BasePlugin {
           const response = await fetch(prop.value);
           if (response.ok) {
             const arrayBuffer = await response.arrayBuffer();
-            // Determine mime type or default
             const contentType =
               response.headers.get("content-type") || "image/png";
 
@@ -164,119 +162,23 @@ export default class LinkMetadataPlugin extends BasePlugin {
               this.logger.info(`Cover downloaded to: ${assetPath}`);
               finalValue = assetPath;
             }
-          } else {
-            this.logger.warn(`Failed to download cover: ${response.status}`);
           }
         } catch (e) {
           this.logger.error("Error downloading cover image", e);
         }
       }
 
-      if (prop.type === PropType.TextChoices) {
-        formattedProperties.push({
-          name: prop.name,
-          type: prop.type,
-          value: finalValue,
-          typeArgs: {
-            choices: Array.isArray(finalValue)
-              ? finalValue.map((item: any) => ({ n: item, c: "" }))
-              : [],
-            subType: "multi",
-          },
-          pos: 0,
-        });
-      } else {
-        formattedProperties.push({
-          name: prop.name,
-          value: finalValue,
-          type: prop.type,
-          typeArgs: prop.typeArgs,
-        });
-      }
+      finalProperties.push({
+        name: prop.name,
+        type: prop.type,
+        value: finalValue,
+        typeArgs: prop.typeArgs,
+      });
     }
 
-    // 1. Insert Tag with properties (Values)
-    // This returns the ID of the Tag Block (either new or existing)
-    const tagBlockId = await orca.commands.invokeEditorCommand(
-      "core.editor.insertTag",
-      null,
-      blockId,
-      tagName,
-      formattedProperties,
-    );
-
-    // 2. Ensure Schema Exists on the Tag Block
-    // If the tag is new, or if we are adding new properties to an existing tag,
-    // we need to make sure the Tag Block defines these properties.
-    if (tagBlockId) {
-      const tagBlock = await orca.invokeBackend("get-block", tagBlockId);
-      if (tagBlock) {
-        const existingProps = tagBlock.properties || [];
-        const propsToAdd = [];
-
-        for (const prop of formattedProperties) {
-          const existingProp = existingProps.find(
-            (p: any) => p.name === prop.name,
-          );
-
-          if (!existingProp) {
-            // Case 1: Property does not exist at all -> Add it
-            propsToAdd.push({
-              name: prop.name,
-              type: prop.type,
-              typeArgs: prop.typeArgs,
-            });
-          } else if (
-            prop.type === PropType.TextChoices &&
-            existingProp.type === PropType.TextChoices
-          ) {
-            // Case 2: Property exists and is multi-select -> Merge new choices
-            // Extract existing choices
-            const existingChoices = existingProp.typeArgs?.choices || [];
-            const existingChoiceValues = new Set(
-              existingChoices.map((c: any) => c.n),
-            );
-
-            // Checking new choices from the formatted property we constructed
-            const newChoices = prop.typeArgs?.choices || [];
-            let hasNew = false;
-
-            for (const choice of newChoices) {
-              if (!existingChoiceValues.has(choice.n)) {
-                existingChoices.push(choice);
-                hasNew = true;
-              }
-            }
-
-            if (hasNew) {
-              // We need to update the existing property definition
-              // setProperties will overwrite the property definition if name matches?
-              // Yes, usually setProperties handles updates.
-              propsToAdd.push({
-                name: existingProp.name,
-                type: existingProp.type,
-                typeArgs: {
-                  ...existingProp.typeArgs,
-                  choices: existingChoices,
-                },
-              });
-            }
-          }
-        }
-
-        if (propsToAdd.length > 0) {
-          this.logger.info(
-            "Updating tag schema with new properties/choices",
-            propsToAdd,
-          );
-          await orca.commands.invokeEditorCommand(
-            "core.editor.setProperties",
-            null,
-            [tagBlockId],
-            propsToAdd,
-          );
-        }
-      }
-    }
+    await DataImporter.applyTag(blockId, {
+      name: tagName,
+      properties: finalProperties,
+    });
   }
 }
