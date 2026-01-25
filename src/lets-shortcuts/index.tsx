@@ -48,14 +48,7 @@ export default class TagShortcutsPlugin extends BasePlugin {
             return null;
           }
 
-          let tags: any[] = [];
-          if (json.type === "orca-tags" && Array.isArray(json.tags)) {
-            tags = json.tags;
-          } else if (Array.isArray(json)) {
-            tags = json;
-          }
-
-          if (tags.length === 0 && !json.content) {
+          if (json.type !== "orca-tags") {
             orca.notify(
               "error",
               t("Clipboard content does not match expected format"),
@@ -63,10 +56,16 @@ export default class TagShortcutsPlugin extends BasePlugin {
             return null;
           }
 
+          const tags = Array.isArray(json.tags) ? json.tags : [];
+          if (tags.length === 0 && !json.content) {
+            orca.notify("error", t("Clipboard content is empty"));
+            return null;
+          }
+
           // Convert to BlockData
           const blockData: BlockData = {
             content: json.content,
-            tags: tags.flatMap((item) =>
+            tags: tags.flatMap((item: any) =>
               Object.entries(item).map(([tagName, props]) => ({
                 name: tagName,
                 properties: props as any[],
