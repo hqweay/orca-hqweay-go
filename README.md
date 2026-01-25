@@ -97,6 +97,48 @@ Orca 的社区插件市场，发现更多可能：
 - **剪贴板粘贴**：
   - 支持 `{ type: "orca-tags", tags: [...], content: ... }` 标准格式。
   - **富文本内容**：支持在打标签的同时插入带格式或链接的 ContentFragment。
+```json
+{
+  "type": "orca-tags",
+  "content": [
+    { "t": "t", "v": "Check our " },
+    { "t": "l", "v": "Orca Documentation", "l": "https://orca.so/docs" }
+  ],
+  "tags": [
+    {
+      "任务标签": [
+        {
+          "name": "状态",
+          "type": 6,
+          "value": ["进行中", "高优先级"]
+        },
+        {
+          "name": "进度",
+          "type": 3,
+          "value": 75
+        },
+        {
+          "name": "已归档",
+          "type": 4,
+          "value": false
+        },
+        {
+          "name": "参考链接",
+          "type": 1,
+          "value": "https://leay.net",
+          "typeArgs": { "subType": "link" }
+        },
+        {
+          "name": "封面",
+          "type": 1,
+          "value": "https://raw.githubusercontent.com/hqweay/picbed/master/img/avatar/avatar.png",
+          "typeArgs": { "subType": "image" }
+        }
+      ]
+    }
+  ]
+}
+```
 
 ## 开发说明
 
