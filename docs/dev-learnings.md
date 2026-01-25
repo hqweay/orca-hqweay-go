@@ -83,3 +83,14 @@
 - **UX Improvements**:
   - **Tooltip**: Implemented a custom React-based tooltip (using `onMouseEnter`/`onMouseLeave`) for the shortcut setting to show supported formats.
   - **Click-to-Copy**: Added interactivity to the help icon to copy an example JSON template to clipboard for easier user onboarding.
+- **Text Insertion Support**:
+  - Added optional `text` field in the Envelope JSON format.
+  - Uses `core.editor.insertFragments` with fragment type `t: "t"` to insert text at cursor position before processing tags.
+- **Rich Text support in Paste Tags**:
+  - Validated both root-level and item-level `text` support.
+  - Handled `string` to fragment conversion for flexibility.
+  - Included interactive help templates with rich text examples.
+- **Refinement**: Scope of `text` insertion restricted to root level to maintain clarity in the tagging lifecycle.
+- **Documentation Correction (Link Fragments)**:
+  - The correct format for a link fragment is `{ "t": "l", "v": "Display Text", "l": "URL" }`.
+  - Previous documentation suggested using type `r` or `u` property, which is incorrect for basic links.

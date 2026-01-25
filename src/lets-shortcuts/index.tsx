@@ -71,6 +71,23 @@ export default class TagShortcutsPlugin extends BasePlugin {
             return null;
           }
 
+          if (json.text) {
+            let fragments = [];
+            if (typeof json.text === "string") {
+              fragments = [{ t: "t", v: json.text }];
+            } else if (Array.isArray(json.text)) {
+              fragments = json.text;
+            }
+
+            if (fragments.length > 0) {
+              await orca.commands.invokeEditorCommand(
+                "core.editor.insertFragments",
+                null,
+                fragments,
+              );
+            }
+          }
+
           const { anchor } = cursor;
           for (const item of data) {
             // item is { tagName: Property[] }
@@ -396,6 +413,10 @@ function ShortcutsSettings({ plugin }: { plugin: TagShortcutsPlugin }) {
                 // Copy example JSON to clipboard
                 const exampleJson = `{
   "type": "orca-tags",
+  "text": [
+    { "t": "t", "v": "Check out " },
+    { "t": "l", "v": "Orca Documentation", "l": "https://orca.so/docs" }
+  ],
   "data": [
     {
       "测试标签": [

@@ -18,6 +18,20 @@ await orca.commands.invokeEditorCommand(
 );
 ```
 
+### `core.editor.insertFragments`
+Used to insert text or other fragments (e.g., links, mentions) into the current editor context.
+
+```typescript
+await orca.commands.invokeEditorCommand(
+  "core.editor.insertFragments",
+  null,          // cursor
+  [
+    { t: "t", v: "Read more at " },
+    { t: "l", v: "Docs", l: "https://example.com" }
+  ] // Array of ContentFragment
+);
+```
+
 ## Critical Rule: Multi-select (TextChoices) Handling
 
 For properties of type `PropType.TextChoices` (Multi-select/Select), simply passing the `value` is **NOT** sufficient if the option does not already exist in the tag's schema.
