@@ -568,7 +568,6 @@ function TagShortcutItem({
             {t("Tag(s)")}
           </div>
           <Input
-            // @ts-ignore
             value={config.tag}
             onChange={(e: any) => updateField("tag", e.target.value)}
             placeholder={t("e.g. tag1, tag2")}
@@ -579,7 +578,6 @@ function TagShortcutItem({
             {t("Shortcut")}
           </div>
           <Input
-            // @ts-ignore
             value={config.shortcut}
             onChange={(e: any) => updateField("shortcut", e.target.value)}
             placeholder={t("e.g. Alt+t")}
@@ -627,7 +625,6 @@ function TagShortcutItem({
               style={{ display: "flex", gap: "8px", alignItems: "center" }}
             >
               <Input
-                // @ts-ignore
                 value={def.name}
                 onChange={(e: any) =>
                   updateDefault(idx, "name", e.target.value)
@@ -659,7 +656,6 @@ function TagShortcutItem({
                 </select>
               </div>
               <Input
-                // @ts-ignore
                 value={def.value}
                 onChange={(e: any) =>
                   updateDefault(idx, "value", e.target.value)

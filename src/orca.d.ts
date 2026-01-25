@@ -2684,7 +2684,7 @@ export interface Orca {
      * ```
      */
     Input: (
-      props: React.HTMLAttributes<HTMLInputElement> & {
+      props: React.InputHTMLAttributes<HTMLInputElement> & {
         pre?: React.ReactElement;
         post?: React.ReactElement;
         error?: React.ReactNode;
