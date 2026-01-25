@@ -26,7 +26,7 @@ export default class TagShortcutsPlugin extends BasePlugin {
     this.logger.info(`${this.name} loaded.`);
   }
 
-  private registerStaticCommands() {
+  private async registerStaticCommands() {
     const commandId = `${this.name}.paste-clipboard-tags`;
     orca.commands.registerEditorCommand(
       commandId,
@@ -97,12 +97,21 @@ export default class TagShortcutsPlugin extends BasePlugin {
       () => {},
       { label: t("Paste Tags from Clipboard") },
     );
-    // Note: We don't add to registeredCommands set because we don't want reloadShortcuts to unregister it.
-    // But we should unregister it on unload.
-    // Instead, let's treat it separately or just add to registeredCommands and ensure reloadShortcuts calls this function again?
-    // Actually easiest is to just add it to registeredCommands and call registerStaticCommands inside reloadShortcuts.
+
     this.registeredCommands.add(commandId);
     this.logger.debug(`Registered static command ${commandId}`);
+
+    // Assign shortcut if configured
+    const settings = this.getSettings();
+    const shortcut = settings.pasteTagsShortcut;
+    if (shortcut) {
+      try {
+        await orca.shortcuts.assign(shortcut, commandId);
+        this.logger.debug(`Assigned shortcut ${shortcut} to ${commandId}`);
+      } catch (e) {
+        this.logger.error(`Failed to assign shortcut ${shortcut}`, e);
+      }
+    }
   }
 
   public async unload(): Promise<void> {
@@ -130,7 +139,7 @@ export default class TagShortcutsPlugin extends BasePlugin {
     this.registeredCommands.clear();
 
     // Register static commands every reload to keep them active
-    this.registerStaticCommands();
+    await this.registerStaticCommands();
 
     const settings = this.getSettings();
     this.logger.debug("Settings loaded", settings);
@@ -324,32 +333,127 @@ function ShortcutsSettings({ plugin }: { plugin: TagShortcutsPlugin }) {
   const [tags, setTags] = useState<TagShortcutConfig[]>(
     settings.tags || [{ tag: "碎碎念", shortcut: "ctrl+shift+t" }],
   );
+  const [pasteShortcut, setPasteShortcut] = useState<string>(
+    settings.pasteTagsShortcut || "",
+  );
 
-  const handleSave = async (newTags: TagShortcutConfig[]) => {
+  const handleSave = async (
+    newTags: TagShortcutConfig[],
+    newPasteShortcut: string,
+  ) => {
     setTags(newTags);
-    await plugin["updateSettings"]({ tags: newTags });
+    setPasteShortcut(newPasteShortcut);
+    await plugin["updateSettings"]({
+      tags: newTags,
+      pasteTagsShortcut: newPasteShortcut,
+    });
   };
 
   const addTag = () => {
-    handleSave([...tags, { tag: "", shortcut: "" }]);
+    handleSave([...tags, { tag: "", shortcut: "" }], pasteShortcut);
   };
 
   const removeTag = (index: number) => {
     const newTags = [...tags];
     newTags.splice(index, 1);
-    handleSave(newTags);
+    handleSave(newTags, pasteShortcut);
   };
 
   const updateTagConfig = (index: number, newConfig: TagShortcutConfig) => {
     const newTags = [...tags];
     newTags[index] = newConfig;
-    handleSave(newTags);
+    handleSave(newTags, pasteShortcut);
   };
 
+  const updatePasteShortcut = (val: string) => {
+    handleSave(tags, val);
+  };
+
+  const [showHelper, setShowHelper] = useState(false);
+
   const Button = orca.components.Button;
+  const Input = orca.components.Input;
 
   return (
     <SettingsSection title={t("Tag Shortcuts")}>
+      <div style={{ marginBottom: "24px" }}>
+        <div style={{ fontSize: "0.9em", marginBottom: "8px", opacity: 0.8 }}>
+          {t("Paste Tags Shortcut")}
+          <div
+            style={{ display: "inline-block", position: "relative" }}
+            onMouseEnter={() => setShowHelper(true)}
+            onMouseLeave={() => setShowHelper(false)}
+          >
+            <span
+              style={{
+                marginLeft: "6px",
+                cursor: "pointer",
+                opacity: 0.6,
+                verticalAlign: "middle",
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                // Copy example JSON to clipboard
+                const exampleJson = `{
+  "type": "orca-tags",
+  "data": [
+    {
+      "测试标签": [
+        {
+          "name": "链接",
+          "type": 1,
+          "value": "https://leay.net",
+          "typeArgs": { "subType": "link" }
+        },
+        {
+          "name": "标题",
+          "type": 1,
+          "value": "Hello Orca"
+        }
+      ]
+    }
+  ]
+}`;
+                navigator.clipboard.writeText(exampleJson).then(() => {
+                  orca.notify("success", t("Example JSON copied to clipboard"));
+                });
+              }}
+            >
+              <i className="ti ti-help" style={{ fontSize: "14px" }}></i>
+            </span>
+            {showHelper && (
+              <div
+                style={{
+                  position: "absolute",
+                  left: "20px",
+                  top: "-10px",
+                  backgroundColor: "var(--orca-color-bg-2)",
+                  border: "1px solid var(--orca-color-border)",
+                  borderRadius: "6px",
+                  padding: "8px",
+                  zIndex: 1000,
+                  width: "300px",
+                  fontSize: "0.9em",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                  whiteSpace: "pre-wrap",
+                  color: "var(--orca-color-text)",
+                }}
+              >
+                {t("pasteTagsHelper")}
+              </div>
+            )}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+          <Input
+            value={pasteShortcut}
+            onChange={(e: any) => updatePasteShortcut(e.target.value)}
+            placeholder={t("e.g. ctrl+shift+v")}
+            style={{ flex: 1 }}
+          />
+        </div>
+      </div>
+
       <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
         {tags.map((config, index) => (
           <TagShortcutItem
