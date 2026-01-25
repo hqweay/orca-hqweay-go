@@ -414,22 +414,38 @@ function ShortcutsSettings({ plugin }: { plugin: TagShortcutsPlugin }) {
                 const exampleJson = `{
   "type": "orca-tags",
   "text": [
-    { "t": "t", "v": "Check out " },
+    { "t": "t", "v": "Check our " },
     { "t": "l", "v": "Orca Documentation", "l": "https://orca.so/docs" }
   ],
   "data": [
     {
-      "测试标签": [
+      "任务标签": [
         {
-          "name": "链接",
+          "name": "状态",
+          "type": 6,
+          "value": ["进行中", "高优先级"]
+        },
+        {
+          "name": "进度",
+          "type": 3,
+          "value": 75
+        },
+        {
+          "name": "已归档",
+          "type": 4,
+          "value": false
+        },
+        {
+          "name": "参考链接",
           "type": 1,
           "value": "https://leay.net",
           "typeArgs": { "subType": "link" }
         },
         {
-          "name": "标题",
+          "name": "封面",
           "type": 1,
-          "value": "Hello Orca"
+          "value": "https://raw.githubusercontent.com/hqweay/picbed/master/img/avatar/avatar.png",
+          "typeArgs": { "subType": "image" }
         }
       ]
     }

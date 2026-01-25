@@ -94,3 +94,6 @@
 - **Documentation Correction (Link Fragments)**:
   - The correct format for a link fragment is `{ "t": "l", "v": "Display Text", "l": "URL" }`.
   - Previous documentation suggested using type `r` or `u` property, which is incorrect for basic links.
+- **Multi-select (TextChoices) Pattern**:
+  - The canonical JSON format for multi-select properties in Paste Tags involves passing an array of strings as `value` and defining `choices` and `subType: "multi"` in `typeArgs`.
+  - Example: `{ "name": "Tags", "type": 3, "value": ["A", "B"], "typeArgs": { "choices": [{ "n": "A", "c": "" }, { "n": "B", "c": "" }], "subType": "multi" } }`.

@@ -42,9 +42,7 @@
 {
   "tag": "MyTag",
   "shortcut": "ctrl+alt+m",
-  "defaults": [
-    { "name": "Status", "value": "Todo", "type": 1 }
-  ]
+  "defaults": [{ "name": "Status", "value": "Todo", "type": 1 }]
 }
 ```
 
@@ -83,17 +81,33 @@
   ],
   "data": [
     {
-      "测试标签": [
+      "任务标签": [
         {
-          "name": "链接",
+          "name": "状态",
+          "type": 6,
+          "value": ["进行中", "高优先级"]
+        },
+        {
+          "name": "进度",
+          "type": 3,
+          "value": 75
+        },
+        {
+          "name": "已归档",
+          "type": 4,
+          "value": false
+        },
+        {
+          "name": "参考链接",
           "type": 1,
           "value": "https://leay.net",
           "typeArgs": { "subType": "link" }
         },
         {
-          "name": "标题",
+          "name": "封面",
           "type": 1,
-          "value": "Hello Orca"
+          "value": "https://raw.githubusercontent.com/hqweay/picbed/master/img/avatar/avatar.png",
+          "typeArgs": { "subType": "image" }
         }
       ]
     }
@@ -123,10 +137,10 @@
 
 ```typescript
 interface Property {
-  name: string;      // 属性名
-  type: number;      // 属性类型 (1: Text, 2: Number, 3: TextChoices, 4: DateTime, 5: Boolean)
-  value: any;        // 属性值 (多选类型可传字符串数组)
-  typeArgs?: any;    // 类型参数 (如 { subType: "link" } 或 { choices: [...] })
+  name: string; // 属性名
+  type: number; // 属性类型 (1: Text, 2: Number, 3: TextChoices, 4: DateTime, 5: Boolean)
+  value: any; // 属性值 (多选类型可传字符串数组)
+  typeArgs?: any; // 类型参数 (如 { subType: "link" } 或 { choices: [...] })
 }
 ```
 
