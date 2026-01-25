@@ -175,6 +175,11 @@ const zhCN = {
   "shortcuts.Please place cursor in editor first.":
     "请先将光标放置在编辑器中。",
   "shortcuts.Insert: {text}": "插入: {text}",
+  "Paste Tags from Clipboard": "从剪贴板粘贴标签",
+  "Invalid JSON in clipboard": "剪贴板中 JSON 格式无效",
+  "Clipboard content does not match expected format":
+    "剪贴板内容不符合预期格式",
+  "Failed to paste tags from clipboard": "从剪贴板粘贴标签失败",
   "Enable ${name}": "启用 ${name}",
   "Sub-plugin Settings": "子插件设置",
   "Open Sub-plugin Settings": "打开子插件设置",

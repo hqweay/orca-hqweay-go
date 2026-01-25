@@ -26,6 +26,85 @@ export default class TagShortcutsPlugin extends BasePlugin {
     this.logger.info(`${this.name} loaded.`);
   }
 
+  private registerStaticCommands() {
+    const commandId = `${this.name}.paste-clipboard-tags`;
+    orca.commands.registerEditorCommand(
+      commandId,
+      async ([_panelId, _rootBlockId, cursor]) => {
+        if (!cursor || !cursor.anchor) {
+          orca.notify("warn", t("Please place cursor in editor first."));
+          return null;
+        }
+
+        try {
+          const text = await navigator.clipboard.readText();
+          let data: any[] = [];
+
+          let json: any;
+          try {
+            json = JSON.parse(text);
+          } catch (e) {
+            orca.notify("error", t("Invalid JSON in clipboard"));
+            return null;
+          }
+
+          // Validation Strategy
+          // 1. Structured Envelope
+          if (json.type === "orca-tags" && Array.isArray(json.data)) {
+            data = json.data;
+          }
+          // 2. Heuristic Schema Match (Array of objects)
+          else if (Array.isArray(json)) {
+            const isValid = json.every(
+              (item: any) => typeof item === "object" && item !== null,
+            );
+            if (isValid) {
+              data = json;
+            }
+          }
+
+          if (!data || data.length === 0) {
+            orca.notify(
+              "error",
+              t("Clipboard content does not match expected format"),
+            );
+            return null;
+          }
+
+          const { anchor } = cursor;
+          for (const item of data) {
+            // item is { tagName: Property[] }
+            for (const [tagName, properties] of Object.entries(item)) {
+              if (!Array.isArray(properties)) {
+                this.logger.warn(
+                  `Skipping tag ${tagName}: properties is not an array`,
+                );
+                continue;
+              }
+              await this.insertTagWithProperties(
+                anchor.blockId,
+                tagName,
+                properties as PropertyDefault[],
+              );
+            }
+          }
+        } catch (e) {
+          this.logger.error("Failed to paste tags", e);
+          orca.notify("error", t("Failed to paste tags from clipboard"));
+        }
+        return null;
+      },
+      () => {},
+      { label: t("Paste Tags from Clipboard") },
+    );
+    // Note: We don't add to registeredCommands set because we don't want reloadShortcuts to unregister it.
+    // But we should unregister it on unload.
+    // Instead, let's treat it separately or just add to registeredCommands and ensure reloadShortcuts calls this function again?
+    // Actually easiest is to just add it to registeredCommands and call registerStaticCommands inside reloadShortcuts.
+    this.registeredCommands.add(commandId);
+    this.logger.debug(`Registered static command ${commandId}`);
+  }
+
   public async unload(): Promise<void> {
     for (const commandId of this.registeredCommands) {
       try {
@@ -49,6 +128,9 @@ export default class TagShortcutsPlugin extends BasePlugin {
       }
     }
     this.registeredCommands.clear();
+
+    // Register static commands every reload to keep them active
+    this.registerStaticCommands();
 
     const settings = this.getSettings();
     this.logger.debug("Settings loaded", settings);
@@ -79,7 +161,7 @@ export default class TagShortcutsPlugin extends BasePlugin {
             .filter((t) => t.length > 0);
 
           for (const tag of tagNames) {
-            await this.applyDefaultsToTag(
+            await this.insertTagWithProperties(
               anchor.blockId,
               tag,
               config.defaults,
@@ -111,12 +193,12 @@ export default class TagShortcutsPlugin extends BasePlugin {
     }
   }
 
-  private async applyDefaultsToTag(
+  private async insertTagWithProperties(
     blockId: number,
     tagName: string,
-    defaults: PropertyDefault[] = [],
+    properties: PropertyDefault[] = [],
   ) {
-    if (!defaults || defaults.length === 0) {
+    if (!properties || properties.length === 0) {
       // Simple insert if no defaults
       await orca.commands.invokeEditorCommand(
         "core.editor.insertTag",
@@ -127,29 +209,29 @@ export default class TagShortcutsPlugin extends BasePlugin {
       return;
     }
 
-    const formattedProperties = defaults.map((p) => {
+    const formattedProperties = properties.map((p) => {
       if (p.type === PropType.TextChoices) {
         // Handle select/multi-select
-        // Assuming value is comma separated for multi, or single string
-        const values = p.value
-          .split(",")
-          .map((v) => v.trim())
-          .filter((v) => v);
+        let values: string[] = [];
+        if (Array.isArray(p.value)) {
+          values = p.value;
+        } else if (typeof p.value === "string") {
+          values = p.value
+            .split(",")
+            .map((v) => v.trim())
+            .filter((v) => v);
+        }
+
         // For formatted properties passed to insertTag, value should be the selected values
         return {
           name: p.name,
           type: p.type,
-          value: p.value, // Usually it expects the current value.
+          value: values, // Pass as array for multi-select
           // For TextChoices, Orca usually expects an array of choices in typeArgs
           // AND the value field to be the selected value(s).
-          // But insertTag might handle it differently.
-          // Based on reference code:
-          // value: finalValue
           typeArgs: {
             choices: values.map((v) => ({ n: v, c: "" })), // Add these as valid choices
-            subType: "multi", // Defaulting to multi for now as per reference? Or checks typeArgs?
-            // The reference code defaulted to "multi" for extracted metadata.
-            // We should probably allow the user config to specify this, but for now let's copy reference.
+            subType: "multi",
           },
           pos: 0,
         };
