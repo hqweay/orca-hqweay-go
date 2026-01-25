@@ -97,3 +97,32 @@
 - **Multi-select (TextChoices) Pattern**:
   - The canonical JSON format for multi-select properties in Paste Tags involves passing an array of strings as `value` and defining `choices` and `subType: "multi"` in `typeArgs`.
   - Example: `{ "name": "Tags", "type": 3, "value": ["A", "B"], "typeArgs": { "choices": [{ "n": "A", "c": "" }, { "n": "B", "c": "" }], "subType": "multi" } }`.
+
+## Unified Data Insertion & Editor Commands
+
+During the refactoring of the data insertion layer (`DataImporter`), several intricacies regarding editor commands and data flow were identified:
+
+### 1. JSON Hierarchy and Proxy Traps
+Orca's state objects (e.g., objects from `orca.state.blocks`) usually carry Proxies or internal markers.
+- **Trap**: Passing these objects directly back to `invokeEditorCommand` or `invokeBackend` can result in cloning errors ("Illegal invocation" or "could not clone") or execution failures.
+- **Solution**: Always use `JSON.parse(JSON.stringify(obj))` to "clean" complex objects (especially Properties) before passing them to system commands.
+
+### 2. Tag Properties and Schema Sync
+In Orca, simply calling `insertTag` with property values is often insufficient.
+- **Trap**: If the Tag Block doesn't already define the property, or if specific choices (for multi-select) are missing from the schema, the UI may fail to display them correctly or allow editing.
+- **Solution**: In `DataImporter.ts`, we supplement `insertTag` by explicitly calling `setProperties` to sync property definitions. For existing multi-select properties, we automatically merge new choices with existing ones to ensure UI consistency.
+
+### 3. The `pos` Logic for DateTime
+For `PropType.DateTime`, the `pos` field in the property definition is critical as it determines the rendering and parsing mode.
+- **Observation**: `pos` values map to different display modes:
+    - `0`: Time Only
+    - `1`: Date Only
+    - `2`: DateTime (Default)
+- `DataImporter` now handles this mapping automatically based on the requested `subType`.
+
+### 4. The Power of ContentFragments
+Block content is more than just raw strings in Orca.
+- **Observation**: Constructing content as fragment arrays yields a much better out-of-the-box experience. For example, URLs should be generated as link fragments: `[{ t: "l", v: "Display Text", l: "URL" }]`. This ensures they are immediately clickable after import without further editing.
+
+### 5. Architectural Logic Reuse
+- **Observation**: When multiple features (CSV Import, Quick Tags, Metadata Extraction) share the "create -> tag -> sync" workflow, abstracting it into a shared `libs/DataImporter.ts` is essential. It not only reduces boilerplate but also ensures that critical fixes (like Proxy cleaning and Schema syncing) are applied consistently across the entire project.

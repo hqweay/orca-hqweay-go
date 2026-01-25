@@ -25,8 +25,11 @@ Synchronize recordings from [VoiceNotes](https://voicenotes.com/) to Orca Note:
 - Automatically archives to a specified "VoiceNotes Inbox".
 
 ### 3. 📂 Import Tools
-- **Folder Import**: Bulk import Markdown files from folders.
-- **CSV Import**: Import CSV data as note blocks.
+-   **Folder Import**: Bulk import Markdown files from folders.
+-   **CSV Import**:
+    -   **Multi-Template Mapping**: Configure multiple tag templates for the same CSV file.
+    -   **Smart Parsing**: Automatically handles complex properties like DateTime and TextChoices.
+    -   **Dual Insertion**: Supports importing to specific pages or directly into Daily Notes.
 
 ### 4. 🧹 Remove Style
 Quickly clean up note content formatting:
@@ -58,13 +61,11 @@ The community plugin marketplace for Orca, discover more possibilities:
 
 ### 8. 🏷️ Quick Tag Shortcuts
 Boost your tagging efficiency with custom shortcuts:
-- **Efficient Entry**: Configure shortcuts for frequently used tags.
-- **Default Properties**: Automatically attach preset properties (e.g., status, date, priority) when inserting tags.
-- **Multi-tag Support**: Insert multiple related tags with a single shortcut.
-- **Paste from Clipboard (Paste Tags)**:
-    - Batch insert tags and complex properties via JSON.
-    - **Rich Text Support**: Insert text fragments (ContentFragment) with links or formatting alongside tags.
-- **Native Integration**: Deeply integrated with Orca's native tagging and property system.
+-   **One-Click Tagging**: Configure shortcuts for frequently used tags to insert at the cursor instantly.
+-   **Default Properties**: Automatically attach properties (e.g., status, priority) with multi-select merging support.
+-   **Paste from Clipboard**:
+    -   Supports the standard `{ type: "orca-tags", tags: [...], content: ... }` format.
+    -   **Rich Text Support**: Insert text fragments (ContentFragment) with links or formatting alongside tags.
 
 ## Development
 
@@ -72,6 +73,8 @@ This project uses a modular architecture:
 - `src/lets-*`: Each directory corresponds to a sub-plugin.
 - `BasePlugin`: All plugins inherit from a base class, managing loading, unloading, and logging uniformly.
 - `main.tsx`: Responsible for dynamically loading all sub-plugins.
+
+**For more development details and common pitfalls, please check: [Development Experience](./docs/dev-learnings.md)**
 
 ## License
 
