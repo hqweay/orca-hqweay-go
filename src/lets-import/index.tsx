@@ -1,7 +1,9 @@
 import zhCN from "@/translations/zhCN";
 import { type MarkdownFile } from "./markdown/markdownImporter";
 import { scanDirectoryForMarkdownFiles } from "./markdown/fileSystem";
-import { FolderSelector } from "./markdown/importUI";
+import { FolderSelector } from "./markdown/ImportUI";
+import { CSVImportModal } from "./csv/CSVImportModal";
+import { CSVImporter } from "./csv/csvImporter";
 import React from "react";
 import { setupL10N, t } from "@/libs/l10n";
 import { BasePlugin } from "@/libs/BasePlugin";
@@ -307,24 +309,6 @@ export default class ImportPlugin extends BasePlugin {
         t("Import Markdown from Folder"),
       );
 
-      // 方法2：直接创建页面别名
-      const aliasName = "项目文档";
-      const pageBlockId = await orca.commands.invokeEditorCommand(
-        "core.editor.insertBlock",
-        null,
-        null,
-        null,
-        [{ t: "t", v: aliasName }],
-      );
-
-      await orca.commands.invokeEditorCommand(
-        "core.editor.createAlias",
-        null,
-        aliasName,
-        pageBlockId,
-        true, // asPage: true 创建为页面
-      );
-
       // 注册CSV导入命令
       orca.commands.registerCommand(
         `${this.name}.importCSV`,
@@ -337,8 +321,6 @@ export default class ImportPlugin extends BasePlugin {
             document.body.appendChild(modalContainer);
 
             const root = createRoot(modalContainer);
-            const { CSVImportModal } = await import("./csv/CSVImportModal");
-            const { CSVImporter } = await import("./csv/csvImporter");
             const csvImporter = new CSVImporter();
 
             root.render(
