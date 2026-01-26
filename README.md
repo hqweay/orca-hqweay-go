@@ -97,6 +97,7 @@ Orca 的社区插件市场，发现更多可能：
 - **剪贴板粘贴**：
   - 支持 `{ type: "orca-tags", tags: [...], content: ... }` 标准格式。
   - **富文本内容**：支持在打标签的同时插入带格式或链接的 ContentFragment。
+
 ```json
 {
   "type": "orca-tags",
@@ -147,7 +148,3 @@ Orca 的社区插件市场，发现更多可能：
 - `src/lets-*`：每个目录对应一个子插件。
 - `BasePlugin`：所有插件继承自基类，统一管理加载、卸载和日志。
 - `main.tsx`：负责动态加载所有子插件。
-
-## License
-
-WTFPL

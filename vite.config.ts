@@ -124,6 +124,13 @@ export default defineConfig(({ command, mode }) => {
 
                 // --- 禁用调试信息 ---
                 disableConsoleOutput: true, // 彻底禁用 console.log/info/error 等输出
+
+                // --- 修复模块解析问题 ---
+                reservedStrings: [
+                  "jszip", // 保护 jszip 导入
+                  "^\\./.*", // 保护所有以 ./ 开头的相对路径导入
+                  "^assets/.*", // 保护可能的资产路径
+                ],
               },
             }),
           ]),
