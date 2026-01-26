@@ -15,7 +15,7 @@ import orcaObfuscator from "vite-plugin-javascript-obfuscator";
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
   const isDev = mode === "development";
-  const devDistDir = "/Users/hqweay/Documents/orca/plugins/orca-hwqeay-go/dist";
+  const devDistDir = "/Users/hqweay/Documents/orca/plugins/orca-hqweay-go/dist";
   return {
     resolve: {
       alias: {
@@ -46,7 +46,7 @@ export default defineConfig(({ command, mode }) => {
                 inDir: "build",
                 outDir: "./",
                 outFileName: "package.zip",
-                pathPrefix: "orca-hwqeay-go",
+                pathPrefix: "orca-hqweay-go",
               }),
             ]
           : [],
