@@ -4,6 +4,7 @@ import { setupL10N, t } from "@/libs/l10n";
 import { Block } from "../orca";
 import { format } from "date-fns";
 import { getRepr } from "@/libs/utils";
+import { pinyin } from "pinyin-pro";
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import React, { useState } from "react";
 
@@ -142,8 +143,27 @@ export default class PublishPlugin extends BasePlugin {
         ? `tags:\n${tagList.map((t: string) => `  - ${t}`).join("\n")}`
         : "";
     // 4. Upload Article
-    // Default slug to timestamp
-    let slug = format(new Date(), "yyyyMMddHHmmss");
+    // Slug: convert title to pinyin if available, else use timestamp
+    let slug = "";
+    if (title && title !== "Untitled") {
+      // Convert to pinyin: '你好 world' -> 'ni-hao-world'
+      // Use pinyin-pro to get pinyin without tone, and joined by dashes
+      const pinyinTitle = pinyin(title, {
+        toneType: "none",
+        v: true,
+      })
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "") // Remove special chars
+        .trim()
+        .replace(/\s+/g, "-") // Replace spaces with dashes
+        .replace(/-+/g, "-"); // Collapse multiple dashes
+
+      slug = `${pinyinTitle}-${block.id}`;
+    }
+
+    if (!slug) {
+      slug = format(new Date(), "yyyyMMddHHmmss");
+    }
     let existingPath = "";
     let publishDate = new Date(); // Default to now if not found
 
