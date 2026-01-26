@@ -62,9 +62,11 @@ jobs:
       - name: Release
         uses: ncipollo/release-action@v1
         with:
+          owner: hqweay
+          repo: orca-hqweay-go
           allowUpdates: true
           artifactErrorsFailBuild: true
           artifacts: "package.zip"
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RELEASE_TOKEN }}
           prerelease: false
           body: ${{ steps.get_message.outputs.message }}
