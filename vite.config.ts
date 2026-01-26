@@ -110,7 +110,7 @@ export default defineConfig(({ command, mode }) => {
                 deadCodeInjectionThreshold: 0.4, // 死代码注入概率
                 identifierNamesGenerator: "hexadecimal", // 标识符生成器，使用十六进制随机字符串 (如 0xabc)
                 renameGlobals: false, // 是否重命名全局变量（插件通常设为 false 以免破坏生命周期函数）
-                selfDefending: true, // 自我保护，如果代码被格式化/美化，可能导致运行失败
+                selfDefending: false, // 自我保护，如果代码被格式化/美化，可能导致运行失败
                 splitStrings: true, // 分割字符串，将单个字符串拆分为多个部分
                 splitStringsChunkLength: 5, // 减小分割长度，增加碎片化
                 unicodeEscapeSequence: true, // 使用 Unicode 转义序列，使代码充满 \u 字符
