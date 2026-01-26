@@ -12,7 +12,7 @@
 set -e
 
 # Configuration
-GIT_REMOTE="my"
+GIT_REMOTE="private"
 
 # Function to display usage
 usage() {
