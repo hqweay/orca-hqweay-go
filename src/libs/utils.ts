@@ -46,7 +46,7 @@ export function getRepr(block: Block): any {
 
   if (block.properties) {
     const reprProp = block.properties.find((p) => p.name === "_repr");
-    if (reprProp && reprProp.type === PropType.JSON && reprProp.value) {
+    if (reprProp && reprProp.value) {
       repr = reprProp.value;
     }
   }

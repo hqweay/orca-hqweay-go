@@ -64,7 +64,7 @@ export default defineConfig(({ command, mode }) => {
       minifySyntax: true,
       minifyIdentifiers: true,
       legalComments: "none",
-      drop: ["console", "debugger"], // 丢弃所有 console 和 debugger 语句
+      drop: isDev ? [] : ["console", "debugger"], // 丢弃所有 console 和 debugger 语句
     },
     plugins: [
       react(),

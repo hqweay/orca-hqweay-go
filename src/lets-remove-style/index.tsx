@@ -2,6 +2,7 @@ import { setupL10N, t } from "@/libs/l10n";
 import { BasePlugin } from "@/libs/BasePlugin";
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import React, { useState } from "react";
+import { getRepr } from "@/libs/utils";
 
 export default class FormatPlugin extends BasePlugin {
   protected settingsComponent = RemoveStyleSettings;
@@ -85,7 +86,11 @@ export default class FormatPlugin extends BasePlugin {
             const isChildrenEmpty =
               !block.children || block.children.length === 0;
 
-            if (isContentEmpty && isChildrenEmpty) {
+            if (
+              isContentEmpty &&
+              isChildrenEmpty &&
+              !this.shouldExcludeFromDeletion(block)
+            ) {
               blocksToDelete.push(block.id);
               return;
             }
@@ -332,6 +337,22 @@ export default class FormatPlugin extends BasePlugin {
         key: "sep-settings",
       }),
     ];
+  }
+
+  /**
+   * 判断是否应该排除删除
+   * @param block
+   * @returns true 表示排除（不删除）
+   */
+  private shouldExcludeFromDeletion(block: any): boolean {
+    const blockRepr = getRepr(block);
+
+    // 排除非文本类型的 block：比如 hr，考虑到还有自定义块的情况，仅清理文本类型的空块
+    if (blockRepr.type !== "text") {
+      return true;
+    }
+
+    return false;
   }
 }
 
