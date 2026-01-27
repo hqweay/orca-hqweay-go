@@ -2,8 +2,7 @@ import { BasePlugin } from "@/libs/BasePlugin";
 import { t } from "@/libs/l10n";
 import { Block, DbId } from "../orca";
 import { getBlocks, getRepr } from "@/libs/utils";
-import React, { useState } from "react";
-import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
+import React from "react";
 
 interface BlockWithLevel {
   block: Block;
@@ -11,7 +10,7 @@ interface BlockWithLevel {
 }
 
 export default class HeadingTreePlugin extends BasePlugin {
-  protected settingsComponent = HeadingTreeSettings;
+  protected headbarButtonId = `${this.name}.heading-tree`;
 
   public async load(): Promise<void> {
     // Register Block Menu Command
@@ -24,20 +23,14 @@ export default class HeadingTreePlugin extends BasePlugin {
             const MenuText = orca.components.MenuText;
             if (!MenuText) return null;
 
-            // Only show when 2+ blocks are selected
-            if (!blockIds || blockIds.length <= 1) return null;
-
             return (
               <MenuText
                 preIcon="ti ti-list-tree"
                 title={t("Reorganize Headings")}
-                onClick={() => {
+                onClick={async () => {
                   close();
-                  orca.commands.invokeCommand(
-                    `${this.name}.reorganize-selection`,
-                    blockIds,
-                    rootBlockId,
-                  );
+                  const blocks = await getBlocks(blockIds);
+                  await this.executeReorganize(blocks);
                 }}
               />
             );
@@ -59,9 +52,6 @@ export default class HeadingTreePlugin extends BasePlugin {
       async () => this.executeReorganizeActivePanel(),
       t("Reorganize Current Page"),
     );
-
-    // Initial headbar setup
-    this.updateHeadbarByConfig(this.getSettings());
 
     this.logger.info(`${this.name} loaded.`);
   }
@@ -339,34 +329,4 @@ export default class HeadingTreePlugin extends BasePlugin {
       );
     }
   }
-}
-
-function HeadingTreeSettings({ plugin }: { plugin: HeadingTreePlugin }) {
-  const settings = plugin["getSettings"]();
-  const [headbarMode, setHeadbarMode] = useState(
-    settings.headbarMode || "both",
-  );
-
-  const updateMode = async (value: string) => {
-    setHeadbarMode(value);
-    await plugin.updateSettings({ headbarMode: value });
-  };
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      <SettingsSection title={t("Headbar Display Mode")}>
-        <SettingsItem label={t("Display Mode")}>
-          <orca.components.Select
-            selected={[headbarMode]}
-            options={[
-              { value: "actions", label: t("Actions Menu") },
-              { value: "standalone", label: t("Standalone Button") },
-              { value: "both", label: t("Both") },
-            ]}
-            onChange={(selected) => updateMode(selected[0])}
-          />
-        </SettingsItem>
-      </SettingsSection>
-    </div>
-  );
 }

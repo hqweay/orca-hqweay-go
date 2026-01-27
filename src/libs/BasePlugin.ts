@@ -1,11 +1,13 @@
 import React from "react";
 import { Logger } from "./logger";
 import { t } from "./l10n";
+import { PluginSettings } from "@/components/PluginSettings";
 
 export abstract class BasePlugin {
   protected mainPluginName: string;
   protected logger: Logger;
   protected name: string;
+  protected headbarButtonId: string | null = null;
   protected isLoaded: boolean = false;
 
   constructor(mainPluginName: string, name: string) {
@@ -26,10 +28,22 @@ export abstract class BasePlugin {
 
   public abstract unload(): Promise<void>;
 
+  /**
+   * Render headbar button for this plugin.
+   * Return null if no button needed.
+   */
+  public renderHeadbarButton(): React.ReactNode {
+    return null;
+  }
+
   public async safeLoad() {
     if (this.isLoaded) return;
     await this.load();
     this.isLoaded = true;
+
+    // Auto register headbar if needed
+    this.syncHeadbar();
+
     this.logger.info("Sub-plugin loaded");
   }
 
@@ -37,7 +51,38 @@ export abstract class BasePlugin {
     if (!this.isLoaded) return;
     await this.unload();
     this.isLoaded = false;
+
+    // Auto unregister headbar
+    this.unregisterHeadbar();
+
     this.logger.info("Sub-plugin unloaded");
+  }
+
+  protected syncHeadbar() {
+    if (!this.headbarButtonId) return;
+
+    const settings = this.getSettings();
+    const mode = settings.headbarMode || "both";
+
+    const needsButton = mode === "standalone" || mode === "both";
+    const isRegistered = !!orca.state.headbarButtons[this.headbarButtonId];
+
+    if (needsButton) {
+      if (!isRegistered) {
+        orca.headbar.registerHeadbarButton(
+          this.headbarButtonId,
+          () => this.renderHeadbarButton() as React.ReactElement,
+        );
+      }
+    } else {
+      this.unregisterHeadbar();
+    }
+  }
+
+  protected unregisterHeadbar() {
+    if (this.headbarButtonId) {
+      orca.headbar.unregisterHeadbarButton(this.headbarButtonId);
+    }
   }
 
   public getSettingsSchema(): any {
@@ -79,7 +124,7 @@ export abstract class BasePlugin {
   /**
    * Get the settings scoped to this sub-plugin
    */
-  protected getSettings(): any {
+  public getSettings(): any {
     return this._config;
   }
 
@@ -128,10 +173,10 @@ export abstract class BasePlugin {
 
   /**
    * Hook called when configuration is updated via updateSettings.
-   * Default implementation does nothing.
+   * Default implementation handles headbar visibility syncing.
    */
   protected async onConfigChanged(_newConfig: any): Promise<void> {
-    // Override in sub-plugins
+    this.syncHeadbar();
   }
 
   /**
@@ -178,17 +223,42 @@ export abstract class BasePlugin {
 
   /**
    * Override this property to return the React component for the settings UI.
+   * Internal use, please use renderCustomSettings for simpler customization.
    */
   protected settingsComponent: React.ComponentType<{ plugin: any }> | null =
     null;
 
   /**
+   * Render custom settings UI for this sub-plugin.
+   * Override this instead of renderSettings for standard layout.
+   */
+  protected renderCustomSettings(): React.ReactNode {
+    return null;
+  }
+
+  /**
+   * Check if this sub-plugin has any settings to display.
+   */
+  public hasSettings(): boolean {
+    if (this.settingsComponent) return true;
+    if (this.headbarButtonId) return true;
+    if (this.renderCustomSettings() !== null) return true;
+    return false;
+  }
+
+  /**
    * Render the settings for this sub-plugin.
-   * Default implementation uses this.settingsComponent.
+   * This provides a standard layout via PluginSettingsWrapper.
    */
   public renderSettings(): React.ReactNode | null {
-    if (!this.settingsComponent) return null;
-    return React.createElement(this.settingsComponent, { plugin: this });
+    if (this.settingsComponent) {
+      return React.createElement(this.settingsComponent, { plugin: this });
+    }
+
+    return React.createElement(PluginSettings, {
+      plugin: this as any,
+      customSettings: this.renderCustomSettings(),
+    });
   }
 
   protected defineSetting(key: string, label: string, desc: string, def = "") {

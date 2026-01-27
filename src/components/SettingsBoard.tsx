@@ -14,7 +14,7 @@ export function SettingsBoard({ onClose, mainPluginName }: SettingsBoardProps) {
   const configurablePlugins = pluginInstances.filter((p) => {
     const settings = orca.state.plugins[mainPluginName]?.settings;
     const isEnabled = settings?.[p["name"]];
-    return isEnabled && p.renderSettings() !== null;
+    return isEnabled && p.hasSettings();
   });
 
   useEffect(() => {
