@@ -5,8 +5,13 @@ import { BasePlugin } from "./libs/BasePlugin";
 import { SettingsBoard } from "./components/SettingsBoard";
 import { DbId, QueryDescription2 } from "./orca";
 
-// Auto-scan all sub-plugins in lets-* folders
-const pluginModules = import.meta.glob("./lets-*/index.tsx", { eager: true });
+// Auto-scan sub-plugins. Test plugins (lets-test-*) are only included in development.
+const pluginModules: Record<string, any> =
+  import.meta.env.MODE === "development"
+    ? import.meta.glob("./lets-*/index.tsx", { eager: true })
+    : import.meta.glob(["./lets-*/index.tsx", "!./lets-test-*/index.tsx"], {
+        eager: true,
+      });
 
 export const pluginInstances: BasePlugin[] = [];
 let unsubscribeSettings: (() => void) | null = null;
@@ -47,12 +52,13 @@ export async function load(_name: string) {
   for (const path in pluginModules) {
     const module: any = pluginModules[path];
     try {
+      // Extract name from path e.g. "./lets-format/index.tsx" -> "lets-format"
+      const folderName = path.split("/")[1];
+      const pluginName = folderName.replace("lets-", "");
+
       // Check if the module exports a default class extending BasePlugin
       if (module.default && module.default.prototype instanceof BasePlugin) {
         // It's a BasePlugin class
-        // Extract name from path e.g. "./lets-format/index.tsx" -> "lets-format"
-        const folderName = path.split("/")[1];
-        const pluginName = folderName.replace("lets-", "");
         const pluginInstance = new module.default(_name, pluginName);
         pluginInstances.push(pluginInstance);
 

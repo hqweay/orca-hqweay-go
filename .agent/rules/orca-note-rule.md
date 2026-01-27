@@ -64,7 +64,13 @@ export default class MyPlugin extends BasePlugin {
 
 ### 2.5 国际化 (i18n)
 *   所有用户可见字符串必须使用 `src/libs/l10n` 提供的 `t()` 函数包裹。
-*   在 `src/translations/zhCN.ts` 中添加对应的中文翻译。
+*   翻译文件统一存放在 `src/translations/` 下。
+
+### 2.6 命名约定与环境隔离 (Naming & Environment)
+*   **正式插件**: 目录命名为 `src/lets-[name]`。
+*   **测试/示例插件**: 目录命名为 `src/lets-test-[name]`。
+*   **自动隔离**: 系统会自动识别并在生产环境下跳过所有 `lets-test-*` 插件的加载，确保生产环境的纯净。
+
 
 ## 3. 自定义块开发 (Custom Blocks) - "双生子原则"
 *   **渲染器与转换器必须成对出现**: 如果注册了 `registerBlock` (渲染器)，**必须** 注册 `registerBlock` (转换器)。缺少转换器会导致搜索、导出、复制操作报错。
