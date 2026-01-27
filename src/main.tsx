@@ -16,27 +16,7 @@ const pluginModules: Record<string, any> =
 export const pluginInstances: BasePlugin[] = [];
 let unsubscribeSettings: (() => void) | null = null;
 
-const test = async () => {
-  const resultIds = (await orca.invokeBackend("query", {
-    q: {
-      kind: 100,
-      conditions: [
-        {
-          kind: 4,
-          name: "VoiceNote",
-          properties: [{ name: "ID", op: 1, value: "H24u0iyL" }],
-          selfOnly: true,
-        },
-      ],
-    },
-    pageSize: 12,
-  } as QueryDescription2)) as DbId[];
-
-  console.log(resultIds);
-};
 export async function load(_name: string) {
-  // test();
-
   setupL10N(orca.state.locale, { "zh-CN": zhCN });
 
   orca.commands.registerCommand(
