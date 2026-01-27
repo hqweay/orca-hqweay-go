@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite build --watch --mode development",
-    "build": "rm -rf dist && NODE_ENV=production tsc && vite build",
+    "build": "node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true})}catch(e){}\" && set NODE_ENV=production && tsc && vite build",
     "preview": "vite preview"
   },
   "peerDependencies": {
