@@ -17,7 +17,8 @@ const zhCN = {
   "csv.import.tags": "目标标签",
   "csv.import.addTag": "添加标签",
   "csv.import.tagNamePlaceholder": "标签名称 (例如: 电影)",
-  "csv.import.tagsHint": "生成的块将打上这些标签。每个标签在下一步可以有不同的属性映射。",
+  "csv.import.tagsHint":
+    "生成的块将打上这些标签。每个标签在下一步可以有不同的属性映射。",
   "csv.import.configuringTag": "配置标签:",
   "csv.import.columnMappings": "列映射",
   "csv.import.columnMappingsFor": "\${name} 的列映射",
@@ -319,6 +320,8 @@ const zhCN = {
   "Blocks must be siblings to reorganize.": "必须是同级块才能重排。",
   "No heading blocks found in selection.": "选中的块中没有标题。",
   "Headings reorganized.": "标题重排完成。",
+  "Reorganize Current Page": "重排当前页面",
+  "heading-tree.headbarMode": "顶部栏按钮模式",
 };
 
 export default zhCN;

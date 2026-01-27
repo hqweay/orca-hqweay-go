@@ -1,7 +1,9 @@
 import { BasePlugin } from "@/libs/BasePlugin";
 import { t } from "@/libs/l10n";
 import { Block, DbId } from "../orca";
-import { getRepr } from "@/libs/utils";
+import { getBlocks, getRepr } from "@/libs/utils";
+import React, { useState } from "react";
+import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 
 interface BlockWithLevel {
   block: Block;
@@ -9,6 +11,8 @@ interface BlockWithLevel {
 }
 
 export default class HeadingTreePlugin extends BasePlugin {
+  protected settingsComponent = HeadingTreeSettings;
+
   public async load(): Promise<void> {
     // Register Block Menu Command
     if (orca.blockMenuCommands.registerBlockMenuCommand) {
@@ -42,62 +46,84 @@ export default class HeadingTreePlugin extends BasePlugin {
       );
     }
 
-    // Register the command
+    // Register selection reorganization command
     orca.commands.registerCommand(
       `${this.name}.reorganize-selection`,
-      async (blockIds: number[], rootBlockId: number) => {
-        if (!blockIds || blockIds.length <= 1) {
-          orca.notify("info", t("Select at least 2 blocks to reorganize."));
-          return;
-        }
-
-        // 1. Fetch all blocks
-        const blocks: Block[] = [];
-        for (const id of blockIds) {
-          let block = orca.state.blocks[id];
-          if (!block) {
-            block = await orca.invokeBackend("get-block", id);
-          }
-          if (block) {
-            blocks.push(block);
-          }
-        }
-
-        if (blocks.length !== blockIds.length) {
-          orca.notify("error", t("Could not load all selected blocks."));
-          return;
-        }
-
-        // 2. Check all blocks are siblings
-        const parentId = blocks[0].parent;
-        const allSiblings = blocks.every((b) => b.parent === parentId);
-        if (!allSiblings || parentId === undefined) {
-          orca.notify("warn", t("Blocks must be siblings to reorganize."));
-          return;
-        }
-
-        // 3. Analyze heading levels
-        const blocksWithLevels: BlockWithLevel[] = blocks.map((block) => ({
-          block,
-          level: this.getHeadingLevel(block),
-        }));
-
-        // 4. Check if there's at least one heading block
-        const hasHeading = blocksWithLevels.some((b) => b.level > 0);
-        if (!hasHeading) {
-          orca.notify("warn", t("No heading blocks found in selection."));
-          return;
-        }
-
-        // 5. Build tree structure and move blocks
-        await this.reorganizeByHeading(blocksWithLevels);
-
-        orca.notify("success", t("Headings reorganized."));
-      },
+      async (blockIds: number[]) => this.executeReorganizeSelection(blockIds),
       t("Reorganize Headings"),
     );
 
+    // Register active panel reorganization command
+    orca.commands.registerCommand(
+      `${this.name}.reorganize-active-panel`,
+      async () => this.executeReorganizeActivePanel(),
+      t("Reorganize Current Page"),
+    );
+
+    // Initial headbar setup
+    this.updateHeadbarByConfig(this.getSettings());
+
     this.logger.info(`${this.name} loaded.`);
+  }
+
+  private async executeReorganizeSelection(blockIds: number[]) {
+    if (!blockIds || blockIds.length <= 1) {
+      orca.notify("info", t("Select at least 2 blocks to reorganize."));
+      return;
+    }
+
+    const blocks = await getBlocks(blockIds);
+    if (blocks.length !== blockIds.length) {
+      orca.notify("error", t("Could not load all selected blocks."));
+      return;
+    }
+
+    // Check all blocks are siblings
+    const parentId = blocks[0].parent;
+    const allSiblings = blocks.every((b) => b.parent === parentId);
+    if (!allSiblings || parentId === undefined) {
+      orca.notify("warn", t("Blocks must be siblings to reorganize."));
+      return;
+    }
+
+    await this.executeReorganize(blocks);
+  }
+
+  private async executeReorganizeActivePanel() {
+    const panel = orca.state.activePanel;
+    if (!panel) return;
+
+    const viewPanel = orca.nav.findViewPanel(panel, orca.state.panels);
+    if (!viewPanel?.viewArgs) return;
+
+    let rootBlockId: number | null = null;
+    const { viewArgs } = viewPanel;
+
+    if (viewArgs.date) {
+      const journalBlock = await orca.invokeBackend(
+        "get-journal-block",
+        viewArgs.date,
+      );
+      if (journalBlock) rootBlockId = journalBlock.id;
+    } else if (viewArgs.blockId) {
+      rootBlockId = viewArgs.blockId;
+    }
+
+    if (rootBlockId === null) return;
+
+    const rootBlock =
+      orca.state.blocks[rootBlockId] ||
+      (await orca.invokeBackend("get-block", rootBlockId));
+    if (!rootBlock || !rootBlock.children) return;
+
+    // Use children order from root block
+    const topLevelBlocks = await getBlocks(rootBlock.children);
+    if (topLevelBlocks.length <= 1) {
+      orca.notify("info", t("Not enough blocks to reorganize."));
+      return;
+    }
+
+    await this.executeReorganize(topLevelBlocks);
   }
 
   public async unload(): Promise<void> {
@@ -105,7 +131,83 @@ export default class HeadingTreePlugin extends BasePlugin {
       `${this.name}.reorganize-headings`,
     );
     orca.commands.unregisterCommand(`${this.name}.reorganize-selection`);
+    orca.commands.unregisterCommand(`${this.name}.reorganize-active-panel`);
+    orca.headbar.unregisterHeadbarButton(
+      `${this.name}.reorganize-active-panel`,
+    );
     this.logger.info(`${this.name} unloaded.`);
+  }
+
+  protected async onConfigChanged(newConfig: any): Promise<void> {
+    this.updateHeadbarByConfig(newConfig);
+  }
+
+  public getHeadbarMenuItems(closeMenu: () => void): React.ReactNode[] {
+    const MenuText = orca.components.MenuText;
+    const settings = this.getSettings();
+    const headbarMode = settings.headbarMode || "both";
+
+    if (headbarMode === "standalone") return [];
+
+    return [
+      <MenuText
+        key="reorganize-active-panel"
+        preIcon="ti ti-list-tree"
+        title={t("Reorganize Current Page")}
+        onClick={async () => {
+          closeMenu();
+          await orca.commands.invokeCommand(
+            `${this.name}.reorganize-active-panel`,
+          );
+        }}
+      />,
+      React.createElement(orca.components.MenuSeparator, {
+        key: "sep-settings",
+      }),
+    ];
+  }
+
+  private updateHeadbarByConfig(settings: any) {
+    const headbarMode = settings.headbarMode || "both";
+    const buttonId = `${this.name}.reorganize-active-panel`;
+
+    if (headbarMode === "standalone" || headbarMode === "both") {
+      if (!orca.state.headbarButtons[buttonId]) {
+        orca.headbar.registerHeadbarButton(buttonId, () => {
+          const Button = orca.components.Button;
+          const Tooltip = orca.components.Tooltip;
+          return (
+            <Tooltip text={t("Reorganize Current Page")}>
+              <Button
+                variant="plain"
+                onClick={() => orca.commands.invokeCommand(buttonId)}
+              >
+                <i className="ti ti-list-tree" />
+              </Button>
+            </Tooltip>
+          );
+        });
+      }
+    } else {
+      orca.headbar.unregisterHeadbarButton(buttonId);
+    }
+  }
+
+  private async executeReorganize(blocks: Block[]) {
+    // 3. Analyze heading levels
+    const blocksWithLevels: BlockWithLevel[] = blocks.map((block) => ({
+      block,
+      level: this.getHeadingLevel(block),
+    }));
+
+    const hasHeading = blocksWithLevels.some((b) => b.level > 0);
+    if (!hasHeading) {
+      orca.notify("warn", t("No heading blocks found in selection."));
+      return;
+    }
+
+    await this.reorganizeByHeading(blocksWithLevels);
+    orca.notify("success", t("Headings reorganized."));
   }
 
   /**
@@ -237,4 +339,34 @@ export default class HeadingTreePlugin extends BasePlugin {
       );
     }
   }
+}
+
+function HeadingTreeSettings({ plugin }: { plugin: HeadingTreePlugin }) {
+  const settings = plugin["getSettings"]();
+  const [headbarMode, setHeadbarMode] = useState(
+    settings.headbarMode || "both",
+  );
+
+  const updateMode = async (value: string) => {
+    setHeadbarMode(value);
+    await plugin.updateSettings({ headbarMode: value });
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      <SettingsSection title={t("Headbar Display Mode")}>
+        <SettingsItem label={t("Display Mode")}>
+          <orca.components.Select
+            selected={[headbarMode]}
+            options={[
+              { value: "actions", label: t("Actions Menu") },
+              { value: "standalone", label: t("Standalone Button") },
+              { value: "both", label: t("Both") },
+            ]}
+            onChange={(selected) => updateMode(selected[0])}
+          />
+        </SettingsItem>
+      </SettingsSection>
+    </div>
+  );
 }
