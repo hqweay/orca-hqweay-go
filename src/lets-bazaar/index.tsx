@@ -26,15 +26,8 @@ export default class BazaarPlugin extends BasePlugin {
       </Button>
     );
   }
-  
-  public getHeadbarMenuItems(closeMenu: () => void): React.ReactNode[] {
-    const settings = this.getSettings();
-    const mode = settings.headbarMode || "actions";
 
-    if (mode === "standalone") {
-      return [];
-    }
-
+  protected renderHeadbarMenuItems(closeMenu: () => void): React.ReactNode[] {
     const MenuText = orca.components.MenuText;
     return [
       React.createElement(MenuText, {

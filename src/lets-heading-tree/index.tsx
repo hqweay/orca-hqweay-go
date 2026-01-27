@@ -128,59 +128,41 @@ export default class HeadingTreePlugin extends BasePlugin {
     this.logger.info(`${this.name} unloaded.`);
   }
 
-  protected async onConfigChanged(newConfig: any): Promise<void> {
-    this.updateHeadbarByConfig(newConfig);
-  }
-
-  public getHeadbarMenuItems(closeMenu: () => void): React.ReactNode[] {
+  protected renderHeadbarMenuItems(closeMenu: () => void): React.ReactNode[] {
     const MenuText = orca.components.MenuText;
-    const settings = this.getSettings();
-    const headbarMode = settings.headbarMode || "both";
-
-    if (headbarMode === "standalone") return [];
-
     return [
-      <MenuText
-        key="reorganize-active-panel"
-        preIcon="ti ti-list-tree"
-        title={t("Reorganize Current Page")}
-        onClick={async () => {
+      React.createElement(MenuText, {
+        key: "reorganize-active-panel",
+        preIcon: "ti ti-list-tree",
+        title: t("Reorganize Current Page"),
+        onClick: async () => {
           closeMenu();
           await orca.commands.invokeCommand(
             `${this.name}.reorganize-active-panel`,
           );
-        }}
-      />,
+        },
+      }),
       React.createElement(orca.components.MenuSeparator, {
         key: "sep-settings",
       }),
     ];
   }
 
-  private updateHeadbarByConfig(settings: any) {
-    const headbarMode = settings.headbarMode || "both";
-    const buttonId = `${this.name}.reorganize-active-panel`;
-
-    if (headbarMode === "standalone" || headbarMode === "both") {
-      if (!orca.state.headbarButtons[buttonId]) {
-        orca.headbar.registerHeadbarButton(buttonId, () => {
-          const Button = orca.components.Button;
-          const Tooltip = orca.components.Tooltip;
-          return (
-            <Tooltip text={t("Reorganize Current Page")}>
-              <Button
-                variant="plain"
-                onClick={() => orca.commands.invokeCommand(buttonId)}
-              >
-                <i className="ti ti-list-tree" />
-              </Button>
-            </Tooltip>
-          );
-        });
-      }
-    } else {
-      orca.headbar.unregisterHeadbarButton(buttonId);
-    }
+  public renderHeadbarButton(): React.ReactNode {
+    const Button = orca.components.Button;
+    const Tooltip = orca.components.Tooltip;
+    return (
+      <Tooltip text={t("Reorganize Current Page")}>
+        <Button
+          variant="plain"
+          onClick={() =>
+            orca.commands.invokeCommand(`${this.name}.reorganize-active-panel`)
+          }
+        >
+          <i className="ti ti-list-tree" />
+        </Button>
+      </Tooltip>
+    );
   }
 
   private async executeReorganize(blocks: Block[]) {

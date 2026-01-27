@@ -202,16 +202,29 @@ export abstract class BasePlugin {
   }
 
   /**
-   * 返回要在顶部栏“三个点”动作菜单中显示的菜单项。
-   *
-   * @param _closeMenu 调用此函数以在点击项后关闭菜单
-   * @returns React 节点数组 (例如 MenuText, MenuSeparator)
+   * (系统调用) 获取要在顶部栏动作菜单中显示的项。
+   * 默认会根据 headbarMode 设置自动决定是否调用 renderHeadbarMenuItems。
+   */
+  public getHeadbarMenuItems(closeMenu: () => void): React.ReactNode[] {
+    const settings = this.getSettings();
+    const headbarMode = settings.headbarMode || "both";
+
+    // 如果设置为仅独立按钮，则不显示在动作菜单中
+    if (headbarMode === "standalone") {
+      return [];
+    }
+
+    return this.renderHeadbarMenuItems(closeMenu);
+  }
+
+  /**
+   * 渲染子插件特有的顶部栏动作菜单项。
    *
    * 场景：
-   * 1. 当 headbarMode 为 'actions' 或 'both' 时使用。
-   * 2. 适用于不适合作为独立按钮显示的次要操作。
+   * 1. 只有当 headbarMode 为 'actions' 或 'both' 时才会被调用。
+   * 2. 子插件只需返回具体的菜单项数组。
    */
-  public getHeadbarMenuItems(_closeMenu: () => void): React.ReactNode[] {
+  protected renderHeadbarMenuItems(_closeMenu: () => void): React.ReactNode[] {
     return [];
   }
 

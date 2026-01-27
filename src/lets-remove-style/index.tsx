@@ -257,25 +257,19 @@ export default class FormatPlugin extends BasePlugin {
     );
   }
 
-  public getHeadbarMenuItems(closeMenu: () => void): React.ReactNode[] {
-    // Only return items if mode is 'actions' or 'both'
-    const settings = this.getSettings();
-    const headbarMode = settings.headbarMode || "actions";
-    if (headbarMode === "standalone") {
-      return [];
-    }
-
+  protected renderHeadbarMenuItems(closeMenu: () => void): React.ReactNode[] {
     const MenuText = orca.components.MenuText;
     return [
       React.createElement(MenuText, {
         key: "remove-all-styles",
-        preIcon: "ti ti-clear-all",
+        preIcon: "ti ti-clear-formatting",
         title: t("remove all styles"),
         onClick: async () => {
           closeMenu();
           await orca.commands.invokeCommand(`${this.name}.remove-style`, [
             "inline",
             "link",
+            "emptyLine",
           ]);
         },
       }),

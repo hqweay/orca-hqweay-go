@@ -141,7 +141,7 @@ export default class FormatPlugin extends BasePlugin {
     this.logger.info(`${this.name} unloaded.`);
   }
 
-  public getHeadbarMenuItems(closeMenu: () => void): React.ReactNode[] {
+  protected renderHeadbarMenuItems(closeMenu: () => void): React.ReactNode[] {
     const MenuText = orca.components.MenuText;
     return [
       React.createElement(MenuText, {
