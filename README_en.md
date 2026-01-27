@@ -67,7 +67,7 @@ Boost your tagging efficiency with custom shortcuts:
     -   Supports the standard `{ type: "orca-tags", tags: [...], content: ... }` format.
     -   **Rich Text Support**: Insert text fragments (ContentFragment) with links or formatting alongside tags.
 
-### 9. 🌳 Heading Tree
+### 9. 🌳 Heading Tree 🥰 [SaXz2](https://github.com/SaXz2)
 Intelligently reorganize document structure based on heading hierarchy:
 
 - **Auto Level Detection**: Smart recognition of H1-H4 heading hierarchy relationships.

@@ -2,7 +2,6 @@ import { BasePlugin } from "@/libs/BasePlugin";
 import { t } from "@/libs/l10n";
 import { Block, DbId } from "../orca";
 import { getRepr } from "@/libs/utils";
-import React from "react";
 
 interface BlockWithLevel {
   block: Block;
@@ -138,7 +137,11 @@ export default class HeadingTreePlugin extends BasePlugin {
     const stack: { blockId: DbId; level: number }[] = [];
 
     // Track where each block should be placed
-    const moves: { blockId: DbId; targetId: DbId; position: 'after' | 'lastChild' }[] = [];
+    const moves: {
+      blockId: DbId;
+      targetId: DbId;
+      position: "after" | "lastChild";
+    }[] = [];
 
     // Process blocks in order
     for (let i = 0; i < blocksWithLevels.length; i++) {
@@ -183,7 +186,7 @@ export default class HeadingTreePlugin extends BasePlugin {
         // This block should be a sibling of the first block
         // Find the last block at the same level as the first block
         let targetBlockId = blocksWithLevels[0].block.id;
-        
+
         for (let j = 1; j < i; j++) {
           if (blocksWithLevels[j].level === blocksWithLevels[0].level) {
             targetBlockId = blocksWithLevels[j].block.id;
@@ -192,25 +195,27 @@ export default class HeadingTreePlugin extends BasePlugin {
 
         // Only add move if this block is not already after the target
         const currentBlock = block;
-        const targetBlock = blocksWithLevels.find(b => b.block.id === targetBlockId)?.block;
-        
+        const targetBlock = blocksWithLevels.find(
+          (b) => b.block.id === targetBlockId,
+        )?.block;
+
         if (targetBlock && currentBlock.parent !== targetBlock.parent) {
           moves.push({
             blockId: block.id,
             targetId: targetBlockId,
-            position: 'after',
+            position: "after",
           });
         }
       } else {
         // Should be child of the top of stack
         const parentId = stack[stack.length - 1].blockId;
-        
+
         // Only move if the block is not already a child of the correct parent
         if (block.parent !== parentId) {
           moves.push({
             blockId: block.id,
             targetId: parentId,
-            position: 'lastChild',
+            position: "lastChild",
           });
         }
       }
