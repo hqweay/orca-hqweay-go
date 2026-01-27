@@ -83,7 +83,14 @@ export default class HeadingTreePlugin extends BasePlugin {
           level: this.getHeadingLevel(block),
         }));
 
-        // 4. Build tree structure and move blocks
+        // 4. Check if there's at least one heading block
+        const hasHeading = blocksWithLevels.some((b) => b.level > 0);
+        if (!hasHeading) {
+          orca.notify("warn", t("No heading blocks found in selection."));
+          return;
+        }
+
+        // 5. Build tree structure and move blocks
         await this.reorganizeByHeading(blocksWithLevels);
 
         orca.notify("success", t("Headings reorganized."));

@@ -317,6 +317,7 @@ const zhCN = {
   "Reorganize Headings": "递归重排标题",
   "Select at least 2 blocks to reorganize.": "请至少选择 2 个块进行重排。",
   "Blocks must be siblings to reorganize.": "必须是同级块才能重排。",
+  "No heading blocks found in selection.": "选中的块中没有标题。",
   "Headings reorganized.": "标题重排完成。",
 };
 
