@@ -83,10 +83,41 @@ export default class MyPlugin extends BasePlugin {
 *   **命名空间**: 所有 ID（命令、设置、渲染器）必须加插件名前缀 (如 `myplugin.insertDate`)，严禁使用 `_` 开头。
 *   **样式**: 禁止硬编码颜色。必须使用 CSS 变量 (如 `--orca-color-bg-1`, `--orca-color-primary-5`) 以适配深色模式。
 
-## 6. 开发流程与文档
-1.  **复用优先**: 新功能优先考虑放入现有子插件，或提取公共方法至 `src/libs`。
-2.  **查阅文档**: 开发前查看 `docs` 目录及本规则。
-3.  **踩坑记录**: 遇到并解决的技术难题（如 API 限制、State 陷阱等），**必须**记录到 `walkthrough.md` 或 `docs` 下的相关文档中，以备后查。
-4.  **严谨性**: 检查代码不使用不存在的 API，确保结构清晰、无明显 Bug。
+## 7. API 避坑指南 (API Pitfalls)
+该项目在开发过程中积累了以下针对 Orca Editor API 的重要经验：
+
+### 7.1 块操作 (Block Movement)
+*   **必须使用复数 API**: 使用 `core.editor.moveBlocks`，而不是 `moveBlock`。
+*   **参数规范**: 即使只移动一个块，也必须传入 ID 数组：
+    ```typescript
+    invokeEditorCommand("core.editor.moveBlocks", null, [blockId], refBlockId, "after")
+    ```
+
+### 7.2 任务块识别 (Task Blocks)
+*   任务状态存储在 `_repr` 属性中：
+    ```typescript
+    const reprProp = block.properties.find(p => p.name === "_repr");
+    const isTask = reprProp?.value?.type === "task";
+    const isCompleted = reprProp?.value?.state === 1; // 1 为完成
+    ```
+
+### 7.3 标签与属性更新
+*   `core.editor.insertTag` 不会自动更新已存在的引用数据。如需更新，请使用 `core.editor.setRefData`。
+
+### 7.4 链接属性
+*   使用 `PropType.Text` 并配合 `typeArgs: { subType: "link" }` 来创建可点击的 URL。
+
+### 7.5 Valtio Proxy 问题
+*   在将数据传递给后端或进行某些底层操作前，**必须** 剥离 Valtio 代理对象以避免不可预知的错误：
+    ```typescript
+    const pureData = JSON.parse(JSON.stringify(proxyObject));
+    ```
+
+### 7.6 安全性与性能
+*   **文件选择器**: `window.showDirectoryPicker()` 必须在用户手势回调中立即同步调用，不能放在异步操作后。
+*   **GitHub API 缓存**: 获取数据时建议添加 `?t=${Date.now()}` 或设置 `cache: "no-store"` 以规避过时的 404/数据缓存。
+
+## 8. 编译环境
+*   **Mac/Unix**: 使用 `rm -rf dist`。构建脚本应保持跨平台兼容性或适配当前系统环境。
 
 最后：如无必要，勿增实体。使用中文回复。
