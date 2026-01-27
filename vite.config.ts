@@ -13,7 +13,7 @@ import { defineConfig } from "vite";
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
   const isDev = mode === "development";
-  const devDistDir = "/Users/hqweay/Documents/orca/plugins/orca-hwqeay-go/dist";
+  const devDistDir = "/Users/hqweay/Documents/orca/plugins/orca-hqweay-go/dist";
   return {
     resolve: {
       alias: {
@@ -43,7 +43,7 @@ export default defineConfig(({ command, mode }) => {
                 inDir: "build",
                 outDir: "./",
                 outFileName: "package.zip",
-                pathPrefix: "orca-hwqeay-go",
+                pathPrefix: "orca-hqweay-go",
               }),
             ]
           : [],
@@ -55,6 +55,13 @@ export default defineConfig(({ command, mode }) => {
             exclude: "node_modules/**",
           }
         : undefined,
+    },
+    esbuild: {
+      minifyWhitespace: true,
+      minifySyntax: true,
+      minifyIdentifiers: true,
+      legalComments: "none",
+      drop: isDev ? [] : ["console", "debugger"], // 丢弃所有 console 和 debugger 语句
     },
     plugins: [
       react(),
