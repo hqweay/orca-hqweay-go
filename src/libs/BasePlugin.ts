@@ -202,8 +202,14 @@ export abstract class BasePlugin {
   }
 
   /**
-   * Return an array of menu items to be displayed in the global Actions menu.
-   * Default implementation returns an empty array.
+   * 返回要在顶部栏“三个点”动作菜单中显示的菜单项。
+   *
+   * @param _closeMenu 调用此函数以在点击项后关闭菜单
+   * @returns React 节点数组 (例如 MenuText, MenuSeparator)
+   *
+   * 场景：
+   * 1. 当 headbarMode 为 'actions' 或 'both' 时使用。
+   * 2. 适用于不适合作为独立按钮显示的次要操作。
    */
   public getHeadbarMenuItems(_closeMenu: () => void): React.ReactNode[] {
     return [];
@@ -247,14 +253,23 @@ export abstract class BasePlugin {
   }
 
   /**
-   * Render the settings for this sub-plugin.
-   * This provides a standard layout via PluginSettingsWrapper.
+   * 渲染插件的设置界面。
+   *
+   * 场景：
+   * 1. 框架自动调用，用于在设置中心展示该子插件的配置项。
+   * 2. 默认会自动包裹 PluginSettings (包含顶部栏显示模式切换)。
+   *
+   * 注意：
+   * - 如果只需要增加简单的业务配置，请优先覆盖 renderCustomSettings()。
+   * - 只有在需要完全接管整个设置页渲染逻辑时，才手动赋值 settingsComponent。
    */
   public renderSettings(): React.ReactNode | null {
+    // 如果覆盖 settingsComponent，展示自定义的子插件配置面板
     if (this.settingsComponent) {
       return React.createElement(this.settingsComponent, { plugin: this });
     }
 
+    // 默认展示 PluginSettings，包含顶部栏显示模式切换
     return React.createElement(PluginSettings, {
       plugin: this as any,
       customSettings: this.renderCustomSettings(),

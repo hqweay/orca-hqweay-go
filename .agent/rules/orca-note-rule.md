@@ -43,24 +43,25 @@ export default class MyPlugin extends BasePlugin {
     - 移除 UI (`orca.toolbar.unregisterToolbarButton`)
     - 清除定时器和 DOM 事件监听。
 
-### 2.3 配置管理 (Settings)
-我们采用 React 组件化的配置面板：
-1.  **定义配置组件**: 在子插件目录下创建配置组件（如 `MySettings.tsx`）。
-2.  **实现 `renderSettings`**: 在插件类中返回配置组件。
+### 2.3 配置管理 (Settings) - 自动化模式
+我们采用“逻辑声明式”配置。大部分插件无需编写 UI 代码：
+1.  **自动化渲染**: 只要子插件声明了 `headbarButtonId`，`BasePlugin` 会自动渲染 `PluginSettings` 组件（包含显示模式切换）。
+2.  **自定义扩展**: 如果需要额外设置项，覆盖 `renderCustomSettings()` 方法：
     ```typescript
-    renderSettings() {
-      return <MySettings plugin={this} />;
+    protected renderCustomSettings() {
+      return <div className="my-logic">...</div>;
     }
     ```
 3.  **读写配置**:
-    *   读取: `this.getSettings()` (在类中) 或 `plugin.getSettings()` (在组件中)。
-    *   写入: `this.updateSettings({ key: value })`。该方法会自动处理防抖 (Debounce) 和持久化。
-    *   **设置 SCHEMA**: 优先使用 `orca.plugins.setSettingsSchema` (或是框架封装的 checkSchema) 来辅助生成设置 UI。
-4.  **实时响应**: 覆盖 `onConfigChanged(newConfig)` 钩子，以便在配置变更时实时更新插件行为（无需重载）。
+    *   读取: `this.getSettings()`。
+    *   写入: `this.updateSettings({ key: value })`。
+4.  **可见性判定**: 依靠 `hasSettings()` 自动决定是否要在设置中心显示该插件（由 `headbarButtonId` 或 `renderCustomSettings` 决定）。
 
-### 2.4 Headbar 与菜单
-*   **Headbar 按钮**: 如果插件需要在顶部栏显示按钮，请提供配置项 `headbarMode` ('standalone' | 'actions' | 'both')，并根据设置在 `load` 和 `onConfigChanged` 中调用 `registerHeadbar`。
-*   **Actions Menu**: 覆盖 `getHeadbarMenuItems()` 方法，返回要插入全局“动作”菜单的列表项 (`MenuText`, `MenuSeparator` 等)。
+### 2.4 Headbar 自动化管理 (Headbar Management)
+*   **声明式注册**: 子插件只需声明 `protected headbarButtonId = "...";`。
+*   **渲染函数**: 必须实现 `renderHeadbarButton()` 返回 React 元素。
+*   **生命周期自动同步**: `BasePlugin` 会自动监听 `headbarMode` 的变更，并在 `load`/`unload` 时自动处理按钮的注册与销毁，严禁在子插件 `load` 中手动注册该按钮。
+*   **菜单扩展**: 覆盖 `getHeadbarMenuItems(closeMenu)` 以在“三个点”动作菜单中增加条目。
 
 ### 2.5 国际化 (i18n)
 *   所有用户可见字符串必须使用 `src/libs/l10n` 提供的 `t()` 函数包裹。
