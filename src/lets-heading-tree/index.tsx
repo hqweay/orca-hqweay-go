@@ -23,6 +23,11 @@ export default class HeadingTreePlugin extends BasePlugin {
             const MenuText = orca.components.MenuText;
             if (!MenuText) return null;
 
+            // todo 可以调整为一个块时对其子块处理。先这样吧
+
+            // Only show when 2+ blocks are selected
+            if (!blockIds || blockIds.length <= 1) return null;
+
             return (
               <MenuText
                 preIcon="ti ti-list-tree"
