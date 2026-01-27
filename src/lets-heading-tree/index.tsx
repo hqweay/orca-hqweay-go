@@ -122,9 +122,6 @@ export default class HeadingTreePlugin extends BasePlugin {
     );
     orca.commands.unregisterCommand(`${this.name}.reorganize-selection`);
     orca.commands.unregisterCommand(`${this.name}.reorganize-active-panel`);
-    orca.headbar.unregisterHeadbarButton(
-      `${this.name}.reorganize-active-panel`,
-    );
     this.logger.info(`${this.name} unloaded.`);
   }
 

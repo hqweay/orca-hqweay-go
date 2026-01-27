@@ -57,11 +57,10 @@ export default class MyPlugin extends BasePlugin {
     *   写入: `this.updateSettings({ key: value })`。
 4.  **可见性判定**: 依靠 `hasSettings()` 自动决定是否要在设置中心显示该插件（由 `headbarButtonId` 或 `renderCustomSettings` 决定）。
 
-### 2.4 Headbar 自动化管理 (Headbar Management)
 *   **声明式注册**: 子插件只需声明 `protected headbarButtonId = "...";`。
-*   **渲染函数**: 必须实现 `renderHeadbarButton()` 返回 React 元素。
-*   **生命周期自动同步**: `BasePlugin` 会自动监听 `headbarMode` 的变更，并在 `load`/`unload` 时自动处理按钮的注册与销毁，严禁在子插件 `load` 中手动注册该按钮。
-*   **菜单扩展**: 覆盖 `getHeadbarMenuItems(closeMenu)` 以在“三个点”动作菜单中增加条目。
+*   **渲染函数**: 必须实现 `renderHeadbarButton()` 返回独立按钮 UI。
+*   **菜单扩展**: 覆盖 `renderHeadbarMenuItems(closeMenu)`。`BasePlugin` 会自动根据 `headbarMode` 判断是否渲染这些菜单项。子插件禁止手动检查 `headbarMode`。
+*   **生命周期自动同步**: `BasePlugin` 会自动处理按钮的注册与销毁，严禁在子插件 `load` 中手动注册按钮。
 
 ### 2.5 国际化 (i18n)
 *   所有用户可见字符串必须使用 `src/libs/l10n` 提供的 `t()` 函数包裹。
