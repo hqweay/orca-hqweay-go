@@ -346,6 +346,23 @@ class FormatUtil {
     //for me
     content = content.replaceAll("** **", " ");
     content = content.replaceAll("****", " ");
+
+    // 英文标点替换为中文标点；先只启用逗号，其他标点符号遇到再说。
+    content = content.replace(/,([\u4e00-\u9fa5\u3040-\u30FF])/g, "，$1");
+    // content = content.replace(/\.([\u4e00-\u9fa5\u3040-\u30FF])/g, "。$1");
+    // content = content.replace(/\?([\u4e00-\u9fa5\u3040-\u30FF])/g, "？$1");
+    // content = content.replace(/!([\u4e00-\u9fa5\u3040-\u30FF])/g, "！$1");
+    // content = content.replace(/;([\u4e00-\u9fa5\u3040-\u30FF])/g, "；$1");
+    // content = content.replace(/:([\u4e00-\u9fa5\u3040-\u30FF])/g, "：$1");
+    // content = content.replace(/\(([\u4e00-\u9fa5\u3040-\u30FF])/g, "（$1");
+    // content = content.replace(/\)([\u4e00-\u9fa5\u3040-\u30FF])/g, "）$1");
+    // content = content.replace(/\{([\u4e00-\u9fa5\u3040-\u30FF])/g, "｛$1");
+    // content = content.replace(/\}([\u4e00-\u9fa5\u3040-\u30FF])/g, "｝$1");
+    // content = content.replace(/\[(\u4e00-\u9fa5\u3040-\u30FF])/g, "【$1");
+    // content = content.replace(/\](\u4e00-\u9fa5\u3040-\u30FF])/g, "】$1");
+    // content = content.replace(/\<([\u4e00-\u9fa5\u3040-\u30FF])/g, "《$1");
+    // content = content.replace(/\>([\u4e00-\u9fa5\u3040-\u30FF])/g, "》$1");
+
     //end for me
     standardNames.forEach((ele: any) => {
       content = content.replace(ele.key, ele.value);
