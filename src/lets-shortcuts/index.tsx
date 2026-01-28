@@ -63,58 +63,80 @@ export default class TagShortcutsPlugin extends BasePlugin {
           }
 
           // Deduplication Check
-          if (json.primaryKey && typeof json.primaryKey === "string") {
-            const primaryKey = json.primaryKey;
+          // Deduplication Check
+          const primaryKeyConfig = json.primaryKey;
+          if (primaryKeyConfig) {
+            // Normalize to map: { tagName: propertyName }
+            let keyMap: Record<string, string> = {};
+            if (typeof primaryKeyConfig === "string") {
+              // Legacy/Simple mode: Apply to all tags having this property?
+              // Or imply it applies to *some* tag?
+              // The original logic was: find *first* tag with this property.
+              // To preserve behavior while supporting map:
+              // We'll search for this property in all tags.
+              // BUT for clarity, let's just implement the loop check dynamically
+              // if it's a string, or lookup if it's a map.
+            }
 
-            // Find the tag containing the primary key property
             outerLoop: for (const item of tags) {
               for (const [tagName, props] of Object.entries(item)) {
                 if (Array.isArray(props)) {
-                  const prop = props.find((p: any) => p.name === primaryKey);
-                  if (prop) {
-                    // Found the target property, check for duplicates in DB
-                    const targetValue = prop.value;
+                  let targetPropertyName: string | undefined;
 
-                    try {
-                      const resultIds = await orca.invokeBackend("query", {
-                        q: {
-                          kind: 100, // QueryKindSelfAnd
-                          conditions: [
-                            {
-                              kind: 4, // QueryKindTag
-                              name: tagName,
-                              properties: [
-                                {
-                                  name: primaryKey,
-                                  op: 1, // QueryOp.Equal
-                                  value: targetValue,
-                                },
-                              ],
-                              selfOnly: true,
-                            },
-                          ],
-                        },
-                        pageSize: 1,
-                      });
+                  if (typeof primaryKeyConfig === "string") {
+                    targetPropertyName = primaryKeyConfig;
+                  } else if (
+                    typeof primaryKeyConfig === "object" &&
+                    primaryKeyConfig !== null
+                  ) {
+                    targetPropertyName = primaryKeyConfig[tagName];
+                  }
 
-                      if (Array.isArray(resultIds) && resultIds.length > 0) {
-                        orca.notify(
-                          "warn",
-                          t(
-                            "Skipped duplicate block (Key: ${key}, Value: ${value})",
-                            {
-                              key: primaryKey,
-                              value: targetValue,
-                            },
-                          ),
-                        );
-                        return null; // Stop execution, do not import
+                  if (targetPropertyName) {
+                    const prop = props.find(
+                      (p: any) => p.name === targetPropertyName,
+                    );
+                    if (prop) {
+                      const targetValue = prop.value;
+                      try {
+                        const resultIds = await orca.invokeBackend("query", {
+                          q: {
+                            kind: 100, // QueryKindSelfAnd
+                            conditions: [
+                              {
+                                kind: 4, // QueryKindTag
+                                name: tagName,
+                                properties: [
+                                  {
+                                    name: targetPropertyName,
+                                    op: 1, // QueryOp.Equal
+                                    value: targetValue,
+                                  },
+                                ],
+                                selfOnly: true,
+                              },
+                            ],
+                          },
+                          pageSize: 1,
+                        });
+
+                        if (Array.isArray(resultIds) && resultIds.length > 0) {
+                          orca.notify(
+                            "warn",
+                            t(
+                              "Skipped duplicate block (Key: ${key}, Value: ${value})",
+                              {
+                                key: targetPropertyName,
+                                value: targetValue,
+                              },
+                            ),
+                          );
+                          return null; // Stop execution
+                        }
+                      } catch (err) {
+                        this.logger.error("Deduplication query failed", err);
                       }
-                    } catch (err) {
-                      this.logger.error("Deduplication query failed", err);
                     }
-
-                    break outerLoop; // Only check the first matching primary key found
                   }
                 }
               }
@@ -328,7 +350,9 @@ function ShortcutsSettings({ plugin }: { plugin: TagShortcutsPlugin }) {
     { "t": "t", "v": "Check our " },
     { "t": "l", "v": "Orca Documentation", "l": "https://orca.so/docs" }
   ],
-  "primaryKey": "参考链接",
+  "primaryKey": {
+    "任务标签": "参考链接"
+  },
   "tags": [
     {
       "任务标签": [

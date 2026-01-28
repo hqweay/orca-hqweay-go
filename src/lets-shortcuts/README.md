@@ -72,6 +72,8 @@
 
 包含类型标识，更安全，避免误识别。
 
+`primaryKey` 可以是字符串（全局唯一键名）或对象（为每个标签指定唯一键名）。
+
 ```json
 {
   "type": "orca-tags",
@@ -79,7 +81,9 @@
     { "t": "t", "v": "Check our " },
     { "t": "l", "v": "Orca Documentation", "l": "https://orca.so/docs" }
   ],
-  "primaryKey": "参考链接",
+  "primaryKey": {
+    "任务标签": "参考链接"
+  },
   "tags": [
     {
       "任务标签": [
