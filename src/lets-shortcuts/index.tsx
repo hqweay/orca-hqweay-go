@@ -143,6 +143,52 @@ export default class TagShortcutsPlugin extends BasePlugin {
             }
           }
 
+          // Handle Image Download
+          if (json.downloadImages === true) {
+            orca.notify("info", t("Downloading images..."));
+            for (const item of tags) {
+              for (const [tagName, props] of Object.entries(item)) {
+                if (Array.isArray(props)) {
+                  for (const prop of props) {
+                    if (
+                      prop.typeArgs?.subType === "image" &&
+                      typeof prop.value === "string" &&
+                      prop.value.startsWith("http")
+                    ) {
+                      try {
+                        this.logger.info(
+                          `Downloading cover image: ${prop.value}`,
+                        );
+                        // Using fetch directly as we are in a browser environment context (plugin)
+                        const response = await fetch(prop.value);
+                        if (response.ok) {
+                          const arrayBuffer = await response.arrayBuffer();
+                          const contentType =
+                            response.headers.get("content-type") || "image/png";
+
+                          const assetPath = await orca.invokeBackend(
+                            "upload-asset-binary",
+                            contentType,
+                            arrayBuffer,
+                          );
+
+                          if (assetPath) {
+                            this.logger.info(
+                              `Cover downloaded to: ${assetPath}`,
+                            );
+                            prop.value = assetPath;
+                          }
+                        }
+                      } catch (e) {
+                        this.logger.error("Error downloading cover image", e);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+
           // Convert to BlockData
           const blockData: BlockData = {
             content: json.content,
@@ -353,6 +399,7 @@ function ShortcutsSettings({ plugin }: { plugin: TagShortcutsPlugin }) {
   "primaryKey": {
     "任务标签": "参考链接"
   },
+  "downloadImages": true,
   "tags": [
     {
       "任务标签": [

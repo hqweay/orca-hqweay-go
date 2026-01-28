@@ -197,7 +197,9 @@ const zhCN = {
   "Invalid JSON in clipboard": "剪贴板中 JSON 格式无效",
   "Clipboard content does not match expected format":
     "剪贴板内容不符合预期格式",
-  "Skipped duplicate block (Key: ${key})": "已跳过重复块 (Key: ${key})",
+  "Skipped duplicate block (Key: ${key}, Value: ${value})":
+    "已跳过重复块 (Key: ${key}, Value: ${value})",
+  "Downloading images...": "正在下载图片...",
   "Failed to paste tags from clipboard": "从剪贴板粘贴标签失败",
   "Enable ${name}": "启用 ${name}",
   "Sub-plugin Settings": "子插件设置",
