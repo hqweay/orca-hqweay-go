@@ -90,9 +90,6 @@ export class CSVImporter {
 
       // 1. Resolve Target Parent Block
       const targetParentId = await this.resolveTargetId(config);
-      if (!targetParentId) {
-        throw new Error(t("csv.import.targetResolveError"));
-      }
 
       console.log("Target parent ID:", targetParentId);
 
@@ -107,7 +104,7 @@ export class CSVImporter {
             console.log("Importing block:", importData);
             await DataImporter.importBlock(importData, {
               type: "block",
-              blockId: targetParentId,
+              blockId: targetParentId || null,
               position: "lastChild",
             });
             success++;

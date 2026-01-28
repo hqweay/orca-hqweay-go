@@ -285,6 +285,17 @@ export function CSVImportModal({
                 });
             }}
           />
+          {!config?.targetBlockId && (
+            <p
+              style={{
+                marginTop: "4px",
+                fontSize: "0.8em",
+                color: "var(--b3-theme-warning)",
+              }}
+            >
+              {t("csv.import.createRootBlocksHint")}
+            </p>
+          )}
         </div>
       )}
 

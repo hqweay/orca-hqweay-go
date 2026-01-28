@@ -43,6 +43,7 @@ const zhCN = {
   "csv.import.tagAdditionError": "添加标签失败",
   "csv.import.propertyError": "添加属性失败",
   "csv.import.targetResolveError": "无法解析目标位置",
+  "csv.import.createRootBlocksHint": "未选择父块，将会建立无父节点的根块。",
 
   // 通用翻译
   "common.back": "返回",
