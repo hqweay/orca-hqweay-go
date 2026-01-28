@@ -62,6 +62,65 @@ export default class TagShortcutsPlugin extends BasePlugin {
             return null;
           }
 
+          // Deduplication Check
+          if (json.primaryKey && typeof json.primaryKey === "string") {
+            const primaryKey = json.primaryKey;
+
+            // Find the tag containing the primary key property
+            outerLoop: for (const item of tags) {
+              for (const [tagName, props] of Object.entries(item)) {
+                if (Array.isArray(props)) {
+                  const prop = props.find((p: any) => p.name === primaryKey);
+                  if (prop) {
+                    // Found the target property, check for duplicates in DB
+                    const targetValue = prop.value;
+
+                    try {
+                      const resultIds = await orca.invokeBackend("query", {
+                        q: {
+                          kind: 100, // QueryKindSelfAnd
+                          conditions: [
+                            {
+                              kind: 4, // QueryKindTag
+                              name: tagName,
+                              properties: [
+                                {
+                                  name: primaryKey,
+                                  op: 1, // QueryOp.Equal
+                                  value: targetValue,
+                                },
+                              ],
+                              selfOnly: true,
+                            },
+                          ],
+                        },
+                        pageSize: 1,
+                      });
+
+                      if (Array.isArray(resultIds) && resultIds.length > 0) {
+                        orca.notify(
+                          "warn",
+                          t(
+                            "Skipped duplicate block (Key: ${key}, Value: ${value})",
+                            {
+                              key: primaryKey,
+                              value: targetValue,
+                            },
+                          ),
+                        );
+                        return null; // Stop execution, do not import
+                      }
+                    } catch (err) {
+                      this.logger.error("Deduplication query failed", err);
+                    }
+
+                    break outerLoop; // Only check the first matching primary key found
+                  }
+                }
+              }
+            }
+          }
+
           // Convert to BlockData
           const blockData: BlockData = {
             content: json.content,
@@ -265,11 +324,12 @@ function ShortcutsSettings({ plugin }: { plugin: TagShortcutsPlugin }) {
                 // Copy example JSON to clipboard
                 const exampleJson = `{
   "type": "orca-tags",
-  "text": [
+  "content": [
     { "t": "t", "v": "Check our " },
     { "t": "l", "v": "Orca Documentation", "l": "https://orca.so/docs" }
   ],
-  "data": [
+  "primaryKey": "参考链接",
+  "tags": [
     {
       "任务标签": [
         {

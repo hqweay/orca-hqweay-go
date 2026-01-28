@@ -106,6 +106,7 @@ Orca 的社区插件市场，发现更多可能：
     { "t": "t", "v": "Check our " },
     { "t": "l", "v": "Orca Documentation", "l": "https://orca.so/docs" }
   ],
+  "primaryKey": "参考链接",
   "tags": [
     {
       "任务标签": [
