@@ -255,6 +255,10 @@ export default class LinkMetadataPlugin extends BasePlugin {
         name: "ChatGPT",
         url: "https://chatgpt.com/",
       },
+      // {
+      //   name: "Pixiv",
+      //   url: "https://www.pixiv.net/",
+      // },
     ];
 
     let initialRule = null;
@@ -381,7 +385,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
               // Image Logic
               let assetPath = data.src;
 
-              if (data.download !== false) {
+              /*if (data.download !== false) {
                 // Download and upload if download is not explicitly false (default true)
                 try {
                   const response = await fetch(data.src);
@@ -404,7 +408,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
                   // We'll fallback to original src if download fails, or maybe notify?
                   // Currently we'll keep assetPath as src, so it inserts the web link as fallback
                 }
-              }
+              }*/
 
               if (assetPath) {
                 await orca.commands.invokeEditorCommand(

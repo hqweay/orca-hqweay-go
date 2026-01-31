@@ -381,15 +381,39 @@ export function BrowserModal({
             position: "relative",
           }}
         >
-          {/* @ts-ignore */}
-          <webview
-            ref={webviewRef}
-            src={activeUrl}
-            useragent={isMobileMode ? MOBILE_UA : undefined}
-            style={{ width: "100%", height: "100%", display: "flex" }}
-            partition="persist:douban" // Keep session
-            httpreferrer="https://www.douban.com/" // Douban specific fix
-          />
+          {(() => {
+            const getSitePartition = (url: string) => {
+              try {
+                const hostname = new URL(url).hostname;
+                const parts = hostname.split(".");
+                // Attempt to get the main domain name (e.g. 'pixiv' from 'www.pixiv.net')
+                const domain =
+                  parts.length >= 2 ? parts[parts.length - 2] : parts[0];
+                if (domain) return `persist:${domain}`;
+              } catch (e) {}
+              return "persist:metadata-browser";
+            };
+            const getSiteReferrer = (url: string) => {
+              try {
+                if (url.startsWith("http")) {
+                  return new URL(url).origin + "/";
+                }
+              } catch (e) {}
+              return undefined;
+            };
+
+            return (
+              /* @ts-ignore */
+              <webview
+                ref={webviewRef}
+                src={activeUrl}
+                useragent={isMobileMode ? MOBILE_UA : undefined}
+                style={{ width: "100%", height: "100%", display: "flex" }}
+                partition={getSitePartition(activeUrl)}
+                httpreferrer={getSiteReferrer(activeUrl)}
+              />
+            );
+          })()}
         </div>
         {contextMenu && contextMenu.visible && (
           <>
