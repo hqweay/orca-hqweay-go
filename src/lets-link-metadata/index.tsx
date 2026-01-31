@@ -255,10 +255,10 @@ export default class LinkMetadataPlugin extends BasePlugin {
         name: "ChatGPT",
         url: "https://chatgpt.com/",
       },
-      // {
-      //   name: "Pixiv",
-      //   url: "https://www.pixiv.net/",
-      // },
+      {
+        name: "Pixiv",
+        url: "https://www.pixiv.net/",
+      },
     ];
 
     let initialRule = null;

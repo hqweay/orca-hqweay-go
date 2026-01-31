@@ -472,6 +472,91 @@ export function BrowserModal({
                         orca.notify("success", t("Saved Image Link"));
                       }}
                     /> */}
+                    <orca.components.MenuText
+                      title={t("Copy Image")}
+                      preIcon="ti ti-copy"
+                      onClick={async () => {
+                        const src = contextMenu.text;
+                        const prepScript = `
+                          (async () => {
+                            const container = document.createElement('div');
+                            container.id = 'orca-capture-container';
+                            container.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:white;z-index:999999999;display:flex;align-items:center;justify-content:center;overflow:hidden;';
+                            
+                            const img = document.createElement('img');
+                            img.id = 'orca-temp-capture';
+                            img.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain;margin:0;padding:0;display:block;';
+                            
+                            container.appendChild(img);
+                            document.body.appendChild(container);
+                            
+                            // Prevent body scroll
+                            const oldOverflow = document.body.style.overflow;
+                            document.body.style.overflow = 'hidden';
+                            
+                            return new Promise((resolve) => {
+                              img.onload = () => {
+                                // Calculate the actual visible rect of the image within the contain-fit container
+                                const rect = img.getBoundingClientRect();
+                                resolve({
+                                  x: rect.x,
+                                  y: rect.y,
+                                  width: rect.width,
+                                  height: rect.height,
+                                  oldOverflow
+                                });
+                              };
+                              img.onerror = () => {
+                                document.body.style.overflow = oldOverflow;
+                                resolve(null);
+                              };
+                              img.src = ${JSON.stringify(src)};
+                            });
+                          })()
+                        `;
+
+                        try {
+                          // @ts-ignore
+                          const rect =
+                            await webviewRef.current.executeJavaScript(
+                              prepScript,
+                            );
+
+                          if (rect) {
+                            const snapshot =
+                              await webviewRef.current.capturePage({
+                                x: Math.round(rect.x),
+                                y: Math.round(rect.y),
+                                width: Math.round(rect.width),
+                                height: Math.round(rect.height),
+                              });
+
+                            const dataURL = snapshot.toDataURL();
+
+                            // Cleanup
+                            await webviewRef.current.executeJavaScript(`
+                               const container = document.getElementById('orca-capture-container');
+                               if(container) container.remove();
+                               document.body.style.overflow = ${JSON.stringify(rect.oldOverflow)};
+                            `);
+
+                            const res = await fetch(dataURL);
+                            const blob = await res.blob();
+                            await navigator.clipboard.write([
+                              new ClipboardItem({ "image/png": blob }),
+                            ]);
+
+                            orca.notify(
+                              "success",
+                              t("Image copied to clipboard"),
+                            );
+                          } else {
+                            orca.notify("error", t("Failed to capture image"));
+                          }
+                        } catch (e) {}
+                        setContextMenu(null);
+                      }}
+                    />
                   </>
                 ) : (
                   <orca.components.MenuText
