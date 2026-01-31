@@ -1,4 +1,28 @@
-## [1.9.3](/compare/v1.9.2...v1.9.3) (2026-01-31)
+# [1.10.0](/compare/1.9.3...1.10.0) (2026-01-31)
+
+
+### Bug Fixes
+
+* Improve screenshot capture accuracy by explicitly sizing and positioning the temporary image and ensuring a single capture container. c347da3
+* Synchronize `isDocked` state with `initialDocked` prop to prevent flickering. 02189f5
+
+
+### Features
+
+* Add an overlay to dismiss the browser modal's context menu when clicking outside. d244bcd
+* Add VoiceNotes and ChatGPT browser links, improve webview reload error handling, and update `@types/node` dev dependency. 7ccc313
+* Allow copying images from the browser modal to the clipboard and enable Pixiv in default rules. 650d975
+* Centralize plugin default settings management and add restore functionality 3b0cc6b
+* disable "Save Image Link" menu option in BrowserModal. 902f410
+* Enhance browser modal with dynamic site-specific session management and temporarily disable image downloads. 4b6a0c9
+* Implement a docked mode for the browser modal and add a sidetool to open it in this mode. 327f66a
+* Implement back and forward navigation for the webview in BrowserModal, along with new translation keys. 1fec5a5
+* Implement mobile user agent toggle in the browser modal and update Douban rules to match mobile URLs. fa0b3ca
+* Implement saving images from the browser modal context menu to the daily note, including options to download/upload or link the image. 932804e
+
+
+
+## [1.9.3](/compare/v1.9.2...1.9.3) (2026-01-31)
 
 
 ### Bug Fixes
