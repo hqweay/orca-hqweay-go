@@ -202,8 +202,6 @@ export default class LinkMetadataPlugin extends BasePlugin {
     }
   }
 
-
-
   private async handleOpenBrowser(url: string, targetBlock: any) {
     const settings = this.getSettings() as LinkMetadataSettings;
     const rules = settings.rules || DEFAULT_RULES;
@@ -220,61 +218,22 @@ export default class LinkMetadataPlugin extends BasePlugin {
       initialRule = matchRule(url, rules) || null;
     }
 
-    this.openBrowserModal(url, rules, quickLinks, async (properties, rule) => {
-      if (targetBlock) {
-        // Check if block is empty (no content or single empty text fragment)
-        const isEmpty =
-          !targetBlock.content ||
-          targetBlock.content.length === 0 ||
-          (targetBlock.content.length === 1 &&
-            targetBlock.content[0].t === "t" &&
-            !targetBlock.content[0].v.trim());
+    this.openBrowserModal(
+      url,
+      rules,
+      quickLinks,
+      async (properties, rule) => {
+        if (targetBlock) {
+          // Check if block is empty (no content or single empty text fragment)
+          const isEmpty =
+            !targetBlock.content ||
+            targetBlock.content.length === 0 ||
+            (targetBlock.content.length === 1 &&
+              targetBlock.content[0].t === "t" &&
+              !targetBlock.content[0].v.trim());
 
-        if (isEmpty) {
-          // Construct Content (Link)
-          const titleProp = properties.find(
-            (p) => p.name === "标题" || p.name === "Title",
-          );
-          const linkProp = properties.find(
-            (p) => p.name === "链接" || p.name === "Link",
-          );
-          const title = titleProp?.value || "Untitled";
-          const linkUrl = linkProp?.value || url;
-
-          const content = [{ t: "l", v: title, l: linkUrl }];
-
-          try {
-            await orca.commands.invokeEditorCommand(
-              "core.editor.setBlocksContent",
-              null,
-              [{ id: targetBlock.id, content: content }],
-              false,
-            );
-          } catch (e) {
-            console.error("Failed to update block content", e);
-          }
-        }
-
-        const ruleToUse = rule || initialRule;
-        this.logger.info("Rule to use:", ruleToUse);
-
-        await this.applyMetadataToBlock(
-          targetBlock.id,
-          ruleToUse?.tagName || "Bookmark",
-          properties,
-          ruleToUse?.downloadCover || false,
-        );
-        orca.notify("success", t("Metadata applied to block"));
-      } else {
-        // Global Mode: Insert into Daily Note
-        try {
-          const journalBlock = await orca.invokeBackend(
-            "get-journal-block",
-            new Date(),
-          );
-
-          if (journalBlock) {
-            // 1. Construct Content (Link)
+          if (isEmpty) {
+            // Construct Content (Link)
             const titleProp = properties.find(
               (p) => p.name === "标题" || p.name === "Title",
             );
@@ -286,43 +245,113 @@ export default class LinkMetadataPlugin extends BasePlugin {
 
             const content = [{ t: "l", v: title, l: linkUrl }];
 
-            this.logger.info("Content:", content);
+            try {
+              await orca.commands.invokeEditorCommand(
+                "core.editor.setBlocksContent",
+                null,
+                [{ id: targetBlock.id, content: content }],
+                false,
+              );
+            } catch (e) {
+              console.error("Failed to update block content", e);
+            }
+          }
 
-            // 2. Prepare Tags logic
-            const ruleToUse = rule || initialRule;
-            const processedProps = await this.processProperties(
-              properties,
-              ruleToUse?.downloadCover || false,
+          const ruleToUse = rule || initialRule;
+          this.logger.info("Rule to use:", ruleToUse);
+
+          await this.applyMetadataToBlock(
+            targetBlock.id,
+            ruleToUse?.tagName || "Bookmark",
+            properties,
+            ruleToUse?.downloadCover || false,
+          );
+          orca.notify("success", t("Metadata applied to block"));
+        } else {
+          // Global Mode: Insert into Daily Note
+          try {
+            const journalBlock = await orca.invokeBackend(
+              "get-journal-block",
+              new Date(),
             );
 
-            const tagsData = [
+            if (journalBlock) {
+              // 1. Construct Content (Link)
+              const titleProp = properties.find(
+                (p) => p.name === "标题" || p.name === "Title",
+              );
+              const linkProp = properties.find(
+                (p) => p.name === "链接" || p.name === "Link",
+              );
+              const title = titleProp?.value || "Untitled";
+              const linkUrl = linkProp?.value || url;
+
+              const content = [{ t: "l", v: title, l: linkUrl }];
+
+              this.logger.info("Content:", content);
+
+              // 2. Prepare Tags logic
+              const ruleToUse = rule || initialRule;
+              const processedProps = await this.processProperties(
+                properties,
+                ruleToUse?.downloadCover || false,
+              );
+
+              const tagsData = [
+                {
+                  name: ruleToUse?.tagName || "Bookmark",
+                  properties: processedProps,
+                },
+              ];
+
+              const blockData: BlockData = {
+                content: content,
+                tags: tagsData,
+              };
+
+              await DataImporter.importBlock(blockData, {
+                type: "block",
+                blockId: journalBlock.id,
+                position: "lastChild",
+              });
+
+              orca.notify("success", t("Saved to Daily Note"));
+            } else {
+              orca.notify("error", t("Could not find Daily Note"));
+            }
+          } catch (e) {
+            console.error("Failed to save to Daily Note", e);
+            orca.notify("error", t("Failed to save to Daily Note"));
+          }
+        }
+      },
+      async (text: string) => {
+        // Save to Daily Note Callback
+        try {
+          const journalBlock = await orca.invokeBackend(
+            "get-journal-block",
+            new Date(),
+          );
+          if (journalBlock) {
+            await DataImporter.importBlock(
               {
-                name: ruleToUse?.tagName || "Bookmark",
-                properties: processedProps,
+                content: [{ t: "t", v: text }],
               },
-            ];
-
-            const blockData: BlockData = {
-              content: content,
-              tags: tagsData,
-            };
-
-            await DataImporter.importBlock(blockData, {
-              type: "block",
-              blockId: journalBlock.id,
-              position: "lastChild",
-            });
-
-            orca.notify("success", t("Saved to Daily Note"));
+              {
+                type: "block",
+                blockId: journalBlock.id,
+                position: "lastChild",
+              },
+            );
           } else {
             orca.notify("error", t("Could not find Daily Note"));
           }
         } catch (e) {
-          console.error("Failed to save to Daily Note", e);
+          console.error("Failed to save selection to Daily Note", e);
           orca.notify("error", t("Failed to save to Daily Note"));
         }
-      }
-    });
+      },
+    );
   }
 
   private async processProperties(properties: any[], downloadCover: boolean) {
@@ -393,6 +422,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
     rules: Rule[],
     quickLinks: { name: string; url: string }[],
     onExtract: (props: any[], rule: Rule | null) => void,
+    onSaveToDailyNote: (text: string) => void,
   ) {
     if (this.modalContainer) {
       this.closeBrowserModal(); // Close existing
@@ -416,6 +446,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
         rules={rules}
         quickLinks={quickLinks}
         onExtract={onExtract}
+        onSaveToDailyNote={onSaveToDailyNote}
       />,
     );
   }

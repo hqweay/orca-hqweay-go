@@ -14,6 +14,7 @@ interface BrowserModalProps {
   rules: Rule[]; // Pass all rules to allow client-side matching
   quickLinks: { name: string; url: string }[];
   onExtract: (properties: MetadataProperty[], rule: Rule | null) => void;
+  onSaveToDailyNote: (text: string) => void;
 }
 
 export function BrowserModal({
@@ -23,12 +24,19 @@ export function BrowserModal({
   rules,
   quickLinks,
   onExtract,
+  onSaveToDailyNote,
 }: BrowserModalProps) {
   const [inputUrl, setInputUrl] = useState(initialUrl);
   const [activeUrl, setActiveUrl] = useState(initialUrl); // Actual webview URL
   // Track the *current* rule based on the current URL
   const [currentRule, setCurrentRule] = useState<Rule | null>(null);
   const webviewRef = useRef<any>(null);
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    text: string;
+  } | null>(null);
 
   const Button = orca.components.Button;
   const Input = orca.components.Input;
@@ -87,11 +95,37 @@ export function BrowserModal({
 
     webview.addEventListener("dom-ready", handleDomReady);
 
+    const handleContextMenu = (e: any) => {
+      // e.params.selectionText
+      const params = e.params;
+      if (params && params.selectionText) {
+        // Show custom menu
+        // Need to calculate position relative to the modal or screen
+        // params.x and params.y are usually relative to the webview
+        // We need to offset them by webview's position?
+        // Actually, let's use fixed positioning based on screen or client X/Y if possible.
+        // But the event comes from webview.
+        // Let's assume params.x/y are relative to the webview content.
+        // We can position the menu absolutely within the webview container.
+        // However, we are rendering the menu in the React Modal, which overlaps.
+        // Let's try to use client rect of webview wrapper.
+
+        const wrapperRect = webviewRef.current.getBoundingClientRect();
+        setContextMenu({
+          visible: true,
+          x: wrapperRect.left + params.x,
+          y: wrapperRect.top + params.y,
+          text: params.selectionText,
+        });
+      }
+    };
+    webview.addEventListener("context-menu", handleContextMenu);
+
     return () => {
       webview.removeEventListener("did-navigate", handleNavigate);
       webview.removeEventListener("did-navigate-in-page", handleNavigate);
-
       webview.removeEventListener("dom-ready", handleDomReady);
+      webview.removeEventListener("context-menu", handleContextMenu);
     };
   }, [visible]); // Re-bind if visible changes or webview ref changes (usually stable but good to be safe)
 
@@ -208,6 +242,7 @@ export function BrowserModal({
         alignItems: "center",
         justifyContent: "center",
       }}
+      onClick={() => setContextMenu(null)} // Close menu on outside click
     >
       <div
         style={{
@@ -300,6 +335,47 @@ export function BrowserModal({
             httpreferrer="https://www.douban.com/" // Douban specific fix
           />
         </div>
+
+        {contextMenu && contextMenu.visible && (
+          <div
+            style={{
+              position: "fixed",
+              top: contextMenu.y,
+              left: contextMenu.x,
+              background: "var(--orca-color-bg-2)",
+              border: "1px solid var(--orca-color-border)",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+              borderRadius: "4px",
+              padding: "4px 0",
+              zIndex: 10000,
+              minWidth: "150px",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                padding: "8px 12px",
+                cursor: "pointer",
+                fontSize: "0.9rem",
+                color: "var(--orca-color-text)",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = "var(--orca-color-bg-3)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = "transparent")
+              }
+              onClick={() => {
+                onSaveToDailyNote(contextMenu.text);
+                setContextMenu(null);
+                orca.notify("success", t("Saved to Daily Note"));
+              }}
+            >
+              <i className="ti ti-notes" style={{ marginRight: "8px" }} />
+              {t("Save to Daily Note")}
+            </div>
+          </div>
+        )}
       </div>
     </ModalOverlay>
   );
