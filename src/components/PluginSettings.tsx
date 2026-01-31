@@ -21,6 +21,14 @@ export function PluginSettings({
     settings.headbarMode || "both",
   );
 
+  // Sync state when plugin prop changes (e.g. switching plugins in settings)
+  // useState initializer only runs on mount, so without this,
+  // the mode would be stale when reusing the component.
+  React.useEffect(() => {
+    const currentSettings = plugin.getSettings();
+    setHeadbarMode(currentSettings.headbarMode || "both");
+  }, [plugin]);
+
   const updateMode = async (value: string) => {
     setHeadbarMode(value);
     await plugin.updateSettings({ headbarMode: value });

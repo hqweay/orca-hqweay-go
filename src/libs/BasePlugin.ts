@@ -154,7 +154,11 @@ export abstract class BasePlugin {
     }
 
     this._saveTimer = setTimeout(async () => {
-      this.logger.info("Persisting settings after debounce", this._config);
+      this.logger.info(
+        "Persisting settings after debounce",
+        this.name,
+        this._config,
+      );
 
       // Persistence
       await orca.plugins.setData(
