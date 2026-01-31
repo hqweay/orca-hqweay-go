@@ -12,7 +12,6 @@ interface BrowserModalProps {
   initialUrl: string;
   rules: Rule[]; // Pass all rules to allow client-side matching
   quickLinks: { name: string; url: string }[];
-  quickLinks: { name: string; url: string }[];
   onExtract: (properties: MetadataProperty[], rule: Rule | null) => void;
 }
 
@@ -59,11 +58,6 @@ export function BrowserModal({
   };
 
   useEffect(() => {
-    if (initialUrl) {
-      setUrl(initialUrl);
-      const rule = matchRule(initialUrl);
-      setCurrentRule(rule || null);
-    }
     if (initialUrl) {
       setInputUrl(initialUrl);
       setActiveUrl(initialUrl);

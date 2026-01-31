@@ -175,14 +175,18 @@ export default function Settings({ plugin }: { plugin: LinkMetadataPlugin }) {
 
   const saveRules = async (newRules: Rule[]) => {
     setRules(newRules);
-    await plugin.updateSettings({ rules: newRules, quickLinks });
+    await plugin.updateSettings({
+      rules: newRules,
+      quickLinks,
+    });
   };
 
-  const saveQuickLinks = async (
-    newLinks: { name: string; url: string }[],
-  ) => {
+  const saveQuickLinks = async (newLinks: { name: string; url: string }[]) => {
     setQuickLinks(newLinks);
-    await plugin.updateSettings({ rules, quickLinks: newLinks });
+    await plugin.updateSettings({
+      rules,
+      quickLinks: newLinks,
+    });
   };
 
   const handleAddRule = () => {
@@ -236,6 +240,62 @@ export default function Settings({ plugin }: { plugin: LinkMetadataPlugin }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      <SettingsSection title={t("Quick Links")}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          {quickLinks.map((link, index) => (
+            <div
+              key={index}
+              style={{
+                display: "flex",
+                gap: "8px",
+                alignItems: "center",
+              }}
+            >
+              <orca.components.CompositionInput
+                value={link.name}
+                onChange={(e) => {
+                  const newLinks = [...quickLinks];
+                  newLinks[index].name = e.target.value;
+                  saveQuickLinks(newLinks);
+                }}
+                placeholder="Name"
+                style={{ width: "150px" }}
+              />
+              <orca.components.CompositionInput
+                value={link.url}
+                onChange={(e) => {
+                  const newLinks = [...quickLinks];
+                  newLinks[index].url = e.target.value;
+                  saveQuickLinks(newLinks);
+                }}
+                placeholder="URL"
+                style={{ flex: 1 }}
+              />
+              <orca.components.Button
+                variant="dangerous"
+                onClick={() => {
+                  const newLinks = quickLinks.filter((_, i) => i !== index);
+                  saveQuickLinks(newLinks);
+                }}
+              >
+                ×
+              </orca.components.Button>
+            </div>
+          ))}
+
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <orca.components.Button
+              variant="solid"
+              onClick={() => {
+                const newLinks = [...quickLinks, { name: "", url: "" }];
+                saveQuickLinks(newLinks);
+              }}
+            >
+              {t("Add Link")}
+            </orca.components.Button>
+          </div>
+        </div>
+      </SettingsSection>
       <SettingsSection title={t("Extraction Rules")}>
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {rules.map((rule, index) => (
@@ -295,64 +355,6 @@ export default function Settings({ plugin }: { plugin: LinkMetadataPlugin }) {
 
             <orca.components.Button variant="solid" onClick={handleAddRule}>
               {t("Add Rule")}
-            </orca.components.Button>
-          </div>
-        </div>
-
-      </SettingsSection>
-
-      <SettingsSection title={t("Quick Links")}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          {quickLinks.map((link, index) => (
-            <div
-              key={index}
-              style={{
-                display: "flex",
-                gap: "8px",
-                alignItems: "center",
-              }}
-            >
-              <orca.components.CompositionInput
-                value={link.name}
-                onChange={(e) => {
-                  const newLinks = [...quickLinks];
-                  newLinks[index].name = e.target.value;
-                  saveQuickLinks(newLinks);
-                }}
-                placeholder="Name"
-                style={{ width: "150px" }}
-              />
-              <orca.components.CompositionInput
-                value={link.url}
-                onChange={(e) => {
-                  const newLinks = [...quickLinks];
-                  newLinks[index].url = e.target.value;
-                  saveQuickLinks(newLinks);
-                }}
-                placeholder="URL"
-                style={{ flex: 1 }}
-              />
-              <orca.components.Button
-                variant="dangerous"
-                onClick={() => {
-                  const newLinks = quickLinks.filter((_, i) => i !== index);
-                  saveQuickLinks(newLinks);
-                }}
-              >
-                ×
-              </orca.components.Button>
-            </div>
-          ))}
-
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <orca.components.Button
-              variant="solid"
-              onClick={() => {
-                const newLinks = [...quickLinks, { name: "", url: "" }];
-                saveQuickLinks(newLinks);
-              }}
-            >
-              {t("Add Link")}
             </orca.components.Button>
           </div>
         </div>

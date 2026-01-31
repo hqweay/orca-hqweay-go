@@ -10,7 +10,7 @@ import { BrowserModal } from "./components/BrowserModal";
 import React from "react";
 
 export default class LinkMetadataPlugin extends BasePlugin {
-  protected settingsComponent = Settings;
+  protected headbarButtonId = "link-metadata-browser-btn";
   private modalRoot: any = null;
   private modalContainer: HTMLElement | null = null;
 
@@ -104,7 +104,41 @@ export default class LinkMetadataPlugin extends BasePlugin {
     this.logger.info(`${this.name} unloaded.`);
   }
 
-  private findUrlInBlock(block: any): string {
+  protected renderCustomSettings(): React.ReactNode {
+    return React.createElement(Settings, { plugin: this });
+  }
+
+  public renderHeadbarButton(): React.ReactNode {
+    return (
+      <orca.components.Button
+        variant="plain"
+        title={t("Metadata: Open Browser")}
+        onClick={() => this.handleOpenBrowser("", null)}
+      >
+        <i className="ti ti-world" style={{ fontSize: "16px" }} />
+      </orca.components.Button>
+    );
+  }
+
+  protected renderHeadbarMenuItems(closeMenu: () => void): React.ReactNode[] {
+    const MenuText = orca.components.MenuText;
+    return [
+      React.createElement(MenuText, {
+        key: "open-browser",
+        preIcon: "ti ti-world",
+        title: t("Metadata: Open Browser"),
+        onClick: () => {
+          closeMenu();
+          this.handleOpenBrowser("", null);
+        },
+      }),
+      React.createElement(orca.components.MenuSeparator, {
+        key: "sep-link-metadata",
+      }),
+    ];
+  }
+
+  private findUrlInBlock(block: any): string | null {
     if (!block || !block.content) return "";
     for (const fragment of block.content) {
       if (fragment.t === "a" && fragment.url) {
