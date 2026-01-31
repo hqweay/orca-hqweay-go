@@ -15,6 +15,7 @@ interface BrowserModalProps {
   quickLinks: { name: string; url: string }[];
   onExtract: (properties: MetadataProperty[], rule: Rule | null) => void;
   onSaveToDailyNote: (text: string) => void;
+  initialDocked?: boolean;
 }
 
 export function BrowserModal({
@@ -25,6 +26,7 @@ export function BrowserModal({
   quickLinks,
   onExtract,
   onSaveToDailyNote,
+  initialDocked = false,
 }: BrowserModalProps) {
   const [inputUrl, setInputUrl] = useState(initialUrl);
   const [activeUrl, setActiveUrl] = useState(initialUrl); // Actual webview URL
@@ -37,6 +39,8 @@ export function BrowserModal({
     y: number;
     text: string;
   } | null>(null);
+
+  const [isDocked, setIsDocked] = useState(initialDocked);
 
   const Button = orca.components.Button;
   const Input = orca.components.Input;
@@ -109,14 +113,16 @@ export function BrowserModal({
         // We can position the menu absolutely within the webview container.
         // However, we are rendering the menu in the React Modal, which overlaps.
         // Let's try to use client rect of webview wrapper.
-
-        const wrapperRect = webviewRef.current.getBoundingClientRect();
-        setContextMenu({
-          visible: true,
-          x: wrapperRect.left + params.x,
-          y: wrapperRect.top + params.y,
-          text: params.selectionText,
-        });
+        // We need to check if webviewRef.current is valid before calling getBoundingClientRect
+        if (webviewRef.current) {
+          const wrapperRect = webviewRef.current.getBoundingClientRect();
+          setContextMenu({
+            visible: true,
+            x: wrapperRect.left + params.x,
+            y: wrapperRect.top + params.y,
+            text: params.selectionText,
+          });
+        }
       }
     };
     webview.addEventListener("context-menu", handleContextMenu);
@@ -235,26 +241,32 @@ export function BrowserModal({
     <ModalOverlay
       visible={true}
       onClose={onClose}
-      blurred={true}
+      blurred={!isDocked}
       style={{
-        backgroundColor: "rgba(255, 255, 255, 0.9)", // slightly opaque
+        backgroundColor: isDocked ? "transparent" : "rgba(255, 255, 255, 0.9)",
         display: "flex",
         alignItems: "center",
-        justifyContent: "center",
+        justifyContent: isDocked ? "flex-end" : "center",
+        pointerEvents: isDocked ? "none" : "auto", // Allow clicking through overlay when docked
       }}
       onClick={() => setContextMenu(null)} // Close menu on outside click
     >
       <div
         style={{
-          background: "var(--b3-theme-background)",
+          backgroundColor:
+            "var(--b3-theme-background, var(--orca-color-bg-main, #ffffff))",
           color: "var(--b3-theme-on-background)",
           padding: "20px",
-          borderRadius: "8px",
-          width: "80%",
-          height: "80vh",
+          borderRadius: isDocked ? "0" : "8px",
+          width: isDocked ? "40%" : "80%",
+          minWidth: isDocked ? "400px" : "auto",
+          height: isDocked ? "100vh" : "80vh",
           display: "flex",
           flexDirection: "column",
           boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
+          borderLeft: isDocked ? "1px solid var(--orca-color-border)" : "none",
+          pointerEvents: "auto", // Re-enable pointer events for the modal content
+          zIndex: 10,
         }}
       >
         <div
@@ -264,9 +276,24 @@ export function BrowserModal({
             marginBottom: "12px",
           }}
         >
-          <div style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
+          <div style={{ fontSize: "1.2rem", fontWeight: "bold", flex: 1 }}>
             {t("Browser Extraction")} - {currentRule?.name || "Generic"}
           </div>
+          <Button
+            variant="plain"
+            onClick={() => setIsDocked(!isDocked)}
+            style={{ marginRight: "8px" }}
+            title={isDocked ? t("Center Object") : t("Dock to Side")}
+          >
+            <i
+              className={
+                isDocked
+                  ? "ti ti-layout-sidebar-left-collapse"
+                  : "ti ti-layout-sidebar-right"
+              }
+              style={{ fontSize: "20px" }}
+            ></i>
+          </Button>
           <Button variant="plain" onClick={onClose}>
             <i className="ti ti-x" style={{ fontSize: "20px" }}></i>
           </Button>

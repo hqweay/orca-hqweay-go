@@ -92,6 +92,38 @@ export default class LinkMetadataPlugin extends BasePlugin {
       { label: t("Metadata: Open Browser") },
     );
 
+    // Register editor sidetool
+    orca.editorSidetools.registerEditorSidetool(
+      `${this.name}.browser-sidetool`,
+      {
+        render: (_rootBlockId, _panelId) => {
+          const Tooltip =
+            orca.components.Tooltip || (({ children }: any) => <>{children}</>);
+          // Use Button directly, assuming it handles basic styling
+          // Or wrap in a way consistent with other sidetools if needed.
+          // Usually sidetools just return a button.
+          return (
+            <Tooltip text={t("Web Assistant (Docked)")} placement="horizontal">
+              <orca.components.Button
+                variant="plain"
+                onClick={() => this.handleOpenBrowser("", null, true)}
+                style={{
+                  width: "30px",
+                  height: "30px",
+                  padding: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <i className="ti ti-world" style={{ fontSize: "16px" }} />
+              </orca.components.Button>
+            </Tooltip>
+          );
+        },
+      },
+    );
+
     this.logger.info(`${this.name} loaded.`);
   }
 
@@ -202,7 +234,11 @@ export default class LinkMetadataPlugin extends BasePlugin {
     }
   }
 
-  private async handleOpenBrowser(url: string, targetBlock: any) {
+  private async handleOpenBrowser(
+    url: string,
+    targetBlock: any,
+    initialDocked: boolean = false,
+  ) {
     const settings = this.getSettings() as LinkMetadataSettings;
     const rules = settings.rules || DEFAULT_RULES;
     // Default quick links if not set
@@ -351,6 +387,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
           orca.notify("error", t("Failed to save to Daily Note"));
         }
       },
+      initialDocked,
     );
   }
 
@@ -423,6 +460,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
     quickLinks: { name: string; url: string }[],
     onExtract: (props: any[], rule: Rule | null) => void,
     onSaveToDailyNote: (text: string) => void,
+    initialDocked: boolean = false,
   ) {
     if (this.modalContainer) {
       this.closeBrowserModal(); // Close existing
@@ -447,6 +485,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
         quickLinks={quickLinks}
         onExtract={onExtract}
         onSaveToDailyNote={onSaveToDailyNote}
+        initialDocked={initialDocked}
       />,
     );
   }
