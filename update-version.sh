@@ -62,6 +62,10 @@ else
     jq --arg new_version "$NEW_VERSION" '.version = $new_version' package.json > "$TMP_FILE"
     mv "$TMP_FILE" package.json
 
+    # Generate Changelog
+    echo "Generating changelog..."
+    pnpm utils:changelog
+
     git add .
     git commit -m "release: $NEW_VERSION $COMMENT"
     git push "$GIT_REMOTE"

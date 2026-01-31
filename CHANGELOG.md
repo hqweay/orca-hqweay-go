@@ -1,3 +1,17 @@
+## [1.9.3](/compare/v1.9.2...v1.9.3) (2026-01-31)
+
+
+### Bug Fixes
+
+* Synchronize plugin settings UI state upon plugin prop changes and include plugin name in settings persistence logs. 5c655fd
+
+
+### Features
+
+* add "Format Block" tooltip to the refresh button in the format plugin. ccc6c9f
+
+
+
 ## [1.9.2](/compare/v1.9.1...v1.9.2) (2026-01-31)
 
 
