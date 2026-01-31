@@ -86,12 +86,35 @@ export function BrowserModal({
       // It will NOT show the updated value immediately. Use the useEffect below to track updates.
     };
 
+    const handleDomReady = () => {
+      // Force all links with target="_blank" to open in the current window
+      // by intercepting the click and manually setting window.location.href
+      // using the capture phase to ensure we handle it first.
+      webview.executeJavaScript(`
+        document.body.addEventListener('click', (e) => {
+          let target = e.target;
+          while (target && target.tagName !== 'A') {
+            target = target.parentElement;
+          }
+          if (target && target.tagName === 'A' && target.target === '_blank') {
+            e.preventDefault();
+            e.stopPropagation();
+            window.location.href = target.href;
+          }
+        }, true);
+      `);
+    };
+
     webview.addEventListener("did-navigate", handleNavigate);
     webview.addEventListener("did-navigate-in-page", handleNavigate); // For SPA
+
+    webview.addEventListener("dom-ready", handleDomReady);
 
     return () => {
       webview.removeEventListener("did-navigate", handleNavigate);
       webview.removeEventListener("did-navigate-in-page", handleNavigate);
+
+      webview.removeEventListener("dom-ready", handleDomReady);
     };
   }, [visible]); // Re-bind if visible changes or webview ref changes (usually stable but good to be safe)
 
