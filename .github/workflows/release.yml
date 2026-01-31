@@ -69,7 +69,7 @@ jobs:
           # ## [Old Version] ...
           
           # We can use awk to extract the first section.
-          awk '/^## \[/{if (found) exit; found=1; print; next} found {print}' CHANGELOG.md > release_body.md
+          awk '/^#+ \[/{if (found) exit; found=1; print; next} found {print}' CHANGELOG.md > release_body.md
           
           # Debug
           cat release_body.md
