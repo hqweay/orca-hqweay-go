@@ -7,7 +7,7 @@
     "dev": "vite build --watch --mode development",
     "build": "rm -rf dist && NODE_ENV=production tsc && vite build",
     "preview": "vite preview",
-    "utils:changelog": "conventional-changelog -p angular -i CHANGELOG.md -s -r 0 -c changelog.json",
+    "utils:changelog": "conventional-changelog -p angular -i CHANGELOG.md -s -r 0 -n changelog.config.js",
     "version": "pnpm utils:changelog && git add CHANGELOG.md"
   },
   "peerDependencies": {

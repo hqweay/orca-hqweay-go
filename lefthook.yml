@@ -2,4 +2,4 @@ pre-push:
   parallel: false
   commands:
     generate-changelog:
-      run: pnpm conventional-changelog -p angular -i CHANGELOG.md -s -r 0 -c changelog.json && git add CHANGELOG.md
+      run: pnpm conventional-changelog -p angular -i CHANGELOG.md -s -r 0 -n changelog.config.js && git add CHANGELOG.md
