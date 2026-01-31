@@ -133,7 +133,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
     );
     orca.commands.unregisterCommand(`${this.name}.extract-metadata`);
     orca.commands.unregisterEditorCommand(`${this.name}.open-browser`);
-    this.closeBrowserModal();
+    this.destroyBrowserModal();
     this.logger.info(`${this.name} unloaded.`);
   }
 
@@ -454,6 +454,8 @@ export default class LinkMetadataPlugin extends BasePlugin {
     });
   }
 
+  private currentBrowserProps: any = null;
+
   private openBrowserModal(
     initialUrl: string,
     rules: Rule[],
@@ -462,35 +464,46 @@ export default class LinkMetadataPlugin extends BasePlugin {
     onSaveToDailyNote: (text: string) => void,
     initialDocked: boolean = false,
   ) {
-    if (this.modalContainer) {
-      this.closeBrowserModal(); // Close existing
+    // If container doesn't exist, create it
+    if (!this.modalContainer) {
+      this.modalContainer = document.createElement("div");
+      document.body.appendChild(this.modalContainer);
+
+      const { createRoot } = window as any;
+      this.modalRoot = createRoot(this.modalContainer);
     }
 
-    this.modalContainer = document.createElement("div");
-    document.body.appendChild(this.modalContainer);
-
-    const { createRoot } = window as any;
-    this.modalRoot = createRoot(this.modalContainer);
-
     const handleClose = () => {
-      this.closeBrowserModal();
+      this.hideBrowserModal();
     };
 
+    this.currentBrowserProps = {
+      onClose: handleClose,
+      initialUrl,
+      rules,
+      quickLinks,
+      onExtract,
+      onSaveToDailyNote,
+      initialDocked,
+    };
+
+    this.renderBrowserModal(true);
+  }
+
+  private renderBrowserModal(visible: boolean) {
+    if (!this.modalRoot || !this.currentBrowserProps) return;
+
     this.modalRoot.render(
-      <BrowserModal
-        visible={true}
-        onClose={handleClose}
-        initialUrl={initialUrl}
-        rules={rules}
-        quickLinks={quickLinks}
-        onExtract={onExtract}
-        onSaveToDailyNote={onSaveToDailyNote}
-        initialDocked={initialDocked}
-      />,
+      <BrowserModal visible={visible} {...this.currentBrowserProps} />,
     );
   }
 
-  private closeBrowserModal() {
+  private hideBrowserModal() {
+    this.renderBrowserModal(false);
+  }
+
+  // Renamed from closeBrowserModal to reflect it destroys the instance
+  private destroyBrowserModal() {
     if (this.modalRoot) {
       this.modalRoot.unmount();
       this.modalRoot = null;
@@ -499,5 +512,6 @@ export default class LinkMetadataPlugin extends BasePlugin {
       this.modalContainer.remove();
       this.modalContainer = null;
     }
+    this.currentBrowserProps = null;
   }
 }

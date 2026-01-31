@@ -222,16 +222,16 @@ export function BrowserModal({
     }
   };
 
-  if (!visible) return null;
+  // if (!visible) return null; // Removed to keep state alive
 
   return (
     <ModalOverlay
-      visible={true}
+      visible={true} // Always keep internal visible true to prevent unmounting if it controls it
       onClose={onClose}
       blurred={!isDocked}
       style={{
         backgroundColor: isDocked ? "transparent" : "rgba(255, 255, 255, 0.9)",
-        display: "flex",
+        display: visible ? "flex" : "none",
         alignItems: "center",
         justifyContent: isDocked ? "flex-end" : "center",
         pointerEvents: isDocked ? "none" : "auto", // Allow clicking through overlay when docked
