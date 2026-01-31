@@ -46,6 +46,14 @@ export function BrowserModal({
   } | null>(null);
 
   const [isDocked, setIsDocked] = useState(initialDocked);
+  const [prevInitialDocked, setPrevInitialDocked] = useState(initialDocked);
+
+  // Sync state with props during render to avoid flickering
+  if (initialDocked !== prevInitialDocked) {
+    setPrevInitialDocked(initialDocked);
+    setIsDocked(initialDocked);
+  }
+
   const [isMobileMode, setIsMobileMode] = useState(false);
 
   const Button = orca.components.Button;
