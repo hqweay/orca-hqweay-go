@@ -1,0 +1,202 @@
+import { Rule } from "./types";
+
+export const DEFAULT_RULES: Rule[] = [
+  {
+    id: "douban-book",
+    name: "Douban Book",
+    urlPattern:
+      /^https:\/\/book\.douban\.com\/subject\/(\d+)(\/|\/?\?.*)?$/i.toString(),
+    tagName: "Douban Book",
+    downloadCover: true,
+    script: `
+    const findElementByText = (text) => {
+      const elements = doc.querySelectorAll("span.pl");
+      for (const el of elements) {
+        if (el.textContent.includes(text)) return el;
+      }
+      return null;
+    };
+
+    const meta = { ...baseMeta }; // Start with base meta
+    // Douban specific overrides
+    // 提取书籍ID
+    const match = url.match(/\\/subject\\/(\\d+)/);
+    const doubanId = (match && match[1]) || "";
+    
+    // 提取书名
+    const titleElement = doc.querySelector("h1 span");
+    const bookTitle = (titleElement && titleElement.textContent.trim()) || baseMeta.title;
+
+    const coverElement = doc.querySelector("#mainpic img");
+    const coverUrl = (coverElement && coverElement.getAttribute("src").trim()) || baseMeta.cover;
+
+    // 提取作者
+    const authorElement = doc.querySelector("#info span:first-child a");
+    const author = (authorElement && authorElement.textContent.trim()) || "";
+
+    // 提取出版社
+    const publisherElement = findElementByText("出版社");
+    const publisher =
+      (publisherElement &&
+        publisherElement.nextElementSibling &&
+        publisherElement.nextElementSibling.textContent.trim()) ||
+      "";
+
+    // 提取出品方
+    const producerElement = findElementByText("出品方");
+    const producer =
+      (producerElement &&
+        producerElement.nextElementSibling &&
+        producerElement.nextElementSibling.textContent.trim()) ||
+      "";
+
+    // 提取副标题
+    const subtitleElement = findElementByText("副标题");
+    const subtitle =
+      (subtitleElement &&
+        subtitleElement.nextSibling &&
+        subtitleElement.nextSibling.textContent.trim()) ||
+      "";
+
+    // 提取出版年
+    const publishDateElement = findElementByText("出版年");
+    const publishDate =
+      (publishDateElement &&
+        publishDateElement.nextSibling &&
+        publishDateElement.nextSibling.textContent.trim()) ||
+      "";
+
+    // 提取页数
+    const pagesElement = findElementByText("页数");
+    const pages =
+      (pagesElement &&
+        pagesElement.nextSibling &&
+        pagesElement.nextSibling.textContent.trim()) ||
+      "";
+
+    // 提取定价
+    const priceElement = findElementByText("定价");
+    const price =
+      (priceElement &&
+        priceElement.nextSibling &&
+        priceElement.nextSibling.textContent.trim()) ||
+      "";
+
+    // 提取装帧
+    const bindingElement = findElementByText("装帧");
+    const binding =
+      (bindingElement &&
+        bindingElement.nextSibling &&
+        bindingElement.nextSibling.textContent.trim()) ||
+      "";
+
+    // 提取ISBN
+    const isbnElement = findElementByText("ISBN");
+    const isbn =
+      (isbnElement &&
+        isbnElement.nextSibling &&
+        isbnElement.nextSibling.textContent.trim()) ||
+      "";
+
+    const cleanDoubanUrl = doubanId ? \`https://book.douban.com/subject/\${doubanId}/\` : url;
+
+    return [
+        { name: "链接", type: PropType.Text, value: cleanDoubanUrl, typeArgs: { subType: "link" } },
+        { name: "标题", type: PropType.Text, value: bookTitle },
+        { name: "封面", type: PropType.Text, value: coverUrl, typeArgs: { subType: "image" } },
+        { name: "作者", type: PropType.Text, value: author },
+        { name: "出版社", type: PropType.Text, value: publisher },
+        { name: "出品方", type: PropType.Text, value: producer },
+        { name: "副标题", type: PropType.Text, value: subtitle },
+        { name: "出版年", type: PropType.Text, value: publishDate },
+        { name: "页数", type: PropType.Text, value: pages },
+        { name: "定价", type: PropType.Text, value: price },
+        { name: "装帧", type: PropType.Text, value: binding },
+        { name: "ISBN", type: PropType.Text, value: isbn },
+    ];
+    `.split("\n"),
+    enabled: true,
+  },
+  {
+    id: "douban-game",
+    name: "Douban Game",
+    urlPattern:
+      /^https:\/\/www\.douban\.com\/game\/(\d+)(\/|\/?\?.*)?$/i.toString(),
+    tagName: "Douban Game",
+    downloadCover: true,
+    script: `
+    const meta = { ...baseMeta };
+    
+    // Title
+    const titleElement = doc.querySelector("#content h1");
+    const title = (titleElement && titleElement.textContent.trim()) || baseMeta.title;
+
+    // Cover
+    const coverElement = doc.querySelector(".item-subject-info .pic a img");
+    const coverUrl = (coverElement && coverElement.getAttribute("src").trim()) || baseMeta.thumbnail;
+
+    // Comment/Rating
+    const commentElement = doc.querySelector(".collection-comment");
+    const comment = (commentElement && commentElement.textContent.trim()) || "";
+
+    return [
+        { name: "链接", type: PropType.Text, value: url, typeArgs: { subType: "link" } },
+        { name: "标题", type: PropType.Text, value: title },
+        { name: "封面", type: PropType.Text, value: coverUrl, typeArgs: { subType: "image" } },
+        { name: "评论", type: PropType.Text, value: comment },
+    ];
+    `.split("\n"),
+    enabled: true,
+  },
+  {
+    id: "douban-movie",
+    name: "Douban Movie",
+    urlPattern:
+      /^https:\/\/movie\.douban\.com\/subject\/(\d+)(\/|\/?\?.*)?$/i.toString(),
+    tagName: "Douban Movie",
+    downloadCover: true,
+    script: `
+    const meta = { ...baseMeta };
+    
+    // Title
+    const titleElement = doc.querySelector("#content h1");
+    const title = (titleElement && titleElement.textContent.trim()) || baseMeta.title;
+
+    // Cover
+    const coverElement = doc.querySelector("#mainpic a img");
+    const coverUrl = (coverElement && coverElement.getAttribute("src").trim()) || baseMeta.thumbnail;
+
+    // Comment
+    const commentElement = doc.querySelector(".j.a_stars > span:last-of-type");
+    const comment = (commentElement && commentElement.textContent.trim()) || "";
+
+    return [
+        { name: "链接", type: PropType.Text, value: url, typeArgs: { subType: "link" } },
+        { name: "标题", type: PropType.Text, value: title },
+        { name: "封面", type: PropType.Text, value: coverUrl, typeArgs: { subType: "image" } },
+        { name: "评论", type: PropType.Text, value: comment },
+    ];
+    `.split("\n"),
+    enabled: true,
+  },
+
+  {
+    id: "default-generic",
+    name: "Generic Example",
+    urlPattern: ".*",
+    tagName: "Bookmark",
+    downloadCover: false,
+    script: `
+  // Just return the generic metadata calculated by the system
+  // Map baseMeta (flat object) to MetadataProperty[]
+  
+  return [
+    { name: "链接", type: PropType.Text, value: url, typeArgs: { subType: "link" } },
+    { name: "标题", type: PropType.Text, value: baseMeta.title || "" },
+    { name: "封面", type: PropType.Text, value: baseMeta.thumbnail || "", typeArgs: { subType: "image" } },
+    { name: "描述", type: PropType.Text, value: baseMeta.description || "" }
+  ];
+`.split("\n"),
+    enabled: true,
+  },
+];
