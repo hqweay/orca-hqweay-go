@@ -83,8 +83,9 @@ export default class LinkMetadataPlugin extends BasePlugin {
           url = this.findUrlInBlock(block) || "";
         }
 
-        // Open browser, passing block context if available for auto-fill and auto-apply
-        await this.handleOpenBrowser(url, block);
+        // Open browser. Target is NULL to enforce insertion into Daily Note (Global Mode)
+        // We only use the block to pre-fill the browser URL if available.
+        await this.handleOpenBrowser(url, null);
         return null;
       },
       () => {}, // No undo action needed for opening modal
@@ -113,7 +114,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
       <orca.components.Button
         variant="plain"
         title={t("Metadata: Open Browser")}
-        onClick={() => this.handleOpenBrowser("", null)}
+        onClick={async () => await this.handleOpenBrowser("", null)}
       >
         <i className="ti ti-world" style={{ fontSize: "16px" }} />
       </orca.components.Button>
@@ -127,9 +128,9 @@ export default class LinkMetadataPlugin extends BasePlugin {
         key: "open-browser",
         preIcon: "ti ti-world",
         title: t("Metadata: Open Browser"),
-        onClick: () => {
+        onClick: async () => {
           closeMenu();
-          this.handleOpenBrowser("", null);
+          await this.handleOpenBrowser("", null);
         },
       }),
       React.createElement(orca.components.MenuSeparator, {
