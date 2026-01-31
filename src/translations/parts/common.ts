@@ -153,7 +153,7 @@ export default {
   "sort.description": "根据状态（已完成、未完成等）对块进行自动排序。",
   "voicenotes-sync": "VoiceNotes 同步",
   "voicenotes-sync.description": "自动从 VoiceNotes.com 同步您的语音笔记。",
-  
+
   // Headbar / General Settings
   "Headbar Display Mode": "顶部栏显示模式",
   "Actions Menu": "聚合菜单 (Actions)",
@@ -168,4 +168,8 @@ export default {
   "Select a plugin from the sidebar": "从侧边栏选择一个插件",
   "Settings saved. Please reload sub-plugin to take effect.":
     "设置已保存。请重启/重新加载子插件以生效。",
+  "Restore to Defaults": "恢复默认设置",
+  "Are you sure you want to restore default settings?":
+    "确定要恢复默认设置吗？",
+  "Settings restored to defaults": "设置已恢复默认",
 };

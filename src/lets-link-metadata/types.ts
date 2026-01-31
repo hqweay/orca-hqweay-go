@@ -19,6 +19,6 @@ export interface Rule {
 
 export interface LinkMetadataSettings {
   rules: Rule[];
-  quickLinks?: { name: string; url: string }[];
-  headbarMode?: "both" | "standalone" | "actions" | "none";
+  quickLinks: { name: string; url: string }[];
+  headbarMode: "both" | "standalone" | "actions" | "none";
 }

@@ -11,6 +11,13 @@ import { BasePlugin } from "@/libs/BasePlugin";
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import React, { useState } from "react";
 
+const DEFAULT_VN_SETTINGS = {
+  inboxName: "VoiceNotes Inbox",
+  noteTag: "VoiceNote",
+  excludeTags: "orca",
+  headbarMode: "both",
+};
+
 export default class VoiceNotesSyncPlugin extends BasePlugin {
   protected settingsComponent = VoiceNotesSettings;
 
@@ -27,8 +34,8 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
 
     orca.notify("info", t("Starting to sync VoiceNotes, please wait..."));
 
-    const inboxName = settings.inboxName || "VoiceNotes Inbox";
-    const noteTag = settings.noteTag || "VoiceNote";
+    const inboxName = settings.inboxName;
+    const noteTag = settings.noteTag;
 
     let lastSyncTime = await this.getData("syncKey");
     if (fullSync) {
@@ -208,6 +215,10 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
     this.logger.info(`${this.name} unloaded.`);
   }
 
+  public getDefaultSettings(): any {
+    return DEFAULT_VN_SETTINGS;
+  }
+
   public getHeadbarMenuItems(closeMenu: () => void): React.ReactNode[] {
     const MenuText = orca.components.MenuText;
     return [
@@ -263,7 +274,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
           // Tag as siyuan (or orca)
           await api.tagVoiceNote(newId, ["orca"]);
 
-          const noteTag = settings.noteTag || "VoiceNote";
+          const noteTag = settings.noteTag;
 
           // Store ID in a Tag, consistent with syncNote
           const tagBlockId = await orca.commands.invokeEditorCommand(
@@ -295,7 +306,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
 
   private getRecordingId(block: Block): string | undefined {
     const settings = this.getSettings();
-    const noteTag = settings.noteTag || "VoiceNote";
+    const noteTag = settings.noteTag;
 
     // Check refs for ID property (tags are often refs with data)
     if (block.refs && block.refs.length > 0) {
@@ -713,7 +724,7 @@ function VoiceNotesSettings({ plugin }: { plugin: VoiceNotesSyncPlugin }) {
         >
           <Input
             // @ts-ignore
-            value={config.inboxName || "VoiceNotes Inbox"}
+            value={config.inboxName}
             onChange={(e: any) => updateConfig("inboxName", e.target.value)}
           />
         </SettingsItem>
@@ -724,7 +735,7 @@ function VoiceNotesSettings({ plugin }: { plugin: VoiceNotesSyncPlugin }) {
         >
           <Input
             // @ts-ignore
-            value={config.noteTag || "VoiceNote"}
+            value={config.noteTag}
             onChange={(e: any) => updateConfig("noteTag", e.target.value)}
           />
         </SettingsItem>
@@ -737,7 +748,7 @@ function VoiceNotesSettings({ plugin }: { plugin: VoiceNotesSyncPlugin }) {
         >
           <TextArea
             // @ts-ignore
-            value={config.excludeTags || "orca"}
+            value={config.excludeTags}
             onChange={(e: any) => updateConfig("excludeTags", e.target.value)}
             style={{ width: "100%", minHeight: "60px" }}
           />

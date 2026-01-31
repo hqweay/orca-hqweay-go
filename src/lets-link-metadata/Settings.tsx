@@ -162,15 +162,8 @@ export default function Settings({ plugin }: { plugin: LinkMetadataPlugin }) {
 
   useEffect(() => {
     const settings = plugin.getSettings();
-    setRules(settings.rules || DEFAULT_RULES);
-    // Default quick link if none exist
-    const defaultQuickLinks = [
-      {
-        name: "Douban Search",
-        url: "https://www.douban.com/search",
-      },
-    ];
-    setQuickLinks(settings.quickLinks || defaultQuickLinks);
+    setRules(settings.rules);
+    setQuickLinks(settings.quickLinks);
   }, []);
 
   const saveRules = async (newRules: Rule[]) => {
@@ -222,11 +215,7 @@ export default function Settings({ plugin }: { plugin: LinkMetadataPlugin }) {
     orca.notify("success", t("Rule saved"));
   };
 
-  const handleRestoreDefaults = async () => {
-    await saveRules(DEFAULT_RULES);
-    setEditingIndex(null);
-    orca.notify("success", t("Restored default rules"));
-  };
+
 
   if (editingIndex !== null && rules[editingIndex]) {
     return (
@@ -342,17 +331,10 @@ export default function Settings({ plugin }: { plugin: LinkMetadataPlugin }) {
           <div
             style={{
               display: "flex",
-              justifyContent: "space-between",
+              justifyContent: "flex-end",
               marginTop: "12px",
             }}
           >
-            <orca.components.Button
-              variant="outline"
-              onClick={handleRestoreDefaults}
-            >
-              {t("Restore Defaults")}
-            </orca.components.Button>
-
             <orca.components.Button variant="solid" onClick={handleAddRule}>
               {t("Add Rule")}
             </orca.components.Button>

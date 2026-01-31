@@ -109,16 +109,20 @@ export abstract class BasePlugin {
    */
   public async initializeSettings(): Promise<void> {
     const rawData = await orca.plugins.getData(this.mainPluginName, this.name);
+    let diskConfig = {};
+
     if (rawData && typeof rawData === "string") {
       try {
-        this._config = JSON.parse(rawData);
+        diskConfig = JSON.parse(rawData);
       } catch (e) {
         this.logger.error("Failed to parse settings", e);
-        this._config = {};
       }
-    } else {
-      this._config = rawData || {};
+    } else if (rawData && typeof rawData === "object") {
+      diskConfig = rawData;
     }
+
+    // Merge with defaults
+    this._config = { ...this.getDefaultSettings(), ...diskConfig };
   }
 
   /**
@@ -126,6 +130,36 @@ export abstract class BasePlugin {
    */
   public getSettings(): any {
     return this._config;
+  }
+
+  /**
+   * Return the default settings for this sub-plugin.
+   * Override this in child classes to provide specific defaults.
+   */
+  public getDefaultSettings(): any {
+    return {
+      headbarMode: "both",
+    };
+  }
+
+  /**
+   * Restore settings to their default values.
+   */
+  public async restoreDefaultSettings(): Promise<void> {
+    const defaults = this.getDefaultSettings();
+    // Replacing entirely, not merging
+    this._config = { ...defaults };
+
+    // Persist immediately
+    await orca.plugins.setData(
+      this.mainPluginName,
+      this.name,
+      JSON.stringify(this._config),
+    );
+
+    // Trigger effects
+    await this.onConfigChanged(this._config);
+    this.logger.info("Settings restored to defaults");
   }
 
   /**
@@ -281,15 +315,16 @@ export abstract class BasePlugin {
    * - 只有在需要完全接管整个设置页渲染逻辑时，才手动赋值 settingsComponent。
    */
   public renderSettings(): React.ReactNode | null {
-    // 如果覆盖 settingsComponent，展示自定义的子插件配置面板
-    if (this.settingsComponent) {
-      return React.createElement(this.settingsComponent, { plugin: this });
-    }
+    const content = this.settingsComponent
+      ? React.createElement(this.settingsComponent, { plugin: this })
+      : React.createElement(PluginSettings, {
+          plugin: this as any,
+          customSettings: this.renderCustomSettings(),
+        });
 
-    // 默认展示 PluginSettings，包含顶部栏显示模式切换
-    return React.createElement(PluginSettings, {
-      plugin: this as any,
-      customSettings: this.renderCustomSettings(),
+    return React.createElement(SettingWrapper, {
+      plugin: this,
+      children: content,
     });
   }
 
@@ -303,4 +338,51 @@ export abstract class BasePlugin {
       },
     };
   }
+}
+
+function SettingWrapper({
+  plugin,
+  children,
+}: {
+  plugin: BasePlugin;
+  children: React.ReactNode;
+}) {
+  const [version, setVersion] = React.useState(0);
+
+  const handleRestore = async () => {
+    if (confirm(t("Are you sure you want to restore default settings?"))) {
+      await plugin.restoreDefaultSettings();
+      setVersion((v) => v + 1);
+      orca.notify("success", t("Settings restored to defaults"));
+    }
+  };
+
+  return React.createElement(
+    "div",
+    {
+      key: version,
+      style: { display: "flex", flexDirection: "column", gap: "24px" },
+    },
+    children,
+    React.createElement(
+      "div",
+      {
+        style: {
+          marginTop: "16px",
+          paddingTop: "16px",
+          borderTop: "1px solid var(--orca-color-border)",
+          display: "flex",
+          justifyContent: "flex-end",
+        },
+      },
+      React.createElement(
+        orca.components.Button,
+        {
+          variant: "outline",
+          onClick: handleRestore,
+        },
+        t("Restore to Defaults"),
+      ),
+    ),
+  );
 }

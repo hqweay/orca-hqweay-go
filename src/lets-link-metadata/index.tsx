@@ -9,6 +9,25 @@ import { DataImporter, BlockData } from "@/libs/DataImporter";
 import { BrowserModal } from "./components/BrowserModal";
 import React from "react";
 
+const DEFAULT_QUICK_LINKS = [
+  {
+    name: "Douban Search",
+    url: "https://www.douban.com/search",
+  },
+  {
+    name: "VoiceNotes",
+    url: "https://voicenotes.com/app",
+  },
+  {
+    name: "ChatGPT",
+    url: "https://chatgpt.com/",
+  },
+  {
+    name: "Pixiv",
+    url: "https://www.pixiv.net/",
+  },
+];
+
 export default class LinkMetadataPlugin extends BasePlugin {
   protected headbarButtonId = "link-metadata-browser-btn";
   private modalRoot: any = null;
@@ -137,8 +156,16 @@ export default class LinkMetadataPlugin extends BasePlugin {
     this.logger.info(`${this.name} unloaded.`);
   }
 
+  public getDefaultSettings(): LinkMetadataSettings {
+    return {
+      rules: DEFAULT_RULES,
+      quickLinks: DEFAULT_QUICK_LINKS,
+      headbarMode: "both",
+    };
+  }
+
   protected renderCustomSettings(): React.ReactNode {
-    return React.createElement(Settings, { plugin: this });
+    return React.createElement(Settings, { plugin: this as any });
   }
 
   public renderHeadbarButton(): React.ReactNode {
@@ -189,7 +216,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
 
   private async handleBlockExtraction(block: any, forceBrowser: boolean) {
     const settings = this.getSettings() as LinkMetadataSettings;
-    const rules = settings.rules || DEFAULT_RULES;
+    const rules = settings.rules;
 
     const targetUrl = this.findUrlInBlock(block);
 
@@ -240,26 +267,8 @@ export default class LinkMetadataPlugin extends BasePlugin {
     initialDocked: boolean = false,
   ) {
     const settings = this.getSettings() as LinkMetadataSettings;
-    const rules = settings.rules || DEFAULT_RULES;
-    // Default quick links if not set
-    const quickLinks = settings.quickLinks || [
-      {
-        name: "Douban Search",
-        url: "https://www.douban.com/search",
-      },
-      {
-        name: "VoiceNotes",
-        url: "https://voicenotes.com/app",
-      },
-      {
-        name: "ChatGPT",
-        url: "https://chatgpt.com/",
-      },
-      {
-        name: "Pixiv",
-        url: "https://www.pixiv.net/",
-      },
-    ];
+    const rules = settings.rules;
+    const quickLinks = settings.quickLinks;
 
     let initialRule = null;
     if (url) {

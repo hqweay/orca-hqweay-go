@@ -8,6 +8,13 @@ import React, { useState } from "react";
 export default class SortPlugin extends BasePlugin {
   protected settingsComponent = SortSettings;
 
+  public getDefaultSettings(): any {
+    return {
+      order: "empty, other, task_checked, task_unchecked",
+      headbarMode: "both",
+    };
+  }
+
   public async load(): Promise<void> {
     // Register Block Menu Command
     if (orca.blockMenuCommands.registerBlockMenuCommand) {
@@ -77,8 +84,7 @@ export default class SortPlugin extends BasePlugin {
 
         // Get sort order from settings
         const settings = this.getSettings();
-        const sortOrderStr =
-          settings.order || "empty, other, task_checked, task_unchecked";
+        const sortOrderStr = settings.order;
         const sortOrder = sortOrderStr
           .split(/[,，]/)
           .map((s: string) => s.trim());
@@ -220,10 +226,8 @@ export default class SortPlugin extends BasePlugin {
 }
 
 function SortSettings({ plugin }: { plugin: SortPlugin }) {
-  const settings = plugin["getSettings"]();
-  const [order, setOrder] = useState(
-    settings.order || "empty, other, task_checked, task_unchecked",
-  );
+  const settings = plugin.getSettings();
+  const [order, setOrder] = useState(settings.order);
 
   const updateOrder = async (value: string) => {
     setOrder(value);
