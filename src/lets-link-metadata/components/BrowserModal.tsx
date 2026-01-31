@@ -194,10 +194,11 @@ export function BrowserModal({
 
   return (
     <ModalOverlay
-      visible={visible}
+      visible={true}
       onClose={onClose}
+      blurred={true}
       style={{
-        zIndex: 9999,
+        backgroundColor: "rgba(255, 255, 255, 0.9)", // slightly opaque
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -209,8 +210,8 @@ export function BrowserModal({
           color: "var(--b3-theme-on-background)",
           padding: "20px",
           borderRadius: "8px",
-          width: "90%",
-          height: "90vh",
+          width: "600px",
+          height: "80vh",
           display: "flex",
           flexDirection: "column",
           boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
@@ -219,9 +220,8 @@ export function BrowserModal({
         <div
           style={{
             display: "flex",
-            justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: "16px",
+            marginBottom: "12px",
           }}
         >
           <div style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
