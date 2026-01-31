@@ -180,7 +180,8 @@ export function BrowserModal({
         if (onExtract) {
           onExtract(properties, ruleToUse);
         }
-        onClose();
+        // TODO: close modal after extraction
+        // onClose();
       } else {
         console.error("Extraction returned non-array:", properties);
         orca.notify("error", t("Script returned invalid data"));
