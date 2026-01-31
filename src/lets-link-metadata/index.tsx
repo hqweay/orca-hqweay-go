@@ -203,6 +203,39 @@ export default class LinkMetadataPlugin extends BasePlugin {
 
     this.openBrowserModal(url, rules, async (properties) => {
       if (targetBlock) {
+        // Check if block is empty (no content or single empty text fragment)
+        const isEmpty =
+          !targetBlock.content ||
+          targetBlock.content.length === 0 ||
+          (targetBlock.content.length === 1 &&
+            targetBlock.content[0].t === "t" &&
+            !targetBlock.content[0].v.trim());
+
+        if (isEmpty) {
+          // Construct Content (Link)
+          const titleProp = properties.find(
+            (p) => p.name === "标题" || p.name === "Title",
+          );
+          const linkProp = properties.find(
+            (p) => p.name === "链接" || p.name === "Link",
+          );
+          const title = titleProp?.value || "Untitled";
+          const linkUrl = linkProp?.value || url;
+
+          const content = [{ t: "l", v: title, l: linkUrl }];
+
+          try {
+            await orca.commands.invokeEditorCommand(
+              "core.editor.setBlocksContent",
+              null,
+              [{ id: targetBlock.id, content: content }],
+              false,
+            );
+          } catch (e) {
+            console.error("Failed to update block content", e);
+          }
+        }
+
         await this.applyMetadataToBlock(
           targetBlock.id,
           initialRule?.tagName || "Bookmark",

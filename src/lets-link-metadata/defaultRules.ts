@@ -7,7 +7,7 @@ export const DEFAULT_RULES: Rule[] = [
     urlPattern:
       /^https:\/\/book\.douban\.com\/subject\/(\d+)(\/|\/?\?.*)?$/i.toString(),
     tagName: "Douban Book",
-    downloadCover: true,
+    downloadCover: false,
     script: `
     const findElementByText = (text) => {
       const elements = doc.querySelectorAll("span.pl");
@@ -123,7 +123,7 @@ export const DEFAULT_RULES: Rule[] = [
     urlPattern:
       /^https:\/\/www\.douban\.com\/game\/(\d+)(\/|\/?\?.*)?$/i.toString(),
     tagName: "Douban Game",
-    downloadCover: true,
+    downloadCover: false,
     script: `
     const meta = { ...baseMeta };
     
@@ -154,7 +154,7 @@ export const DEFAULT_RULES: Rule[] = [
     urlPattern:
       /^https:\/\/movie\.douban\.com\/subject\/(\d+)(\/|\/?\?.*)?$/i.toString(),
     tagName: "Douban Movie",
-    downloadCover: true,
+    downloadCover: false,
     script: `
     const meta = { ...baseMeta };
     
