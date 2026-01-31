@@ -104,25 +104,12 @@ export function BrowserModal({
       const params = e.params;
       if (params && params.selectionText) {
         // Show custom menu
-        // Need to calculate position relative to the modal or screen
-        // params.x and params.y are usually relative to the webview
-        // We need to offset them by webview's position?
-        // Actually, let's use fixed positioning based on screen or client X/Y if possible.
-        // But the event comes from webview.
-        // Let's assume params.x/y are relative to the webview content.
-        // We can position the menu absolutely within the webview container.
-        // However, we are rendering the menu in the React Modal, which overlaps.
-        // Let's try to use client rect of webview wrapper.
-        // We need to check if webviewRef.current is valid before calling getBoundingClientRect
-        if (webviewRef.current) {
-          const wrapperRect = webviewRef.current.getBoundingClientRect();
-          setContextMenu({
-            visible: true,
-            x: wrapperRect.left + params.x,
-            y: wrapperRect.top + params.y,
-            text: params.selectionText,
-          });
-        }
+        setContextMenu({
+          visible: true,
+          x: params.x,
+          y: params.y,
+          text: params.selectionText,
+        });
       }
     };
     webview.addEventListener("context-menu", handleContextMenu);
@@ -258,7 +245,7 @@ export function BrowserModal({
           color: "var(--b3-theme-on-background)",
           padding: "20px",
           borderRadius: isDocked ? "0" : "8px",
-          width: isDocked ? "40%" : "80%",
+          width: isDocked ? "40vw" : "80vw",
           minWidth: isDocked ? "400px" : "auto",
           height: isDocked ? "100vh" : "80vh",
           display: "flex",
@@ -298,7 +285,6 @@ export function BrowserModal({
             <i className="ti ti-x" style={{ fontSize: "20px" }}></i>
           </Button>
         </div>
-
         <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
           <Input
             value={inputUrl}
@@ -313,7 +299,6 @@ export function BrowserModal({
             {t("Extract Metadata")}
           </Button>
         </div>
-
         {/* Quick Links */}
         <div
           style={{
@@ -343,7 +328,6 @@ export function BrowserModal({
             </Button>
           ))}
         </div>
-
         <div
           style={{
             flex: 1,
@@ -362,45 +346,38 @@ export function BrowserModal({
             httpreferrer="https://www.douban.com/" // Douban specific fix
           />
         </div>
-
         {contextMenu && contextMenu.visible && (
           <div
             style={{
               position: "fixed",
-              top: contextMenu.y,
-              left: contextMenu.x,
-              background: "var(--orca-color-bg-2)",
-              border: "1px solid var(--orca-color-border)",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-              borderRadius: "4px",
-              padding: "4px 0",
-              zIndex: 10000,
-              minWidth: "150px",
+              top: Math.round(contextMenu.y),
+              left: Math.round(contextMenu.x),
+              zIndex: 10001,
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div
-              style={{
-                padding: "8px 12px",
-                cursor: "pointer",
-                fontSize: "0.9rem",
-                color: "var(--orca-color-text)",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "var(--orca-color-bg-3)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "transparent")
-              }
-              onClick={() => {
-                onSaveToDailyNote(contextMenu.text);
-                setContextMenu(null);
-                orca.notify("success", t("Saved to Daily Note"));
-              }}
-            >
-              <i className="ti ti-notes" style={{ marginRight: "8px" }} />
-              {t("Save to Daily Note")}
-            </div>
+            <orca.components.Menu>
+              <orca.components.MenuText
+                title={t("Save to Daily Note")}
+                preIcon="ti ti-notes"
+                onClick={() => {
+                  onSaveToDailyNote(contextMenu.text);
+                  setContextMenu(null);
+                  orca.notify("success", t("Saved to Daily Note"));
+                }}
+              />
+              {/* <orca.components.MenuSeparator />
+              <orca.components.MenuText
+                title={t("Extract to Metadata")}
+                preIcon="ti ti-sparkles"
+                onClick={() => {
+                  navigator.clipboard.writeText(contextMenu.text);
+                  setContextMenu(null);
+                  orca.notify("success", t("Copied to clipboard"));
+                }}
+                subtitle="Copy to clipboard"
+              /> */}
+            </orca.components.Menu>
           </div>
         )}
       </div>
