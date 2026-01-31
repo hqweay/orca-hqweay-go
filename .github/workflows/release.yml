@@ -52,12 +52,27 @@ jobs:
       - name: Build for production
         run: pnpm build
 
-      - name: Get commit message
-        id: get_message
+      - name: Generate Release Body
+        id: release_body
         run: |
-          echo "message<<EOF" >> $GITHUB_OUTPUT
-          git log -1 --pretty=%B >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          npx conventional-changelog -p angular -i CHANGELOG.md -s -r 1
+          # The above command updates CHANGELOG.md, but we just want to extract the top entry.
+          # Actually, 'conventional-changelog' is hard to make output JUST the new entry cleanly to stdout without context.
+          # A better way for CI is using a dedicated action or script.
+          # But since we have `CHANGELOG.md` in the repo (committed by update-version.sh), we can try to parse it?
+          # Easier: Just use the git tag message or the commit message like before?
+          # User wants "changelog" as description.
+          # Let's try to grab the latest entry from CHANGELOG.md
+          # Assuming structure:
+          # ## [Version] ...
+          # content...
+          # ## [Old Version] ...
+          
+          # We can use awk to extract the first section.
+          awk '/^## \[/{if (found) exit; found=1; print; next} found {print}' CHANGELOG.md > release_body.md
+          
+          # Debug
+          cat release_body.md
 
       - name: Release
         uses: ncipollo/release-action@v1
@@ -67,4 +82,4 @@ jobs:
           artifacts: "package.zip"
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: false
-          body: ${{ steps.get_message.outputs.message }}
+          bodyFile: release_body.md
