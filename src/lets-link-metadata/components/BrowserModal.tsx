@@ -111,7 +111,6 @@ export function BrowserModal({
 
     webview.addEventListener("did-navigate", handleNavigate);
     webview.addEventListener("did-navigate-in-page", handleNavigate); // For SPA
-
     webview.addEventListener("dom-ready", handleDomReady);
 
     const handleContextMenu = (e: any) => {
@@ -379,26 +378,38 @@ export function BrowserModal({
           />
         </div>
         {contextMenu && contextMenu.visible && (
-          <div
-            style={{
-              position: "fixed",
-              top: Math.round(contextMenu.y),
-              left: Math.round(contextMenu.x),
-              zIndex: 10001,
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <orca.components.Menu>
-              <orca.components.MenuText
-                title={t("Save to Daily Note")}
-                preIcon="ti ti-notes"
-                onClick={() => {
-                  onSaveToDailyNote(contextMenu.text);
-                  setContextMenu(null);
-                  orca.notify("success", t("Saved to Daily Note"));
-                }}
-              />
-              {/* <orca.components.MenuSeparator />
+          <>
+            <div
+              style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                width: "100vw",
+                height: "100vh",
+                zIndex: 10000,
+              }}
+              onClick={() => setContextMenu(null)}
+            />
+            <div
+              style={{
+                position: "fixed",
+                top: Math.round(contextMenu.y),
+                left: Math.round(contextMenu.x),
+                zIndex: 10001,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <orca.components.Menu>
+                <orca.components.MenuText
+                  title={t("Save to Daily Note")}
+                  preIcon="ti ti-notes"
+                  onClick={() => {
+                    onSaveToDailyNote(contextMenu.text);
+                    setContextMenu(null);
+                    orca.notify("success", t("Saved to Daily Note"));
+                  }}
+                />
+                {/* <orca.components.MenuSeparator />
               <orca.components.MenuText
                 title={t("Extract to Metadata")}
                 preIcon="ti ti-sparkles"
@@ -409,8 +420,9 @@ export function BrowserModal({
                 }}
                 subtitle="Copy to clipboard"
               /> */}
-            </orca.components.Menu>
-          </div>
+              </orca.components.Menu>
+            </div>
+          </>
         )}
       </div>
     </ModalOverlay>
