@@ -172,4 +172,6 @@ export default {
   "Are you sure you want to restore default settings?":
     "确定要恢复默认设置吗？",
   "Settings restored to defaults": "设置已恢复默认",
+  Back: "后退",
+  Forward: "前进",
 };

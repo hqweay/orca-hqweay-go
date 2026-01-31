@@ -55,6 +55,19 @@ export function BrowserModal({
   }
 
   const [isMobileMode, setIsMobileMode] = useState(false);
+  const [canGoBack, setCanGoBack] = useState(false);
+  const [canGoForward, setCanGoForward] = useState(false);
+
+  const updateNavigationState = () => {
+    if (webviewRef.current) {
+      try {
+        setCanGoBack(webviewRef.current.canGoBack());
+        setCanGoForward(webviewRef.current.canGoForward());
+      } catch (e) {
+        // Ignore if webview not ready
+      }
+    }
+  };
 
   const Button = orca.components.Button;
   const Input = orca.components.Input;
@@ -99,8 +112,7 @@ export function BrowserModal({
         const rule = matchRule(e.url, rules);
         setCurrentRule(rule || null);
       }
-      // Note: 'currentRule' here is from the closure created when this listener was bound.
-      // It will NOT show the updated value immediately. Use the useEffect below to track updates.
+      updateNavigationState();
     };
 
     const handleDomReady = () => {
@@ -161,6 +173,18 @@ export function BrowserModal({
   const handleGo = () => {
     // Navigate to the input URL
     setActiveUrl(inputUrl);
+  };
+
+  const handleGoBack = () => {
+    if (webviewRef.current && webviewRef.current.canGoBack()) {
+      webviewRef.current.goBack();
+    }
+  };
+
+  const handleGoForward = () => {
+    if (webviewRef.current && webviewRef.current.canGoForward()) {
+      webviewRef.current.goForward();
+    }
   };
 
   const handleExtract = async () => {
@@ -337,7 +361,40 @@ export function BrowserModal({
             <i className="ti ti-x" style={{ fontSize: "20px" }}></i>
           </Button>
         </div>
-        <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "8px",
+            marginBottom: "12px",
+            alignItems: "center",
+          }}
+        >
+          <div style={{ display: "flex", gap: "4px" }}>
+            <Button
+              variant="plain"
+              onClick={handleGoBack}
+              disabled={!canGoBack}
+              style={{ minWidth: "32px", padding: "0 4px", height: "32px" }}
+              title={t("Back")}
+            >
+              <i
+                className="ti ti-chevron-left"
+                style={{ fontSize: "18px" }}
+              ></i>
+            </Button>
+            <Button
+              variant="plain"
+              onClick={handleGoForward}
+              disabled={!canGoForward}
+              style={{ minWidth: "32px", padding: "0 4px", height: "32px" }}
+              title={t("Forward")}
+            >
+              <i
+                className="ti ti-chevron-right"
+                style={{ fontSize: "18px" }}
+              ></i>
+            </Button>
+          </div>
           <Input
             value={inputUrl}
             onChange={(e: any) => setInputUrl(e.target.value)}
