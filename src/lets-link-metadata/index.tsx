@@ -247,6 +247,14 @@ export default class LinkMetadataPlugin extends BasePlugin {
         name: "Douban Search",
         url: "https://www.douban.com/search",
       },
+      {
+        name: "VoiceNotes",
+        url: "https://voicenotes.com/app",
+      },
+      {
+        name: "ChatGPT",
+        url: "https://chatgpt.com/",
+      },
     ];
 
     let initialRule = null;

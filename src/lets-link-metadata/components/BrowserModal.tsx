@@ -56,7 +56,11 @@ export function BrowserModal({
     if (webviewRef.current) {
       // Small delay to ensure prop update propagates before reload
       setTimeout(() => {
-        webviewRef.current.reload();
+        try {
+          webviewRef.current.reload();
+        } catch (e) {
+          // Ignore if not ready
+        }
       }, 50);
     }
   }, [isMobileMode]);
