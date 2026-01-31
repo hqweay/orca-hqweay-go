@@ -78,22 +78,23 @@ Intelligently reorganize document structure based on heading hierarchy:
 
 - **Level Gap Handling**: Supports missing intermediate levels (e.g., H1 → H3).
 
-### 10. 🔗 Link Metadata
+### 10. 🌐 Web Assistant
 
-A robust web metadata extraction tool that converts web information into Orca block properties intelligently:
+An all-in-one web enhancement tool combining **Metadata Extraction**, **Internal Browsing**, and **Content Clipping**:
 
 -   **Smart Extraction**:
-    -   **Auto Mode**: Use the extraction command on blocks with URLs to automatically fetch title, cover, and other info based on rules.
-    -   **Rule Engine**: Supports custom URL regex matching and site-specific JavaScript extraction scripts.
-    -   **Static/Dynamic**: Defaults to static fetching, with a fallback to Browser Mode for manual extraction.
--   **Browser Mode**:
-    -   **Built-in Browser**: Open web pages directly within the plugin for a WYSIWYG experience.
-    -   **Interactive Extraction**: Solves the problem of extracting data from pages requiring login or dynamic rendering.
-    -   **Forced Navigation**: Automatically intercepts `target="_blank"` links to ensuring you stay within the extraction window.
--   **Configuration & Extension**:
-    -   **Quick Links**: Built-in quick access to frequently used sites (e.g., Douban Search).
-    -   **Data Insertion**: Support inserting metadata into the current block or as a new block in "Daily Notes".
-    -   **Topbar Customization**: Configure as a standalone top-bar button or part of the Actions menu.
+    -   **Auto Mode**: One-click extract link metadata (title, cover, summary) to create beautiful cards.
+    -   **Rule Engine**: Built-in rules (e.g., Douban) and support for custom JavaScript extraction scripts.
+-   **Internal Browser**:
+    -   **Seamless Browsing**: Open web pages directly within the note app, no need to switch windows.
+    -   **Force Navigation**: Automatically handles `target="_blank"` redirection to keep you in the current window.
+    -   **Quick Access**: Custom shortcuts for frequently used sites (Google, Wiki, etc.).
+-   **Web Clipper**:
+    -   **WYSIWYG Clipping**: Select text in the browser, right-click, and **"Save to Daily Note"** instantly.
+    -   **Interactive Extraction**: Handles pages requiring login or dynamic loading.
+-   **Flexible Config**:
+    -   Supports top-bar customization (Standalone button or Actions menu).
+    -   Supports inserting data into the current block or creating new blocks.
 
 ## Development
 

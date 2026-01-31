@@ -346,10 +346,10 @@ const zhCN = {
   "heading-tree.headbarMode": "顶部栏按钮模式",
 
   // lets-link-metadata
-  "link-metadata": "从网页提取数据",
-  "Extract Link Metadata": "提取链接元数据",
+  "link-metadata": "网页助手 (Web Assistant)",
+  "Extract Link Metadata": "网页助手：提取元数据",
   "Block not found": "找不到块",
-  "Metadata: Browser Mode": "浏览器打开网页：提取信息",
+  "Metadata: Browser Mode": "网页助手：浏览器模式",
   "No URL found in block": "块中未找到 URL",
   "No matching rule found for this URL": "未找到匹配此 URL 的规则",
   "Edit Rule": "编辑规则",
