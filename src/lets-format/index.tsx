@@ -161,15 +161,18 @@ export default class FormatPlugin extends BasePlugin {
 
   public renderHeadbarButton(): React.ReactNode {
     const Button = orca.components.Button;
+    const Tooltip = orca.components.Tooltip;
     return (
-      <Button
-        variant="plain"
-        onClick={async () =>
-          orca.commands.invokeCommand(`${this.name}.format-block`)
-        }
-      >
-        <i className="ti ti-refresh" />
-      </Button>
+      <Tooltip text={t("Format Block")}>
+        <Button
+          variant="plain"
+          onClick={async () =>
+            orca.commands.invokeCommand(`${this.name}.format-block`)
+          }
+        >
+          <i className="ti ti-refresh" />
+        </Button>
+      </Tooltip>
     );
   }
 }
