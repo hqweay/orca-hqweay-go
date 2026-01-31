@@ -14,7 +14,7 @@ interface BrowserModalProps {
   rules: Rule[]; // Pass all rules to allow client-side matching
   quickLinks: { name: string; url: string }[];
   onExtract: (properties: MetadataProperty[], rule: Rule | null) => void;
-  onSaveToDailyNote: (text: string) => void;
+  onSaveToDailyNote: (data: any, type?: string) => void;
   initialDocked?: boolean;
 }
 
@@ -42,6 +42,7 @@ export function BrowserModal({
     x: number;
     y: number;
     text: string;
+    type?: "text" | "image";
   } | null>(null);
 
   const [isDocked, setIsDocked] = useState(initialDocked);
@@ -120,13 +121,22 @@ export function BrowserModal({
     const handleContextMenu = (e: any) => {
       // e.params.selectionText
       const params = e.params;
-      if (params && params.selectionText) {
+      if (params.mediaType === "image" && params.srcURL) {
+        setContextMenu({
+          visible: true,
+          x: params.x,
+          y: params.y,
+          text: params.srcURL,
+          type: "image",
+        });
+      } else if (params && params.selectionText) {
         // Show custom menu
         setContextMenu({
           visible: true,
           x: params.x,
           y: params.y,
           text: params.selectionText,
+          type: "text",
         });
       }
     };
@@ -404,26 +414,52 @@ export function BrowserModal({
               onClick={(e) => e.stopPropagation()}
             >
               <orca.components.Menu>
-                <orca.components.MenuText
-                  title={t("Save to Daily Note")}
-                  preIcon="ti ti-notes"
-                  onClick={() => {
-                    onSaveToDailyNote(contextMenu.text);
-                    setContextMenu(null);
-                    orca.notify("success", t("Saved to Daily Note"));
-                  }}
-                />
-                {/* <orca.components.MenuSeparator />
-              <orca.components.MenuText
-                title={t("Extract to Metadata")}
-                preIcon="ti ti-sparkles"
-                onClick={() => {
-                  navigator.clipboard.writeText(contextMenu.text);
-                  setContextMenu(null);
-                  orca.notify("success", t("Copied to clipboard"));
-                }}
-                subtitle="Copy to clipboard"
-              /> */}
+                {contextMenu.type === "image" ? (
+                  <>
+                    <orca.components.MenuText
+                      title={t("Save Image to Daily Note")}
+                      preIcon="ti ti-photo"
+                      onClick={() => {
+                        onSaveToDailyNote(
+                          {
+                            type: "image",
+                            src: contextMenu.text,
+                            download: true,
+                          },
+                          "image",
+                        );
+                        setContextMenu(null);
+                        orca.notify("success", t("Saved Image to Daily Note"));
+                      }}
+                    />
+                    <orca.components.MenuText
+                      title={t("Save Image Link")}
+                      preIcon="ti ti-link"
+                      onClick={() => {
+                        onSaveToDailyNote(
+                          {
+                            type: "image",
+                            src: contextMenu.text,
+                            download: false,
+                          },
+                          "image",
+                        );
+                        setContextMenu(null);
+                        orca.notify("success", t("Saved Image Link"));
+                      }}
+                    />
+                  </>
+                ) : (
+                  <orca.components.MenuText
+                    title={t("Save to Daily Note")}
+                    preIcon="ti ti-notes"
+                    onClick={() => {
+                      onSaveToDailyNote(contextMenu.text, "text");
+                      setContextMenu(null);
+                      orca.notify("success", t("Saved to Daily Note"));
+                    }}
+                  />
+                )}
               </orca.components.Menu>
             </div>
           </>

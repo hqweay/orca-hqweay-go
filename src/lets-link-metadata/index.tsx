@@ -369,7 +369,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
           }
         }
       },
-      async (text: string) => {
+      async (data: any, type?: string) => {
         // Save to Daily Note Callback
         try {
           const journalBlock = await orca.invokeBackend(
@@ -377,16 +377,60 @@ export default class LinkMetadataPlugin extends BasePlugin {
             new Date(),
           );
           if (journalBlock) {
-            await DataImporter.importBlock(
-              {
-                content: [{ t: "t", v: text }],
-              },
-              {
-                type: "block",
-                blockId: journalBlock.id,
-                position: "lastChild",
-              },
-            );
+            if (type === "image" && data.src) {
+              // Image Logic
+              let assetPath = data.src;
+
+              if (data.download !== false) {
+                // Download and upload if download is not explicitly false (default true)
+                try {
+                  const response = await fetch(data.src);
+                  if (response.ok) {
+                    const arrayBuffer = await response.arrayBuffer();
+                    const contentType =
+                      response.headers.get("content-type") || "image/png";
+                    const uploadedPath = await orca.invokeBackend(
+                      "upload-asset-binary",
+                      contentType,
+                      arrayBuffer,
+                    );
+                    if (uploadedPath) {
+                      assetPath = uploadedPath;
+                    }
+                  }
+                } catch (e) {
+                  console.error("Failed to download image", e);
+                  // fallback to original src or error?
+                  // We'll fallback to original src if download fails, or maybe notify?
+                  // Currently we'll keep assetPath as src, so it inserts the web link as fallback
+                }
+              }
+
+              if (assetPath) {
+                await orca.commands.invokeEditorCommand(
+                  "core.editor.insertBlock",
+                  null,
+                  journalBlock,
+                  "lastChild",
+                  null,
+                  { type: "image", src: assetPath },
+                );
+              }
+            } else {
+              // Text Logic
+              const text =
+                typeof data === "string" ? data : JSON.stringify(data);
+              await DataImporter.importBlock(
+                {
+                  content: [{ t: "t", v: text }],
+                },
+                {
+                  type: "block",
+                  blockId: journalBlock.id,
+                  position: "lastChild",
+                },
+              );
+            }
           } else {
             orca.notify("error", t("Could not find Daily Note"));
           }
