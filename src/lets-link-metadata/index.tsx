@@ -234,8 +234,8 @@ export default class LinkMetadataPlugin extends BasePlugin {
     // Default quick links if not set
     const quickLinks = settings.quickLinks || [
       {
-        name: "Douban Book Search",
-        url: "https://search.douban.com/book/subject_search?search_text=",
+        name: "Douban Search",
+        url: "https://www.douban.com/search",
       },
     ];
 

@@ -166,8 +166,8 @@ export default function Settings({ plugin }: { plugin: LinkMetadataPlugin }) {
     // Default quick link if none exist
     const defaultQuickLinks = [
       {
-        name: "Douban Book Search",
-        url: "https://search.douban.com/book/subject_search?search_text=",
+        name: "Douban Search",
+        url: "https://www.douban.com/search",
       },
     ];
     setQuickLinks(settings.quickLinks || defaultQuickLinks);

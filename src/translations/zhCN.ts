@@ -340,6 +340,34 @@ const zhCN = {
   "Headings reorganized.": "标题重排完成。",
   "Reorganize Current Page": "重排当前页面",
   "heading-tree.headbarMode": "顶部栏按钮模式",
+
+  // lets-link-metadata
+  "link-metadata": "从网页提取元数据",
+  "Extract Link Metadata": "提取链接元数据",
+  "Block not found": "找不到块",
+  "Metadata: Browser Mode": "元数据：浏览器模式",
+  "No URL found in block": "块中未找到 URL",
+  "No matching rule found for this URL": "未找到匹配此 URL 的规则",
+  "Edit Rule": "编辑规则",
+  "Rule Name": "规则名称",
+  "URL Regex Pattern": "URL 正则表达式模式",
+  "Target Tag Name": "目标标签名称",
+  Enabled: "启用",
+  "Download Cover to Local": "下载封面到本地",
+  "Extraction Script (JavaScript)": "提取脚本 (JavaScript)",
+  "Available variables: doc, url, cleanUrl, PropType, baseMeta":
+    "可用变量: doc, url, cleanUrl, PropType, baseMeta",
+  Cancel: "取消",
+  "Save Rule": "保存规则",
+  "Rule saved": "规则已保存",
+  "Restored default rules": "已恢复默认规则",
+  "Quick Links": "快速访问链接",
+  "Add Link": "添加链接",
+  "Extraction Rules": "提取规则",
+  Edit: "编辑",
+  Delete: "删除",
+  "Restore Defaults": "恢复默认",
+  "Add Rule": "添加规则",
 };
 
 export default zhCN;
