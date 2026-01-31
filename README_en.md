@@ -76,6 +76,25 @@ Intelligently reorganize document structure based on heading hierarchy:
 - **Text Attribution**: Plain text blocks automatically become children of the nearest heading.
 - **Level Gap Handling**: Supports missing intermediate levels (e.g., H1 → H3).
 
+- **Level Gap Handling**: Supports missing intermediate levels (e.g., H1 → H3).
+
+### 10. 🔗 Link Metadata
+
+A robust web metadata extraction tool that converts web information into Orca block properties intelligently:
+
+-   **Smart Extraction**:
+    -   **Auto Mode**: Use the extraction command on blocks with URLs to automatically fetch title, cover, and other info based on rules.
+    -   **Rule Engine**: Supports custom URL regex matching and site-specific JavaScript extraction scripts.
+    -   **Static/Dynamic**: Defaults to static fetching, with a fallback to Browser Mode for manual extraction.
+-   **Browser Mode**:
+    -   **Built-in Browser**: Open web pages directly within the plugin for a WYSIWYG experience.
+    -   **Interactive Extraction**: Solves the problem of extracting data from pages requiring login or dynamic rendering.
+    -   **Forced Navigation**: Automatically intercepts `target="_blank"` links to ensuring you stay within the extraction window.
+-   **Configuration & Extension**:
+    -   **Quick Links**: Built-in quick access to frequently used sites (e.g., Douban Search).
+    -   **Data Insertion**: Support inserting metadata into the current block or as a new block in "Daily Notes".
+    -   **Topbar Customization**: Configure as a standalone top-bar button or part of the Actions menu.
+
 ## Development
 
 This project uses a modular architecture:
