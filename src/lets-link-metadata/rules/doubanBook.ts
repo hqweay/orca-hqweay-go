@@ -3,7 +3,8 @@ import { Rule } from "../types";
 export const doubanBook: Rule = {
   id: "douban-book",
   name: "Douban Book",
-  urlPattern: /^https:\/\/book\.douban\.com\/subject\/(\d+)(\/|\/?\?.*)?$/i.toString(),
+  urlPattern:
+    /^https:\/\/(book\.douban\.com|m\.douban\.com\/book)\/subject\/(\d+)(\/|\/?\?.*)?$/i.toString(),
   tagName: "Douban Book",
   downloadCover: false,
   script: `

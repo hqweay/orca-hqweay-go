@@ -18,6 +18,10 @@ interface BrowserModalProps {
   initialDocked?: boolean;
 }
 
+// Mobile UA for iPhone 15 Pro
+const MOBILE_UA =
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1";
+
 export function BrowserModal({
   visible,
   onClose,
@@ -41,10 +45,21 @@ export function BrowserModal({
   } | null>(null);
 
   const [isDocked, setIsDocked] = useState(initialDocked);
+  const [isMobileMode, setIsMobileMode] = useState(false);
 
   const Button = orca.components.Button;
   const Input = orca.components.Input;
   const ModalOverlay = orca.components.ModalOverlay;
+
+  // Reload webview when UA changes
+  useEffect(() => {
+    if (webviewRef.current) {
+      // Small delay to ensure prop update propagates before reload
+      setTimeout(() => {
+        webviewRef.current.reload();
+      }, 50);
+    }
+  }, [isMobileMode]);
 
   useEffect(() => {
     if (initialUrl) {
@@ -264,8 +279,24 @@ export function BrowserModal({
           }}
         >
           <div style={{ fontSize: "1.2rem", fontWeight: "bold", flex: 1 }}>
-            {t("Browser Extraction")} - {currentRule?.name || "Generic"}
+            {/* {t("Browser Extraction")} - {currentRule?.name || "Generic"} */}
+            {currentRule?.name || "Generic"}
           </div>
+          <Button
+            variant="plain"
+            onClick={() => setIsMobileMode(!isMobileMode)}
+            style={{ marginRight: "8px" }}
+            title={
+              isMobileMode ? t("Switch to Desktop") : t("Switch to Mobile")
+            }
+          >
+            <i
+              className={
+                isMobileMode ? "ti ti-device-desktop" : "ti ti-device-mobile"
+              }
+              style={{ fontSize: "20px" }}
+            ></i>
+          </Button>
           <Button
             variant="plain"
             onClick={() => setIsDocked(!isDocked)}
@@ -341,6 +372,7 @@ export function BrowserModal({
           <webview
             ref={webviewRef}
             src={activeUrl}
+            useragent={isMobileMode ? MOBILE_UA : undefined}
             style={{ width: "100%", height: "100%", display: "flex" }}
             partition="persist:douban" // Keep session
             httpreferrer="https://www.douban.com/" // Douban specific fix
