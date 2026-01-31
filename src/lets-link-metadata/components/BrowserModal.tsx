@@ -23,7 +23,8 @@ export function BrowserModal({
   quickLinks,
   onExtract,
 }: BrowserModalProps) {
-  const [url, setUrl] = useState(initialUrl);
+  const [inputUrl, setInputUrl] = useState(initialUrl);
+  const [activeUrl, setActiveUrl] = useState(initialUrl); // Actual webview URL
   // Track the *current* rule based on the current URL
   const [currentRule, setCurrentRule] = useState<Rule | null>(null);
   const webviewRef = useRef<any>(null);
@@ -63,7 +64,8 @@ export function BrowserModal({
       setCurrentRule(rule || null);
     }
     if (initialUrl) {
-      setUrl(initialUrl);
+      setInputUrl(initialUrl);
+      setActiveUrl(initialUrl);
       const rule = matchRule(initialUrl);
       setCurrentRule(rule || null);
     }
@@ -75,9 +77,13 @@ export function BrowserModal({
     if (!webview) return;
 
     const handleNavigate = (e: any) => {
-      // e.url is the new url
+      // Update rule when navigation happens
       if (e.url) {
-        setUrl(e.url);
+        setInputUrl(e.url);
+        // We don't necessarily set activeUrl here to avoid re-triggering src update loop,
+        // but typically webview.src matches e.url.
+        // setActiveUrl(e.url);
+
         const rule = matchRule(e.url);
         setCurrentRule(rule || null);
       }
@@ -95,9 +101,8 @@ export function BrowserModal({
   }, [visible]); // Re-bind if visible changes or webview ref changes (usually stable but good to be safe)
 
   const handleGo = () => {
-    if (webviewRef.current) {
-      webviewRef.current.loadURL(url);
-    }
+    // Navigate to the input URL
+    setActiveUrl(inputUrl);
   };
 
   const handleExtract = async () => {
@@ -236,8 +241,8 @@ export function BrowserModal({
 
         <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
           <Input
-            value={url}
-            onChange={(e: any) => setUrl(e.target.value)}
+            value={inputUrl}
+            onChange={(e: any) => setInputUrl(e.target.value)}
             placeholder="URL"
             style={{ flex: 1 }}
           />
@@ -264,10 +269,8 @@ export function BrowserModal({
               variant="plain"
               onClick={() => {
                 const targetUrl = link.url;
-                setUrl(targetUrl);
-                if (webviewRef.current) {
-                  webviewRef.current.loadURL(targetUrl);
-                }
+                setInputUrl(targetUrl);
+                setActiveUrl(targetUrl);
               }}
               style={{
                 fontSize: "0.85rem",
@@ -293,7 +296,7 @@ export function BrowserModal({
           {/* @ts-ignore */}
           <webview
             ref={webviewRef}
-            src={url}
+            src={activeUrl}
             style={{ width: "100%", height: "100%", display: "flex" }}
             partition="persist:douban" // Keep session
             httpreferrer="https://www.douban.com/" // Douban specific fix
