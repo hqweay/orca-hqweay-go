@@ -11,6 +11,7 @@ interface BrowserModalProps {
   onClose: () => void;
   initialUrl: string;
   rules: Rule[]; // Pass all rules to allow client-side matching
+  quickLinks: { name: string; url: string }[];
   onExtract: (properties: MetadataProperty[]) => void;
 }
 
@@ -19,6 +20,7 @@ export function BrowserModal({
   onClose,
   initialUrl,
   rules,
+  quickLinks,
   onExtract,
 }: BrowserModalProps) {
   const [url, setUrl] = useState(initialUrl);
@@ -210,7 +212,7 @@ export function BrowserModal({
           color: "var(--b3-theme-on-background)",
           padding: "20px",
           borderRadius: "8px",
-          width: "600px",
+          width: "80%",
           height: "80vh",
           display: "flex",
           flexDirection: "column",
@@ -245,6 +247,38 @@ export function BrowserModal({
           <Button variant="solid" onClick={handleExtract}>
             {t("Extract Metadata")}
           </Button>
+        </div>
+
+        {/* Quick Links */}
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "8px",
+            marginBottom: "12px",
+          }}
+        >
+          {quickLinks.map((link) => (
+            <Button
+              key={link.name || link.url}
+              variant="plain"
+              onClick={() => {
+                const targetUrl = link.url;
+                setUrl(targetUrl);
+                if (webviewRef.current) {
+                  webviewRef.current.loadURL(targetUrl);
+                }
+              }}
+              style={{
+                fontSize: "0.85rem",
+                padding: "2px 8px",
+                height: "24px",
+                backgroundColor: "var(--orca-color-bg-2)",
+              }}
+            >
+              {link.name || link.url}
+            </Button>
+          ))}
         </div>
 
         <div

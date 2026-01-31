@@ -196,12 +196,20 @@ export default class LinkMetadataPlugin extends BasePlugin {
   private async handleOpenBrowser(url: string, targetBlock: any) {
     const settings = this.getSettings() as LinkMetadataSettings;
     const rules = settings.rules || DEFAULT_RULES;
+    // Default quick links if not set
+    const quickLinks = settings.quickLinks || [
+      {
+        name: "Douban Book Search",
+        url: "https://search.douban.com/book/subject_search?search_text=",
+      },
+    ];
+
     let initialRule = null;
     if (url) {
       initialRule = this.matchRule(url, rules);
     }
 
-    this.openBrowserModal(url, rules, async (properties) => {
+    this.openBrowserModal(url, rules, quickLinks, async (properties) => {
       if (targetBlock) {
         // Check if block is empty (no content or single empty text fragment)
         const isEmpty =
@@ -366,6 +374,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
   private openBrowserModal(
     initialUrl: string,
     rules: Rule[],
+    quickLinks: { name: string; url: string }[],
     onExtract: (props: any[]) => void,
   ) {
     if (this.modalContainer) {
@@ -388,6 +397,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
         onClose={handleClose}
         initialUrl={initialUrl}
         rules={rules}
+        quickLinks={quickLinks}
         onExtract={onExtract}
       />,
     );
