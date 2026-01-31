@@ -1,3 +1,12 @@
+# [1.11.0](/compare/1.10.0...1.11.0) (2026-01-31)
+
+
+### Features
+
+* update release body extraction to match any heading level in CHANGELOG.md a0bf93f
+
+
+
 # [1.10.0](/compare/1.9.3...1.10.0) (2026-01-31)
 
 

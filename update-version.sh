@@ -1,34 +1,29 @@
 #!/bin/bash
 
-# Usage Examples:
-#
-# 1. Simple commit and push (no version update):
-#    ./update-version.sh a "fix: meaningful commit message"
-#
-# 2. release version (Update package.json, tag, and push):
-#    ./update-version.sh 1.0.1 "feat: release description"
+# Usage:
+#   ./update-version.sh a "commit message"       # Simple commit & push
+#   ./update-version.sh patch "comment"          # 1.0.0 -> 1.0.1
+#   ./update-version.sh minor "comment"          # 1.0.0 -> 1.1.0
+#   ./update-version.sh major "comment"          # 1.0.0 -> 2.0.0
+#   ./update-version.sh 1.2.3 "comment"          # Manual version
 
-# Exit on error
 set -e
 
-# Configuration
 GIT_REMOTE="my"
 
-# Function to display usage
 usage() {
     echo "Usage:"
     echo "  $0 a <comment>              # Simple commit and push"
-    echo "  $0 <version> <comment>      # Update version, tag, and release"
+    echo "  $0 patch|minor|major <msg>  # Auto increment version & release"
+    echo "  $0 <version> <msg>          # Manual version & release"
     exit 1
 }
 
-# Check if jq is installed
 if ! command -v jq &> /dev/null; then
     echo "Error: jq is not installed."
     exit 1
 fi
 
-# Ensure at least one argument is provided
 if [ -z "$1" ]; then
     usage
 fi
@@ -36,43 +31,69 @@ fi
 TYPE="$1"
 COMMENT="$2"
 
+# 1. Simple commit mode
 if [ "$TYPE" = "a" ]; then
     if [ -z "$COMMENT" ]; then
         echo "Error: Comment is required for 'a' command."
         exit 1
     fi
-    echo "Performing simple commit..."
-    echo "Comment: $COMMENT"
-    
     git add .
     git commit -m "$COMMENT"
     git push "$GIT_REMOTE"
-else
-    NEW_VERSION="$TYPE"
-    if [ -z "$COMMENT" ]; then
-        # Handle case where comment might be optional or default
-        COMMENT="Update to $NEW_VERSION"
-    fi
-    
-    echo "Releasing version: $NEW_VERSION"
-    echo "Comment: $COMMENT"
-
-    # Safely update package.json using a temp file
-    TMP_FILE=$(mktemp)
-    jq --arg new_version "$NEW_VERSION" '.version = $new_version' package.json > "$TMP_FILE"
-    mv "$TMP_FILE" package.json
-
-    # Generate Changelog
-    echo "Generating changelog..."
-    pnpm utils:changelog
-
-    git add .
-    git commit -m "release: $NEW_VERSION $COMMENT"
-    git push "$GIT_REMOTE"
-    
-    git tag "$NEW_VERSION"
-    # Keeping the original logic of pushing to 'my' remote for tags
-    git push "$GIT_REMOTE" "$NEW_VERSION"
+    echo "Done."
+    exit 0
 fi
 
-echo "Done."
+# 2. Release mode
+CURRENT_VERSION=$(jq -r '.version' package.json)
+NEW_VERSION=""
+
+if [[ "$TYPE" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || [[ "$TYPE" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    NEW_VERSION="${TYPE#v}" # Remove 'v' if manually provided for package.json
+else
+    # Auto increment logic
+    IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
+    case "$TYPE" in
+        major)
+            NEW_VERSION="$((major + 1)).0.0"
+            ;;
+        minor)
+            NEW_VERSION="$major.$((minor + 1)).0"
+            ;;
+        patch)
+            NEW_VERSION="$major.$minor.$((patch + 1))"
+            ;;
+        *)
+            usage
+            ;;
+    esac
+fi
+
+if [ -z "$COMMENT" ]; then
+    COMMENT="Update to $NEW_VERSION"
+fi
+
+echo "Current version: $CURRENT_VERSION"
+echo "Release version: $NEW_VERSION"
+echo "Comment: $COMMENT"
+
+# Update package.json
+TMP_FILE=$(mktemp)
+jq --arg nv "$NEW_VERSION" '.version = $nv' package.json > "$TMP_FILE"
+mv "$TMP_FILE" package.json
+
+# Generate Changelog
+echo "Generating changelog..."
+pnpm utils:changelog
+
+# Commit and Push
+git add .
+git commit -m "release: $NEW_VERSION $COMMENT"
+git push "$GIT_REMOTE"
+
+# Tag and Push Tag (with 'v' prefix)
+TAG_NAME="v$NEW_VERSION"
+git tag "$TAG_NAME"
+git push "$GIT_REMOTE" "$TAG_NAME"
+
+echo "Done. Released $TAG_NAME"
