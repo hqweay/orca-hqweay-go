@@ -12,7 +12,8 @@ interface BrowserModalProps {
   initialUrl: string;
   rules: Rule[]; // Pass all rules to allow client-side matching
   quickLinks: { name: string; url: string }[];
-  onExtract: (properties: MetadataProperty[]) => void;
+  quickLinks: { name: string; url: string }[];
+  onExtract: (properties: MetadataProperty[], rule: Rule | null) => void;
 }
 
 export function BrowserModal({
@@ -182,7 +183,9 @@ export function BrowserModal({
       }
 
       if (Array.isArray(properties)) {
-        onExtract(properties);
+        if (onExtract) {
+          onExtract(properties, ruleToUse);
+        }
         onClose();
       } else {
         console.error("Extraction returned non-array:", properties);

@@ -209,7 +209,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
       initialRule = this.matchRule(url, rules);
     }
 
-    this.openBrowserModal(url, rules, quickLinks, async (properties) => {
+    this.openBrowserModal(url, rules, quickLinks, async (properties, rule) => {
       if (targetBlock) {
         // Check if block is empty (no content or single empty text fragment)
         const isEmpty =
@@ -244,11 +244,14 @@ export default class LinkMetadataPlugin extends BasePlugin {
           }
         }
 
+        const ruleToUse = rule || initialRule;
+        this.logger.info("Rule to use:", ruleToUse);
+
         await this.applyMetadataToBlock(
           targetBlock.id,
-          initialRule?.tagName || "Bookmark",
+          ruleToUse?.tagName || "Bookmark",
           properties,
-          initialRule?.downloadCover || false,
+          ruleToUse?.downloadCover || false,
         );
         orca.notify("success", t("Metadata applied to block"));
       } else {
@@ -275,19 +278,22 @@ export default class LinkMetadataPlugin extends BasePlugin {
             this.logger.info("Content:", content);
 
             // 2. Prepare Tags logic
+            const ruleToUse = rule || initialRule;
             const processedProps = await this.processProperties(
               properties,
-              initialRule?.downloadCover || false,
+              ruleToUse?.downloadCover || false,
             );
+
+            const tagsData = [
+              {
+                name: ruleToUse?.tagName || "Bookmark",
+                properties: processedProps,
+              },
+            ];
 
             const blockData: BlockData = {
               content: content,
-              tags: [
-                {
-                  name: initialRule?.tagName || "Bookmark",
-                  properties: processedProps,
-                },
-              ],
+              tags: tagsData,
             };
 
             await DataImporter.importBlock(blockData, {
@@ -375,7 +381,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
     initialUrl: string,
     rules: Rule[],
     quickLinks: { name: string; url: string }[],
-    onExtract: (props: any[]) => void,
+    onExtract: (props: any[], rule: Rule | null) => void,
   ) {
     if (this.modalContainer) {
       this.closeBrowserModal(); // Close existing
