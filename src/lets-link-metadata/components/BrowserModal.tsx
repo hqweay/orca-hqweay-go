@@ -456,7 +456,7 @@ export function BrowserModal({
                         orca.notify("success", t("Saved Image to Daily Note"));
                       }}
                     />
-                    <orca.components.MenuText
+                    {/* <orca.components.MenuText
                       title={t("Save Image Link")}
                       preIcon="ti ti-link"
                       onClick={() => {
@@ -471,7 +471,7 @@ export function BrowserModal({
                         setContextMenu(null);
                         orca.notify("success", t("Saved Image Link"));
                       }}
-                    />
+                    /> */}
                   </>
                 ) : (
                   <orca.components.MenuText
