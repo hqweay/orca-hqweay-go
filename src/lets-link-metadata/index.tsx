@@ -2,7 +2,7 @@ import { BasePlugin } from "@/libs/BasePlugin";
 import { setupL10N, t } from "@/libs/l10n";
 import Settings from "./Settings";
 import { LinkMetadataSettings, Rule, MetadataProperty } from "./types";
-import { extractMetadata } from "./metadataExtractor";
+import { extractMetadata, matchRule } from "./metadataExtractor";
 import { PropType } from "@/libs/consts";
 import { DEFAULT_RULES } from "./defaultRules";
 import { DataImporter, BlockData } from "@/libs/DataImporter";
@@ -173,7 +173,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
     this.logger.info(`Found URL: ${targetUrl}`);
 
     // Match Rule
-    const matchedRule = this.matchRule(targetUrl, rules);
+    const matchedRule = matchRule(targetUrl, rules);
     this.logger.info(`Matched Rule: ${matchedRule?.name}`);
 
     if (!matchedRule) {
@@ -202,31 +202,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
     }
   }
 
-  private matchRule(url: string, rules: Rule[]) {
-    return rules.find((rule: Rule) => {
-      if (!rule.enabled) return false;
-      try {
-        let regex: RegExp;
-        const pattern = rule.urlPattern.trim();
 
-        // Check if it's a regex literal string like "/pattern/i"
-        if (pattern.startsWith("/") && pattern.lastIndexOf("/") > 0) {
-          const lastSlashIndex = pattern.lastIndexOf("/");
-          const body = pattern.substring(1, lastSlashIndex);
-          const flags = pattern.substring(lastSlashIndex + 1);
-          regex = new RegExp(body, flags);
-        } else {
-          // Legacy/Simple string support
-          regex = new RegExp(pattern, "i");
-        }
-
-        return regex.test(url);
-      } catch (e) {
-        this.logger.error(`Invalid regex for rule ${rule.name}`, e);
-        return false;
-      }
-    });
-  }
 
   private async handleOpenBrowser(url: string, targetBlock: any) {
     const settings = this.getSettings() as LinkMetadataSettings;
@@ -241,7 +217,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
 
     let initialRule = null;
     if (url) {
-      initialRule = this.matchRule(url, rules);
+      initialRule = matchRule(url, rules) || null;
     }
 
     this.openBrowserModal(url, rules, quickLinks, async (properties, rule) => {

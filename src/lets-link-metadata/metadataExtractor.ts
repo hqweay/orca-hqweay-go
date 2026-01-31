@@ -1,7 +1,33 @@
-import { MetadataProperty } from "./types";
+import { MetadataProperty, Rule } from "./types";
 import { PropType } from "@/libs/consts";
 
 const cleanUrl = (url: string) => url.split("?")[0].split("#")[0];
+
+export function matchRule(url: string, rules: Rule[]): Rule | undefined {
+  return rules.find((rule: Rule) => {
+    if (!rule.enabled) return false;
+    try {
+      let regex: RegExp;
+      const pattern = rule.urlPattern.trim();
+
+      // Check if it's a regex literal string like "/pattern/i"
+      if (pattern.startsWith("/") && pattern.lastIndexOf("/") > 0) {
+        const lastSlashIndex = pattern.lastIndexOf("/");
+        const body = pattern.substring(1, lastSlashIndex);
+        const flags = pattern.substring(lastSlashIndex + 1);
+        regex = new RegExp(body, flags);
+      } else {
+        // Legacy/Simple string support
+        regex = new RegExp(pattern, "i");
+      }
+
+      return regex.test(url);
+    } catch (e) {
+      console.error(`Invalid regex for rule ${rule.name}`, e);
+      return false;
+    }
+  });
+}
 
 export async function extractMetadata(
   url: string,
@@ -25,16 +51,16 @@ export async function extractMetadata(
     const response = await fetch(url, fetchOptions);
 
     if (!response.ok) {
-        console.warn(`Fetch error: ${response.status}`);
-        // Depending on requirements, we might want to throw or return empty
-        // The original code warned and proceeded, but usually fetch failure means no HTML.
-        // Let's trying reading text anyway, or throw if critical.
-        // Original code: if (!response.ok) warn. Then await response.text().
-        // If response is not ok, text() might be error page.
-        if (response.status >= 400) {
-            // Treat 4xx/5xx as failure enough to maybe not give good metadata?
-            // But let's follow original flow: warn and try to parse.
-        }
+      console.warn(`Fetch error: ${response.status}`);
+      // Depending on requirements, we might want to throw or return empty
+      // The original code warned and proceeded, but usually fetch failure means no HTML.
+      // Let's trying reading text anyway, or throw if critical.
+      // Original code: if (!response.ok) warn. Then await response.text().
+      // If response is not ok, text() might be error page.
+      if (response.status >= 400) {
+        // Treat 4xx/5xx as failure enough to maybe not give good metadata?
+        // But let's follow original flow: warn and try to parse.
+      }
     }
 
     const html = await response.text();

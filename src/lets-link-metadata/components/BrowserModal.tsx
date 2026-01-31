@@ -5,6 +5,7 @@ import { PropType } from "@/libs/consts";
 
 // Safe webview type definition: removed as it conflicts with env.
 // We will rely on existing types or @ts-ignore
+import { matchRule } from "../metadataExtractor";
 
 interface BrowserModalProps {
   visible: boolean;
@@ -33,35 +34,11 @@ export function BrowserModal({
   const Input = orca.components.Input;
   const ModalOverlay = orca.components.ModalOverlay;
 
-  const matchRule = (targetUrl: string) => {
-    return rules.find((rule: Rule) => {
-      if (!rule.enabled) return false;
-      try {
-        let regex: RegExp;
-        const pattern = rule.urlPattern.trim();
-        // Check if it's a regex literal string like "/pattern/i"
-        if (pattern.startsWith("/") && pattern.lastIndexOf("/") > 0) {
-          const lastSlashIndex = pattern.lastIndexOf("/");
-          const body = pattern.substring(1, lastSlashIndex);
-          const flags = pattern.substring(lastSlashIndex + 1);
-          regex = new RegExp(body, flags);
-        } else {
-          // Legacy/Simple string support
-          regex = new RegExp(pattern, "i");
-        }
-        return regex.test(targetUrl);
-      } catch (e) {
-        console.error(`Invalid regex for rule ${rule.name}`, e);
-        return false;
-      }
-    });
-  };
-
   useEffect(() => {
     if (initialUrl) {
       setInputUrl(initialUrl);
       setActiveUrl(initialUrl);
-      const rule = matchRule(initialUrl);
+      const rule = matchRule(initialUrl, rules);
       setCurrentRule(rule || null);
     }
   }, [initialUrl]);
@@ -79,7 +56,7 @@ export function BrowserModal({
         // but typically webview.src matches e.url.
         // setActiveUrl(e.url);
 
-        const rule = matchRule(e.url);
+        const rule = matchRule(e.url, rules);
         setCurrentRule(rule || null);
       }
       // Note: 'currentRule' here is from the closure created when this listener was bound.
@@ -133,7 +110,7 @@ export function BrowserModal({
 
     if (!ruleToUse) {
       const currentWebviewUrl = webviewRef.current.getURL();
-      ruleToUse = matchRule(currentWebviewUrl) || null;
+      ruleToUse = matchRule(currentWebviewUrl, rules) || null;
     }
 
     if (!ruleToUse) {
