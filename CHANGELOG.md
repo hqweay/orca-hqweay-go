@@ -1,4 +1,19 @@
-# [1.11.0](/compare/1.10.0...1.11.0) (2026-01-31)
+## [1.11.1](/compare/v1.11.0...v1.11.1) (2026-02-01)
+
+
+### Bug Fixes
+
+* Initialize and update `isMobileMode` state based on `initialDocked` prop. 8aab088
+
+
+### Features
+
+* add homepage setting with dedicated UI and default browser URL integration. 02c463c
+* Add image normalization with maxWidth support when copying images from webview to clipboard. a4f5e30
+
+
+
+# [1.11.0](/compare/1.10.0...v1.11.0) (2026-01-31)
 
 
 ### Features
