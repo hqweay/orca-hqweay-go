@@ -8,6 +8,7 @@ import { PropType } from "@/libs/consts";
 import { matchRule } from "../metadataExtractor";
 import { WebviewUtils } from "@/libs/WebviewUtils";
 import { HTML_TO_MARKDOWN_SCRIPT } from "../webviewScripts";
+import { defaultGeneric } from "../rules/generic";
 
 interface BrowserModalProps {
   visible: boolean;
@@ -93,7 +94,7 @@ export function BrowserModal({
           console.debug("Failed to set UA (likely not ready yet):", e);
         }
       }
-      
+
       // Small delay to ensure prop update propagates before reload
       setTimeout(() => {
         try {
@@ -340,26 +341,49 @@ export function BrowserModal({
           const getBaseMeta = () => {
              const title = doc.querySelector("meta[property='og:title']")?.getAttribute("content")?.trim() || doc.querySelector("title")?.textContent?.trim() || "";
              const thumbnail = doc.querySelector("meta[property='og:image']")?.getAttribute("content") || doc.querySelector("meta[name='og:image']")?.getAttribute("content") || doc.querySelector("link[rel='icon']")?.getAttribute("href") || "";
-             return { title, thumbnail, url }; 
+             const description = doc.querySelector("meta[property='og:description']")?.getAttribute("content") || doc.querySelector("meta[name='description']")?.getAttribute("content") || "";
+             return { title, thumbnail, description, url }; 
           };
           
           const baseMeta = getBaseMeta();
-          const userScriptBody = ${ruleToUse ? JSON.stringify(ruleToUse.script.join("\n")) : "''"};
+          const metadataScriptBody = ${ruleToUse ? JSON.stringify(ruleToUse.script.join("\n")) : "''"};
+          const contentScriptBody = ${
+            ruleToUse && ruleToUse.contentScript
+              ? JSON.stringify(ruleToUse.contentScript.join("\n"))
+              : JSON.stringify(defaultGeneric.contentScript?.join("\n"))
+          };
           
           ${HTML_TO_MARKDOWN_SCRIPT}
 
-          if (!userScriptBody) {
-             return { error: "No extraction script found" };
-          }
+          const runScript = (body) => {
+             if (!body) return [];
+             const extractorFn = new Function("doc", "url", "PropType", "cleanUrl", "baseMeta", "htmlToMarkdown", body);
+             return extractorFn(doc, url, PropType, cleanUrl, baseMeta, htmlToMarkdown);
+          };
 
           try {
-              const extractorFn = new Function("doc", "url", "PropType", "cleanUrl", "baseMeta", "htmlToMarkdown", userScriptBody);
-              return extractorFn(doc, url, PropType, cleanUrl, baseMeta, htmlToMarkdown);
+              const metadata = runScript(metadataScriptBody) || [];
+              let content = [];
+              if (contentScriptBody) {
+                  content = runScript(contentScriptBody) || [];
+              }
+              
+              if (Array.isArray(metadata) && Array.isArray(content)) {
+                  return [...metadata, ...content];
+              }
+              return metadata;
           } catch(err) {
               return { error: err.toString() };
           }
         })()
       `;
+
+      // Prepend dependencies - wait, HTML_TO_MARKDOWN_SCRIPT is already inside shimScript ?
+      // Actually, relying on it being inside the shim is safer scope-wise.
+      // But let's check how I did it before.
+      // Before I prepended it to fullScript.
+      // Here I embedded it directly into shimScript (lines 349 in previous, line 30 in replacement).
+      // This is self-contained.
 
       const properties = await webviewRef.current.executeJavaScript(shimScript);
 
@@ -371,7 +395,7 @@ export function BrowserModal({
 
       if (Array.isArray(properties)) {
         const contentProp = properties.find(
-          (p) => p.name === "正文" || p.name === "Content",
+          (p: any) => p.name === "正文" || p.name === "Content",
         );
         if (contentProp && contentProp.value) {
           onSaveToDailyNote(properties, "markdown", ruleToUse);

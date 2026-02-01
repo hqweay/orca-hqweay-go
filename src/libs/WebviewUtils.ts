@@ -85,8 +85,8 @@ export class WebviewUtils {
 
         // 获取捕获的图片数据
         const initialDataURL = snapshot.toDataURL();
-				console.log("initialDataURL", initialDataURL);
-				console.log("rect", rect);
+        // console.log("initialDataURL", initialDataURL);
+        // console.log("rect", rect);
         // 规格化尺寸（处理 Retina 缩放和 maxWidth）
         // 这里目标尺寸取: Math.min(原图宽度, maxWidth)
         const targetWidth = Math.min(rect.naturalWidth, maxWidth);

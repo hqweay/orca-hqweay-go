@@ -15,6 +15,7 @@ export interface Rule {
   script: string[]; // JavaScript function body (array of lines for JSON readability)
   enabled: boolean;
   downloadCover?: boolean; // Whether to download cover image to local assets
+  contentScript?: string[]; // Optional script for heavy content extraction (Markdown, etc.)
 }
 
 export interface LinkMetadataSettings {

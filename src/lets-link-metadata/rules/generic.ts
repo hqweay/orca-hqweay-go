@@ -8,13 +8,15 @@ export const defaultGeneric: Rule = {
   downloadCover: false,
   script: `
   // 1. Generic Metadata
-  const results = [
+  return [
     { name: "链接", type: PropType.Text, value: url, typeArgs: { subType: "link" } },
+    { name: "域名", type: PropType.Text, value: new URL(url).hostname, typeArgs: { subType: "link" } },
     { name: "标题", type: PropType.Text, value: baseMeta.title || "" },
     { name: "封面", type: PropType.Text, value: baseMeta.thumbnail || "", typeArgs: { subType: "image" } },
     { name: "描述", type: PropType.Text, value: baseMeta.description || "" }
   ];
-
+`.split("\n"),
+  contentScript: `
   // 2. Simple Heuristic Content Extraction
   const selectors = ['article', 'main', '.article', '.post-content', '.entry-content', '#content'];
   let target = null;
@@ -36,14 +38,11 @@ export const defaultGeneric: Rule = {
   }
   
   // 3. Use injected HTML to Markdown Converter
-  const title = baseMeta.title || "";
   const markdown = htmlToMarkdown(target)
     .replace(/\\n{3,}/g, "\\n\\n") // Clean up extra newlines
     .trim();
   
-  results.push({ name: "正文", type: PropType.Text, value: markdown });
-
-  return results;
+  return [{ name: "正文", type: PropType.Text, value: markdown }];
 `.split("\n"),
   enabled: true,
 };
