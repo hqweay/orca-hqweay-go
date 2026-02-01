@@ -45,4 +45,8 @@ export default {
   "Extracted Title: ${title}": "已提取标题: ${title}",
   "Failed to extract metadata": "提取元数据失败",
   "Clip Content": "提取网页内容",
+  "Extract the main content of the page and save it to the Daily Note":
+    "提取网页正文并将内容作为 Block 批量保存到日记中，规则可配置",
+  "Extract page metadata and apply it to the current block":
+    "提取网页元数据保存书签，规则可配置",
 };

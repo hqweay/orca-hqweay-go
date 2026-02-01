@@ -495,12 +495,30 @@ export function BrowserModal({
           <Button variant="outline" onClick={handleGo}>
             {t("Go")}
           </Button>
-          <Button variant="outline" onClick={handleClip}>
-            {t("Clip Content")}
-          </Button>
-          <Button variant="solid" onClick={handleExtract}>
-            {t("Extract Metadata")}
-          </Button>
+          <orca.components.Tooltip
+            text={t(
+              "Extract the main content of the page and save it to the Daily Note",
+            )}
+          >
+            <Button
+              variant="outline"
+              onClick={handleClip}
+              style={{ minWidth: "32px", height: "32px", padding: 0 }}
+            >
+              <i className="ti ti-news" style={{ fontSize: "18px" }}></i>
+            </Button>
+          </orca.components.Tooltip>
+          <orca.components.Tooltip
+            text={t("Extract page metadata and apply it to the current block")}
+          >
+            <Button
+              variant="solid"
+              onClick={handleExtract}
+              style={{ minWidth: "32px", height: "32px", padding: 0 }}
+            >
+              <i className="ti ti-link" style={{ fontSize: "18px" }}></i>
+            </Button>
+          </orca.components.Tooltip>
         </div>
         {/* Quick Links */}
         <div
