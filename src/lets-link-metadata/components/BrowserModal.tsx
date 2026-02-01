@@ -136,9 +136,18 @@ export function BrowserModal({
       `);
     };
 
+    const handleNewWindow = (e: any) => {
+      const url = e.url;
+      if (url) {
+        setActiveUrl(url);
+        setInputUrl(url);
+      }
+    };
+
     webview.addEventListener("did-navigate", handleNavigate);
     webview.addEventListener("did-navigate-in-page", handleNavigate); // For SPA
     webview.addEventListener("dom-ready", handleDomReady);
+    webview.addEventListener("new-window", handleNewWindow);
 
     const handleContextMenu = (e: any) => {
       // e.params.selectionText
@@ -168,6 +177,7 @@ export function BrowserModal({
       webview.removeEventListener("did-navigate", handleNavigate);
       webview.removeEventListener("did-navigate-in-page", handleNavigate);
       webview.removeEventListener("dom-ready", handleDomReady);
+      webview.removeEventListener("new-window", handleNewWindow);
       webview.removeEventListener("context-menu", handleContextMenu);
     };
   }, [visible]); // Re-bind if visible changes or webview ref changes (usually stable but good to be safe)
