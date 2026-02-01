@@ -47,14 +47,15 @@ export function BrowserModal({
 
   const [isDocked, setIsDocked] = useState(initialDocked);
   const [prevInitialDocked, setPrevInitialDocked] = useState(initialDocked);
+  const [isMobileMode, setIsMobileMode] = useState(initialDocked);
 
   // Sync state with props during render to avoid flickering
   if (initialDocked !== prevInitialDocked) {
     setPrevInitialDocked(initialDocked);
     setIsDocked(initialDocked);
+    setIsMobileMode(initialDocked);
   }
 
-  const [isMobileMode, setIsMobileMode] = useState(false);
   const [canGoBack, setCanGoBack] = useState(false);
   const [canGoForward, setCanGoForward] = useState(false);
 
