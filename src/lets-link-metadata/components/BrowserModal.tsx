@@ -7,7 +7,7 @@ import { PropType } from "@/libs/consts";
 // We will rely on existing types or @ts-ignore
 import { matchRule } from "../metadataExtractor";
 import { WebviewUtils } from "@/libs/WebviewUtils";
-import { HTML_TO_MARKDOWN_SCRIPT } from "../webviewScripts";
+import { HTML_TO_MARKDOWN_SCRIPT, CLEAN_URL_SCRIPT } from "../webviewScripts";
 import { defaultGeneric } from "../rules/generic";
 
 interface BrowserModalProps {
@@ -251,7 +251,7 @@ export function BrowserModal({
         (() => {
           const PropType = ${JSON.stringify(PropType)};
           
-          const cleanUrl = (u) => u.split('?')[0].split('#')[0];
+          // cleanUrl is injected via CLEAN_URL_SCRIPT
           const url = window.location.href;
           const doc = document;
           
@@ -295,7 +295,13 @@ export function BrowserModal({
         })()
       `;
 
-      const properties = await webviewRef.current.executeJavaScript(shimScript);
+      // Prepend dependencies
+      const fullScript = `
+        ${CLEAN_URL_SCRIPT}
+        ${shimScript}
+      `;
+
+      const properties = await webviewRef.current.executeJavaScript(fullScript);
 
       if (properties && properties.error) {
         throw new Error(properties.error);
@@ -334,7 +340,7 @@ export function BrowserModal({
       const shimScript = `
         (() => {
           const PropType = ${JSON.stringify(PropType)};
-          const cleanUrl = (u) => u.split('?')[0].split('#')[0];
+          // cleanUrl is injected via CLEAN_URL_SCRIPT
           const url = window.location.href;
           const doc = document;
           
@@ -353,7 +359,7 @@ export function BrowserModal({
               : JSON.stringify(defaultGeneric.contentScript?.join("\n"))
           };
           
-          ${HTML_TO_MARKDOWN_SCRIPT}
+          };
 
           const runScript = (body) => {
              if (!body) return [];
@@ -378,14 +384,14 @@ export function BrowserModal({
         })()
       `;
 
-      // Prepend dependencies - wait, HTML_TO_MARKDOWN_SCRIPT is already inside shimScript ?
-      // Actually, relying on it being inside the shim is safer scope-wise.
-      // But let's check how I did it before.
-      // Before I prepended it to fullScript.
-      // Here I embedded it directly into shimScript (lines 349 in previous, line 30 in replacement).
-      // This is self-contained.
+      // Prepend dependencies
+      const fullScript = `
+        ${CLEAN_URL_SCRIPT}
+        ${HTML_TO_MARKDOWN_SCRIPT}
+        ${shimScript}
+      `;
 
-      const properties = await webviewRef.current.executeJavaScript(shimScript);
+      const properties = await webviewRef.current.executeJavaScript(fullScript);
 
       if (properties && properties.error) {
         throw new Error(properties.error);
