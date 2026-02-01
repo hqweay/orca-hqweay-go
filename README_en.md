@@ -91,7 +91,11 @@ An all-in-one web enhancement tool combining **Metadata Extraction**, **Internal
     -   **Quick Access**: Custom shortcuts for frequently used sites (Google, Wiki, etc.).
 -   **Web Clipper**:
     -   **WYSIWYG Clipping**: Select text in the browser, right-click, and **"Save to Daily Note"** instantly.
+    -   **Markdown Engine**: Automatically converts HTML to Markdown (preserving headers, links, bolding, etc.).
+    -   **Structured Clipping**: Creates a "Bookmark Block" (with title, link, cover, tags) and inserts content as nested child blocks.
     -   **Interactive Extraction**: Handles pages requiring login or dynamic loading.
+-   **Mobile Simulation**:
+    -   One-click switch to mobile User Agent for a cleaner, reading-friendly layout (optimized for sites like Douban).
 -   **Flexible Config**:
     -   Supports top-bar customization (Standalone button or Actions menu).
     -   Supports inserting data into the current block or creating new blocks.
