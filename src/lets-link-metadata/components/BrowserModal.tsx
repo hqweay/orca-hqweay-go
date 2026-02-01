@@ -352,15 +352,9 @@ export function BrowserModal({
           };
           
           const baseMeta = getBaseMeta();
-          const metadataScriptBody = ${ruleToUse ? JSON.stringify(ruleToUse.script.join("\n")) : "''"};
-          const contentScriptBody = ${
-            ruleToUse && ruleToUse.contentScript
-              ? JSON.stringify(ruleToUse.contentScript.join("\n"))
-              : JSON.stringify(defaultGeneric.contentScript?.join("\n"))
-          };
+          const userScriptBody = ${ruleToUse ? JSON.stringify(ruleToUse.script.join("\n")) : "''"};
           
-          };
-
+          
           const runScript = (body) => {
              if (!body) return [];
              const extractorFn = new Function("doc", "url", "PropType", "cleanUrl", "baseMeta", "htmlToMarkdown", body);
@@ -368,8 +362,13 @@ export function BrowserModal({
           };
 
           try {
-              const metadata = runScript(metadataScriptBody) || [];
+              const metadata = runScript(userScriptBody) || [];
               let content = [];
+              const contentScriptBody = ${
+                ruleToUse && ruleToUse.contentScript
+                  ? JSON.stringify(ruleToUse.contentScript.join("\n"))
+                  : JSON.stringify(defaultGeneric.contentScript?.join("\n"))
+              };
               if (contentScriptBody) {
                   content = runScript(contentScriptBody) || [];
               }
@@ -396,8 +395,6 @@ export function BrowserModal({
       if (properties && properties.error) {
         throw new Error(properties.error);
       }
-
-      console.log(properties);
 
       if (Array.isArray(properties)) {
         const contentProp = properties.find(

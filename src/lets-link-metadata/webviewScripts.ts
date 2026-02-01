@@ -6,7 +6,7 @@ import { PropType } from "@/libs/consts";
  */
 
 export const HTML_TO_MARKDOWN_SCRIPT = `
-  const htmlToMarkdown = (node) => {
+  var htmlToMarkdown = (node) => {
     if (!node) return "";
     if (node.nodeType === 3) return node.textContent; // Text node
     if (node.nodeType !== 1) return ""; // Not an element
@@ -32,7 +32,6 @@ export const HTML_TO_MARKDOWN_SCRIPT = `
   };
 `;
 
-// Shared cleanUrl implementation
 // Shared cleanUrl implementation
 export const cleanUrl = (urlString: string) => {
   try {
@@ -76,5 +75,5 @@ export const cleanUrl = (urlString: string) => {
 };
 
 export const CLEAN_URL_SCRIPT = `
-  const cleanUrl = ${cleanUrl.toString()};
+  var cleanUrl = ${cleanUrl.toString()};
 `;
