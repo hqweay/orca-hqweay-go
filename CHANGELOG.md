@@ -1,3 +1,21 @@
+# [1.12.0](/compare/v1.11.1...v1.12.0) (2026-02-01)
+
+现在支持虎鲸内剪藏,使用在子插件设置的[网页助手]里执行一次[恢复默认配置].现在默认配置能剪藏简单的网页
+
+
+### Features
+
+* Add `new-window` event listener to webview to update URL upon new window navigation. f3e0d69
+* Add content clipping functionality to the browser modal, enabling extraction of web page content (including Douban book summaries) to daily notes. 30e5ea0
+* Configure webview with desktop user agent, persistent partition, direct `loadURL` navigation, and popup support. 4a5622d
+* enhance markdown clipping to create structured metadata blocks in daily notes and refactor daily note saving logic. 83631aa
+* Implement HTML to Markdown conversion for web content clipping and integrate it into generic metadata extraction. 757fe5c
+* Import multi-line text as separate blocks, one per line, using `invokeGroup` for batch operations. 9862380
+* inject an optional comment into the changelog after generation. ae21754
+* Replace "Clip Content" and "Extract Metadata" buttons with icon buttons and tooltips in BrowserModal. ca3a172
+
+
+
 ## [1.11.1](/compare/v1.11.0...v1.11.1) (2026-02-01)
 
 
