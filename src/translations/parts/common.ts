@@ -174,4 +174,8 @@ export default {
   "Settings restored to defaults": "设置已恢复默认",
   Back: "后退",
   Forward: "前进",
+  Homepage: "主页",
+  "General Settings": "常规设置",
+  "Default URL when browser opens": "浏览器打开时默认加载的 URL",
+  "Set as Homepage": "设为主页",
 };

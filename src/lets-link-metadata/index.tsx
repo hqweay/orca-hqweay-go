@@ -158,6 +158,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
 
   public getDefaultSettings(): LinkMetadataSettings {
     return {
+      homepage: "https://www.douban.com/search",
       rules: DEFAULT_RULES,
       quickLinks: DEFAULT_QUICK_LINKS,
       headbarMode: "both",
@@ -270,13 +271,16 @@ export default class LinkMetadataPlugin extends BasePlugin {
     const rules = settings.rules;
     const quickLinks = settings.quickLinks;
 
+    const homepage = settings.homepage || "";
+    const finalUrl = url || homepage;
+
     let initialRule = null;
-    if (url) {
-      initialRule = matchRule(url, rules) || null;
+    if (finalUrl) {
+      initialRule = matchRule(finalUrl, rules) || null;
     }
 
     this.openBrowserModal(
-      url,
+      finalUrl,
       rules,
       quickLinks,
       async (properties, rule) => {

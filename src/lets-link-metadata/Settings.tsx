@@ -158,28 +158,29 @@ export default function Settings({ plugin }: { plugin: LinkMetadataPlugin }) {
   const [quickLinks, setQuickLinks] = useState<{ name: string; url: string }[]>(
     [],
   );
+  const [homepage, setHomepage] = useState("");
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const settings = plugin.getSettings();
     setRules(settings.rules);
     setQuickLinks(settings.quickLinks);
+    setHomepage(settings.homepage || "");
   }, []);
+
+  const saveHomepage = async (newHomepage: string) => {
+    setHomepage(newHomepage);
+    await plugin.updateSettings({ homepage: newHomepage });
+  };
 
   const saveRules = async (newRules: Rule[]) => {
     setRules(newRules);
-    await plugin.updateSettings({
-      rules: newRules,
-      quickLinks,
-    });
+    await plugin.updateSettings({ rules: newRules });
   };
 
   const saveQuickLinks = async (newLinks: { name: string; url: string }[]) => {
     setQuickLinks(newLinks);
-    await plugin.updateSettings({
-      rules,
-      quickLinks: newLinks,
-    });
+    await plugin.updateSettings({ quickLinks: newLinks });
   };
 
   const handleAddRule = () => {
@@ -229,6 +230,20 @@ export default function Settings({ plugin }: { plugin: LinkMetadataPlugin }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      <SettingsSection title={t("General Settings")}>
+        <SettingsItem
+          label={t("Homepage")}
+          description={t("Default URL when browser opens")}
+          vertical
+        >
+          <orca.components.Input
+            value={homepage}
+            onChange={(e: any) => saveHomepage(e.target.value)}
+            placeholder="https://..."
+          />
+        </SettingsItem>
+      </SettingsSection>
+
       <SettingsSection title={t("Quick Links")}>
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {quickLinks.map((link, index) => (
@@ -258,10 +273,23 @@ export default function Settings({ plugin }: { plugin: LinkMetadataPlugin }) {
                   saveQuickLinks(newLinks);
                 }}
                 placeholder="URL"
-                style={{ flex: 1 }}
+                style={{ flex: 2 }}
               />
               <orca.components.Button
-                variant="dangerous"
+                variant="plain"
+                title={t("Set as Homepage")}
+                onClick={() => saveHomepage(link.url)}
+                style={{
+                  color:
+                    homepage === link.url
+                      ? "var(--orca-color-primary)"
+                      : "inherit",
+                }}
+              >
+                <i className="ti ti-home" style={{ fontSize: "16px" }}></i>
+              </orca.components.Button>
+              <orca.components.Button
+                variant="plain"
                 onClick={() => {
                   const newLinks = quickLinks.filter((_, i) => i !== index);
                   saveQuickLinks(newLinks);
