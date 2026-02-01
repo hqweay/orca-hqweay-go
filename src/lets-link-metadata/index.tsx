@@ -437,16 +437,27 @@ export default class LinkMetadataPlugin extends BasePlugin {
               // Text Logic
               const text =
                 typeof data === "string" ? data : JSON.stringify(data);
-              await DataImporter.importBlock(
-                {
-                  content: [{ t: "t", v: text }],
-                },
-                {
-                  type: "block",
-                  blockId: journalBlock.id,
-                  position: "lastChild",
-                },
-              );
+              const lines = text
+                .split("\n")
+                .map((l) => l.trim())
+                .filter((l) => l.length > 0);
+              // 按换行符拆分，每一行作为一个block，避免插入块内换行符
+              if (lines.length > 0) {
+                await orca.commands.invokeGroup(async () => {
+                  for (const line of lines) {
+                    await DataImporter.importBlock(
+                      {
+                        content: [{ t: "t", v: line }],
+                      },
+                      {
+                        type: "block",
+                        blockId: journalBlock.id,
+                        position: "lastChild",
+                      },
+                    );
+                  }
+                });
+              }
             }
           } else {
             orca.notify("error", t("Could not find Daily Note"));
