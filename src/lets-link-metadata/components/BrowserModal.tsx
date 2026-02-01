@@ -16,7 +16,7 @@ interface BrowserModalProps {
   rules: Rule[]; // Pass all rules to allow client-side matching
   quickLinks: { name: string; url: string }[];
   onExtract: (properties: MetadataProperty[], rule: Rule | null) => void;
-  onSaveToDailyNote: (data: any, type?: string) => void;
+  onSaveToDailyNote: (data: any, type?: string, rule?: Rule | null) => void;
   initialDocked?: boolean;
 }
 
@@ -361,7 +361,7 @@ export function BrowserModal({
           (p) => p.name === "正文" || p.name === "Content",
         );
         if (contentProp && contentProp.value) {
-          onSaveToDailyNote(contentProp.value, "markdown");
+          onSaveToDailyNote(properties, "markdown", ruleToUse);
           orca.notify("success", t("Content clipped to Daily Note"));
         } else {
           orca.notify("warn", t("No content found to clip"));
@@ -635,6 +635,7 @@ export function BrowserModal({
                             download: true,
                           },
                           "image",
+                          currentRule,
                         );
                         setContextMenu(null);
                         orca.notify("success", t("Saved Image to Daily Note"));
@@ -684,7 +685,7 @@ export function BrowserModal({
                     title={t("Save to Daily Note")}
                     preIcon="ti ti-notes"
                     onClick={() => {
-                      onSaveToDailyNote(contextMenu.text, "text");
+                      onSaveToDailyNote(contextMenu.text, "text", currentRule);
                       setContextMenu(null);
                       orca.notify("success", t("Saved to Daily Note"));
                     }}

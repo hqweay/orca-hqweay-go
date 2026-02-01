@@ -37,7 +37,7 @@ export const defaultGeneric: Rule = {
   
   // 3. Use injected HTML to Markdown Converter
   const title = baseMeta.title || "";
-  const markdown = (title ? "# " + title + " #剪藏\\n\\n" : "") + htmlToMarkdown(target)
+  const markdown = htmlToMarkdown(target)
     .replace(/\\n{3,}/g, "\\n\\n") // Clean up extra newlines
     .trim();
   

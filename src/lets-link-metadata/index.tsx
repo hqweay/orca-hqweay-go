@@ -285,7 +285,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
       quickLinks,
       async (properties, rule) => {
         if (targetBlock) {
-          // Check if block is empty (no content or single empty text fragment)
+          // ... (existing targetBlock logic)
           const isEmpty =
             !targetBlock.content ||
             targetBlock.content.length === 0 ||
@@ -294,7 +294,6 @@ export default class LinkMetadataPlugin extends BasePlugin {
               !targetBlock.content[0].v.trim());
 
           if (isEmpty) {
-            // Construct Content (Link)
             const titleProp = properties.find(
               (p) => p.name === "标题" || p.name === "Title",
             );
@@ -319,8 +318,6 @@ export default class LinkMetadataPlugin extends BasePlugin {
           }
 
           const ruleToUse = rule || initialRule;
-          this.logger.info("Rule to use:", ruleToUse);
-
           await this.applyMetadataToBlock(
             targetBlock.id,
             ruleToUse?.tagName || "Bookmark",
@@ -330,63 +327,20 @@ export default class LinkMetadataPlugin extends BasePlugin {
           orca.notify("success", t("Metadata applied to block"));
         } else {
           // Global Mode: Insert into Daily Note
-          try {
-            const journalBlock = await orca.invokeBackend(
-              "get-journal-block",
-              new Date(),
-            );
-
-            if (journalBlock) {
-              // 1. Construct Content (Link)
-              const titleProp = properties.find(
-                (p) => p.name === "标题" || p.name === "Title",
-              );
-              const linkProp = properties.find(
-                (p) => p.name === "链接" || p.name === "Link",
-              );
-              const title = titleProp?.value || "Untitled";
-              const linkUrl = linkProp?.value || url;
-
-              const content = [{ t: "l", v: title, l: linkUrl }];
-
-              this.logger.info("Content:", content);
-
-              // 2. Prepare Tags logic
-              const ruleToUse = rule || initialRule;
-              const processedProps = await this.processProperties(
-                properties,
-                ruleToUse?.downloadCover || false,
-              );
-
-              const tagsData = [
-                {
-                  name: ruleToUse?.tagName || "Bookmark",
-                  properties: processedProps,
-                },
-              ];
-
-              const blockData: BlockData = {
-                content: content,
-                tags: tagsData,
-              };
-
-              await DataImporter.importBlock(blockData, {
-                type: "block",
-                blockId: journalBlock.id,
-                position: "lastChild",
-              });
-
-              orca.notify("success", t("Saved to Daily Note"));
-            } else {
-              orca.notify("error", t("Could not find Daily Note"));
-            }
-          } catch (e) {
-            console.error("Failed to save to Daily Note", e);
-            orca.notify("error", t("Failed to save to Daily Note"));
+          const ruleToUse = rule || initialRule;
+          const insertedBlock = await this.saveMetadataBlockToDailyNote(
+            properties,
+            ruleToUse || null,
+            url,
+          );
+          if (insertedBlock) {
+            orca.notify("success", t("Saved to Daily Note"));
+          } else {
+            orca.notify("error", t("Could not find Daily Note"));
           }
         }
       },
-      async (data: any, type?: string) => {
+      async (data: any, type?: string, rule?: Rule | null) => {
         // Save to Daily Note Callback
         try {
           const journalBlock = await orca.invokeBackend(
@@ -395,34 +349,8 @@ export default class LinkMetadataPlugin extends BasePlugin {
           );
           if (journalBlock) {
             if (type === "image" && data.src) {
-              // Image Logic
+              // ... image logic
               let assetPath = data.src;
-
-              /*if (data.download !== false) {
-                // Download and upload if download is not explicitly false (default true)
-                try {
-                  const response = await fetch(data.src);
-                  if (response.ok) {
-                    const arrayBuffer = await response.arrayBuffer();
-                    const contentType =
-                      response.headers.get("content-type") || "image/png";
-                    const uploadedPath = await orca.invokeBackend(
-                      "upload-asset-binary",
-                      contentType,
-                      arrayBuffer,
-                    );
-                    if (uploadedPath) {
-                      assetPath = uploadedPath;
-                    }
-                  }
-                } catch (e) {
-                  console.error("Failed to download image", e);
-                  // fallback to original src or error?
-                  // We'll fallback to original src if download fails, or maybe notify?
-                  // Currently we'll keep assetPath as src, so it inserts the web link as fallback
-                }
-              }*/
-
               if (assetPath) {
                 await orca.commands.invokeEditorCommand(
                   "core.editor.insertBlock",
@@ -434,17 +362,54 @@ export default class LinkMetadataPlugin extends BasePlugin {
                 );
               }
             } else if (type === "markdown") {
-              const content =
-                typeof data === "string" ? data : JSON.stringify(data);
-              await orca.commands.invokeEditorCommand(
-                "core.editor.batchInsertText",
-                null, // cursor
-                journalBlock,
-                "lastChild",
-                content,
-                false, // skipMarkdown
-                false, // skipTags
-              );
+              if (Array.isArray(data)) {
+                // Clipping with properties
+                const properties = data as MetadataProperty[];
+                const contentProp = properties.find(
+                  (p) => p.name === "正文" || p.name === "Content",
+                );
+
+                const ruleToUse = rule || initialRule;
+                // 1. First insert the metadata block
+                const parentBlock = await this.saveMetadataBlockToDailyNote(
+                  properties,
+                  ruleToUse || null,
+                  url,
+                );
+
+                // Set as long form display
+                await orca.commands.invokeEditorCommand(
+                  "core.editor.toggleShowAsLongForm",
+                  null, // cursor can be null for this operation
+                  parentBlock.id,
+                );
+
+                if (parentBlock && contentProp && contentProp.value) {
+                  // 2. Then insert the content under it
+                  await orca.commands.invokeEditorCommand(
+                    "core.editor.batchInsertText",
+                    null, // cursor
+                    parentBlock,
+                    "lastChild",
+                    contentProp.value,
+                    false, // skipMarkdown
+                    false, // skipTags
+                  );
+                }
+              } else {
+                // Direct markdown string
+                const content =
+                  typeof data === "string" ? data : JSON.stringify(data);
+                await orca.commands.invokeEditorCommand(
+                  "core.editor.batchInsertText",
+                  null, // cursor
+                  journalBlock,
+                  "lastChild",
+                  content,
+                  false, // skipMarkdown
+                  false, // skipTags
+                );
+              }
             } else {
               // Text Logic
               const text =
@@ -453,7 +418,6 @@ export default class LinkMetadataPlugin extends BasePlugin {
                 .split("\n")
                 .map((l) => l.trim())
                 .filter((l) => l.length > 0);
-              // 按换行符拆分，每一行作为一个block，避免插入块内换行符
               if (lines.length > 0) {
                 await orca.commands.invokeGroup(async () => {
                   for (const line of lines) {
@@ -481,6 +445,67 @@ export default class LinkMetadataPlugin extends BasePlugin {
       },
       initialDocked,
     );
+  }
+
+  private async saveMetadataBlockToDailyNote(
+    properties: MetadataProperty[],
+    rule: Rule | null,
+    url?: string,
+  ): Promise<any | null> {
+    try {
+      const journalBlock = await orca.invokeBackend(
+        "get-journal-block",
+        new Date(),
+      );
+
+      if (journalBlock) {
+        // 1. Construct Content (Link)
+        const titleProp = properties.find(
+          (p) => p.name === "标题" || p.name === "Title",
+        );
+        const linkProp = properties.find(
+          (p) => p.name === "链接" || p.name === "Link",
+        );
+        const title = titleProp?.value || "Untitled";
+        const linkUrl = linkProp?.value || url || "";
+
+        const content = [{ t: "l", v: title, l: linkUrl }];
+
+        // 2. Prepare Tags logic
+        const filteredProps = properties.filter(
+          (p) => p.name !== "正文" && p.name !== "Content",
+        );
+        const processedProps = await this.processProperties(
+          filteredProps,
+          rule?.downloadCover || false,
+        );
+
+        const tagsData = [
+          {
+            name: rule?.tagName || "Bookmark",
+            properties: processedProps,
+          },
+        ];
+
+        const blockData = {
+          content: content,
+          tags: tagsData,
+        };
+
+        const blockId = await DataImporter.importBlock(blockData, {
+          type: "block",
+          blockId: journalBlock.id,
+          position: "lastChild",
+        });
+
+        if (blockId) {
+          return await orca.invokeBackend("get-block", blockId);
+        }
+      }
+    } catch (e) {
+      this.logger.error("Failed to save metadata block to Daily Note", e);
+    }
+    return null;
   }
 
   private async processProperties(properties: any[], downloadCover: boolean) {
@@ -553,7 +578,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
     rules: Rule[],
     quickLinks: { name: string; url: string }[],
     onExtract: (props: any[], rule: Rule | null) => void,
-    onSaveToDailyNote: (text: string) => void,
+    onSaveToDailyNote: (data: any, type?: string, rule?: Rule | null) => void,
     initialDocked: boolean = false,
   ) {
     // If container doesn't exist, create it
