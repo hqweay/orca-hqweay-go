@@ -1,6 +1,17 @@
-## [1.12.1](/compare/v1.12.0...v1.12.1) (2026-02-01)
+## [1.12.2](/compare/v1.12.1...v1.12.2) (2026-02-01)
 
 现在支持虎鲸内剪藏,使用时在子插件设置的[网页助手]里执行一次[恢复默认配置],获取最新配置后使用.
+
+
+### Features
+
+* Add `contentScript` to metadata rules for separate content extraction and refactor the generic rule to utilize it. 76a527f
+* enhance URL cleaning by stripping tracking parameters and centralize its implementation for webview injection. 4bce62f
+* Standardize URL cleaning across Douban and generic rules, update generic domain to use origin, and include description in base metadata. 76af4fc
+
+
+
+## [1.12.1](/compare/v1.12.0...v1.12.1) (2026-02-01)
 
 
 ### Bug Fixes
