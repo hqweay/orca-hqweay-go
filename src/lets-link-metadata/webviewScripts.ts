@@ -33,45 +33,48 @@ export const HTML_TO_MARKDOWN_SCRIPT = `
 `;
 
 // Shared cleanUrl implementation
+// Shared cleanUrl implementation
+export const cleanUrl = (urlString: string) => {
+  try {
+      const url = new URL(urlString);
+      const paramsToRemove = [
+        "utm_source",
+        "utm_medium",
+        "utm_campaign",
+        "utm_term",
+        "utm_content",
+        "fbclid",
+        "gclid",
+        "yclid",
+        "msclkid",
+        "icid",
+        "mc_cid",
+        "mc_eid",
+        "_ga",
+        "si",
+        "igshid",
+        "feature",
+        "sharing",
+        "app",
+        "ref",
+        "nr",
+        "ncid",
+        "cmpid",
+        "ito",
+        "ved",
+        "ei",
+        "s",
+        "cvid",
+        "form",
+      ];
+      paramsToRemove.forEach((param) => url.searchParams.delete(param));
+      return url.toString();
+  } catch(e) {
+      // Fallback for invalid URLs
+      return urlString ? urlString.split('?')[0].split('#')[0] : "";
+  }
+};
+
 export const CLEAN_URL_SCRIPT = `
-  const cleanUrl = (urlString) => {
-    try {
-        const url = new URL(urlString);
-        const paramsToRemove = [
-          "utm_source",
-          "utm_medium",
-          "utm_campaign",
-          "utm_term",
-          "utm_content",
-          "fbclid",
-          "gclid",
-          "yclid",
-          "msclkid",
-          "icid",
-          "mc_cid",
-          "mc_eid",
-          "_ga",
-          "si",
-          "igshid",
-          "feature",
-          "sharing",
-          "app",
-          "ref",
-          "nr",
-          "ncid",
-          "cmpid",
-          "ito",
-          "ved",
-          "ei",
-          "s",
-          "cvid",
-          "form",
-        ];
-        paramsToRemove.forEach((param) => url.searchParams.delete(param));
-        return url.toString();
-    } catch(e) {
-        // Fallback for invalid URLs
-        return urlString ? urlString.split('?')[0].split('#')[0] : "";
-    }
-  };
+  const cleanUrl = ${cleanUrl.toString()};
 `;

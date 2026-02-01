@@ -1,47 +1,8 @@
 import { MetadataProperty, Rule } from "./types";
 import { PropType } from "@/libs/consts";
-import { HTML_TO_MARKDOWN_SCRIPT } from "./webviewScripts";
+import { HTML_TO_MARKDOWN_SCRIPT, cleanUrl } from "./webviewScripts";
 
-const cleanUrl = (urlString: string) => {
-  try {
-    const url = new URL(urlString);
-    const paramsToRemove = [
-      "utm_source",
-      "utm_medium",
-      "utm_campaign",
-      "utm_term",
-      "utm_content",
-      "fbclid",
-      "gclid",
-      "yclid",
-      "msclkid",
-      "icid",
-      "mc_cid",
-      "mc_eid",
-      "_ga",
-      "si",
-      "igshid",
-      "feature",
-      "sharing",
-      "app",
-      "ref",
-      "nr",
-      "ncid",
-      "cmpid",
-      "ito",
-      "ved",
-      "ei",
-      "s",
-      "cvid",
-      "form",
-    ];
-    paramsToRemove.forEach((param) => url.searchParams.delete(param));
-    return url.toString();
-  } catch (e) {
-    // Fallback for invalid URLs
-    return urlString ? urlString.split("?")[0].split("#")[0] : "";
-  }
-};
+// cleanUrl is imported from ./webviewScripts
 
 export function matchRule(url: string, rules: Rule[]): Rule | undefined {
   return rules.find((rule: Rule) => {
