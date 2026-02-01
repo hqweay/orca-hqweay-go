@@ -4,9 +4,15 @@
 export class WebviewUtils {
   /**
    * 从 Webview 中抓取图片并写入剪贴板
-   * 通过注入脚本渲染图片并使用 capturePage 截图，规避 CORS 限制
+   * @param webview Webview 实例
+   * @param src 图片 URL
+   * @param maxWidth 最大宽度，默认 1200px
    */
-  public static async copyImageToClipboard(webview: any, src: string): Promise<boolean> {
+  public static async copyImageToClipboard(
+    webview: any,
+    src: string,
+    maxWidth: number = 1200,
+  ): Promise<boolean> {
     if (!webview) return false;
 
     const prepScript = `
@@ -29,6 +35,7 @@ export class WebviewUtils {
             const vw = window.innerWidth;
             const vh = window.innerHeight;
             
+            // 确保显示在当前视口内
             const r = Math.min(vw / nw, vh / nh, 1);
             const w = Math.floor(nw * r);
             const h = Math.floor(nh * r);
@@ -42,18 +49,17 @@ export class WebviewUtils {
             const oldOverflow = document.body.style.overflow;
             document.body.style.overflow = 'hidden';
             
-            // 延时确保渲染稳定
             setTimeout(() => {
               resolve({
                 width: w,
                 height: h,
+                naturalWidth: nw,
+                naturalHeight: nh,
                 oldOverflow
               });
             }, 50);
           };
-          img.onerror = () => {
-            resolve(null);
-          };
+          img.onerror = () => resolve(null);
           img.src = ${JSON.stringify(src)};
         });
       })()
@@ -70,20 +76,27 @@ export class WebviewUtils {
           height: rect.height,
         });
 
-        const dataURL = snapshot.toDataURL();
-
-        // 清理注入的 DOM
+        // 清理
         await webview.executeJavaScript(`
           const container = document.getElementById('orca-capture-container');
           if(container) container.remove();
           document.body.style.overflow = ${JSON.stringify(rect.oldOverflow)};
         `);
 
-        // 转换为 Blob 并写入剪贴板
-        const res = await fetch(dataURL);
-        const blob = await res.blob();
+        // 获取捕获的图片数据
+        const initialDataURL = snapshot.toDataURL();
+				console.log("initialDataURL", initialDataURL);
+				console.log("rect", rect);
+        // 规格化尺寸（处理 Retina 缩放和 maxWidth）
+        // 这里目标尺寸取: Math.min(原图宽度, maxWidth)
+        const targetWidth = Math.min(rect.naturalWidth, maxWidth);
+        const normalizedBlob = await this.normalizeImage(
+          initialDataURL,
+          targetWidth,
+        );
+
         await navigator.clipboard.write([
-          new ClipboardItem({ [blob.type]: blob }),
+          new ClipboardItem({ [normalizedBlob.type]: normalizedBlob }),
         ]);
 
         return true;
@@ -92,5 +105,51 @@ export class WebviewUtils {
       console.error("WebviewUtils.copyImageToClipboard error:", e);
     }
     return false;
+  }
+
+  /**
+   * 使用 Canvas 调整图片尺寸
+   */
+  private static async normalizeImage(
+    dataURL: string,
+    targetWidth: number,
+  ): Promise<Blob> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        // 如果图已经比目标小了，且 DPI 捕获导致它变大，我们也把它缩放回目标物理尺寸
+        const canvas = document.createElement("canvas");
+        const ratio = targetWidth / img.width;
+
+        // 如果缩放比例非常接近 1 (例如非 Retina 屏且没超宽)，直接返回
+        if (Math.abs(ratio - 1) < 0.01) {
+          fetch(dataURL)
+            .then((res) => res.blob())
+            .then(resolve);
+          return;
+        }
+
+        canvas.width = targetWidth;
+        canvas.height = img.height * ratio;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          fetch(dataURL)
+            .then((res) => res.blob())
+            .then(resolve);
+          return;
+        }
+
+        // 使用高质量缩放
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob((blob) => {
+          resolve(blob || new Blob());
+        }, "image/png");
+      };
+      img.src = dataURL;
+    });
   }
 }
