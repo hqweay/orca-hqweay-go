@@ -1,6 +1,20 @@
-# [1.12.0](/compare/v1.11.1...v1.12.0) (2026-02-01)
+## [1.12.1](/compare/v1.12.0...v1.12.1) (2026-02-01)
 
-现在支持虎鲸内剪藏,使用在子插件设置的[网页助手]里执行一次[恢复默认配置].现在默认配置能剪藏简单的网页
+现在支持虎鲸内剪藏,使用时在子插件设置的[网页助手]里执行一次[恢复默认配置],获取最新配置后使用.
+
+
+### Bug Fixes
+
+* Explicitly set webview user agent and handle attachment errors during initial load. eca7d70
+
+
+### Features
+
+* Use clipboard content as the URL if no URL is provided, before falling back to the homepage. 4f7aa8f
+
+
+
+# [1.12.0](/compare/v1.11.1...v1.12.0) (2026-02-01)
 
 
 ### Features
