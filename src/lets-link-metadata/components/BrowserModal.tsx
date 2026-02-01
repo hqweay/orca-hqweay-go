@@ -81,6 +81,19 @@ export function BrowserModal({
   // Reload webview when UA changes
   useEffect(() => {
     if (webviewRef.current) {
+      const targetUA = isMobileMode ? MOBILE_UA : DESKTOP_UA;
+      // Explicitly set User Agent on the instance to ensure it sticks
+      // Wrap in try-catch because on initial mount, the webview might not be ready yet.
+      // The 'useragent' prop handles the initial load, this is mostly for runtime switching.
+      if (webviewRef.current.setUserAgent) {
+        try {
+          webviewRef.current.setUserAgent(targetUA);
+        } catch (e) {
+          // Ignore "The WebView must be attached to the DOM" error on initial load
+          console.debug("Failed to set UA (likely not ready yet):", e);
+        }
+      }
+      
       // Small delay to ensure prop update propagates before reload
       setTimeout(() => {
         try {
