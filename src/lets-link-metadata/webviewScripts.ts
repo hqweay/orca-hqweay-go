@@ -16,16 +16,17 @@ export const HTML_TO_MARKDOWN_SCRIPT = `
     node.childNodes.forEach(child => children += htmlToMarkdown(child));
 
     switch (tag) {
+      case "img": return "\\n![](" + (node.getAttribute("src") || "") + ")\\n";
       case "script": case "style": case "nav": case "header": case "footer": case "aside": return "";
-      case "h1": return "\\n# " + children + "\\n";
-      case "h2": return "\\n## " + children + "\\n";
-      case "h3": return "\\n### " + children + "\\n";
+      case "h1": return "\\n# " + children.trim() + "\\n";
+      case "h2": return "\\n## " + children.trim() + "\\n";
+      case "h3": return "\\n### " + children.trim() + "\\n";
       case "p": case "div": return "\\n" + children + "\\n";
       case "br": return "\\n";
       case "strong": case "b": return "**" + children + "**";
       case "em": case "i": return "*" + children + "*";
-      case "a": return "[" + children + "](" + (node.getAttribute("href") || "") + ")";
-      case "li": return "\\n- " + children;
+      case "a": return "[" + children.trim() + "](" + (node.getAttribute("href") || "") + ")";
+      case "li": return "\\n- " + children.trim();
       case "ul": case "ol": return children + "\\n";
       default: return children;
     }
@@ -35,42 +36,42 @@ export const HTML_TO_MARKDOWN_SCRIPT = `
 // Shared cleanUrl implementation
 export const cleanUrl = (urlString: string) => {
   try {
-      const url = new URL(urlString);
-      const paramsToRemove = [
-        "utm_source",
-        "utm_medium",
-        "utm_campaign",
-        "utm_term",
-        "utm_content",
-        "fbclid",
-        "gclid",
-        "yclid",
-        "msclkid",
-        "icid",
-        "mc_cid",
-        "mc_eid",
-        "_ga",
-        "si",
-        "igshid",
-        "feature",
-        "sharing",
-        "app",
-        "ref",
-        "nr",
-        "ncid",
-        "cmpid",
-        "ito",
-        "ved",
-        "ei",
-        "s",
-        "cvid",
-        "form",
-      ];
-      paramsToRemove.forEach((param) => url.searchParams.delete(param));
-      return url.toString();
-  } catch(e) {
-      // Fallback for invalid URLs
-      return urlString ? urlString.split('?')[0].split('#')[0] : "";
+    const url = new URL(urlString);
+    const paramsToRemove = [
+      "utm_source",
+      "utm_medium",
+      "utm_campaign",
+      "utm_term",
+      "utm_content",
+      "fbclid",
+      "gclid",
+      "yclid",
+      "msclkid",
+      "icid",
+      "mc_cid",
+      "mc_eid",
+      "_ga",
+      "si",
+      "igshid",
+      "feature",
+      "sharing",
+      "app",
+      "ref",
+      "nr",
+      "ncid",
+      "cmpid",
+      "ito",
+      "ved",
+      "ei",
+      "s",
+      "cvid",
+      "form",
+    ];
+    paramsToRemove.forEach((param) => url.searchParams.delete(param));
+    return url.toString();
+  } catch (e) {
+    // Fallback for invalid URLs
+    return urlString ? urlString.split("?")[0].split("#")[0] : "";
   }
 };
 

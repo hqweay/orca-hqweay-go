@@ -392,6 +392,8 @@ export function BrowserModal({
 
       const properties = await webviewRef.current.executeJavaScript(fullScript);
 
+      console.log("properties", properties);
+      
       if (properties && properties.error) {
         throw new Error(properties.error);
       }
