@@ -86,6 +86,13 @@ mv "$TMP_FILE" package.json
 echo "Generating changelog..."
 pnpm utils:changelog
 
+# Inject Comment into Changelog (after header)
+if [ -n "$COMMENT" ]; then
+  # Insert comment at line 3 (after header and empty line)
+  # Using a temporary file to safely editing
+  awk -v comment="$COMMENT" 'NR==3{print comment; print ""} 1' CHANGELOG.md > CHANGELOG.tmp && mv CHANGELOG.tmp CHANGELOG.md
+fi
+
 # Commit and Push
 git add .
 git commit -m "release: $NEW_VERSION $COMMENT"
