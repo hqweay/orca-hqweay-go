@@ -22,6 +22,8 @@ interface BrowserModalProps {
 // Mobile UA for iPhone 15 Pro
 const MOBILE_UA =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1";
+const DESKTOP_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 export function BrowserModal({
   visible,
@@ -107,9 +109,10 @@ export function BrowserModal({
       // Update rule when navigation happens
       if (e.url) {
         setInputUrl(e.url);
-        // We don't necessarily set activeUrl here to avoid re-triggering src update loop,
-        // but typically webview.src matches e.url.
-        // setActiveUrl(e.url);
+        // We DO NOT set activeUrl here because it would create a feedback loop
+        // with the <webview src={activeUrl}> prop, which can cause the webview
+        // to reset or ignore the value. activeUrl should only be set when
+        // we want to *trigger* a navigation from the host.
 
         const rule = matchRule(e.url, rules);
         setCurrentRule(rule || null);
@@ -180,11 +183,19 @@ export function BrowserModal({
       webview.removeEventListener("new-window", handleNewWindow);
       webview.removeEventListener("context-menu", handleContextMenu);
     };
-  }, [visible]); // Re-bind if visible changes or webview ref changes (usually stable but good to be safe)
+  }, [visible]); // Re-bind if visible changes; webview is stable now with fixed key
 
   const handleGo = () => {
     // Navigate to the input URL
-    setActiveUrl(inputUrl);
+    if (webviewRef.current && inputUrl) {
+      try {
+        webviewRef.current.loadURL(inputUrl);
+      } catch (e) {
+        setActiveUrl(inputUrl);
+      }
+    } else {
+      setActiveUrl(inputUrl);
+    }
   };
 
   const handleGoBack = () => {
@@ -479,15 +490,20 @@ export function BrowserModal({
               return undefined;
             };
 
+            // 对于插件内置浏览器这种需要频繁处理“登录-提取数据”流程的场景，固定 Partition 是更标准、更稳妥的做法。它能确保登录跳转不丢失状态，且避免了 Electron 属性更改的限制。
+            const partition = "persist:metadata-browser";
+
             return (
               /* @ts-ignore */
               <webview
+                key="metadata-browser"
                 ref={webviewRef}
                 src={activeUrl}
-                useragent={isMobileMode ? MOBILE_UA : undefined}
+                useragent={isMobileMode ? MOBILE_UA : DESKTOP_UA}
                 style={{ width: "100%", height: "100%", display: "flex" }}
-                partition={getSitePartition(activeUrl)}
+                partition={partition}
                 httpreferrer={getSiteReferrer(activeUrl)}
+                allowpopups={true}
               />
             );
           })()}
