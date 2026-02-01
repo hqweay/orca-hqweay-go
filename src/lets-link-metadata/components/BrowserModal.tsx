@@ -6,6 +6,7 @@ import { PropType } from "@/libs/consts";
 // Safe webview type definition: removed as it conflicts with env.
 // We will rely on existing types or @ts-ignore
 import { matchRule } from "../metadataExtractor";
+import { WebviewUtils } from "@/libs/WebviewUtils";
 
 interface BrowserModalProps {
   visible: boolean;
@@ -543,96 +544,21 @@ export function BrowserModal({
                       preIcon="ti ti-copy"
                       onClick={async () => {
                         const src = contextMenu.text;
-                        const prepScript = `
-                          (async () => {
-                            const old = document.getElementById('orca-capture-container');
-                            if(old) old.remove();
-
-                            const container = document.createElement('div');
-                            container.id = 'orca-capture-container';
-                            container.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:white;z-index:999999999;overflow:hidden;';
-                            
-                            const img = document.createElement('img');
-                            img.id = 'orca-temp-capture';
-                            img.style.cssText = 'position:absolute;top:0;left:0;margin:0;padding:0;display:block;';
-                            
-                            return new Promise((resolve) => {
-                              img.onload = () => {
-                                const nw = img.naturalWidth;
-                                const nh = img.naturalHeight;
-                                const vw = window.innerWidth;
-                                const vh = window.innerHeight;
-                                
-                                const r = Math.min(vw / nw, vh / nh, 1);
-                                const w = Math.floor(nw * r);
-                                const h = Math.floor(nh * r);
-                                
-                                img.style.width = w + 'px';
-                                img.style.height = h + 'px';
-                                
-                                container.appendChild(img);
-                                document.body.appendChild(container);
-                                
-                                const oldOverflow = document.body.style.overflow;
-                                document.body.style.overflow = 'hidden';
-                                
-                                // Delay to ensure stability
-                                setTimeout(() => {
-                                  resolve({
-                                    width: w,
-                                    height: h,
-                                    oldOverflow
-                                  });
-                                }, 50);
-                              };
-                              img.onerror = () => {
-                                resolve(null);
-                              };
-                              img.src = ${JSON.stringify(src)};
-                            });
-                          })()
-                        `;
-
-                        try {
-                          // @ts-ignore
-                          const rect =
-                            await webviewRef.current.executeJavaScript(
-                              prepScript,
-                            );
-
-                          if (rect) {
-                            const snapshot =
-                              await webviewRef.current.capturePage({
-                                x: 0,
-                                y: 0,
-                                width: rect.width,
-                                height: rect.height,
-                              });
-
-                            const dataURL = snapshot.toDataURL();
-
-                            // Cleanup
-                            await webviewRef.current.executeJavaScript(`
-                               const container = document.getElementById('orca-capture-container');
-                               if(container) container.remove();
-                               document.body.style.overflow = ${JSON.stringify(rect.oldOverflow)};
-                            `);
-
-                            const res = await fetch(dataURL);
-                            const blob = await res.blob();
-                            await navigator.clipboard.write([
-                              new ClipboardItem({ "image/png": blob }),
-                            ]);
-
-                            orca.notify(
-                              "success",
-                              t("Image copied to clipboard"),
-                            );
-                          } else {
-                            orca.notify("error", t("Failed to capture image"));
-                          }
-                        } catch (e) {}
                         setContextMenu(null);
+
+                        const success = await WebviewUtils.copyImageToClipboard(
+                          webviewRef.current,
+                          src,
+                        );
+
+                        if (success) {
+                          orca.notify(
+                            "success",
+                            t("Image copied to clipboard"),
+                          );
+                        } else {
+                          orca.notify("error", t("Failed to capture image"));
+                        }
                       }}
                     />
                   </>
