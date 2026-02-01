@@ -267,8 +267,8 @@ export function BrowserModal({
               doc.querySelector("meta[name='og:image']")?.getAttribute("content") ||
               doc.querySelector("link[rel='icon']")?.getAttribute("href") ||
               "";
-              
-             return { title, thumbnail, url }; 
+             const description = doc.querySelector("meta[property='og:description']")?.getAttribute("content") || doc.querySelector("meta[name='description']")?.getAttribute("content") || "";
+             return { title, thumbnail, description, url }; 
           };
           
           const baseMeta = getBaseMeta();

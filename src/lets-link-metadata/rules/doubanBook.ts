@@ -101,7 +101,7 @@ export const doubanBook: Rule = {
     const summaryElement = doc.querySelector("#link-report .intro p") || doc.querySelector("#link-report .intro") || doc.querySelector(".section-intro_desc");
     const summary = (summaryElement && summaryElement.innerText.trim()) || "";
 
-    const cleanDoubanUrl = doubanId ? \`https://book.douban.com/subject/\${doubanId}/\` : url;
+    const cleanDoubanUrl = doubanId ? \`https://book.douban.com/subject/\${doubanId}/\` : cleanUrl;
 
     return [
         { name: "链接", type: PropType.Text, value: cleanDoubanUrl, typeArgs: { subType: "link" } },

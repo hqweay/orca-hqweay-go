@@ -23,7 +23,7 @@ export const doubanMovie: Rule = {
     const comment = (commentElement && commentElement.innerText.trim()) || "";
 
     return [
-        { name: "链接", type: PropType.Text, value: url, typeArgs: { subType: "link" } },
+        { name: "链接", type: PropType.Text, value: cleanUrl(url), typeArgs: { subType: "link" } },
         { name: "标题", type: PropType.Text, value: title },
         { name: "封面", type: PropType.Text, value: coverUrl, typeArgs: { subType: "image" } },
         { name: "评论", type: PropType.Text, value: comment },
