@@ -97,6 +97,10 @@ export const doubanBook: Rule = {
         isbnElement.nextSibling.textContent.trim()) ||
       "";
 
+    // 提取简介 (作为正文内容)
+    const summaryElement = doc.querySelector("#link-report .intro p") || doc.querySelector("#link-report .intro") || doc.querySelector(".section-intro_desc");
+    const summary = (summaryElement && summaryElement.textContent.trim()) || "";
+
     const cleanDoubanUrl = doubanId ? \`https://book.douban.com/subject/\${doubanId}/\` : url;
 
     return [
@@ -112,6 +116,7 @@ export const doubanBook: Rule = {
         { name: "定价", type: PropType.Text, value: price },
         { name: "装帧", type: PropType.Text, value: binding },
         { name: "ISBN", type: PropType.Text, value: isbn },
+        { name: "正文", type: PropType.Text, value: summary },
     ];
     `.split("\n"),
   enabled: true,

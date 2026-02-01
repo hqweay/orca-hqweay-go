@@ -305,6 +305,74 @@ export function BrowserModal({
     }
   };
 
+  const handleClip = async () => {
+    if (!webviewRef.current) return;
+
+    let ruleToUse = currentRule;
+    if (!ruleToUse) {
+      const currentWebviewUrl = webviewRef.current.getURL();
+      ruleToUse = matchRule(currentWebviewUrl, rules) || null;
+    }
+
+    try {
+      // 1. Prepare Shim Script
+      const shimScript = `
+        (() => {
+          const PropType = ${JSON.stringify(PropType)};
+          const cleanUrl = (u) => u.split('?')[0].split('#')[0];
+          const url = window.location.href;
+          const doc = document;
+          
+          const getBaseMeta = () => {
+             const title = doc.querySelector("meta[property='og:title']")?.getAttribute("content")?.trim() || doc.querySelector("title")?.textContent?.trim() || "";
+             const thumbnail = doc.querySelector("meta[property='og:image']")?.getAttribute("content") || doc.querySelector("meta[name='og:image']")?.getAttribute("content") || doc.querySelector("link[rel='icon']")?.getAttribute("href") || "";
+             return { title, thumbnail, url }; 
+          };
+          
+          const baseMeta = getBaseMeta();
+          const userScriptBody = ${ruleToUse ? JSON.stringify(ruleToUse.script.join("\n")) : "''"};
+          
+          if (!userScriptBody) {
+             // Basic fallback: just return innerText
+             return [{ name: "正文", type: PropType.Text, value: document.body.innerText }];
+          }
+
+          try {
+              const extractorFn = new Function("doc", "url", "PropType", "cleanUrl", "baseMeta", userScriptBody);
+              return extractorFn(doc, url, PropType, cleanUrl, baseMeta);
+          } catch(err) {
+              return { error: err.toString() };
+          }
+        })()
+      `;
+
+      const properties = await webviewRef.current.executeJavaScript(shimScript);
+
+      if (properties && properties.error) {
+        throw new Error(properties.error);
+      }
+
+      console.log(properties);
+
+      if (Array.isArray(properties)) {
+        const contentProp = properties.find(
+          (p) => p.name === "正文" || p.name === "Content",
+        );
+        if (contentProp && contentProp.value) {
+          onSaveToDailyNote(contentProp.value, "text");
+          orca.notify("success", t("Content clipped to Daily Note"));
+        } else {
+          orca.notify("warn", t("No content found to clip"));
+        }
+      }
+    } catch (e: any) {
+      orca.notify(
+        "error",
+        t("Failed to clip content: ${msg}", { msg: e.message }),
+      );
+    }
+  };
+
   // if (!visible) return null; // Removed to keep state alive
 
   return (
@@ -426,6 +494,9 @@ export function BrowserModal({
           />
           <Button variant="outline" onClick={handleGo}>
             {t("Go")}
+          </Button>
+          <Button variant="outline" onClick={handleClip}>
+            {t("Clip Content")}
           </Button>
           <Button variant="solid" onClick={handleExtract}>
             {t("Extract Metadata")}

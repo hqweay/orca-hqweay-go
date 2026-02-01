@@ -44,4 +44,5 @@ export default {
   "Extract Metadata": "提取元数据",
   "Extracted Title: ${title}": "已提取标题: ${title}",
   "Failed to extract metadata": "提取元数据失败",
+  "Clip Content": "提取网页内容",
 };
