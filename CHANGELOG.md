@@ -1,6 +1,15 @@
-## [1.12.2](/compare/v1.12.1...v1.12.2) (2026-02-01)
+## [1.12.3](/compare/v1.12.2...v1.12.3) (2026-02-01)
 
 现在支持虎鲸内剪藏,使用时在子插件设置的[网页助手]里执行一次[恢复默认配置],获取最新配置后使用.
+
+
+### Features
+
+* Enhance HTML to Markdown conversion with image support and whitespace trimming, reformat `cleanUrl` function, and add a debug log for properties. 9472c45
+
+
+
+## [1.12.2](/compare/v1.12.1...v1.12.2) (2026-02-01)
 
 
 ### Features
