@@ -272,7 +272,25 @@ export default class LinkMetadataPlugin extends BasePlugin {
     const quickLinks = settings.quickLinks;
 
     const homepage = settings.homepage || "";
-    const finalUrl = url || homepage;
+    let finalUrl = url;
+
+    // Use clipboard content if no URL is provided, before falling back to homepage
+    if (!finalUrl) {
+      try {
+        const clipboardText = await navigator.clipboard.readText();
+        if (
+          clipboardText &&
+          (clipboardText.startsWith("http://") ||
+            clipboardText.startsWith("https://"))
+        ) {
+          finalUrl = clipboardText.trim();
+        }
+      } catch (e) {
+        // Ignore clipboard read errors
+      }
+    }
+
+    finalUrl = finalUrl || homepage;
 
     let initialRule = null;
     if (finalUrl) {
