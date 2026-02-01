@@ -18,6 +18,7 @@ interface BrowserModalProps {
   quickLinks: { name: string; url: string }[];
   onExtract: (properties: MetadataProperty[], rule: Rule | null) => void;
   onSaveToDailyNote: (data: any, type?: string, rule?: Rule | null) => void;
+  onUrlChange?: (url: string) => void;
   initialDocked?: boolean;
 }
 
@@ -35,6 +36,7 @@ export function BrowserModal({
   quickLinks,
   onExtract,
   onSaveToDailyNote,
+  onUrlChange,
   initialDocked = false,
 }: BrowserModalProps) {
   const [inputUrl, setInputUrl] = useState(initialUrl);
@@ -131,6 +133,10 @@ export function BrowserModal({
 
         const rule = matchRule(e.url, rules);
         setCurrentRule(rule || null);
+
+        if (onUrlChange) {
+          onUrlChange(e.url);
+        }
       }
       updateNavigationState();
     };

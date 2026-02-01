@@ -32,6 +32,8 @@ export default class LinkMetadataPlugin extends BasePlugin {
   protected headbarButtonId = "link-metadata-browser-btn";
   private modalRoot: any = null;
   private modalContainer: HTMLElement | null = null;
+  private lastVisitedUrl: string | null = null;
+  private lastClipboardUrl: string | null = null;
 
   public async load(): Promise<void> {
     if (orca.blockMenuCommands.registerBlockMenuCommand) {
@@ -274,22 +276,60 @@ export default class LinkMetadataPlugin extends BasePlugin {
     const homepage = settings.homepage || "";
     let finalUrl = url;
 
-    // Use clipboard content if no URL is provided, before falling back to homepage
-    if (!finalUrl) {
-      try {
-        const clipboardText = await navigator.clipboard.readText();
-        if (
-          clipboardText &&
-          (clipboardText.startsWith("http://") ||
-            clipboardText.startsWith("https://"))
-        ) {
-          finalUrl = clipboardText.trim();
-        }
-      } catch (e) {
-        // Ignore clipboard read errors
+    // Smart Resume Logic
+    // 1. Check clipboard first
+    let clipboardUrl = "";
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      if (
+        clipboardText &&
+        (clipboardText.startsWith("http://") ||
+          clipboardText.startsWith("https://"))
+      ) {
+        clipboardUrl = clipboardText.trim();
+      }
+    } catch (e) {
+      // Ignore
+    }
+
+    // 2. Decide Priority
+    if (finalUrl) {
+      // Priority 1: Explicit URL provided (e.g. from block) -> Use it
+    } else if (
+      clipboardUrl &&
+      clipboardUrl !== this.lastClipboardUrl &&
+      clipboardUrl !== this.lastVisitedUrl
+    ) {
+      // Priority 2: New Clipboard Content -> Ask User
+      // Mark as seen regardless of choice so we don't ask again for the same link
+      this.lastClipboardUrl = clipboardUrl;
+
+      const shouldOpen = confirm(
+        t("Open link from clipboard?") + "\n" + clipboardUrl,
+      );
+      if (shouldOpen) {
+        finalUrl = clipboardUrl;
+      } else if (this.lastVisitedUrl) {
+        // Priority 3: Resume last visited
+        finalUrl = this.lastVisitedUrl;
+      } else {
+        // Priority 4: Homepage
+        finalUrl = homepage;
+      }
+    } else if (this.lastVisitedUrl) {
+      // Priority 3: Resume last visited
+      finalUrl = this.lastVisitedUrl;
+    } else {
+      // Priority 4: Homepage
+      finalUrl = homepage;
+      // Also try to use current clipboard if it's there
+      if (clipboardUrl) {
+        finalUrl = clipboardUrl;
+        this.lastClipboardUrl = clipboardUrl;
       }
     }
 
+    // Fallback if finalUrl is still empty
     finalUrl = finalUrl || homepage;
 
     let initialRule = null;
@@ -461,6 +501,9 @@ export default class LinkMetadataPlugin extends BasePlugin {
           orca.notify("error", t("Failed to save to Daily Note"));
         }
       },
+      (url: string) => {
+        this.lastVisitedUrl = url;
+      },
       initialDocked,
     );
   }
@@ -597,6 +640,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
     quickLinks: { name: string; url: string }[],
     onExtract: (props: any[], rule: Rule | null) => void,
     onSaveToDailyNote: (data: any, type?: string, rule?: Rule | null) => void,
+    onUrlChange: (url: string) => void,
     initialDocked: boolean = false,
   ) {
     // If container doesn't exist, create it
@@ -619,6 +663,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
       quickLinks,
       onExtract,
       onSaveToDailyNote,
+      onUrlChange,
       initialDocked,
     };
 

@@ -49,4 +49,5 @@ export default {
     "提取网页正文并将内容作为 Block 批量保存到日记中，规则可配置",
   "Extract page metadata and apply it to the current block":
     "提取网页元数据保存书签，规则可配置",
+  "Open link from clipboard?": "检测到剪贴板中有链接，是否打开？",
 };
