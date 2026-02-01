@@ -99,7 +99,7 @@ export const doubanBook: Rule = {
 
     // 提取简介 (作为正文内容)
     const summaryElement = doc.querySelector("#link-report .intro p") || doc.querySelector("#link-report .intro") || doc.querySelector(".section-intro_desc");
-    const summary = (summaryElement && summaryElement.textContent.trim()) || "";
+    const summary = (summaryElement && summaryElement.innerText.trim()) || "";
 
     const cleanDoubanUrl = doubanId ? \`https://book.douban.com/subject/\${doubanId}/\` : url;
 

@@ -433,6 +433,18 @@ export default class LinkMetadataPlugin extends BasePlugin {
                   { type: "image", src: assetPath },
                 );
               }
+            } else if (type === "markdown") {
+              const content =
+                typeof data === "string" ? data : JSON.stringify(data);
+              await orca.commands.invokeEditorCommand(
+                "core.editor.batchInsertText",
+                null, // cursor
+                journalBlock,
+                "lastChild",
+                content,
+                false, // skipMarkdown
+                false, // skipTags
+              );
             } else {
               // Text Logic
               const text =

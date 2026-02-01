@@ -1,5 +1,6 @@
 import { MetadataProperty, Rule } from "./types";
 import { PropType } from "@/libs/consts";
+import { HTML_TO_MARKDOWN_SCRIPT } from "./webviewScripts";
 
 const cleanUrl = (url: string) => url.split("?")[0].split("#")[0];
 
@@ -69,26 +70,38 @@ export async function extractMetadata(
     const cleanedUrl = cleanUrl(url);
 
     // 1. Extract Generic Metadata (Base)
-    const baseMeta = getGenericMetadata(doc, cleanedUrl);
+    const baseMetaResults = getGenericMetadata(doc, cleanedUrl);
+    // Convert array of MetadataProperty to a flat object for baseMeta
+    const baseMeta: any = {};
+    baseMetaResults.forEach((p) => {
+      if (p.name === "标题") baseMeta.title = p.value;
+      if (p.name === "封面") baseMeta.thumbnail = p.value;
+    });
 
     // Join script lines
     const scriptBody = script.join("\n");
 
     // Create a function from the script string
-    // Arguments: doc, url, PropType, cleanUrl, baseMeta
+    // Arguments: doc, url, PropType, cleanUrl, baseMeta, htmlToMarkdown
     const extractorFn = new Function(
       "doc",
       "url",
       "PropType",
       "cleanUrl",
       "baseMeta",
-      scriptBody,
+      "htmlToMarkdown",
+      HTML_TO_MARKDOWN_SCRIPT + scriptBody,
     );
 
     // Execute the script
-    const result = extractorFn(doc, cleanedUrl, PropType, cleanUrl, baseMeta);
-
-    // Ensure result is array
+    const result = extractorFn(
+      doc,
+      cleanedUrl,
+      PropType,
+      cleanUrl,
+      baseMeta,
+      null, // htmlToMarkdown is defined inside the script body via HTML_TO_MARKDOWN_SCRIPT prefix
+    ); // Ensure result is array
     if (!Array.isArray(result)) {
       console.warn("Script returned non-array:", result);
       return [];

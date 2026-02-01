@@ -3,7 +3,8 @@ import { Rule } from "../types";
 export const doubanGame: Rule = {
   id: "douban-game",
   name: "Douban Game",
-  urlPattern: /^https:\/\/www\.douban\.com\/game\/(\d+)(\/|\/?\?.*)?$/i.toString(),
+  urlPattern:
+    /^https:\/\/www\.douban\.com\/game\/(\d+)(\/|\/?\?.*)?$/i.toString(),
   tagName: "Douban Game",
   downloadCover: false,
   script: `
@@ -19,7 +20,7 @@ export const doubanGame: Rule = {
 
     // Comment/Rating
     const commentElement = doc.querySelector(".collection-comment");
-    const comment = (commentElement && commentElement.textContent.trim()) || "";
+    const comment = (commentElement && commentElement.innerText.trim()) || "";
 
     return [
         { name: "链接", type: PropType.Text, value: url, typeArgs: { subType: "link" } },

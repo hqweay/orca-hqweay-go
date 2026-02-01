@@ -20,7 +20,7 @@ export const doubanMovie: Rule = {
 
     // Comment
     const commentElement = doc.querySelector(".j.a_stars > span:last-of-type");
-    const comment = (commentElement && commentElement.textContent.trim()) || "";
+    const comment = (commentElement && commentElement.innerText.trim()) || "";
 
     return [
         { name: "链接", type: PropType.Text, value: url, typeArgs: { subType: "link" } },

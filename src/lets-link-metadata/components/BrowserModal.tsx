@@ -7,6 +7,7 @@ import { PropType } from "@/libs/consts";
 // We will rely on existing types or @ts-ignore
 import { matchRule } from "../metadataExtractor";
 import { WebviewUtils } from "@/libs/WebviewUtils";
+import { HTML_TO_MARKDOWN_SCRIPT } from "../webviewScripts";
 
 interface BrowserModalProps {
   visible: boolean;
@@ -332,14 +333,15 @@ export function BrowserModal({
           const baseMeta = getBaseMeta();
           const userScriptBody = ${ruleToUse ? JSON.stringify(ruleToUse.script.join("\n")) : "''"};
           
+          ${HTML_TO_MARKDOWN_SCRIPT}
+
           if (!userScriptBody) {
-             // Basic fallback: just return innerText
-             return [{ name: "正文", type: PropType.Text, value: document.body.innerText }];
+             return { error: "No extraction script found" };
           }
 
           try {
-              const extractorFn = new Function("doc", "url", "PropType", "cleanUrl", "baseMeta", userScriptBody);
-              return extractorFn(doc, url, PropType, cleanUrl, baseMeta);
+              const extractorFn = new Function("doc", "url", "PropType", "cleanUrl", "baseMeta", "htmlToMarkdown", userScriptBody);
+              return extractorFn(doc, url, PropType, cleanUrl, baseMeta, htmlToMarkdown);
           } catch(err) {
               return { error: err.toString() };
           }
@@ -359,7 +361,7 @@ export function BrowserModal({
           (p) => p.name === "正文" || p.name === "Content",
         );
         if (contentProp && contentProp.value) {
-          onSaveToDailyNote(contentProp.value, "text");
+          onSaveToDailyNote(contentProp.value, "markdown");
           orca.notify("success", t("Content clipped to Daily Note"));
         } else {
           orca.notify("warn", t("No content found to clip"));
