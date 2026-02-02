@@ -11,8 +11,11 @@ export const doubanMovie: Rule = {
     const meta = { ...baseMeta };
     
     // Title
-    const titleElement = doc.querySelector("#content h1");
-    const title = (titleElement && titleElement.textContent.trim()) || baseMeta.title;
+    const titleElement = doc.querySelector("#content h1 [property='v:itemreviewed']");
+    const h1Element = doc.querySelector("#content h1");
+    const title = (titleElement && titleElement.textContent.trim()) || 
+                  (h1Element && h1Element.textContent.replace(/\(\d{4}\)$/, '').trim()) || 
+                  baseMeta.title;
 
     // Cover
     const coverElement = doc.querySelector("#mainpic a img");
@@ -25,7 +28,7 @@ export const doubanMovie: Rule = {
     return [
         { name: "链接", type: PropType.Text, value: cleanUrl(url), typeArgs: { subType: "link" } },
         { name: "标题", type: PropType.Text, value: title },
-        { name: "封面", type: PropType.Text, value: coverUrl, typeArgs: { subType: "image" } },
+        // { name: "封面", type: PropType.Text, value: coverUrl, typeArgs: { subType: "image" } },
         { name: "评论", type: PropType.Text, value: comment },
     ];
     `.split("\n"),

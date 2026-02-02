@@ -106,7 +106,7 @@ export const doubanBook: Rule = {
     return [
         { name: "链接", type: PropType.Text, value: cleanDoubanUrl, typeArgs: { subType: "link" } },
         { name: "标题", type: PropType.Text, value: bookTitle },
-        { name: "封面", type: PropType.Text, value: coverUrl, typeArgs: { subType: "image" } },
+        // { name: "封面", type: PropType.Text, value: coverUrl, typeArgs: { subType: "image" } },
         { name: "作者", type: PropType.Text, value: author },
         { name: "出版社", type: PropType.Text, value: publisher },
         { name: "出品方", type: PropType.Text, value: producer },
@@ -116,7 +116,7 @@ export const doubanBook: Rule = {
         { name: "定价", type: PropType.Text, value: price },
         { name: "装帧", type: PropType.Text, value: binding },
         { name: "ISBN", type: PropType.Text, value: isbn },
-        { name: "正文", type: PropType.Text, value: summary },
+        // { name: "正文", type: PropType.Text, value: summary },
     ];
     `.split("\n"),
   enabled: true,
