@@ -148,14 +148,17 @@ export default class PublishPlugin extends BasePlugin {
     if (title && title !== "Untitled") {
       // Convert to pinyin: '你好 world' -> 'ni-hao-world'
       // Use pinyin-pro to get pinyin without tone, and joined by dashes
+      // Use pinyin-pro options to handle numbers and separator cleanly
       const pinyinTitle = pinyin(title, {
         toneType: "none",
         v: true,
+        nonZh: "consecutive", // Merge non-Chinese characters (e.g. "2025")
+        separator: "-", // Join with dashes
       })
         .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, "") // Remove special chars
+        .replace(/[^a-z0-9\s-]/g, "") // Remove special chars (keep spaces and dashes)
         .trim()
-        .replace(/\s+/g, "-") // Replace spaces with dashes
+        .replace(/\s+/g, "-") // Replace remaining spaces with dashes
         .replace(/-+/g, "-"); // Collapse multiple dashes
 
       slug = `${pinyinTitle}-${block.id}`;
