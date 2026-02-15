@@ -1,6 +1,18 @@
-## [1.12.3](/compare/v1.12.2...v1.12.3) (2026-02-01)
+## [1.12.4](/compare/v1.12.3...v1.12.4) (2026-02-15)
 
-现在支持虎鲸内剪藏,使用时在子插件设置的[网页助手]里执行一次[恢复默认配置],获取最新配置后使用.
+Update to 1.12.4
+
+
+### Features
+
+* Add poetry tag setting to compact newlines in published content and update tag label description. a049350
+* enhance Douban movie title parsing and remove cover and summary metadata fields across Douban rules. e9cad91
+* Enhance pinyin slug generation by adding `nonZh` and `separator` options to handle numbers and non-Chinese characters more cleanly. 7430d4b
+* Implement smart resume for browser modal, prioritizing explicit URLs, new clipboard content with user confirmation, or the last visited URL. 2e1e393
+
+
+
+## [1.12.3](/compare/v1.12.2...v1.12.3) (2026-02-01)
 
 
 ### Features
