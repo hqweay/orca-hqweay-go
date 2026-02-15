@@ -52,6 +52,9 @@ One-click publish Orca notes as Markdown blog posts:
     - Records `github_url` and `blog_url` (clickable).
     - Automatically maintains `publish_date` creation time.
     - Only effective for Page Blocks.
+- **Poetry Mode**:
+    - **Compact Formatting**: Triggered by tag, compresses double newlines to single newlines.
+    - **Hard Breaks**: Automatically appends two spaces to each line to ensure standard Markdown hard breaks.
 
 ### 7. 🏪 Plugin Bazaar
 The community plugin marketplace for Orca, discover more possibilities:
