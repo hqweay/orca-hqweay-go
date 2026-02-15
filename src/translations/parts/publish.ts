@@ -14,4 +14,9 @@ export default {
   "Committer Name": "提交者名称",
   "Committer Email": "提交者邮箱",
   "GitHub Token (Can be same as Image Bed)": "GitHub 令牌 (可与图床相同)",
+  "Poetry Tag": "诗歌模式标签",
+  "Tag name to trigger poetry mode (compact newlines)":
+    "触发诗歌模式的标签名称（压缩换行）",
+  "Tag name to mark as published (default: 已发布)":
+    "标记为已发布的标签名称（默认为：已发布）",
 };

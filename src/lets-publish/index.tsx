@@ -96,6 +96,7 @@ export default class PublishPlugin extends BasePlugin {
     const blogToken = (settings.blog?.token || "").trim();
     const ibToken = (settings.imageBed?.token || "").trim();
     const tagLabel = settings.tagLabel || "已发布";
+    const poetryTag = settings.poetryTag || "";
 
     if (!ibToken || !blogToken) {
       throw new Error("Missing GitHub tokens in settings.");
@@ -131,6 +132,10 @@ export default class PublishPlugin extends BasePlugin {
       tagList = resolvedTags
         .filter((t) => t && t !== tagLabel)
         .map((t) => t.trim());
+    }
+
+    if (poetryTag && tagList.includes(poetryTag)) {
+      mdContent = mdContent.replace(/\n\n/g, "\n").replace(/\n/g, "  \n");
     }
 
     // Ensure "博客" tag is present for the blog post
@@ -823,12 +828,23 @@ function PublishSettings({ plugin }: { plugin: PublishPlugin }) {
       <SettingsSection title={t("Other")}>
         <SettingsItem
           label={t("Tag Label")}
-          description={t("Tag Label for Published Blocks")}
+          description={t("Tag name to mark as published (default: 已发布)")}
         >
           <Input
             // @ts-ignore
             value={config.tagLabel || "已发布"}
             onChange={(e: any) => updateConfig("tagLabel", e.target.value)}
+          />
+        </SettingsItem>
+
+        <SettingsItem
+          label={t("Poetry Tag")}
+          description={t("Tag name to trigger poetry mode (compact newlines)")}
+        >
+          <Input
+            // @ts-ignore
+            value={config.poetryTag || ""}
+            onChange={(e: any) => updateConfig("poetryTag", e.target.value)}
           />
         </SettingsItem>
       </SettingsSection>
