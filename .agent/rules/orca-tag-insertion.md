@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Orca Tag & Property Insertion Best Practices
 
 ## Context
@@ -53,8 +57,8 @@ When constructing the `properties` array for `insertTag`:
   typeArgs: {
     // CRITICAL: Define these values as valid choices
     choices: [
-      { n: "Option A", c: "" },
-      { n: "Option B", c: "" }
+      { n: "Option A"},
+      { n: "Option B"}
     ],
     subType: "multi"
   },
