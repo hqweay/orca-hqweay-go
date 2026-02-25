@@ -16,6 +16,28 @@ const pluginModules: Record<string, any> =
 export const pluginInstances: BasePlugin[] = [];
 let unsubscribeSettings: (() => void) | null = null;
 
+async function fixData() {
+  // 修复脏数据 (Fix dirty data for block 27074)
+  const targetBlock = orca.state.blocks[27074];
+  if (targetBlock && targetBlock.properties) {
+    targetBlock.properties
+      .filter((item: any) => item.type === 6)
+      .forEach((item: any) => {
+        if (item.typeArgs && Array.isArray(item.typeArgs.choices)) {
+          item.typeArgs.choices = item.typeArgs.choices.map((choice: any) => ({
+            n: choice.n,
+          }));
+        }
+      });
+    await orca.commands.invokeEditorCommand(
+      "core.editor.setProperties",
+      null,
+      [27074],
+      JSON.parse(JSON.stringify(targetBlock.properties)),
+    );
+  }
+}
+
 export async function load(_name: string) {
   setupL10N(orca.state.locale, { "zh-CN": zhCN });
 
