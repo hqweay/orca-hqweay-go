@@ -24,9 +24,9 @@ async function fixData() {
       .filter((item: any) => item.type === 6)
       .forEach((item: any) => {
         if (item.typeArgs && Array.isArray(item.typeArgs.choices)) {
-          item.typeArgs.choices = item.typeArgs.choices.map((choice: any) => ({
-            n: choice.n,
-          }));
+          item.typeArgs.choices = item.typeArgs.choices.map((choice: any) =>
+            typeof choice === "string" ? choice : choice.n,
+          );
         }
       });
     await orca.commands.invokeEditorCommand(
@@ -40,7 +40,7 @@ async function fixData() {
 
 export async function load(_name: string) {
   setupL10N(orca.state.locale, { "zh-CN": zhCN });
-
+  // fixData();
   orca.commands.registerCommand(
     "subplugins.settings",
     () => openSettingsBoard(_name),

@@ -123,7 +123,7 @@ export class DataImporter {
           type: p.type,
           value: choicesValues,
           typeArgs: {
-            choices: choicesValues.map((v) => ({ n: v })),
+            choices: choicesValues,
             subType: "multi",
           },
           pos: 0,

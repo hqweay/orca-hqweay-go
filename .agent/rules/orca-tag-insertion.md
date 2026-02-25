@@ -57,8 +57,8 @@ When constructing the `properties` array for `insertTag`:
   typeArgs: {
     // CRITICAL: Define these values as valid choices
     choices: [
-      { n: "Option A"},
-      { n: "Option B"}
+      "Option A",
+      "Option B"
     ],
     subType: "multi"
   },
