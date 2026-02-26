@@ -1,6 +1,20 @@
-## [1.12.4](/compare/v1.12.3...v1.12.4) (2026-02-15)
+## [1.12.5](/compare/v1.12.4...v1.12.5) (2026-02-26)
 
-Update to 1.12.4
+Update to 1.12.5
+
+
+### Bug Fixes
+
+* correct dirty data in block 27074 by transforming choice properties. 85aa91e
+
+
+### Features
+
+* Add `always_on` trigger to tag insertion rules and remove the `c` property from choice objects. a95734c
+
+
+
+## [1.12.4](/compare/v1.12.3...v1.12.4) (2026-02-15)
 
 
 ### Features
