@@ -204,14 +204,8 @@ export default class LinkMetadataPlugin extends BasePlugin {
   private findUrlInBlock(block: any): string | null {
     if (!block || !block.content) return "";
     for (const fragment of block.content) {
-      if (fragment.t === "a" && fragment.url) {
-        return fragment.url;
-      }
-      if (typeof fragment.v === "string" && fragment.v.includes("http")) {
-        const match = fragment.v.match(/https?:\/\/[^\s]+/);
-        if (match) {
-          return match[0];
-        }
+      if (typeof fragment.l === "string" && fragment.l.startsWith("http")) {
+        return fragment.l;
       }
     }
     return "";
