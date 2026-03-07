@@ -95,7 +95,11 @@ fi
 
 # Commit and Push
 git add .
-git commit -m "release: $NEW_VERSION $COMMENT"
+if [ "$COMMENT" = "Update to $NEW_VERSION" ]; then
+    git commit -m "release: $NEW_VERSION"
+else
+    git commit -m "release: $NEW_VERSION $COMMENT"
+fi
 git push "$GIT_REMOTE"
 
 # Tag and Push Tag (with 'v' prefix)
