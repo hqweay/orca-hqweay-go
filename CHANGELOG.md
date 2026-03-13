@@ -1,8 +1,46 @@
+## [1.12.8](/compare/v1.12.7...v1.12.8) (2026-03-13)
+
+Update to 1.12.8
+
+
+### Features
+
+* Implement pinyin-based slug generation for articles using `pinyin-pro`, falling back to timestamps. aeac5d7
+
+## [1.7.9](/compare/v1.7.8...v1.7.9) (2026-01-26)
+
+## [1.7.8](/compare/v1.7.7...v1.7.8) (2026-01-26)
+
+
+### Features
+
+* Prevent deletion of non-text empty blocks by checking block representation and refining `getRepr` utility. 1656d04
+
+## [1.7.7](/compare/v1.7.6...v1.7.7) (2026-01-26)
+
+
+### Bug Fixes
+
+* correct typo 'hwqeay' to 'hqweay' in package name and gitignore. 297eac1
+
+## [1.7.6](/compare/v1.7.5...v1.7.6) (2026-01-26)
+
+## [1.7.5](/compare/v1.7.4...v1.7.5) (2026-01-26)
+
+## [1.7.4](/compare/v1.7.3...v1.7.4) (2026-01-26)
+
+## [1.7.3](/compare/v1.7.2...v1.7.3) (2026-01-26)
+
+## [1.7.2](/compare/v1.7.1...v1.7.2) (2026-01-26)
+
+## [1.7.1](/compare/v1.6.4...v1.7.1) (2026-01-26)
+
+
+### Features
+
+* Add JavaScript obfuscation and update build configurations. d812d1c
+
 ## [1.12.7](/compare/v1.12.6...v1.12.7) (2026-03-06)
-
-Update to 1.12.7
-
-
 
 ## [1.12.6](/compare/v1.12.4...v1.12.6) (2026-02-26)
 
@@ -16,8 +54,6 @@ Update to 1.12.7
 
 * Add `always_on` trigger to tag insertion rules and remove the `c` property from choice objects. a95734c
 
-
-
 ## [1.12.4](/compare/v1.12.3...v1.12.4) (2026-02-15)
 
 
@@ -28,16 +64,12 @@ Update to 1.12.7
 * Enhance pinyin slug generation by adding `nonZh` and `separator` options to handle numbers and non-Chinese characters more cleanly. 7430d4b
 * Implement smart resume for browser modal, prioritizing explicit URLs, new clipboard content with user confirmation, or the last visited URL. 2e1e393
 
-
-
 ## [1.12.3](/compare/v1.12.2...v1.12.3) (2026-02-01)
 
 
 ### Features
 
 * Enhance HTML to Markdown conversion with image support and whitespace trimming, reformat `cleanUrl` function, and add a debug log for properties. 9472c45
-
-
 
 ## [1.12.2](/compare/v1.12.1...v1.12.2) (2026-02-01)
 
@@ -47,8 +79,6 @@ Update to 1.12.7
 * Add `contentScript` to metadata rules for separate content extraction and refactor the generic rule to utilize it. 76a527f
 * enhance URL cleaning by stripping tracking parameters and centralize its implementation for webview injection. 4bce62f
 * Standardize URL cleaning across Douban and generic rules, update generic domain to use origin, and include description in base metadata. 76af4fc
-
-
 
 ## [1.12.1](/compare/v1.12.0...v1.12.1) (2026-02-01)
 
@@ -61,8 +91,6 @@ Update to 1.12.7
 ### Features
 
 * Use clipboard content as the URL if no URL is provided, before falling back to the homepage. 4f7aa8f
-
-
 
 # [1.12.0](/compare/v1.11.1...v1.12.0) (2026-02-01)
 
@@ -78,8 +106,6 @@ Update to 1.12.7
 * inject an optional comment into the changelog after generation. ae21754
 * Replace "Clip Content" and "Extract Metadata" buttons with icon buttons and tooltips in BrowserModal. ca3a172
 
-
-
 ## [1.11.1](/compare/v1.11.0...v1.11.1) (2026-02-01)
 
 
@@ -93,16 +119,12 @@ Update to 1.12.7
 * add homepage setting with dedicated UI and default browser URL integration. 02c463c
 * Add image normalization with maxWidth support when copying images from webview to clipboard. a4f5e30
 
-
-
 # [1.11.0](/compare/1.10.0...v1.11.0) (2026-01-31)
 
 
 ### Features
 
 * update release body extraction to match any heading level in CHANGELOG.md a0bf93f
-
-
 
 # [1.10.0](/compare/1.9.3...1.10.0) (2026-01-31)
 
@@ -126,8 +148,6 @@ Update to 1.12.7
 * Implement mobile user agent toggle in the browser modal and update Douban rules to match mobile URLs. fa0b3ca
 * Implement saving images from the browser modal context menu to the daily note, including options to download/upload or link the image. 932804e
 
-
-
 ## [1.9.3](/compare/v1.9.2...1.9.3) (2026-01-31)
 
 
@@ -140,8 +160,6 @@ Update to 1.12.7
 
 * add "Format Block" tooltip to the refresh button in the format plugin. ccc6c9f
 
-
-
 ## [1.9.2](/compare/v1.9.1...v1.9.2) (2026-01-31)
 
 
@@ -149,8 +167,6 @@ Update to 1.12.7
 
 * Implement a custom context menu in the browser modal to save selected text to the daily note. dc879e7
 * rename 'Link Metadata' to 'Web Assistant' and introduce web clipping, internal browsing, and enhanced metadata extraction. 32258ae
-
-
 
 ## [1.9.1](/compare/v1.8.4...v1.9.1) (2026-01-31)
 
@@ -170,8 +186,6 @@ Update to 1.12.7
 * Update default Douban quick link to a general search URL and name. 0091b0c
 * 格式化中英文混排 eaaa754
 
-
-
 ## [1.8.4](/compare/v1.8.3...v1.8.4) (2026-01-28)
 
 
@@ -179,8 +193,6 @@ Update to 1.12.7
 
 * Implement automatic image downloading and local asset conversion for tag properties. eeee8c5
 * Update deduplication logic to support object-based primaryKey configuration for tag-specific property mapping.feat: Update deduplication logic to support object-based primaryKey configuration for tag-specific property mapping. 0c03c34
-
-
 
 ## [1.8.3](/compare/v1.8.2...v1.8.3) (2026-01-28)
 
@@ -193,8 +205,6 @@ Update to 1.12.7
 * Introduce `removeFolder` for plugins, `QueryConditionsBuilder` component, `showBlockPreview` utility, `hasContent` and `hasRefs` query properties, and refine `after` command documentation. a3a40e9
 * update and enhance formatting utilities b310295
 
-
-
 ## [1.8.2](/compare/v1.8.1...v1.8.2) (2026-01-27)
 
 
@@ -205,8 +215,6 @@ Update to 1.12.7
 * only show heading tree menu when two or more blocks are selected 5da71a5
 * Standardize plugin headbar button rendering and settings management with a new PluginSettings component. d9ab644
 
-
-
 ## [1.8.1](/compare/v1.8.0...v1.8.1) (2026-01-27)
 
 
@@ -214,9 +222,7 @@ Update to 1.12.7
 
 * remove AGENTS.md content merger from rules 11fb97f
 
-
-
-# [1.8.0](/compare/v1.6.4...v1.8.0) (2026-01-27)
+# [1.8.0](/compare/v1.7.9...v1.8.0) (2026-01-27)
 
 
 ### Features
@@ -224,15 +230,42 @@ Update to 1.12.7
 * Add `pinyin-pro` dependency and configure `esbuild` for build optimization; fix: Correct project name typos and update package version. 16d477c
 * Enhance slug generation with pinyin conversion, refine empty block deletion, and update dependencies and build configurations. c3452db
 
+## [1.7.9](/compare/v1.7.8...v1.7.9) (2026-01-26)
 
+## [1.7.8](/compare/v1.7.7...v1.7.8) (2026-01-26)
+
+
+### Features
+
+* Prevent deletion of non-text empty blocks by checking block representation and refining `getRepr` utility. 1656d04
+
+## [1.7.7](/compare/v1.7.6...v1.7.7) (2026-01-26)
+
+
+### Bug Fixes
+
+* correct typo 'hwqeay' to 'hqweay' in package name and gitignore. 297eac1
+
+## [1.7.6](/compare/v1.7.5...v1.7.6) (2026-01-26)
+
+## [1.7.5](/compare/v1.7.4...v1.7.5) (2026-01-26)
+
+## [1.7.4](/compare/v1.7.3...v1.7.4) (2026-01-26)
+
+## [1.7.3](/compare/v1.7.2...v1.7.3) (2026-01-26)
+
+## [1.7.2](/compare/v1.7.1...v1.7.2) (2026-01-26)
+
+## [1.7.1](/compare/v1.6.4...v1.7.1) (2026-01-26)
+
+
+### Features
+
+* Add JavaScript obfuscation and update build configurations. d812d1c
 
 ## [1.6.4](/compare/v1.6.3...v1.6.4) (2026-01-25)
 
-
-
 ## [1.6.3](/compare/v1.6.2...v1.6.3) (2026-01-25)
-
-
 
 ## [1.6.2](/compare/v1.6.1...v1.6.2) (2026-01-25)
 
@@ -243,16 +276,12 @@ Update to 1.12.7
 * Map CSV content to support links or plain text and remove data importer debug logs. 1c048d5
 * Refactor CSV import modal with new configuration types, move components to `_csv` directory, and introduce a `DataImporter` utility. 0488cb0
 
-
-
 ## [1.6.1](/compare/v1.6.0...v1.6.1) (2026-01-25)
 
 
 ### Features
 
 * Document multi-select tag pattern and update example JSON with diverse tag types including multi-select, progress, boolean, link, and image. 3452562
-
-
 
 # [1.6.0](/compare/v1.5.5...v1.6.0) (2026-01-25)
 
@@ -267,27 +296,15 @@ Update to 1.12.7
 * implement link metadata extraction with configurable rules and settings UI. 543d0ca
 * Implement rich text insertion for `lets-shortcuts` through a new `text` field in the JSON payload, utilizing `core.editor.insertFragments`, and update documentation. 04b0469
 
-
-
 ## [1.5.5](/compare/v1.5.4...v1.5.5) (2026-01-24)
-
-
 
 ## [1.5.4](/compare/v1.5.3...v1.5.4) (2026-01-24)
 
-
-
 ## [1.5.3](/compare/v1.5.2...v1.5.3) (2026-01-24)
-
-
 
 ## [1.5.2](/compare/1.5.1...v1.5.2) (2026-01-24)
 
-
-
 ## [1.5.1](/compare/1.5.0...1.5.1) (2026-01-23)
-
-
 
 # [1.5.0](/compare/1.4.0...1.5.0) (2026-01-23)
 
@@ -309,11 +326,7 @@ Update to 1.12.7
 * Implement headbar menu items for Import and VoiceNotesSync plugins, enhancing user interaction with new action buttons ce16808
 * Integrate headbar settings for Format and RemoveStyle plugins, allowing users to customize display modes and enhance interaction ee526db
 
-
-
 # [1.4.0](/compare/1.3.6...1.4.0) (2026-01-23)
-
-
 
 ## [1.3.6](/compare/1.3.5...1.3.6) (2026-01-23)
 
@@ -328,23 +341,13 @@ Update to 1.12.7
 * Add search functionality to Bazaar modal for filtering plugins 36e8277
 * Enhance user notification for plugin directory selection in Bazaar modal c378d24
 
-
-
 ## [1.3.5](/compare/1.3.4...1.3.5) (2026-01-22)
-
-
 
 ## [1.3.4](/compare/1.3.3...1.3.4) (2026-01-22)
 
-
-
 ## [1.3.3](/compare/1.3.2...1.3.3) (2026-01-22)
 
-
-
 ## [1.3.2](/compare/1.3.1...1.3.2) (2026-01-22)
-
-
 
 ## [1.3.1](/compare/1.3.0...1.3.1) (2026-01-22)
 
@@ -355,8 +358,6 @@ Update to 1.12.7
 * Add GitHub repository link next to the repository name in the Bazaar modal. cd7ee2c
 * Implement plugin list caching and add a GitHub link and refresh button to the Bazaar modal. 6dd2c00
 
-
-
 # [1.3.0](/compare/1.2.3...1.3.0) (2026-01-22)
 
 
@@ -364,8 +365,6 @@ Update to 1.12.7
 
 * Broaden zip asset detection and enhance file extraction robustness by skipping system files, invalid filenames, and gracefully handling write errors. aaf57bb
 * implement Orca Bazaar for browsing and installing plugins with `jszip` dependency e6f2027
-
-
 
 ## [1.2.3](/compare/1.2.2...1.2.3) (2026-01-22)
 
@@ -379,16 +378,12 @@ Update to 1.12.7
 * Group synced attachments under a new 'Attachments' heading block. 7ac7594
 * Reorder creation and transcript processing, introduce HTML to Markdown conversion, and structure transcript and creation titles as headings. cdba3f0
 
-
-
 ## [1.2.2](/compare/1.2.1...1.2.2) (2026-01-21)
 
 
 ### Features
 
 * Restructure build output to `build/dist` and add static asset copying for `icon.png`, `README.md`, and `LICENSE`. 1caba1d
-
-
 
 ## [1.2.1](/compare/1.2.0...1.2.1) (2026-01-21)
 
@@ -397,8 +392,6 @@ Update to 1.12.7
 
 * Enable publishing for all blocks, refine title and publish date property generation, and update logger's development environment detection. 5d58363
 * Pass additional `undefined` and `true` arguments to the `renderBlock` function call. 07cab6c
-
-
 
 # [1.2.0](/compare/1.1.2...1.2.0) (2026-01-19)
 
@@ -420,11 +413,7 @@ Update to 1.12.7
 * Rework publish plugin to track posts via `github_url`/`blog_url` properties, preserve `publish_date`, and add configurable tag label and blog domain. 10b472e
 * set logger global level to DEBUG in development and ERROR in production b2dd018
 
-
-
 ## [1.1.2](/compare/1.1.1...1.1.2) (2026-01-19)
-
-
 
 # [1.1.0](/compare/1.0.12...1.1.0) (2026-01-19)
 
@@ -435,11 +424,7 @@ Update to 1.12.7
 * introduce a plugin to sort selected blocks by task status and text content, and remove AI documentation. 5b23781
 * Introduce configurable block sort order through plugin settings and refactor sorting logic to prioritize block types. 0b6d24b
 
-
-
 ## [1.1.1](/compare/1.1.0...1.1.1) (2026-01-19)
-
-
 
 # [1.1.0](/compare/1.0.12...1.1.0) (2026-01-19)
 
@@ -451,8 +436,6 @@ Update to 1.12.7
 * introduce a plugin to sort selected blocks by task status and text content, and remove AI documentation. 5b23781
 * Introduce configurable block sort order through plugin settings and refactor sorting logic to prioritize block types. 0b6d24b
 
-
-
 ## [1.0.12](/compare/1.0.11...1.0.12) (2026-01-18)
 
 
@@ -460,51 +443,27 @@ Update to 1.12.7
 
 * Add option to remove empty lines in `lets-remove-style` plugin, refactor its menu text and notifications, update Vite config for path resolution, and remove CSV test files. c8c8dee
 
-
-
 ## [1.0.11](/compare/1.0.10...1.0.11) (2026-01-18)
-
-
 
 ## [1.0.10](/compare/1.0.9...1.0.10) (2026-01-18)
 
-
-
 ## [1.0.9](/compare/1.0.8...1.0.9) (2026-01-18)
-
-
 
 ## [1.0.8](/compare/1.0.7...1.0.8) (2026-01-18)
 
-
-
 ## [1.0.7](/compare/1.0.6...1.0.7) (2026-01-18)
-
-
 
 ## [1.0.6](/compare/1.0.5...1.0.6) (2026-01-18)
 
-
-
 ## [1.0.5](/compare/1.0.4...1.0.5) (2026-01-18)
-
-
 
 ## [1.0.4](/compare/1.0.3...1.0.4) (2026-01-18)
 
-
-
 ## [1.0.3](/compare/1.0.2...1.0.3) (2026-01-18)
-
-
 
 ## [1.0.2](/compare/1.0.1...1.0.2) (2026-01-18)
 
-
-
 ## [1.0.1](/compare/1.0.0...1.0.1) (2026-01-18)
-
-
 
 # [1.0.0](/compare/e18863181872aed16a77d9fd1204ea7d06c6c25d...1.0.0) (2026-01-18)
 
@@ -523,6 +482,3 @@ Update to 1.12.7
 * add Markdown and CSV import capabilities and a new formatting module. e188631
 * Add notification for formatted blocks and refactor plugin name variable scope in voicenotes-sync. 84802f6
 * Enable full voice note synchronization, clean note and creation titles, and disable block insertion in import. 7164d79
-
-
-
