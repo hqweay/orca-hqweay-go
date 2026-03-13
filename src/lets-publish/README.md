@@ -25,6 +25,11 @@ Easily publish your Orca Notes page blocks as Markdown articles to a GitHub repo
 *   **Intelligent Title Generation**:
     *   Automatically extracts the title from the **first line** of the generated markdown content.
     *   Removes the first line from the body to ensure clean, non-repetitive publishing.
+*   **Poetry Mode**:
+    *   **Compact Formatting**: Automatically detects a configured "Poetry Tag" (e.g., "诗歌").
+    *   **Smart Line Breaks**: Replaces double newlines with single newlines, and appends two spaces to each line to ensure hard breaks in Markdown.
+    *   **Ideal Usage**: Poems, lyrics, or lists where you want tight vertical spacing.
+
 ## Usage
 
 1.  **Configure**:

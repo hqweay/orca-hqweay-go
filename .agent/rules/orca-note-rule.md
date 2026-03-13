@@ -43,28 +43,35 @@ export default class MyPlugin extends BasePlugin {
     - 移除 UI (`orca.toolbar.unregisterToolbarButton`)
     - 清除定时器和 DOM 事件监听。
 
-### 2.3 配置管理 (Settings)
-我们采用 React 组件化的配置面板：
-1.  **定义配置组件**: 在子插件目录下创建配置组件（如 `MySettings.tsx`）。
-2.  **实现 `renderSettings`**: 在插件类中返回配置组件。
+### 2.3 配置管理 (Settings) - 自动化模式
+我们采用“逻辑声明式”配置。大部分插件无需编写 UI 代码：
+1.  **自动化渲染**: 只要子插件声明了 `headbarButtonId`，`BasePlugin` 会自动渲染 `PluginSettings` 组件（包含显示模式切换）。
+2.  **自定义扩展**: 如果需要额外设置项，覆盖 `renderCustomSettings()` 方法：
     ```typescript
-    renderSettings() {
-      return <MySettings plugin={this} />;
+    protected renderCustomSettings() {
+      return <div className="my-logic">...</div>;
     }
     ```
 3.  **读写配置**:
-    *   读取: `this.getSettings()` (在类中) 或 `plugin.getSettings()` (在组件中)。
-    *   写入: `this.updateSettings({ key: value })`。该方法会自动处理防抖 (Debounce) 和持久化。
-    *   **设置 SCHEMA**: 优先使用 `orca.plugins.setSettingsSchema` (或是框架封装的 checkSchema) 来辅助生成设置 UI。
-4.  **实时响应**: 覆盖 `onConfigChanged(newConfig)` 钩子，以便在配置变更时实时更新插件行为（无需重载）。
+    *   读取: `this.getSettings()`。
+    *   写入: `this.updateSettings({ key: value })`。
+4.  **可见性判定**: 依靠 `hasSettings()` 自动决定是否要在设置中心显示该插件（由 `headbarButtonId` 或 `renderCustomSettings` 决定）。
 
-### 2.4 Headbar 与菜单
-*   **Headbar 按钮**: 如果插件需要在顶部栏显示按钮，请提供配置项 `headbarMode` ('standalone' | 'actions' | 'both')，并根据设置在 `load` 和 `onConfigChanged` 中调用 `registerHeadbar`。
-*   **Actions Menu**: 覆盖 `getHeadbarMenuItems()` 方法，返回要插入全局“动作”菜单的列表项 (`MenuText`, `MenuSeparator` 等)。
+*   **声明式注册**: 子插件只需声明 `protected headbarButtonId = "...";`。
+*   **渲染函数**: 必须实现 `renderHeadbarButton()` 返回独立按钮 UI。
+*   **菜单扩展**: 覆盖 `renderHeadbarMenuItems(closeMenu)`。`BasePlugin` 会自动根据 `headbarMode` 判断是否渲染这些菜单项。子插件禁止手动检查 `headbarMode`。
+*   **生命周期自动同步**: `BasePlugin` 会自动处理按钮的注册与销毁，严禁在子插件 `load` 中手动注册按钮。
 
 ### 2.5 国际化 (i18n)
 *   所有用户可见字符串必须使用 `src/libs/l10n` 提供的 `t()` 函数包裹。
-*   在 `src/translations/zhCN.ts` 中添加对应的中文翻译。
+*   翻译文件统一存放在 `src/translations/` 下。
+*   **模块化管理**: 所有新的翻译内容必须按模块拆分，放置在 `src/translations/parts/` 目录下（例如 `parts/myPlugin.ts`）。`zhCN.ts` 等主文件会通过 `import.meta.glob` 自动扫描并加载这些分片，无需手动修改主文件。
+
+### 2.6 命名约定与环境隔离 (Naming & Environment)
+*   **正式插件**: 目录命名为 `src/lets-[name]`。
+*   **测试/示例插件**: 目录命名为 `src/lets-test-[name]`。
+*   **自动隔离**: 系统会自动识别并在生产环境下跳过所有 `lets-test-*` 插件的加载，确保生产环境的纯净。
+
 
 ## 3. 自定义块开发 (Custom Blocks) - "双生子原则"
 *   **渲染器与转换器必须成对出现**: 如果注册了 `registerBlock` (渲染器)，**必须** 注册 `registerBlock` (转换器)。缺少转换器会导致搜索、导出、复制操作报错。

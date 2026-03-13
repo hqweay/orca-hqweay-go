@@ -72,6 +72,10 @@
 
 包含类型标识，更安全，避免误识别。
 
+`primaryKey` 可以是字符串（全局唯一键名）或对象（为每个标签指定唯一键名）。
+
+`downloadImages` 为 `true` 时，会自动下载属性中的远程图片（`typeArgs: { subType: "image" }`）。
+
 ```json
 {
   "type": "orca-tags",
@@ -79,6 +83,10 @@
     { "t": "t", "v": "Check our " },
     { "t": "l", "v": "Orca Documentation", "l": "https://orca.so/docs" }
   ],
+  "primaryKey": {
+    "任务标签": "参考链接"
+  },
+  "downloadImages": true,
   "tags": [
     {
       "任务标签": [

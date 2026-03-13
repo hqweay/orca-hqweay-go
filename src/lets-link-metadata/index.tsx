@@ -1,0 +1,691 @@
+import { BasePlugin } from "@/libs/BasePlugin";
+import { setupL10N, t } from "@/libs/l10n";
+import Settings from "./Settings";
+import { LinkMetadataSettings, Rule, MetadataProperty } from "./types";
+import { extractMetadata, matchRule } from "./metadataExtractor";
+import { PropType } from "@/libs/consts";
+import { DEFAULT_RULES } from "./defaultRules";
+import { DataImporter, BlockData } from "@/libs/DataImporter";
+import { BrowserModal } from "./components/BrowserModal";
+import React from "react";
+
+const DEFAULT_QUICK_LINKS = [
+  {
+    name: "Douban Search",
+    url: "https://www.douban.com/search",
+  },
+  {
+    name: "VoiceNotes",
+    url: "https://voicenotes.com/app",
+  },
+  {
+    name: "ChatGPT",
+    url: "https://chatgpt.com/",
+  },
+  {
+    name: "Pixiv",
+    url: "https://www.pixiv.net/",
+  },
+];
+
+export default class LinkMetadataPlugin extends BasePlugin {
+  protected headbarButtonId = "link-metadata-browser-btn";
+  private modalRoot: any = null;
+  private modalContainer: HTMLElement | null = null;
+  private lastVisitedUrl: string | null = null;
+  private lastClipboardUrl: string | null = null;
+
+  public async load(): Promise<void> {
+    if (orca.blockMenuCommands.registerBlockMenuCommand) {
+      orca.blockMenuCommands.registerBlockMenuCommand(
+        `${this.name}.extract-metadata`,
+        {
+          worksOnMultipleBlocks: false,
+          render: (blockId: number, rootBlockId: number, close: any) => {
+            const MenuText = orca.components.MenuText;
+            if (!MenuText) return null;
+            return (
+              <>
+                <MenuText
+                  preIcon="ti ti-link"
+                  title={t("Extract Link Metadata")}
+                  onClick={() => {
+                    close();
+                    orca.commands.invokeCommand(
+                      `${this.name}.extract-metadata`,
+                      blockId,
+                    );
+                  }}
+                />
+                <MenuText
+                  preIcon="ti ti-world"
+                  title={t("Metadata: Browser Mode")}
+                  onClick={async () => {
+                    close();
+                    const block = await orca.invokeBackend(
+                      "get-block",
+                      blockId,
+                    );
+                    const url = this.findUrlInBlock(block) || "";
+                    await this.handleOpenBrowser(url, block);
+                  }}
+                />
+              </>
+            );
+          },
+        },
+      );
+    }
+
+    // Auto/Static Command
+    orca.commands.registerCommand(
+      `${this.name}.extract-metadata`,
+      async (blockId: number) => {
+        const block = await orca.invokeBackend("get-block", blockId);
+        if (!block) {
+          orca.notify("error", t("Block not found"));
+          return;
+        }
+        await this.handleBlockExtraction(block, false);
+      },
+      t("Extract Link Metadata"),
+    );
+
+    // Browser/Manual Command
+    orca.commands.registerEditorCommand(
+      `${this.name}.open-browser`,
+      async ([_panelId, _rootBlockId, cursor]) => {
+        let blockId = cursor?.anchor?.blockId;
+
+        let url = "";
+        let block = null;
+        if (blockId) {
+          block = await orca.invokeBackend("get-block", blockId);
+          url = this.findUrlInBlock(block) || "";
+        }
+
+        // Open browser. Target is NULL to enforce insertion into Daily Note (Global Mode)
+        // We only use the block to pre-fill the browser URL if available.
+        await this.handleOpenBrowser(url, null);
+        return null;
+      },
+      () => {}, // No undo action needed for opening modal
+      { label: t("Metadata: Open Browser") },
+    );
+
+    // Register editor sidetool
+    orca.editorSidetools.registerEditorSidetool(
+      `${this.name}.browser-sidetool`,
+      {
+        render: (_rootBlockId, _panelId) => {
+          const Tooltip =
+            orca.components.Tooltip || (({ children }: any) => <>{children}</>);
+          // Use Button directly, assuming it handles basic styling
+          // Or wrap in a way consistent with other sidetools if needed.
+          // Usually sidetools just return a button.
+          return (
+            <Tooltip text={t("Web Assistant (Docked)")} placement="horizontal">
+              <orca.components.Button
+                variant="plain"
+                onClick={() => this.handleOpenBrowser("", null, true)}
+                style={{
+                  width: "30px",
+                  height: "30px",
+                  padding: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <i className="ti ti-world" style={{ fontSize: "16px" }} />
+              </orca.components.Button>
+            </Tooltip>
+          );
+        },
+      },
+    );
+
+    this.logger.info(`${this.name} loaded.`);
+  }
+
+  public async unload(): Promise<void> {
+    orca.blockMenuCommands.unregisterBlockMenuCommand(
+      `${this.name}.extract-metadata`,
+    );
+    orca.commands.unregisterCommand(`${this.name}.extract-metadata`);
+    orca.commands.unregisterEditorCommand(`${this.name}.open-browser`);
+    this.destroyBrowserModal();
+    this.logger.info(`${this.name} unloaded.`);
+  }
+
+  public getDefaultSettings(): LinkMetadataSettings {
+    return {
+      homepage: "https://www.douban.com/search",
+      rules: DEFAULT_RULES,
+      quickLinks: DEFAULT_QUICK_LINKS,
+      headbarMode: "both",
+    };
+  }
+
+  protected renderCustomSettings(): React.ReactNode {
+    return React.createElement(Settings, { plugin: this as any });
+  }
+
+  public renderHeadbarButton(): React.ReactNode {
+    return (
+      <orca.components.Button
+        variant="plain"
+        title={t("Metadata: Open Browser")}
+        onClick={async () => await this.handleOpenBrowser("", null)}
+      >
+        <i className="ti ti-world" style={{ fontSize: "16px" }} />
+      </orca.components.Button>
+    );
+  }
+
+  protected renderHeadbarMenuItems(closeMenu: () => void): React.ReactNode[] {
+    const MenuText = orca.components.MenuText;
+    return [
+      React.createElement(MenuText, {
+        key: "open-browser",
+        preIcon: "ti ti-world",
+        title: t("Metadata: Open Browser"),
+        onClick: async () => {
+          closeMenu();
+          await this.handleOpenBrowser("", null);
+        },
+      }),
+      React.createElement(orca.components.MenuSeparator, {
+        key: "sep-link-metadata",
+      }),
+    ];
+  }
+
+  private findUrlInBlock(block: any): string | null {
+    if (!block || !block.content) return "";
+    for (const fragment of block.content) {
+      if (typeof fragment.l === "string" && fragment.l.startsWith("http")) {
+        return fragment.l;
+      }
+    }
+    return "";
+  }
+
+  private async handleBlockExtraction(block: any, forceBrowser: boolean) {
+    const settings = this.getSettings() as LinkMetadataSettings;
+    const rules = settings.rules;
+
+    const targetUrl = this.findUrlInBlock(block);
+
+    if (!targetUrl) {
+      if (forceBrowser) {
+        this.handleOpenBrowser("", block);
+        return;
+      }
+      orca.notify("warn", t("No URL found in block"));
+      return;
+    }
+
+    this.logger.info(`Found URL: ${targetUrl}`);
+
+    // Match Rule
+    const matchedRule = matchRule(targetUrl, rules);
+    this.logger.info(`Matched Rule: ${matchedRule?.name}`);
+
+    if (!matchedRule) {
+      // If no rule matches, we can still fall back to generic or browser
+      // For now warn
+      orca.notify("warn", t("No matching rule found for this URL"));
+      return;
+    }
+
+    // Try Static Extraction
+    try {
+      const properties = await extractMetadata(targetUrl, matchedRule.script);
+      this.logger.info("Extracted Metadata:", properties);
+
+      await this.applyMetadataToBlock(
+        block.id,
+        matchedRule.tagName,
+        properties,
+        matchedRule.downloadCover,
+      );
+      orca.notify("success", t("Metadata extracted and applied"));
+    } catch (e: any) {
+      this.logger.error("Extraction failed", e);
+      // Fallback prompt
+      orca.notify("error", t("Fetch failed. Try Browser Mode?"));
+    }
+  }
+
+  private async handleOpenBrowser(
+    url: string,
+    targetBlock: any,
+    initialDocked: boolean = false,
+  ) {
+    const settings = this.getSettings() as LinkMetadataSettings;
+    const rules = settings.rules;
+    const quickLinks = settings.quickLinks;
+
+    const homepage = settings.homepage || "";
+    let finalUrl = url;
+
+    // Smart Resume Logic
+    // 1. Check clipboard first
+    let clipboardUrl = "";
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      if (
+        clipboardText &&
+        (clipboardText.startsWith("http://") ||
+          clipboardText.startsWith("https://"))
+      ) {
+        clipboardUrl = clipboardText.trim();
+      }
+    } catch (e) {
+      // Ignore
+    }
+
+    // 2. Decide Priority
+    if (finalUrl) {
+      // Priority 1: Explicit URL provided (e.g. from block) -> Use it
+    } else if (
+      clipboardUrl &&
+      clipboardUrl !== this.lastClipboardUrl &&
+      clipboardUrl !== this.lastVisitedUrl
+    ) {
+      // Priority 2: New Clipboard Content -> Ask User
+      // Mark as seen regardless of choice so we don't ask again for the same link
+      this.lastClipboardUrl = clipboardUrl;
+
+      const shouldOpen = confirm(
+        t("Open link from clipboard?") + "\n" + clipboardUrl,
+      );
+      if (shouldOpen) {
+        finalUrl = clipboardUrl;
+      } else if (this.lastVisitedUrl) {
+        // Priority 3: Resume last visited
+        finalUrl = this.lastVisitedUrl;
+      } else {
+        // Priority 4: Homepage
+        finalUrl = homepage;
+      }
+    } else if (this.lastVisitedUrl) {
+      // Priority 3: Resume last visited
+      finalUrl = this.lastVisitedUrl;
+    } else {
+      // Priority 4: Homepage
+      finalUrl = homepage;
+      // Also try to use current clipboard if it's there
+      if (clipboardUrl) {
+        finalUrl = clipboardUrl;
+        this.lastClipboardUrl = clipboardUrl;
+      }
+    }
+
+    // Fallback if finalUrl is still empty
+    finalUrl = finalUrl || homepage;
+
+    let initialRule = null;
+    if (finalUrl) {
+      initialRule = matchRule(finalUrl, rules) || null;
+    }
+
+    this.openBrowserModal(
+      finalUrl,
+      rules,
+      quickLinks,
+      async (properties, rule) => {
+        if (targetBlock) {
+          // ... (existing targetBlock logic)
+          const isEmpty =
+            !targetBlock.content ||
+            targetBlock.content.length === 0 ||
+            (targetBlock.content.length === 1 &&
+              targetBlock.content[0].t === "t" &&
+              !targetBlock.content[0].v.trim());
+
+          if (isEmpty) {
+            const titleProp = properties.find(
+              (p) => p.name === "标题" || p.name === "Title",
+            );
+            const linkProp = properties.find(
+              (p) => p.name === "链接" || p.name === "Link",
+            );
+            const title = titleProp?.value || "Untitled";
+            const linkUrl = linkProp?.value || url;
+
+            const content = [{ t: "l", v: title, l: linkUrl }];
+
+            try {
+              await orca.commands.invokeEditorCommand(
+                "core.editor.setBlocksContent",
+                null,
+                [{ id: targetBlock.id, content: content }],
+                false,
+              );
+            } catch (e) {
+              console.error("Failed to update block content", e);
+            }
+          }
+
+          const ruleToUse = rule || initialRule;
+          await this.applyMetadataToBlock(
+            targetBlock.id,
+            ruleToUse?.tagName || "Bookmark",
+            properties,
+            ruleToUse?.downloadCover || false,
+          );
+          orca.notify("success", t("Metadata applied to block"));
+        } else {
+          // Global Mode: Insert into Daily Note
+          const ruleToUse = rule || initialRule;
+          const insertedBlock = await this.saveMetadataBlockToDailyNote(
+            properties,
+            ruleToUse || null,
+            url,
+          );
+          if (insertedBlock) {
+            orca.notify("success", t("Saved to Daily Note"));
+          } else {
+            orca.notify("error", t("Could not find Daily Note"));
+          }
+        }
+      },
+      async (data: any, type?: string, rule?: Rule | null) => {
+        // Save to Daily Note Callback
+        try {
+          const journalBlock = await orca.invokeBackend(
+            "get-journal-block",
+            new Date(),
+          );
+          if (journalBlock) {
+            if (type === "image" && data.src) {
+              // ... image logic
+              let assetPath = data.src;
+              if (assetPath) {
+                await orca.commands.invokeEditorCommand(
+                  "core.editor.insertBlock",
+                  null,
+                  journalBlock,
+                  "lastChild",
+                  null,
+                  { type: "image", src: assetPath },
+                );
+              }
+            } else if (type === "markdown") {
+              if (Array.isArray(data)) {
+                // Clipping with properties
+                const properties = data as MetadataProperty[];
+                const contentProp = properties.find(
+                  (p) => p.name === "正文" || p.name === "Content",
+                );
+
+                const ruleToUse = rule || initialRule;
+                // 1. First insert the metadata block
+                const parentBlock = await this.saveMetadataBlockToDailyNote(
+                  properties,
+                  ruleToUse || null,
+                  url,
+                );
+
+                // Set as long form display
+                await orca.commands.invokeEditorCommand(
+                  "core.editor.toggleShowAsLongForm",
+                  null, // cursor can be null for this operation
+                  parentBlock.id,
+                );
+
+                if (parentBlock && contentProp && contentProp.value) {
+                  // 2. Then insert the content under it
+                  await orca.commands.invokeEditorCommand(
+                    "core.editor.batchInsertText",
+                    null, // cursor
+                    parentBlock,
+                    "lastChild",
+                    contentProp.value,
+                    false, // skipMarkdown
+                    false, // skipTags
+                  );
+                }
+              } else {
+                // Direct markdown string
+                const content =
+                  typeof data === "string" ? data : JSON.stringify(data);
+                await orca.commands.invokeEditorCommand(
+                  "core.editor.batchInsertText",
+                  null, // cursor
+                  journalBlock,
+                  "lastChild",
+                  content,
+                  false, // skipMarkdown
+                  false, // skipTags
+                );
+              }
+            } else {
+              // Text Logic
+              const text =
+                typeof data === "string" ? data : JSON.stringify(data);
+              const lines = text
+                .split("\n")
+                .map((l) => l.trim())
+                .filter((l) => l.length > 0);
+              if (lines.length > 0) {
+                await orca.commands.invokeGroup(async () => {
+                  for (const line of lines) {
+                    await DataImporter.importBlock(
+                      {
+                        content: [{ t: "t", v: line }],
+                      },
+                      {
+                        type: "block",
+                        blockId: journalBlock.id,
+                        position: "lastChild",
+                      },
+                    );
+                  }
+                });
+              }
+            }
+          } else {
+            orca.notify("error", t("Could not find Daily Note"));
+          }
+        } catch (e) {
+          console.error("Failed to save selection to Daily Note", e);
+          orca.notify("error", t("Failed to save to Daily Note"));
+        }
+      },
+      (url: string) => {
+        this.lastVisitedUrl = url;
+      },
+      initialDocked,
+    );
+  }
+
+  private async saveMetadataBlockToDailyNote(
+    properties: MetadataProperty[],
+    rule: Rule | null,
+    url?: string,
+  ): Promise<any | null> {
+    try {
+      const journalBlock = await orca.invokeBackend(
+        "get-journal-block",
+        new Date(),
+      );
+
+      if (journalBlock) {
+        // 1. Construct Content (Link)
+        const titleProp = properties.find(
+          (p) => p.name === "标题" || p.name === "Title",
+        );
+        const linkProp = properties.find(
+          (p) => p.name === "链接" || p.name === "Link",
+        );
+        const title = titleProp?.value || "Untitled";
+        const linkUrl = linkProp?.value || url || "";
+
+        const content = [{ t: "l", v: title, l: linkUrl }];
+
+        // 2. Prepare Tags logic
+        const filteredProps = properties.filter(
+          (p) => p.name !== "正文" && p.name !== "Content",
+        );
+        const processedProps = await this.processProperties(
+          filteredProps,
+          rule?.downloadCover || false,
+        );
+
+        const tagsData = [
+          {
+            name: rule?.tagName || "Bookmark",
+            properties: processedProps,
+          },
+        ];
+
+        const blockData = {
+          content: content,
+          tags: tagsData,
+        };
+
+        const blockId = await DataImporter.importBlock(blockData, {
+          type: "block",
+          blockId: journalBlock.id,
+          position: "lastChild",
+        });
+
+        if (blockId) {
+          return await orca.invokeBackend("get-block", blockId);
+        }
+      }
+    } catch (e) {
+      this.logger.error("Failed to save metadata block to Daily Note", e);
+    }
+    return null;
+  }
+
+  private async processProperties(properties: any[], downloadCover: boolean) {
+    const finalProperties = [];
+    for (const prop of properties) {
+      let finalValue = prop.value;
+
+      // Check if this is an image property and download is enabled
+      if (
+        downloadCover &&
+        prop.typeArgs?.subType === "image" &&
+        typeof prop.value === "string" &&
+        prop.value.startsWith("http")
+      ) {
+        try {
+          this.logger.info(`Downloading cover image: ${prop.value}`);
+          const response = await fetch(prop.value);
+          if (response.ok) {
+            const arrayBuffer = await response.arrayBuffer();
+            const contentType =
+              response.headers.get("content-type") || "image/png";
+
+            const assetPath = await orca.invokeBackend(
+              "upload-asset-binary",
+              contentType,
+              arrayBuffer,
+            );
+
+            if (assetPath) {
+              this.logger.info(`Cover downloaded to: ${assetPath}`);
+              finalValue = assetPath;
+            }
+          }
+        } catch (e) {
+          this.logger.error("Error downloading cover image", e);
+        }
+      }
+
+      finalProperties.push({
+        name: prop.name,
+        type: prop.type,
+        value: finalValue,
+        typeArgs: prop.typeArgs,
+      });
+    }
+    return finalProperties;
+  }
+
+  private async applyMetadataToBlock(
+    blockId: number,
+    tagName: string,
+    properties: any[],
+    downloadCover: boolean = false,
+  ) {
+    const finalProperties = await this.processProperties(
+      properties,
+      downloadCover,
+    );
+
+    await DataImporter.applyTag(blockId, {
+      name: tagName,
+      properties: finalProperties,
+    });
+  }
+
+  private currentBrowserProps: any = null;
+
+  private openBrowserModal(
+    initialUrl: string,
+    rules: Rule[],
+    quickLinks: { name: string; url: string }[],
+    onExtract: (props: any[], rule: Rule | null) => void,
+    onSaveToDailyNote: (data: any, type?: string, rule?: Rule | null) => void,
+    onUrlChange: (url: string) => void,
+    initialDocked: boolean = false,
+  ) {
+    // If container doesn't exist, create it
+    if (!this.modalContainer) {
+      this.modalContainer = document.createElement("div");
+      document.body.appendChild(this.modalContainer);
+
+      const { createRoot } = window as any;
+      this.modalRoot = createRoot(this.modalContainer);
+    }
+
+    const handleClose = () => {
+      this.hideBrowserModal();
+    };
+
+    this.currentBrowserProps = {
+      onClose: handleClose,
+      initialUrl,
+      rules,
+      quickLinks,
+      onExtract,
+      onSaveToDailyNote,
+      onUrlChange,
+      initialDocked,
+    };
+
+    this.renderBrowserModal(true);
+  }
+
+  private renderBrowserModal(visible: boolean) {
+    if (!this.modalRoot || !this.currentBrowserProps) return;
+
+    this.modalRoot.render(
+      <BrowserModal visible={visible} {...this.currentBrowserProps} />,
+    );
+  }
+
+  private hideBrowserModal() {
+    this.renderBrowserModal(false);
+  }
+
+  // Renamed from closeBrowserModal to reflect it destroys the instance
+  private destroyBrowserModal() {
+    if (this.modalRoot) {
+      this.modalRoot.unmount();
+      this.modalRoot = null;
+    }
+    if (this.modalContainer) {
+      this.modalContainer.remove();
+      this.modalContainer = null;
+    }
+    this.currentBrowserProps = null;
+  }
+}

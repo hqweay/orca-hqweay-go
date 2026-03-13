@@ -117,6 +117,9 @@ class FormatUtil {
     // 去掉 1 , 234 , 567 这种千分位表示的数字内的空格
     content = content.replace(/([0-9])\s*,\s*([0-9])/g, "$1,$2");
 
+    // 中文冒号后面不需要空格
+    content = content.replace(/：\s*/g, "：");
+
     //去掉 「，  哈哈。 」这样的空格
     // content = content.replace(/([^-])\s*([，。、《》？『』「」；∶【】&｛｝！＠￥％…（）])\s*/g, "$1$2");
     content = content.replace(
@@ -238,7 +241,10 @@ class FormatUtil {
     content = content.replace(/(\w)\s*＋\s*(\w)/g, "$1 + $2");
     content = content.replace(/(\w)\s*｛\s*(\w)/g, "$1 {$2");
     content = content.replace(/(\w)\s*｝\s*(\w)/g, "$1} $2");
-    content = content.replace(/(\w)\s*[【\[]\s*(\w)/g, "$1 [$2");
+    // 不包含引用块才换避免 plugins[name].setting => plugins [name].setting
+    if (!/`.*?`/.test(content)) {
+      content = content.replace(/(\w)\s*[【\[]\s*(\w)/g, "$1 [$2");
+    }
     content = content.replace(/(\w)\s*[】\]]\s*(\w)/g, "$1] $2");
     content = content.replace(/(\w)\s*｜\s*(\w)/g, "$1 | $2");
     content = content.replace(/(\w)\s*＼\s*(\w)/g, "$1  $2");
@@ -340,6 +346,23 @@ class FormatUtil {
     //for me
     content = content.replaceAll("** **", " ");
     content = content.replaceAll("****", " ");
+
+    // 英文标点替换为中文标点；先只启用逗号，其他标点符号遇到再说。
+    content = content.replace(/,([\u4e00-\u9fa5\u3040-\u30FF])/g, "，$1");
+    // content = content.replace(/\.([\u4e00-\u9fa5\u3040-\u30FF])/g, "。$1");
+    // content = content.replace(/\?([\u4e00-\u9fa5\u3040-\u30FF])/g, "？$1");
+    // content = content.replace(/!([\u4e00-\u9fa5\u3040-\u30FF])/g, "！$1");
+    // content = content.replace(/;([\u4e00-\u9fa5\u3040-\u30FF])/g, "；$1");
+    // content = content.replace(/:([\u4e00-\u9fa5\u3040-\u30FF])/g, "：$1");
+    // content = content.replace(/\(([\u4e00-\u9fa5\u3040-\u30FF])/g, "（$1");
+    // content = content.replace(/\)([\u4e00-\u9fa5\u3040-\u30FF])/g, "）$1");
+    // content = content.replace(/\{([\u4e00-\u9fa5\u3040-\u30FF])/g, "｛$1");
+    // content = content.replace(/\}([\u4e00-\u9fa5\u3040-\u30FF])/g, "｝$1");
+    // content = content.replace(/\[(\u4e00-\u9fa5\u3040-\u30FF])/g, "【$1");
+    // content = content.replace(/\](\u4e00-\u9fa5\u3040-\u30FF])/g, "】$1");
+    // content = content.replace(/\<([\u4e00-\u9fa5\u3040-\u30FF])/g, "《$1");
+    // content = content.replace(/\>([\u4e00-\u9fa5\u3040-\u30FF])/g, "》$1");
+
     //end for me
     standardNames.forEach((ele: any) => {
       content = content.replace(ele.key, ele.value);

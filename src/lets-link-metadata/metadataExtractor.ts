@@ -1,7 +1,34 @@
-import { MetadataProperty } from "./types";
+import { MetadataProperty, Rule } from "./types";
 import { PropType } from "@/libs/consts";
+import { HTML_TO_MARKDOWN_SCRIPT, cleanUrl } from "./webviewScripts";
 
-const cleanUrl = (url: string) => url.split("?")[0].split("#")[0];
+// cleanUrl is imported from ./webviewScripts
+
+export function matchRule(url: string, rules: Rule[]): Rule | undefined {
+  return rules.find((rule: Rule) => {
+    if (!rule.enabled) return false;
+    try {
+      let regex: RegExp;
+      const pattern = rule.urlPattern.trim();
+
+      // Check if it's a regex literal string like "/pattern/i"
+      if (pattern.startsWith("/") && pattern.lastIndexOf("/") > 0) {
+        const lastSlashIndex = pattern.lastIndexOf("/");
+        const body = pattern.substring(1, lastSlashIndex);
+        const flags = pattern.substring(lastSlashIndex + 1);
+        regex = new RegExp(body, flags);
+      } else {
+        // Legacy/Simple string support
+        regex = new RegExp(pattern, "i");
+      }
+
+      return regex.test(url);
+    } catch (e) {
+      console.error(`Invalid regex for rule ${rule.name}`, e);
+      return false;
+    }
+  });
+}
 
 export async function extractMetadata(
   url: string,
@@ -25,16 +52,16 @@ export async function extractMetadata(
     const response = await fetch(url, fetchOptions);
 
     if (!response.ok) {
-        console.warn(`Fetch error: ${response.status}`);
-        // Depending on requirements, we might want to throw or return empty
-        // The original code warned and proceeded, but usually fetch failure means no HTML.
-        // Let's trying reading text anyway, or throw if critical.
-        // Original code: if (!response.ok) warn. Then await response.text().
-        // If response is not ok, text() might be error page.
-        if (response.status >= 400) {
-            // Treat 4xx/5xx as failure enough to maybe not give good metadata?
-            // But let's follow original flow: warn and try to parse.
-        }
+      console.warn(`Fetch error: ${response.status}`);
+      // Depending on requirements, we might want to throw or return empty
+      // The original code warned and proceeded, but usually fetch failure means no HTML.
+      // Let's trying reading text anyway, or throw if critical.
+      // Original code: if (!response.ok) warn. Then await response.text().
+      // If response is not ok, text() might be error page.
+      if (response.status >= 400) {
+        // Treat 4xx/5xx as failure enough to maybe not give good metadata?
+        // But let's follow original flow: warn and try to parse.
+      }
     }
 
     const html = await response.text();
@@ -43,26 +70,38 @@ export async function extractMetadata(
     const cleanedUrl = cleanUrl(url);
 
     // 1. Extract Generic Metadata (Base)
-    const baseMeta = getGenericMetadata(doc, cleanedUrl);
+    const baseMetaResults = getGenericMetadata(doc, cleanedUrl);
+    // Convert array of MetadataProperty to a flat object for baseMeta
+    const baseMeta: any = {};
+    baseMetaResults.forEach((p) => {
+      if (p.name === "标题") baseMeta.title = p.value;
+      if (p.name === "封面") baseMeta.thumbnail = p.value;
+    });
 
     // Join script lines
     const scriptBody = script.join("\n");
 
     // Create a function from the script string
-    // Arguments: doc, url, PropType, cleanUrl, baseMeta
+    // Arguments: doc, url, PropType, cleanUrl, baseMeta, htmlToMarkdown
     const extractorFn = new Function(
       "doc",
       "url",
       "PropType",
       "cleanUrl",
       "baseMeta",
-      scriptBody,
+      "htmlToMarkdown",
+      HTML_TO_MARKDOWN_SCRIPT + scriptBody,
     );
 
     // Execute the script
-    const result = extractorFn(doc, cleanedUrl, PropType, cleanUrl, baseMeta);
-
-    // Ensure result is array
+    const result = extractorFn(
+      doc,
+      cleanedUrl,
+      PropType,
+      cleanUrl,
+      baseMeta,
+      null, // htmlToMarkdown is defined inside the script body via HTML_TO_MARKDOWN_SCRIPT prefix
+    ); // Ensure result is array
     if (!Array.isArray(result)) {
       console.warn("Script returned non-array:", result);
       return [];

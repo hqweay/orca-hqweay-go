@@ -59,10 +59,13 @@ One-click publish Orca notes as Markdown blog posts:
 - **Image Hosting Integration**: Automatically extract images and upload to a specified GitHub repo (supports deduplication).
 - **Blog Deployment**: Push Markdown content to blog repositories (compatible with Hexo/Jekyll/Hugo, etc.).
 - **Smart Metadata**:
-  - Automatically generates Frontmatter.
-  - Records `github_url` and `blog_url` (clickable).
-  - Automatically maintains `publish_date` creation time.
-  - Only effective for Page Blocks.
+    - Automatically generates Frontmatter.
+    - Records `github_url` and `blog_url` (clickable).
+    - Automatically maintains `publish_date` creation time.
+    - Only effective for Page Blocks.
+- **Poetry Mode**:
+    - **Compact Formatting**: Triggered by tag, compresses double newlines to single newlines.
+    - **Hard Breaks**: Automatically appends two spaces to each line to ensure standard Markdown hard breaks.
 
 ### 7. 🏪 Plugin Bazaar
 
@@ -81,6 +84,39 @@ Boost your tagging efficiency with custom shortcuts:
 - **Paste from Clipboard**:
   - Supports the standard `{ type: "orca-tags", tags: [...], content: ... }` format.
   - **Rich Text Support**: Insert text fragments (ContentFragment) with links or formatting alongside tags.
+
+### 9. 🌳 Heading Tree 🥰 [SaXz2](https://github.com/SaXz2)
+Intelligently reorganize document structure based on heading hierarchy:
+
+- **Auto Level Detection**: Smart recognition of H1-H4 heading hierarchy relationships.
+- **Sibling Preservation**: Same-level headings maintain their sibling relationship without incorrect staircase indentation.
+- **Smart Movement**: Only moves blocks that need adjustment; blocks already in correct positions remain unchanged.
+- **Text Attribution**: Plain text blocks automatically become children of the nearest heading.
+- **Level Gap Handling**: Supports missing intermediate levels (e.g., H1 → H3).
+
+- **Level Gap Handling**: Supports missing intermediate levels (e.g., H1 → H3).
+
+### 10. 🌐 Web Assistant
+
+An all-in-one web enhancement tool combining **Metadata Extraction**, **Internal Browsing**, and **Content Clipping**:
+
+-   **Smart Extraction**:
+    -   **Auto Mode**: One-click extract link metadata (title, cover, summary) to create beautiful cards.
+    -   **Rule Engine**: Built-in rules (e.g., Douban) and support for custom JavaScript extraction scripts.
+-   **Internal Browser**:
+    -   **Seamless Browsing**: Open web pages directly within the note app, no need to switch windows.
+    -   **Force Navigation**: Automatically handles `target="_blank"` redirection to keep you in the current window.
+    -   **Quick Access**: Custom shortcuts for frequently used sites (Google, Wiki, etc.).
+-   **Web Clipper**:
+    -   **WYSIWYG Clipping**: Select text in the browser, right-click, and **"Save to Daily Note"** instantly.
+    -   **Markdown Engine**: Automatically converts HTML to Markdown (preserving headers, links, bolding, etc.).
+    -   **Structured Clipping**: Creates a "Bookmark Block" (with title, link, cover, tags) and inserts content as nested child blocks.
+    -   **Interactive Extraction**: Handles pages requiring login or dynamic loading.
+-   **Mobile Simulation**:
+    -   One-click switch to mobile User Agent for a cleaner, reading-friendly layout (optimized for sites like Douban).
+-   **Flexible Config**:
+    -   Supports top-bar customization (Standalone button or Actions menu).
+    -   Supports inserting data into the current block or creating new blocks.
 
 ## Development
 

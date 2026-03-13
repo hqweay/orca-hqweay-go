@@ -62,6 +62,133 @@ export default class TagShortcutsPlugin extends BasePlugin {
             return null;
           }
 
+          // Deduplication Check
+          // Deduplication Check
+          const primaryKeyConfig = json.primaryKey;
+          if (primaryKeyConfig) {
+            // Normalize to map: { tagName: propertyName }
+            let keyMap: Record<string, string> = {};
+            if (typeof primaryKeyConfig === "string") {
+              // Legacy/Simple mode: Apply to all tags having this property?
+              // Or imply it applies to *some* tag?
+              // The original logic was: find *first* tag with this property.
+              // To preserve behavior while supporting map:
+              // We'll search for this property in all tags.
+              // BUT for clarity, let's just implement the loop check dynamically
+              // if it's a string, or lookup if it's a map.
+            }
+
+            outerLoop: for (const item of tags) {
+              for (const [tagName, props] of Object.entries(item)) {
+                if (Array.isArray(props)) {
+                  let targetPropertyName: string | undefined;
+
+                  if (typeof primaryKeyConfig === "string") {
+                    targetPropertyName = primaryKeyConfig;
+                  } else if (
+                    typeof primaryKeyConfig === "object" &&
+                    primaryKeyConfig !== null
+                  ) {
+                    targetPropertyName = primaryKeyConfig[tagName];
+                  }
+
+                  if (targetPropertyName) {
+                    const prop = props.find(
+                      (p: any) => p.name === targetPropertyName,
+                    );
+                    if (prop) {
+                      const targetValue = prop.value;
+                      try {
+                        const resultIds = await orca.invokeBackend("query", {
+                          q: {
+                            kind: 100, // QueryKindSelfAnd
+                            conditions: [
+                              {
+                                kind: 4, // QueryKindTag
+                                name: tagName,
+                                properties: [
+                                  {
+                                    name: targetPropertyName,
+                                    op: 1, // QueryOp.Equal
+                                    value: targetValue,
+                                  },
+                                ],
+                                selfOnly: true,
+                              },
+                            ],
+                          },
+                          pageSize: 1,
+                        });
+
+                        if (Array.isArray(resultIds) && resultIds.length > 0) {
+                          orca.notify(
+                            "warn",
+                            t(
+                              "Skipped duplicate block (Key: ${key}, Value: ${value})",
+                              {
+                                key: targetPropertyName,
+                                value: targetValue,
+                              },
+                            ),
+                          );
+                          return null; // Stop execution
+                        }
+                      } catch (err) {
+                        this.logger.error("Deduplication query failed", err);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          // Handle Image Download
+          if (json.downloadImages === true) {
+            orca.notify("info", t("Downloading images..."));
+            for (const item of tags) {
+              for (const [tagName, props] of Object.entries(item)) {
+                if (Array.isArray(props)) {
+                  for (const prop of props) {
+                    if (
+                      prop.typeArgs?.subType === "image" &&
+                      typeof prop.value === "string" &&
+                      prop.value.startsWith("http")
+                    ) {
+                      try {
+                        this.logger.info(
+                          `Downloading cover image: ${prop.value}`,
+                        );
+                        // Using fetch directly as we are in a browser environment context (plugin)
+                        const response = await fetch(prop.value);
+                        if (response.ok) {
+                          const arrayBuffer = await response.arrayBuffer();
+                          const contentType =
+                            response.headers.get("content-type") || "image/png";
+
+                          const assetPath = await orca.invokeBackend(
+                            "upload-asset-binary",
+                            contentType,
+                            arrayBuffer,
+                          );
+
+                          if (assetPath) {
+                            this.logger.info(
+                              `Cover downloaded to: ${assetPath}`,
+                            );
+                            prop.value = assetPath;
+                          }
+                        }
+                      } catch (e) {
+                        this.logger.error("Error downloading cover image", e);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+
           // Convert to BlockData
           const blockData: BlockData = {
             content: json.content,
@@ -265,11 +392,15 @@ function ShortcutsSettings({ plugin }: { plugin: TagShortcutsPlugin }) {
                 // Copy example JSON to clipboard
                 const exampleJson = `{
   "type": "orca-tags",
-  "text": [
+  "content": [
     { "t": "t", "v": "Check our " },
     { "t": "l", "v": "Orca Documentation", "l": "https://orca.so/docs" }
   ],
-  "data": [
+  "primaryKey": {
+    "任务标签": "参考链接"
+  },
+  "downloadImages": true,
+  "tags": [
     {
       "任务标签": [
         {

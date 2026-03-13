@@ -96,6 +96,7 @@ export default class PublishPlugin extends BasePlugin {
     const blogToken = (settings.blog?.token || "").trim();
     const ibToken = (settings.imageBed?.token || "").trim();
     const tagLabel = settings.tagLabel || "已发布";
+    const poetryTag = settings.poetryTag || "";
 
     if (!ibToken || !blogToken) {
       throw new Error("Missing GitHub tokens in settings.");
@@ -133,6 +134,10 @@ export default class PublishPlugin extends BasePlugin {
         .map((t) => t.trim());
     }
 
+    if (poetryTag && tagList.includes(poetryTag)) {
+      mdContent = mdContent.replace(/\n\n/g, "\n").replace(/\n/g, "  \n");
+    }
+
     // Ensure "博客" tag is present for the blog post
     // if (!tagList.includes("博客")) {
     //   tagList.push("博客");
@@ -148,14 +153,17 @@ export default class PublishPlugin extends BasePlugin {
     if (title && title !== "Untitled") {
       // Convert to pinyin: '你好 world' -> 'ni-hao-world'
       // Use pinyin-pro to get pinyin without tone, and joined by dashes
+      // Use pinyin-pro options to handle numbers and separator cleanly
       const pinyinTitle = pinyin(title, {
         toneType: "none",
         v: true,
+        nonZh: "consecutive", // Merge non-Chinese characters (e.g. "2025")
+        separator: "-", // Join with dashes
       })
         .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, "") // Remove special chars
+        .replace(/[^a-z0-9\s-]/g, "") // Remove special chars (keep spaces and dashes)
         .trim()
-        .replace(/\s+/g, "-") // Replace spaces with dashes
+        .replace(/\s+/g, "-") // Replace remaining spaces with dashes
         .replace(/-+/g, "-"); // Collapse multiple dashes
 
       slug = `${pinyinTitle}-${block.id}`;
@@ -820,12 +828,23 @@ function PublishSettings({ plugin }: { plugin: PublishPlugin }) {
       <SettingsSection title={t("Other")}>
         <SettingsItem
           label={t("Tag Label")}
-          description={t("Tag Label for Published Blocks")}
+          description={t("Tag name to mark as published (default: 已发布)")}
         >
           <Input
             // @ts-ignore
             value={config.tagLabel || "已发布"}
             onChange={(e: any) => updateConfig("tagLabel", e.target.value)}
+          />
+        </SettingsItem>
+
+        <SettingsItem
+          label={t("Poetry Tag")}
+          description={t("Tag name to trigger poetry mode (compact newlines)")}
+        >
+          <Input
+            // @ts-ignore
+            value={config.poetryTag || ""}
+            onChange={(e: any) => updateConfig("poetryTag", e.target.value)}
           />
         </SettingsItem>
       </SettingsSection>

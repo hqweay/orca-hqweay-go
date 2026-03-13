@@ -1,19 +1,12 @@
 import { formatUtil } from "@/libs/format";
 import { setupL10N, t } from "@/libs/l10n";
 import { BasePlugin } from "@/libs/BasePlugin";
-import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
-import React, { useState } from "react";
+import React from "react";
 
 export default class FormatPlugin extends BasePlugin {
-  protected settingsComponent = FormatSettings;
+  protected headbarButtonId = `${this.name}.format-block`;
 
   public async load(): Promise<void> {
-    const settings = this.getSettings();
-    const headbarMode = settings.headbarMode || "actions";
-    if (headbarMode === "standalone" || headbarMode === "both") {
-      this.registerHeadbar();
-    }
-
     orca.commands.registerCommand(
       `${this.name}.format-block`,
       async () => {
@@ -148,7 +141,7 @@ export default class FormatPlugin extends BasePlugin {
     this.logger.info(`${this.name} unloaded.`);
   }
 
-  public getHeadbarMenuItems(closeMenu: () => void): React.ReactNode[] {
+  protected renderHeadbarMenuItems(closeMenu: () => void): React.ReactNode[] {
     const MenuText = orca.components.MenuText;
     return [
       React.createElement(MenuText, {
@@ -168,22 +161,9 @@ export default class FormatPlugin extends BasePlugin {
 
   public renderHeadbarButton(): React.ReactNode {
     const Button = orca.components.Button;
+    const Tooltip = orca.components.Tooltip;
     return (
-      <Button
-        variant="plain"
-        onClick={async () =>
-          orca.commands.invokeCommand(`${this.name}.format-block`)
-        }
-      >
-        <i className="ti ti-refresh" />
-      </Button>
-    );
-  }
-
-  private registerHeadbar() {
-    const Button = orca.components.Button;
-    if (orca.state.headbarButtons[`${this.name}.format-block`] == null) {
-      orca.headbar.registerHeadbarButton(`${this.name}.format-block`, () => (
+      <Tooltip text={t("Format Block")}>
         <Button
           variant="plain"
           onClick={async () =>
@@ -192,46 +172,7 @@ export default class FormatPlugin extends BasePlugin {
         >
           <i className="ti ti-refresh" />
         </Button>
-      ));
-    }
+      </Tooltip>
+    );
   }
-
-  protected async onConfigChanged(newConfig: any): Promise<void> {
-    const headbarMode = newConfig.headbarMode || "actions";
-    if (headbarMode === "standalone" || headbarMode === "both") {
-      this.registerHeadbar();
-    } else {
-      orca.headbar.unregisterHeadbarButton(`${this.name}.format-block`);
-    }
-  }
-}
-
-function FormatSettings({ plugin }: { plugin: FormatPlugin }) {
-  const settings = plugin["getSettings"]();
-  const [headbarMode, setHeadbarMode] = useState(
-    settings.headbarMode || "both",
-  );
-
-  const updateMode = async (value: string) => {
-    setHeadbarMode(value);
-    await plugin.updateSettings({ headbarMode: value });
-  };
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      <SettingsSection title={t("Headbar Display Mode")}>
-        <SettingsItem label={t("Display Mode")}>
-          <orca.components.Select
-            selected={[headbarMode]}
-            options={[
-              { value: "actions", label: t("Actions Menu") },
-              { value: "standalone", label: t("Standalone Button") },
-              { value: "both", label: t("Both") },
-            ]}
-            onChange={(selected) => updateMode(selected[0])}
-          />
-        </SettingsItem>
-      </SettingsSection>
-    </div>
-  );
 }

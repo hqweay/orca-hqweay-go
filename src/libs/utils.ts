@@ -52,3 +52,21 @@ export function getRepr(block: Block): any {
   }
   return repr;
 }
+
+/**
+ * Fetch blocks by IDs using memory-first strategy.
+ * Checks orca.state.blocks first, then falls back to backend "get-block".
+ */
+export async function getBlocks(blockIds: number[]): Promise<Block[]> {
+  const blocks: any[] = [];
+  for (const id of blockIds) {
+    let block = orca.state.blocks[id];
+    if (!block) {
+      block = await orca.invokeBackend("get-block", id);
+    }
+    if (block) {
+      blocks.push(block);
+    }
+  }
+  return blocks;
+}

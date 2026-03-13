@@ -90,9 +90,6 @@ export class CSVImporter {
 
       // 1. Resolve Target Parent Block
       const targetParentId = await this.resolveTargetId(config);
-      if (!targetParentId) {
-        throw new Error(t("csv.import.targetResolveError"));
-      }
 
       console.log("Target parent ID:", targetParentId);
 
@@ -100,21 +97,23 @@ export class CSVImporter {
       let failed = 0;
 
       // 2. Process rows using DataImporter
-      for (const data of dataObjects) {
-        try {
-          const importData = this.mapRowToBlockData(data, config, headers);
-          console.log("Importing block:", importData);
-          await DataImporter.importBlock(importData, {
-            type: "block",
-            blockId: targetParentId,
-            position: "lastChild",
-          });
-          success++;
-        } catch (error) {
-          console.error("Failed to import row:", error);
-          failed++;
+      await orca.commands.invokeGroup(async () => {
+        for (const data of dataObjects) {
+          try {
+            const importData = this.mapRowToBlockData(data, config, headers);
+            console.log("Importing block:", importData);
+            await DataImporter.importBlock(importData, {
+              type: "block",
+              blockId: targetParentId || null,
+              position: "lastChild",
+            });
+            success++;
+          } catch (error) {
+            console.error("Failed to import row:", error);
+            failed++;
+          }
         }
-      }
+      });
 
       return { success, failed };
     } catch (error) {
@@ -151,7 +150,14 @@ export class CSVImporter {
     let content = (data[contentColumnKey] || "").trim();
     let contentFragment: any[] = [];
     if (content.startsWith("http://") || content.startsWith("https://")) {
-      contentFragment = [{ t: "l", v: `${content}`, l: `${content}` }];
+      // 如果是链接，默认以第一列作为链接文本
+      contentFragment = [
+        {
+          t: "l",
+          v: `${data[headers[0]]?.trim() || content}`,
+          l: `${content}`,
+        },
+      ];
     } else {
       contentFragment = [{ t: "t", v: `${content}` }];
     }

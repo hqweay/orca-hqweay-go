@@ -1,11 +1,13 @@
 import React from "react";
 import { Logger } from "./logger";
 import { t } from "./l10n";
+import { PluginSettings } from "@/components/PluginSettings";
 
 export abstract class BasePlugin {
   protected mainPluginName: string;
   protected logger: Logger;
   protected name: string;
+  protected headbarButtonId: string | null = null;
   protected isLoaded: boolean = false;
 
   constructor(mainPluginName: string, name: string) {
@@ -26,10 +28,22 @@ export abstract class BasePlugin {
 
   public abstract unload(): Promise<void>;
 
+  /**
+   * Render headbar button for this plugin.
+   * Return null if no button needed.
+   */
+  public renderHeadbarButton(): React.ReactNode {
+    return null;
+  }
+
   public async safeLoad() {
     if (this.isLoaded) return;
     await this.load();
     this.isLoaded = true;
+
+    // Auto register headbar if needed
+    this.syncHeadbar();
+
     this.logger.info("Sub-plugin loaded");
   }
 
@@ -37,7 +51,38 @@ export abstract class BasePlugin {
     if (!this.isLoaded) return;
     await this.unload();
     this.isLoaded = false;
+
+    // Auto unregister headbar
+    this.unregisterHeadbar();
+
     this.logger.info("Sub-plugin unloaded");
+  }
+
+  protected syncHeadbar() {
+    if (!this.headbarButtonId) return;
+
+    const settings = this.getSettings();
+    const mode = settings.headbarMode || "both";
+
+    const needsButton = mode === "standalone" || mode === "both";
+    const isRegistered = !!orca.state.headbarButtons[this.headbarButtonId];
+
+    if (needsButton) {
+      if (!isRegistered) {
+        orca.headbar.registerHeadbarButton(
+          this.headbarButtonId,
+          () => this.renderHeadbarButton() as React.ReactElement,
+        );
+      }
+    } else {
+      this.unregisterHeadbar();
+    }
+  }
+
+  protected unregisterHeadbar() {
+    if (this.headbarButtonId) {
+      orca.headbar.unregisterHeadbarButton(this.headbarButtonId);
+    }
   }
 
   public getSettingsSchema(): any {
@@ -64,23 +109,57 @@ export abstract class BasePlugin {
    */
   public async initializeSettings(): Promise<void> {
     const rawData = await orca.plugins.getData(this.mainPluginName, this.name);
+    let diskConfig = {};
+
     if (rawData && typeof rawData === "string") {
       try {
-        this._config = JSON.parse(rawData);
+        diskConfig = JSON.parse(rawData);
       } catch (e) {
         this.logger.error("Failed to parse settings", e);
-        this._config = {};
       }
-    } else {
-      this._config = rawData || {};
+    } else if (rawData && typeof rawData === "object") {
+      diskConfig = rawData;
     }
+
+    // Merge with defaults
+    this._config = { ...this.getDefaultSettings(), ...diskConfig };
   }
 
   /**
    * Get the settings scoped to this sub-plugin
    */
-  protected getSettings(): any {
+  public getSettings(): any {
     return this._config;
+  }
+
+  /**
+   * Return the default settings for this sub-plugin.
+   * Override this in child classes to provide specific defaults.
+   */
+  public getDefaultSettings(): any {
+    return {
+      headbarMode: "both",
+    };
+  }
+
+  /**
+   * Restore settings to their default values.
+   */
+  public async restoreDefaultSettings(): Promise<void> {
+    const defaults = this.getDefaultSettings();
+    // Replacing entirely, not merging
+    this._config = { ...defaults };
+
+    // Persist immediately
+    await orca.plugins.setData(
+      this.mainPluginName,
+      this.name,
+      JSON.stringify(this._config),
+    );
+
+    // Trigger effects
+    await this.onConfigChanged(this._config);
+    this.logger.info("Settings restored to defaults");
   }
 
   /**
@@ -109,7 +188,11 @@ export abstract class BasePlugin {
     }
 
     this._saveTimer = setTimeout(async () => {
-      this.logger.info("Persisting settings after debounce", this._config);
+      this.logger.info(
+        "Persisting settings after debounce",
+        this.name,
+        this._config,
+      );
 
       // Persistence
       await orca.plugins.setData(
@@ -128,10 +211,10 @@ export abstract class BasePlugin {
 
   /**
    * Hook called when configuration is updated via updateSettings.
-   * Default implementation does nothing.
+   * Default implementation handles headbar visibility syncing.
    */
   protected async onConfigChanged(_newConfig: any): Promise<void> {
-    // Override in sub-plugins
+    this.syncHeadbar();
   }
 
   /**
@@ -157,10 +240,29 @@ export abstract class BasePlugin {
   }
 
   /**
-   * Return an array of menu items to be displayed in the global Actions menu.
-   * Default implementation returns an empty array.
+   * (系统调用) 获取要在顶部栏动作菜单中显示的项。
+   * 默认会根据 headbarMode 设置自动决定是否调用 renderHeadbarMenuItems。
    */
-  public getHeadbarMenuItems(_closeMenu: () => void): React.ReactNode[] {
+  public getHeadbarMenuItems(closeMenu: () => void): React.ReactNode[] {
+    const settings = this.getSettings();
+    const headbarMode = settings.headbarMode || "both";
+
+    // 如果设置为仅独立按钮，则不显示在动作菜单中
+    if (headbarMode === "standalone") {
+      return [];
+    }
+
+    return this.renderHeadbarMenuItems(closeMenu);
+  }
+
+  /**
+   * 渲染子插件特有的顶部栏动作菜单项。
+   *
+   * 场景：
+   * 1. 只有当 headbarMode 为 'actions' 或 'both' 时才会被调用。
+   * 2. 子插件只需返回具体的菜单项数组。
+   */
+  protected renderHeadbarMenuItems(_closeMenu: () => void): React.ReactNode[] {
     return [];
   }
 
@@ -178,17 +280,52 @@ export abstract class BasePlugin {
 
   /**
    * Override this property to return the React component for the settings UI.
+   * Internal use, please use renderCustomSettings for simpler customization.
    */
   protected settingsComponent: React.ComponentType<{ plugin: any }> | null =
     null;
 
   /**
-   * Render the settings for this sub-plugin.
-   * Default implementation uses this.settingsComponent.
+   * Render custom settings UI for this sub-plugin.
+   * Override this instead of renderSettings for standard layout.
+   */
+  protected renderCustomSettings(): React.ReactNode {
+    return null;
+  }
+
+  /**
+   * Check if this sub-plugin has any settings to display.
+   */
+  public hasSettings(): boolean {
+    if (this.settingsComponent) return true;
+    if (this.headbarButtonId) return true;
+    if (this.renderCustomSettings() !== null) return true;
+    return false;
+  }
+
+  /**
+   * 渲染插件的设置界面。
+   *
+   * 场景：
+   * 1. 框架自动调用，用于在设置中心展示该子插件的配置项。
+   * 2. 默认会自动包裹 PluginSettings (包含顶部栏显示模式切换)。
+   *
+   * 注意：
+   * - 如果只需要增加简单的业务配置，请优先覆盖 renderCustomSettings()。
+   * - 只有在需要完全接管整个设置页渲染逻辑时，才手动赋值 settingsComponent。
    */
   public renderSettings(): React.ReactNode | null {
-    if (!this.settingsComponent) return null;
-    return React.createElement(this.settingsComponent, { plugin: this });
+    const content = this.settingsComponent
+      ? React.createElement(this.settingsComponent, { plugin: this })
+      : React.createElement(PluginSettings, {
+          plugin: this as any,
+          customSettings: this.renderCustomSettings(),
+        });
+
+    return React.createElement(SettingWrapper, {
+      plugin: this,
+      children: content,
+    });
   }
 
   protected defineSetting(key: string, label: string, desc: string, def = "") {
@@ -201,4 +338,51 @@ export abstract class BasePlugin {
       },
     };
   }
+}
+
+function SettingWrapper({
+  plugin,
+  children,
+}: {
+  plugin: BasePlugin;
+  children: React.ReactNode;
+}) {
+  const [version, setVersion] = React.useState(0);
+
+  const handleRestore = async () => {
+    if (confirm(t("Are you sure you want to restore default settings?"))) {
+      await plugin.restoreDefaultSettings();
+      setVersion((v) => v + 1);
+      orca.notify("success", t("Settings restored to defaults"));
+    }
+  };
+
+  return React.createElement(
+    "div",
+    {
+      key: version,
+      style: { display: "flex", flexDirection: "column", gap: "24px" },
+    },
+    children,
+    React.createElement(
+      "div",
+      {
+        style: {
+          marginTop: "16px",
+          paddingTop: "16px",
+          borderTop: "1px solid var(--orca-color-border)",
+          display: "flex",
+          justifyContent: "flex-end",
+        },
+      },
+      React.createElement(
+        orca.components.Button,
+        {
+          variant: "outline",
+          onClick: handleRestore,
+        },
+        t("Restore to Defaults"),
+      ),
+    ),
+  );
 }

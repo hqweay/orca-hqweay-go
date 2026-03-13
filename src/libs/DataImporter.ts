@@ -21,7 +21,7 @@ export interface BlockData {
 
 export interface InsertTarget {
   type: "block" | "cursor";
-  blockId?: number; // Only for "block" type
+  blockId?: number | null; // Only for "block" type
   position?: "firstChild" | "lastChild" | "before" | "after";
   cursor?: any; // CursorData from editor command
 }
@@ -50,9 +50,8 @@ export class DataImporter {
         blockId = anchor.blockId;
       } else {
         const parentId = target.blockId;
-        if (!parentId) return null;
 
-        const parentBlock = orca.state.blocks[parentId];
+        const parentBlock = parentId ? orca.state.blocks[parentId] : null;
         const fragments = this.normalizeContent(data.content);
 
         blockId = await orca.commands.invokeEditorCommand(
@@ -124,7 +123,7 @@ export class DataImporter {
           type: p.type,
           value: choicesValues,
           typeArgs: {
-            choices: choicesValues.map((v) => ({ n: v, c: "" })),
+            choices: choicesValues,
             subType: "multi",
           },
           pos: 0,
