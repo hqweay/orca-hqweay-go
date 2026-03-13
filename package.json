@@ -1,11 +1,11 @@
 {
   "name": "orca-hqweay-go",
-  "version": "1.12.9",
+  "version": "1.12.10",
   "description": "虎鲸笔记插件：恐龙工具箱",
   "type": "module",
   "scripts": {
     "dev": "vite build --watch --mode development",
-    "build": "rm -rf build && NODE_ENV=production tsc && vite build",
+    "build": "NODE_ENV=production tsc && vite build",
     "preview": "vite preview",
     "utils:changelog": "conventional-changelog -p angular -i CHANGELOG.md -s -r 0",
     "version": "pnpm utils:changelog && git add CHANGELOG.md"
