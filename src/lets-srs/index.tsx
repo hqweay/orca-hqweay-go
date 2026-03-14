@@ -1,4 +1,4 @@
-import { DbId, PanelProps } from "@/orca";
+import { DbId, PanelProps, QueryDescription2 } from "@/orca";
 import { BasePlugin } from "../libs/BasePlugin";
 import { t } from "../libs/l10n";
 import { ensureCardTagSchema } from "./core/tagSchema";
@@ -115,6 +115,7 @@ export default class SrsPlugin extends BasePlugin {
                   // 如果只选择了一个块且是查询块，则漫游其结果
                   if (blockIds.length === 1) {
                     const blockId = blockIds[0];
+
                     const block = orca.state.blocks[blockId];
                     const queryBlockRepr = block?.properties.find(
                       (p: any) => p.name === "_repr",
@@ -130,11 +131,18 @@ export default class SrsPlugin extends BasePlugin {
                     }
 
                     queryBlockRepr.q.page = 1;
-                    queryBlockRepr.q.pageSize = 1000;
-                    const queryResults: DbId[] = await orca.invokeBackend(
-                      "query",
-                      queryBlockRepr.q,
-                    );
+                    queryBlockRepr.q.pageSize = 500;
+                    // const queryResults: DbId[] = await orca.invokeBackend(
+                    //   "query",
+                    //   queryBlockRepr.q,
+                    // );
+
+                    const queryResults = (await orca.invokeBackend("query", {
+                      q: JSON.parse(JSON.stringify(queryBlockRepr.q.q)),
+                      page: 1,
+                      pageSize: 1000,
+                      sort: [],
+                    } as QueryDescription2)) as DbId[];
 
                     this.logger.info("Query results22", queryResults);
                     if (!queryResults?.length) {
