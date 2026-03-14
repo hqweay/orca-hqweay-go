@@ -454,7 +454,6 @@ export function ReviewPanel(props: RendererProps) {
                 style={{
                   flex: 1,
                   borderRadius: 8,
-                  borderColor: "var(--orca-border)",
                 }}
               >
                 {t("Skip")}
