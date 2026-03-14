@@ -7,3 +7,6 @@
 [submodule "vendor/orca-plugin-task-planner"]
 	path = vendor/orca-plugin-task-planner
 	url = git@github.com:litcu/orca-plugin-task-planner.git
+[submodule "vendor/orca-random-walk"]
+	path = vendor/orca-random-walk
+	url = git@github.com:sethyuan/orca-random-walk.git
