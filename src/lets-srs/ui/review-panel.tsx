@@ -92,14 +92,17 @@ export function ReviewPanel(props: RendererProps) {
     if (history.length === 0) return;
     const newHistory = [...history];
     const prevIndex = newHistory.pop();
-    
+
     if (prevIndex !== undefined) {
       const cardToRevert = cards[prevIndex];
       if (cardToRevert) {
         try {
           await revertCardToState(cardToRevert);
         } catch (err) {
-          console.error("[lets-srs] failed to revert card state during undo", err);
+          console.error(
+            "[lets-srs] failed to revert card state during undo",
+            err,
+          );
         }
       }
       setHistory(newHistory);
@@ -142,12 +145,12 @@ export function ReviewPanel(props: RendererProps) {
 
     const selectors = [
       ".orca-block-handle",
-      ".orca-repr-handle",
-      ".orca-block-bullet",
-      '[data-role="bullet"]',
-      ".orca-block-drag-handle",
-      ".orca-repr-collapse",
-      ".orca-breadcrumb",
+      // ".orca-repr-handle",
+      // ".orca-block-bullet",
+      // '[data-role="bullet"]',
+      // ".orca-block-drag-handle",
+      // ".orca-repr-collapse",
+      // ".orca-breadcrumb",
     ];
 
     const hiddenElements: HTMLElement[] = [];
@@ -356,20 +359,19 @@ export function ReviewPanel(props: RendererProps) {
     );
   };
 
-  return (
-    <BlockShell
-      panelId={props.panelId}
-      blockId={props.blockId}
-      rndId={props.rndId}
-      mirrorId={props.mirrorId}
-      blockLevel={props.blockLevel}
-      indentLevel={props.indentLevel}
-      initiallyCollapsed={props.initiallyCollapsed}
-      renderingMode={props.renderingMode}
-      reprClassName="lets-srs-review-session"
-      contentClassName="lets-srs-review-session-content"
-      contentJsx={renderContent()}
-      childrenJsx={null}
-    />
-  );
+  return renderContent();
+  // <BlockShell
+  //   panelId={props.panelId}
+  //   blockId={props.blockId}
+  //   rndId={props.rndId}
+  //   mirrorId={props.mirrorId}
+  //   blockLevel={props.blockLevel}
+  //   indentLevel={props.indentLevel}
+  //   initiallyCollapsed={props.initiallyCollapsed}
+  //   renderingMode={props.renderingMode}
+  //   reprClassName="lets-srs-review-session"
+  //   contentClassName="lets-srs-review-session-content"
+  //   contentJsx={renderContent()}
+  //   childrenJsx={null}
+  // />
 }
