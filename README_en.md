@@ -119,6 +119,22 @@ An all-in-one web enhancement tool combining **Metadata Extraction**, **Internal
     -   Supports top-bar customization (Standalone button or Actions menu).
     -   Supports inserting data into the current block or creating new blocks.
 
+### 11. 🧠 Spaced Repetition (SRS)
+
+An efficient tool for memory and knowledge exploration based on the FSRS algorithm:
+
+- **FSRS Algorithm Integration**: Integrates [ts-fsrs](https://github.com/open-spaced-repetition/ts-fsrs) to intelligently schedule review tasks based on the forgetting curve.
+- **Roaming Mode**:
+  - **Contextual Roaming**: When starting a roam for a single block, it automatically collects subtree content, outgoing references, and backlinks to explore related knowledge while reviewing.
+  - **Dynamic Query Roaming**: Directly converts real-time search results from Query blocks (e.g., "#bookmark") into a review task stream.
+- **Seamless Conversion & Persistence**:
+  - **Automatic Conversion**: Simply "Mark as Read" or "Grade" during roaming to automatically convert regular blocks into flashcards (attaches `#Card` tag).
+  - **Comprehensive Tracking**: Supports saving remarks, flagging, and switching statuses (Archive/Suspend).
+- **Optimized Interaction**:
+  - **Multi-Format Support**: Supports both Question-Answer mode (Item) and immersive reading mode (Topic).
+  - **Intuitive Handling**: Supports shortcuts (Space, Numbers 1-4), one-click Undo (Z key), and reverting review progress.
+- **Full i18n Support**: Native English and Chinese localization, including time interval displays (e.g., "1d", "2.5mo").
+
 ## Development
 
 This project uses a modular architecture:
