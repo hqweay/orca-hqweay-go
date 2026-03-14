@@ -408,6 +408,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
                 value={localRemark}
                 onChange={(e) => setLocalRemark(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSaveRemark()}
+                onBlur={handleSaveRemark}
                 style={{
                   flex: 1,
                   background: "var(--orca-bg-primary)",
@@ -419,13 +420,13 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
                 }}
                 placeholder={t("Add a remark...")}
               />
-              <Button
+              {/* <Button
                 variant="solid"
                 onClick={handleSaveRemark}
                 style={{ padding: "4px 8px", fontSize: 11 }}
               >
                 {t("Save")}
-              </Button>
+              </Button> */}
             </div>
           </div>
         </div>
