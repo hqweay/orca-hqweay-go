@@ -1,4 +1,4 @@
-import { PanelProps } from "@/orca";
+import { DbId, PanelProps } from "@/orca";
 import { BasePlugin } from "../libs/BasePlugin";
 import { t } from "../libs/l10n";
 import { ensureCardTagSchema } from "./core/tagSchema";
@@ -93,6 +93,100 @@ export default class SrsPlugin extends BasePlugin {
         t("Open SRS Review Panel"),
       );
     }
+
+    if (orca.blockMenuCommands.registerBlockMenuCommand) {
+      orca.blockMenuCommands.registerBlockMenuCommand(
+        `${this.name}.roam-in-srs`,
+        {
+          worksOnMultipleBlocks: true,
+          render: (blockIds, rootBlockId, close) => {
+            const MenuText = orca.components.MenuText;
+            if (!MenuText) return null;
+
+            return (
+              <MenuText
+                key="roam-in-srs"
+                title={t("Roam in SRS")}
+                preIcon="ti ti-cards"
+                onClick={async () => {
+                  close();
+                  if (!blockIds || blockIds.length === 0) return;
+
+                  // 如果只选择了一个块且是查询块，则漫游其结果
+                  if (blockIds.length === 1) {
+                    const blockId = blockIds[0];
+                    const block = orca.state.blocks[blockId];
+                    const queryBlockRepr = block?.properties.find(
+                      (p: any) => p.name === "_repr",
+                    )?.value;
+
+                    this.logger.info("Query block repr", queryBlockRepr);
+                    if (queryBlockRepr?.type !== "query") {
+                      orca.notify(
+                        "error",
+                        t("Please give a valid query block."),
+                      );
+                      return;
+                    }
+
+                    queryBlockRepr.q.page = 1;
+                    queryBlockRepr.q.pageSize = 1000;
+                    const queryResults: DbId[] = await orca.invokeBackend(
+                      "query",
+                      queryBlockRepr.q,
+                    );
+
+                    this.logger.info("Query results22", queryResults);
+                    if (!queryResults?.length) {
+                      orca.notify("warn", t("No results found for the query."));
+                      return;
+                    }
+
+                    this.logger.info("Query results", queryResults);
+                    this.handleRoam(queryResults);
+                  } else {
+                    this.handleRoam(blockIds);
+                  }
+                }}
+              />
+            );
+          },
+        },
+      );
+    }
+  }
+
+  private async handleRoam(blockIds: number[]) {
+    const activePanelId = orca.state.activePanel;
+    if (!activePanelId) return;
+
+    const blockId = await this.getOrCreateSessionBlock();
+
+    // 尝试查找是否已经打开了复习面板
+    let existingPanelId: string | null = null;
+    for (const [id, panel] of Object.entries(orca.state.panels)) {
+      if ((panel as any).viewArgs?.blockId === blockId) {
+        existingPanelId = id;
+        break;
+      }
+    }
+
+    if (existingPanelId) {
+      orca.nav.switchFocusTo(existingPanelId);
+    } else {
+      const newPanelId = orca.nav.addTo(activePanelId, "right", {
+        view: "block",
+        viewArgs: {
+          blockId,
+          repr: RENDERER_TYPE,
+          initialBlockIds: blockIds,
+        },
+        viewState: {},
+      } as any);
+      if (newPanelId) {
+        orca.nav.switchFocusTo(newPanelId);
+      }
+    }
   }
 
   public renderHeadbarButton(): React.ReactNode {
@@ -186,6 +280,11 @@ export default class SrsPlugin extends BasePlugin {
     }
     if (orca.state.commands[COMMAND_OPEN]) {
       orca.commands.unregisterCommand(COMMAND_OPEN);
+    }
+    if (orca.blockMenuCommands.unregisterBlockMenuCommand) {
+      orca.blockMenuCommands.unregisterBlockMenuCommand(
+        `${this.name}.roam-in-srs`,
+      );
     }
   }
 }

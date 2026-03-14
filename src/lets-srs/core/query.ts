@@ -15,6 +15,7 @@ export interface SrsCardData {
   status: string[]; // multi-select options: suspend, archived, marked, leech
   remark?: string;
   snapshotProps?: any[]; // Original property values for Undo
+  isVirtual?: boolean; // If true, it means it doesn't have a #Card tag yet
 }
 
 /**
@@ -71,113 +72,14 @@ export async function fetchDueCards(): Promise<SrsCardData[]> {
     const dueCards: SrsCardData[] = [];
 
     for (const blockId of resultIds) {
-      if (!blockId) continue;
-
-      // 获取或加载块数据
-      let block = orca.state.blocks[blockId];
-      if (!block) {
-        block = await orca.invokeBackend("get-block", blockId);
-      }
-      if (!block) {
-        logger.warn(`[lets-srs] failed to find block: ${blockId}`);
-        continue;
-      }
-
-      // 🛡️ 强制数据归一化
-      if (!Array.isArray(block.children)) block.children = [];
-      if (!Array.isArray(block.refs)) block.refs = [];
-      if (!Array.isArray(block.properties)) block.properties = [];
-
-      let typeProp: { name: string; value?: any } | undefined;
-      let fsrsProp: { name: string; value?: any } | undefined;
-      let statusProp: { name: string; value?: any } | undefined;
-      let remarkProp: { name: string; value?: any } | undefined;
-      let dueDate: string | number | null = null;
-      let cardRef: any = null;
-
-      // 提取标签数据
-      const refs = block.refs || [];
-      cardRef = refs.find(
-        (ref: any) => ref.type === 2 && ref.alias === CARD_TAG_ALIAS,
-      );
-
-      const srsPropNames = ["due", "type", "fsrsData", "status", "remark"];
-      let snapshotProps: any[] = [];
-
-      if (cardRef && cardRef.data && Array.isArray(cardRef.data)) {
-        for (const prop of cardRef.data) {
-          if (srsPropNames.includes(prop.name)) {
-            snapshotProps.push({ ...prop });
-          }
-          if (prop.name === "due") dueDate = prop.value;
-          else if (prop.name === "type") typeProp = prop;
-          else if (prop.name === "fsrsData") fsrsProp = prop;
-          else if (prop.name === "status") statusProp = prop;
-          else if (prop.name === "remark") remarkProp = prop;
+      const card = await normalizeBlockToCard(blockId);
+      if (card) {
+        // 过滤掉已暂停或已归档的卡片
+        if (card.status.includes("suspend") || card.status.includes("archived")) {
+          continue;
         }
+        dueCards.push(card);
       }
-
-      // 备选方案：检查顶层属性
-      if (!dueDate && block.properties) {
-        for (const prop of block.properties) {
-          if (srsPropNames.includes(prop.name)) {
-            snapshotProps.push({ ...prop });
-          }
-          if (prop.name === "due") dueDate = prop.value;
-          else if (prop.name === "type") typeProp = prop;
-          else if (prop.name === "fsrsData") fsrsProp = prop;
-          else if (prop.name === "status") statusProp = prop;
-          else if (prop.name === "remark") remarkProp = prop;
-        }
-      }
-
-      // 解析多选状态
-      let currentStatus: string[] = [];
-      const rawStatus = statusProp?.value;
-      if (Array.isArray(rawStatus)) {
-        currentStatus = rawStatus.filter((s) => typeof s === "string");
-      } else if (typeof rawStatus === "string" && rawStatus) {
-        currentStatus = [rawStatus];
-      }
-
-      // 过滤掉已暂停或已归档的卡片
-      if (currentStatus.includes("suspend") || currentStatus.includes("archived")) {
-        continue;
-      }
-
-      // 提取 FSRS 数据
-      const srsDataRaw = fsrsProp?.value;
-      let srsData = null;
-      if (typeof srsDataRaw === "string" && srsDataRaw) {
-        try {
-          srsData = JSON.parse(srsDataRaw);
-        } catch (e) {}
-      } else if (typeof srsDataRaw === "object" && srsDataRaw !== null) {
-        srsData = srsDataRaw;
-      }
-
-      const parsedDue = dueDate != null ? new Date(dueDate).getTime() : null;
-      const blockValue = typeProp?.value;
-      let blockType = Array.isArray(blockValue) ? blockValue[0] : blockValue;
-
-      if (!blockType) {
-        // 如果没有显式设置类型（空即 Auto），根据是否有子块来区分：有子块为 Item (QA)，没子块为 Topic (Read)
-        const hasChildren = block.children && block.children.length > 0;
-        blockType = hasChildren ? "Item" : "Topic";
-      }
-
-      dueCards.push({
-        blockId,
-        due: parsedDue,
-        type: blockType as "Auto" | "Topic" | "Item",
-        fsrsData: srsData,
-        block,
-        isNew: parsedDue === null,
-        cardRef: cardRef,
-        status: currentStatus,
-        remark: remarkProp?.value || "",
-        snapshotProps: snapshotProps,
-      });
     } // 结束 resultIds 遍历
 
     // 3. 进入内存过滤阶段：只保留 Due <= 现在 或 新卡 (Due 为空) 的内容
@@ -205,4 +107,114 @@ export async function fetchDueCards(): Promise<SrsCardData[]> {
     console.error(`[lets-srs] failed to fetch cards`, err);
     return [];
   }
+}
+
+/**
+ * 将任意 Block 标准化为 SrsCardData
+ */
+export async function normalizeBlockToCard(
+  blockId: number,
+): Promise<SrsCardData | null> {
+  if (!blockId) return null;
+
+  // 获取或加载块数据
+  let block = orca.state.blocks[blockId];
+  if (!block) {
+    block = await orca.invokeBackend("get-block", blockId);
+  }
+  if (!block) {
+    logger.warn(`[lets-srs] failed to find block: ${blockId}`);
+    return null;
+  }
+
+  // 🛡️ 强制数据归一化
+  if (!Array.isArray(block.children)) block.children = [];
+  if (!Array.isArray(block.refs)) block.refs = [];
+  if (!Array.isArray(block.properties)) block.properties = [];
+
+  let typeProp: { name: string; value?: any } | undefined;
+  let fsrsProp: { name: string; value?: any } | undefined;
+  let statusProp: { name: string; value?: any } | undefined;
+  let remarkProp: { name: string; value?: any } | undefined;
+  let dueDate: string | number | null = null;
+  let cardRef: any = null;
+
+  // 提取标签数据
+  const refs = block.refs || [];
+  cardRef = refs.find(
+    (ref: any) => ref.type === 2 && ref.alias === CARD_TAG_ALIAS,
+  );
+
+  const srsPropNames = ["due", "type", "fsrsData", "status", "remark"];
+  let snapshotProps: any[] = [];
+
+  if (cardRef && cardRef.data && Array.isArray(cardRef.data)) {
+    for (const prop of cardRef.data) {
+      if (srsPropNames.includes(prop.name)) {
+        snapshotProps.push({ ...prop });
+      }
+      if (prop.name === "due") dueDate = prop.value;
+      else if (prop.name === "type") typeProp = prop;
+      else if (prop.name === "fsrsData") fsrsProp = prop;
+      else if (prop.name === "status") statusProp = prop;
+      else if (prop.name === "remark") remarkProp = prop;
+    }
+  }
+
+  // 备选方案：检查顶层属性
+  if (!dueDate && block.properties) {
+    for (const prop of block.properties) {
+      if (srsPropNames.includes(prop.name)) {
+        snapshotProps.push({ ...prop });
+      }
+      if (prop.name === "due") dueDate = prop.value;
+      else if (prop.name === "type") typeProp = prop;
+      else if (prop.name === "fsrsData") fsrsProp = prop;
+      else if (prop.name === "status") statusProp = prop;
+      else if (prop.name === "remark") remarkProp = prop;
+    }
+  }
+
+  // 解析多选状态
+  let currentStatus: string[] = [];
+  const rawStatus = statusProp?.value;
+  if (Array.isArray(rawStatus)) {
+    currentStatus = rawStatus.filter((s) => typeof s === "string");
+  } else if (typeof rawStatus === "string" && rawStatus) {
+    currentStatus = [rawStatus];
+  }
+
+  // 提取 FSRS 数据
+  const srsDataRaw = fsrsProp?.value;
+  let srsData = null;
+  if (typeof srsDataRaw === "string" && srsDataRaw) {
+    try {
+      srsData = JSON.parse(srsDataRaw);
+    } catch (e) {}
+  } else if (typeof srsDataRaw === "object" && srsDataRaw !== null) {
+    srsData = srsDataRaw;
+  }
+
+  const parsedDue = dueDate != null ? new Date(dueDate).getTime() : null;
+  const blockValue = typeProp?.value;
+  let blockType = Array.isArray(blockValue) ? blockValue[0] : blockValue;
+
+  if (!blockType) {
+    const hasChildren = block.children && block.children.length > 0;
+    blockType = hasChildren ? "Item" : "Topic";
+  }
+
+  return {
+    blockId,
+    due: parsedDue,
+    type: blockType as "Auto" | "Topic" | "Item",
+    fsrsData: srsData,
+    block,
+    isNew: parsedDue === null,
+    cardRef: cardRef,
+    status: currentStatus,
+    remark: remarkProp?.value || "",
+    snapshotProps: snapshotProps,
+    isVirtual: !cardRef, // 没有 #Card 标签即为虚构卡片
+  };
 }

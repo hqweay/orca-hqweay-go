@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { fetchDueCards, SrsCardData } from "../core/query";
+import {
+  fetchDueCards,
+  SrsCardData,
+  normalizeBlockToCard,
+} from "../core/query";
 import { t } from "../../libs/l10n";
 import { ensureCardTagSchema } from "../core/tagSchema";
 import { PropType } from "@/libs/consts";
@@ -35,9 +39,32 @@ export function ReviewPanel(props: RendererProps) {
     try {
       setLoading(true);
       await ensureCardTagSchema("lets-srs");
-      const dueCards = await fetchDueCards();
-      logger.debug("due cards:", dueCards);
-      setCards(dueCards || []);
+
+      logger.debug("props", props);
+      // 检查是否有外部传入的块列表（漫游模式）
+      const viewPanel = orca.nav.findViewPanel(
+        props.panelId,
+        orca.state.panels,
+      );
+      const viewArgs = viewPanel?.viewArgs;
+      const initialBlockIds = viewArgs?.initialBlockIds;
+
+      logger.debug("viewArgs", viewArgs);
+      logger.debug("initialBlockIds", initialBlockIds);
+
+      if (Array.isArray(initialBlockIds) && initialBlockIds.length > 0) {
+        const roamingCards: SrsCardData[] = [];
+        for (const bid of initialBlockIds) {
+          const card = await normalizeBlockToCard(bid);
+          if (card) roamingCards.push(card);
+        }
+        setCards(roamingCards);
+      } else {
+        const dueCards = await fetchDueCards();
+        logger.debug("due cards:", dueCards);
+        setCards(dueCards || []);
+      }
+
       setCurrentIndex(0);
       setHistory([]);
     } catch (err) {
@@ -233,7 +260,11 @@ export function ReviewPanel(props: RendererProps) {
             contentEditable={false}
             style={{ fontWeight: 600, fontSize: 18 }}
           >
-            {t("SRS Review")}
+            {history.length > 0
+              ? t("SRS Review")
+              : cards[0]?.isVirtual
+                ? t("Roaming Mode")
+                : t("SRS Review")}
           </div>
           <div
             contentEditable={false}

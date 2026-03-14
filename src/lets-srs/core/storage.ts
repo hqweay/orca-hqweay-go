@@ -1,4 +1,6 @@
 import { SrsCardData } from "./query";
+import { CARD_TAG_ALIAS, CARD_PROPERTIES } from "./tagSchema";
+import { Logger } from "@/libs/logger";
 import { FsrsGrade, calculateNextReview } from "./fsrs";
 
 /**
@@ -60,6 +62,33 @@ export async function saveCardRemark(
 ): Promise<void> {
   const tagProperties = [{ name: "remark", value: remark }];
   await updateCardProperties(card, tagProperties);
+}
+
+/**
+ * 确保块带有 #Card 标签（用于漫游模式下的“转化为闪卡”）
+ */
+export async function ensureCardTag(card: SrsCardData): Promise<void> {
+  if (!card.isVirtual && card.cardRef) return;
+
+  const tabBlockId = (await orca.commands.invokeEditorCommand(
+    "core.editor.insertTag",
+    null,
+    card.blockId,
+    CARD_TAG_ALIAS,
+    CARD_PROPERTIES,
+  )) as number;
+
+  // 获取新创建的组件块数据
+  const tagBlock = await orca.invokeBackend("get-block", tabBlockId);
+  if (tagBlock) {
+    card.cardRef = {
+      id: tabBlockId,
+      type: 2,
+      alias: CARD_TAG_ALIAS,
+      data: tagBlock.properties || [],
+    };
+    card.isVirtual = false;
+  }
 }
 
 /**
