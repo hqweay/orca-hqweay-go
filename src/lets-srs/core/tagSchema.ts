@@ -7,21 +7,34 @@ export const CARD_PROPERTIES: BlockProperty[] = [
   {
     name: "due",
     type: PropType.DateTime,
-    value: null as any, // 留空，由 FSRS 算法填入
   },
   {
     name: "type",
     type: PropType.TextChoices,
-    value: [] as string[], // 默认为空，由层级关系自动判断
     typeArgs: {
       choices: ["Topic", "Item"],
       subType: "single",
+      defaultEnabled: true,
+      default: "Topic",
     },
   },
   {
     name: "fsrsData",
     type: PropType.Text,
-    value: null as any, // 存储完整 FSRS 对象的序列化内容
+  },
+  {
+    name: "status",
+    type: PropType.TextChoices,
+    typeArgs: {
+      choices: ["suspend", "archived", "marked", "leech"],
+      subType: "multi",
+      defaultEnabled: false,
+      default: [""],
+    },
+  },
+  {
+    name: "remark",
+    type: PropType.Text,
   },
 ];
 
@@ -58,28 +71,28 @@ export async function ensureCardTagSchema(pluginName: string): Promise<void> {
     const missingProps = CARD_PROPERTIES.filter(
       (prop) => !existingPropNames.has(prop.name),
     );
-
+    console.log("Missing properties:", missingProps);
     if (missingProps.length === 0) {
       isInitialized = true;
       return;
     }
 
     // Add missing properties
-    for (const prop of missingProps) {
-      try {
-        await orca.commands.invokeEditorCommand(
-          "core.editor.setProperties",
-          null,
-          [cardTagBlock.id],
-          [prop],
-        );
-      } catch (err) {
-        console.error(
-          `[${pluginName}] Failed to inject property "${prop.name}" for #Card schema.`,
-          err,
-        );
-      }
+    // for (const prop of missingProps) {
+    try {
+      await orca.commands.invokeEditorCommand(
+        "core.editor.setProperties",
+        null,
+        [cardTagBlock.id],
+        missingProps,
+      );
+    } catch (err) {
+      console.error(
+        `[${pluginName}] Failed to inject property "${prop.name}" for #Card schema.`,
+        err,
+      );
     }
+    // }
 
     isInitialized = true;
   } catch (error) {

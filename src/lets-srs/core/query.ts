@@ -12,6 +12,8 @@ export interface SrsCardData {
   block: any;
   isNew: boolean;
   cardRef?: any; // The BlockRef object for the Card tag
+  status: string[]; // multi-select options: suspend, archived, marked, leech
+  remark?: string;
 }
 
 /**
@@ -87,6 +89,8 @@ export async function fetchDueCards(): Promise<SrsCardData[]> {
 
       let typeProp: { name: string; value?: any } | undefined;
       let fsrsProp: { name: string; value?: any } | undefined;
+      let statusProp: { name: string; value?: any } | undefined;
+      let remarkProp: { name: string; value?: any } | undefined;
       let dueDate: string | number | null = null;
       let cardRef: any = null;
 
@@ -101,6 +105,8 @@ export async function fetchDueCards(): Promise<SrsCardData[]> {
           if (prop.name === "due") dueDate = prop.value;
           else if (prop.name === "type") typeProp = prop;
           else if (prop.name === "fsrsData") fsrsProp = prop;
+          else if (prop.name === "status") statusProp = prop;
+          else if (prop.name === "remark") remarkProp = prop;
         }
       }
 
@@ -110,7 +116,23 @@ export async function fetchDueCards(): Promise<SrsCardData[]> {
           if (prop.name === "due") dueDate = prop.value;
           else if (prop.name === "type") typeProp = prop;
           else if (prop.name === "fsrsData") fsrsProp = prop;
+          else if (prop.name === "status") statusProp = prop;
+          else if (prop.name === "remark") remarkProp = prop;
         }
+      }
+
+      // 解析多选状态
+      let currentStatus: string[] = [];
+      const rawStatus = statusProp?.value;
+      if (Array.isArray(rawStatus)) {
+        currentStatus = rawStatus.filter((s) => typeof s === "string");
+      } else if (typeof rawStatus === "string" && rawStatus) {
+        currentStatus = [rawStatus];
+      }
+
+      // 过滤掉已暂停或已归档的卡片
+      if (currentStatus.includes("suspend") || currentStatus.includes("archived")) {
+        continue;
       }
 
       // 提取 FSRS 数据
@@ -142,6 +164,8 @@ export async function fetchDueCards(): Promise<SrsCardData[]> {
         block,
         isNew: parsedDue === null,
         cardRef: cardRef,
+        status: currentStatus,
+        remark: remarkProp?.value || "",
       });
     } // 结束 resultIds 遍历
 

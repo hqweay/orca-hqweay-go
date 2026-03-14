@@ -24,6 +24,8 @@ export function ReviewPanel(props: RendererProps) {
 
   const [cards, setCards] = useState<SrsCardData[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [history, setHistory] = useState<number[]>([]);
+  const [shortcutsEnabled, setShortcutsEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const activeCard = cards[currentIndex];
@@ -36,6 +38,7 @@ export function ReviewPanel(props: RendererProps) {
       logger.debug("due cards:", dueCards);
       setCards(dueCards || []);
       setCurrentIndex(0);
+      setHistory([]);
     } catch (err) {
       console.error("[lets-srs] failed to load cards", err);
     } finally {
@@ -48,14 +51,50 @@ export function ReviewPanel(props: RendererProps) {
   }, []);
 
   const handleSkip = () => {
+    setHistory((prev) => [...prev, currentIndex]);
     setCurrentIndex((prev) => prev + 1);
   };
 
   const handleCardCompleted = () => {
+    setHistory((prev) => [...prev, currentIndex]);
     setCurrentIndex((prev) => prev + 1);
   };
 
+  const handleGoBack = () => {
+    if (history.length === 0) return;
+    const newHistory = [...history];
+    const prevIndex = newHistory.pop();
+    setHistory(newHistory);
+    if (prevIndex !== undefined) {
+      setCurrentIndex(prevIndex);
+    }
+  };
+
   const containerRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      if (!shortcutsEnabled) return;
+
+      const key = e.key.toLowerCase();
+      if (key === "z") {
+        e.preventDefault();
+        handleGoBack();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleGoBack, shortcutsEnabled]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -196,15 +235,54 @@ export function ReviewPanel(props: RendererProps) {
               borderRadius: 20,
               fontWeight: 500,
               boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+              marginRight: "auto",
+              marginLeft: 12,
             }}
           >
             {remainingCount} {t("cards left")}
           </div>
-          <orca.components.Tooltip text={t("Refresh")}>
-            <Button variant="plain" onClick={() => loadCards()}>
-              <i className="ti ti-refresh" style={{ fontSize: "16px" }} />
-            </Button>
-          </orca.components.Tooltip>
+
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            {history.length > 0 && (
+              <orca.components.Tooltip text={t("Undo [Z]")}>
+                <Button variant="plain" onClick={handleGoBack}>
+                  <i
+                    className="ti ti-arrow-back-up"
+                    style={{ fontSize: "18px" }}
+                  />
+                </Button>
+              </orca.components.Tooltip>
+            )}
+
+            <orca.components.Tooltip
+              text={
+                shortcutsEnabled ? t("Lock Shortcuts") : t("Unlock Shortcuts")
+              }
+            >
+              <Button
+                variant="plain"
+                onClick={() => setShortcutsEnabled(!shortcutsEnabled)}
+                style={{
+                  color: shortcutsEnabled
+                    ? "var(--orca-text-secondary)"
+                    : "var(--orca-color-warning-5)",
+                }}
+              >
+                <i
+                  className={
+                    shortcutsEnabled ? "ti ti-keyboard" : "ti ti-keyboard-off"
+                  }
+                  style={{ fontSize: "18px" }}
+                />
+              </Button>
+            </orca.components.Tooltip>
+
+            <orca.components.Tooltip text={t("Refresh")}>
+              <Button variant="plain" onClick={() => loadCards()}>
+                <i className="ti ti-refresh" style={{ fontSize: "18px" }} />
+              </Button>
+            </orca.components.Tooltip>
+          </div>
         </div>
 
         {/* Card Content Area */}
@@ -229,6 +307,7 @@ export function ReviewPanel(props: RendererProps) {
               panelId={props.panelId}
               onCardCompleted={handleCardCompleted}
               onSkip={handleSkip}
+              shortcutsEnabled={shortcutsEnabled}
             />
           </div>
         </div>
