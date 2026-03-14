@@ -40,7 +40,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
 }) => {
   const { blockId, type, fsrsData } = activeCard;
   const isTopic = type === "Topic";
-  
+
   const [showAnswer, setShowAnswer] = useState(isTopic);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -146,12 +146,23 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
       </div>
 
       {/* 底部控制栏 */}
-      <div className="srs-card-footer" style={{ display: "flex", justifyContent: "center" }}>
+      <div
+        className="srs-card-footer"
+        style={{ display: "flex", justifyContent: "center" }}
+      >
         {!showAnswer && !isTopic ? (
-          <div style={{ display: "flex", gap: 12, width: "100%", maxWidth: 600 }}>
-            <Button variant="outline" onClick={onSkip} style={{ flex: 1, borderRadius: 8 }}>
+          <div
+            style={{ display: "flex", gap: 12, width: "100%", maxWidth: 600 }}
+          >
+            <Button
+              variant="outline"
+              onClick={onSkip}
+              style={{ flex: 1, borderRadius: 8 }}
+            >
               {t("Skip")}
-              <span style={{ fontSize: 10, marginLeft: 4, opacity: 0.6 }}>[S]</span>
+              <span style={{ fontSize: 10, marginLeft: 4, opacity: 0.6 }}>
+                [S]
+              </span>
             </Button>
             <Button
               variant="solid"
@@ -167,11 +178,29 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
               }}
             >
               {t("Show Answer")}
-              <span style={{ fontSize: 11, marginLeft: 8, opacity: 0.8 }}>[Space]</span>
+              <span style={{ fontSize: 11, marginLeft: 8, opacity: 0.8 }}>
+                [Space]
+              </span>
             </Button>
           </div>
         ) : (
-          <div style={{ display: "flex", gap: 12, width: "100%", maxWidth: 600 }}>
+          <div
+            style={{ display: "flex", gap: 12, width: "100%", maxWidth: 600 }}
+          >
+            <Button
+              variant="outline"
+              onClick={onSkip}
+              disabled={isSaving}
+              style={{ flex: 1, borderRadius: 8 }}
+            >
+              {t("Skip")}
+              <span
+                contentEditable={false}
+                style={{ fontSize: 10, marginLeft: 4, opacity: 0.6 }}
+              >
+                [S]
+              </span>
+            </Button>
             <div style={{ display: "flex", gap: 12, flex: 4 }}>
               {isTopic ? (
                 <Button
@@ -179,10 +208,16 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
                   onClick={() => handleGradeAction("good")}
                   disabled={isSaving}
                   className="srs-grade-btn"
-                  style={{ background: "#1e88e5", color: "white", borderRadius: 8 }}
+                  style={{
+                    background: "#1e88e5",
+                    color: "white",
+                    borderRadius: 8,
+                  }}
                 >
                   <div style={{ fontWeight: 600 }}>{t("Mark as Read")}</div>
-                  <div className="srs-interval-hint">{predictedIntervals?.good}</div>
+                  <div className="srs-interval-hint">
+                    {predictedIntervals?.good}
+                  </div>
                 </Button>
               ) : (
                 <>
@@ -191,53 +226,68 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
                     onClick={() => handleGradeAction("again")}
                     disabled={isSaving}
                     className="srs-grade-btn"
-                    style={{ background: "#e53935", color: "white", borderRadius: 8 }}
+                    style={{
+                      background: "#e53935",
+                      color: "white",
+                      borderRadius: 8,
+                    }}
                   >
                     <div style={{ fontWeight: 600 }}>{t("Again")}</div>
-                    <div className="srs-interval-hint">{predictedIntervals?.again}</div>
+                    <div className="srs-interval-hint">
+                      {predictedIntervals?.again}
+                    </div>
                   </Button>
                   <Button
                     variant="solid"
                     onClick={() => handleGradeAction("hard")}
                     disabled={isSaving}
                     className="srs-grade-btn"
-                    style={{ background: "#fb8c00", color: "white", borderRadius: 8 }}
+                    style={{
+                      background: "#fb8c00",
+                      color: "white",
+                      borderRadius: 8,
+                    }}
                   >
                     <div style={{ fontWeight: 600 }}>{t("Hard")}</div>
-                    <div className="srs-interval-hint">{predictedIntervals?.hard}</div>
+                    <div className="srs-interval-hint">
+                      {predictedIntervals?.hard}
+                    </div>
                   </Button>
                   <Button
                     variant="solid"
                     onClick={() => handleGradeAction("good")}
                     disabled={isSaving}
                     className="srs-grade-btn"
-                    style={{ background: "#43a047", color: "white", borderRadius: 8 }}
+                    style={{
+                      background: "#43a047",
+                      color: "white",
+                      borderRadius: 8,
+                    }}
                   >
                     <div style={{ fontWeight: 600 }}>{t("Good")}</div>
-                    <div className="srs-interval-hint">{predictedIntervals?.good}</div>
+                    <div className="srs-interval-hint">
+                      {predictedIntervals?.good}
+                    </div>
                   </Button>
                   <Button
                     variant="solid"
                     onClick={() => handleGradeAction("easy")}
                     disabled={isSaving}
                     className="srs-grade-btn"
-                    style={{ background: "#1e88e5", color: "white", borderRadius: 8 }}
+                    style={{
+                      background: "#1e88e5",
+                      color: "white",
+                      borderRadius: 8,
+                    }}
                   >
                     <div style={{ fontWeight: 600 }}>{t("Easy")}</div>
-                    <div className="srs-interval-hint">{predictedIntervals?.easy}</div>
+                    <div className="srs-interval-hint">
+                      {predictedIntervals?.easy}
+                    </div>
                   </Button>
                 </>
               )}
             </div>
-            <Button
-              variant="outline"
-              onClick={onSkip}
-              disabled={isSaving}
-              style={{ flex: 1, borderRadius: 8 }}
-            >
-              {t("Skip")}
-              <span style={{ fontSize: 10, marginLeft: 4, opacity: 0.6 }}>[S]</span>
-            </Button>
           </div>
         )}
       </div>
