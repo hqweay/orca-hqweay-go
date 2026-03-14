@@ -24,11 +24,36 @@ export async function fetchDueCards(): Promise<SrsCardData[]> {
   // 注意：我们先查出所有，然后在内存中过滤，以确保对比精度和逻辑的一致性。
   const query: QueryDescription2 = {
     q: {
-      kind: 4 as any, // QueryKindTag
-      name: CARD_TAG_ALIAS,
-      selfOnly: true,
-    } as any,
-    pageSize: 2000,
+      kind: 101, // QueryKindSelfOr
+      conditions: [
+        {
+          kind: 4, // QueryKindTag
+          name: "Card",
+          properties: [
+            {
+              name: "due",
+              type: 5,
+              op: 10, // QueryLe (LessEqual)
+              value: new Date(),
+            },
+          ],
+          selfOnly: true,
+        },
+        {
+          kind: 4, // QueryKindTag
+          name: "Card",
+          properties: [
+            {
+              name: "due",
+              type: 5,
+              op: 11, // QueryNull
+            },
+          ],
+          selfOnly: true,
+        },
+      ],
+    },
+    pageSize: 1000,
   };
 
   try {

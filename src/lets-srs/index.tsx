@@ -3,6 +3,7 @@ import { BasePlugin } from "../libs/BasePlugin";
 import { t } from "../libs/l10n";
 import { ensureCardTagSchema } from "./core/tagSchema";
 import { ReviewPanel } from "./ui/review-panel";
+import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
 
 /**
  * 虎鲸笔记 - 记忆卡片 (SRS) 插件
@@ -27,12 +28,30 @@ export default class SrsPlugin extends BasePlugin {
   async load() {
     console.log(`[${this.name}] plugin loaded`);
 
+    // orca.themes.injectCSSResource("./ui/srs.css", this.name);
+
+    // 创建 style 标签
+
+    applyCSSRule(
+      `
+    div[repr="lets-srs.review-session"] .orca-repr-scope-line {
+        display: none;
+    }`,
+      { id: RENDERER_TYPE },
+    );
+
     // 1. 确保标签被初始化
     ensureCardTagSchema(this.name);
 
     // 2. 注册自定义块渲染器
     if (!orca.state.blockRenderers[RENDERER_TYPE]) {
-      orca.renderers.registerBlock(RENDERER_TYPE, false, ReviewPanel, [], false);
+      orca.renderers.registerBlock(
+        RENDERER_TYPE,
+        false,
+        ReviewPanel,
+        [],
+        false,
+      );
     }
 
     if (!orca.state.commands[COMMAND_OPEN]) {
@@ -101,9 +120,14 @@ export default class SrsPlugin extends BasePlugin {
     }
 
     // 尝试从插件配置中读取已有的 ID
-    const storedId = await orca.plugins.getData(this.name, STORAGE_KEY_SESSION_BLOCK);
+    const storedId = await orca.plugins.getData(
+      this.name,
+      STORAGE_KEY_SESSION_BLOCK,
+    );
     if (typeof storedId === "number") {
-      const block = orca.state.blocks[storedId] || await orca.invokeBackend("get-block", storedId);
+      const block =
+        orca.state.blocks[storedId] ||
+        (await orca.invokeBackend("get-block", storedId));
       if (block) {
         this.sessionBlockId = storedId;
         // 注入渲染器标记
@@ -114,18 +138,22 @@ export default class SrsPlugin extends BasePlugin {
     }
 
     // 创建一个新的“虚拟”但持久的会话块
-    const newBlockId = await orca.commands.invokeEditorCommand(
+    const newBlockId = (await orca.commands.invokeEditorCommand(
       "core.editor.insertBlock",
       null,
       null,
       null,
       [{ t: "t", v: `[SRS Review Session]` }],
-      { type: RENDERER_TYPE }
-    ) as number;
+      { type: RENDERER_TYPE },
+    )) as number;
 
-    await orca.plugins.setData(this.name, STORAGE_KEY_SESSION_BLOCK, newBlockId);
+    await orca.plugins.setData(
+      this.name,
+      STORAGE_KEY_SESSION_BLOCK,
+      newBlockId,
+    );
     this.sessionBlockId = newBlockId;
-    
+
     // 确保 state 中的 block 带有 _repr
     const block = orca.state.blocks[newBlockId];
     if (block) (block as any)._repr = { type: RENDERER_TYPE };
@@ -135,6 +163,8 @@ export default class SrsPlugin extends BasePlugin {
 
   async unload() {
     console.log(`[${this.name}] plugin unloaded`);
+    // orca.themes.removeCSSResources(this.name);
+    removeCSSRule(RENDERER_TYPE);
     if (orca.state.blockRenderers[RENDERER_TYPE]) {
       orca.renderers.unregisterBlock(RENDERER_TYPE);
     }

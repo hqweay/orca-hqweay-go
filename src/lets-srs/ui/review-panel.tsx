@@ -29,12 +29,13 @@ function formatInterval(days: number): string {
   return `${(rounded / 365.25).toFixed(1)}y`;
 }
 
-interface QuestionBlockProps {
+interface ReviewCardProps {
   blockId: number;
   panelId: string;
+  showAnswer: boolean;
 }
 
-function QuestionBlock({ blockId, panelId }: QuestionBlockProps) {
+function ReviewCard({ blockId, panelId, showAnswer }: ReviewCardProps) {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const { Block } = orca.components;
 
@@ -42,130 +43,75 @@ function QuestionBlock({ blockId, panelId }: QuestionBlockProps) {
     const container = containerRef.current;
     if (!container) return;
 
-    const removeChildren = () => {
-      const selectors = [
-        ".orca-block-children",
-        ".orca-repr-children",
-        "[data-role='children']",
-        "[data-testid='children']",
-      ];
-      selectors.forEach((s) => {
-        container.querySelectorAll(s).forEach((el) => el.remove());
-      });
-    };
-
-    removeChildren();
-    const observer = new MutationObserver(removeChildren);
-    observer.observe(container, { childList: true, subtree: true });
-    return () => observer.disconnect();
-  }, [blockId]);
-
-  return (
-    <div
-      ref={containerRef}
-      className="srs-question-block"
-      data-orca-block-root="true"
-    >
-      <Block
-        panelId={panelId}
-        blockId={blockId}
-        blockLevel={0}
-        indentLevel={0}
-        renderingMode="simple"
-      />
-    </div>
-  );
-}
-
-interface AnswerBlockProps {
-  blockId: number;
-  panelId: string;
-}
-
-function AnswerBlock({ blockId, panelId }: AnswerBlockProps) {
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const { Block } = orca.components;
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const ensureExpanded = () => {
+    const updateVisibility = () => {
       const rootBlock = container.querySelector<HTMLElement>(
         ":scope > .orca-block",
       );
-      if (rootBlock) {
-        const collapseSelector =
-          ".orca-repr-collapse, [data-role='collapse'], [data-testid='collapse']";
-        const collapseEl =
-          rootBlock.querySelector<HTMLElement>(collapseSelector);
-        if (collapseEl) {
-          const isCollapsed =
-            collapseEl.getAttribute("aria-expanded") === "false" ||
-            collapseEl.getAttribute("data-state") === "closed" ||
-            collapseEl.classList.contains("collapsed");
-          if (isCollapsed) {
-            collapseEl.click();
-          }
-        }
+      if (!rootBlock) return;
+
+      // 1. 自动展开
+      const collapseSelector =
+        ".orca-repr-main-expand, .orca-block-expand, [data-role='expand']";
+      const collapseEl = rootBlock.querySelector<HTMLElement>(collapseSelector);
+      if (collapseEl) {
+        const isCollapsed =
+          collapseEl.getAttribute("aria-expanded") === "false" ||
+          collapseEl.classList.contains("collapsed");
+        if (isCollapsed) collapseEl.click();
       }
-    };
 
-    const hideParent = () => {
-      ensureExpanded();
-
-      // 1. 隐藏父块的主内容
-      const main = container.querySelector<HTMLElement>(
-        ":scope > .orca-block > .orca-repr > .orca-repr-main",
-      );
-      if (main) main.style.display = "none";
-
-      // 2. 隐藏 handle/bullet/折叠按钮
-      const selectors = [
-        ":scope > .orca-block > .orca-block-handle",
-        ":scope > .orca-block > .orca-block-bullet",
-        ":scope > .orca-block > .orca-repr > .orca-repr-handle",
-        ":scope > .orca-block > .orca-repr > .orca-repr-collapse",
+      // 2. 隐藏块级杂项 (Handle, Bullet, etc.)
+      const uiSelectors = [
+        // ".orca-block-handle",
+        //  ".orca-block-bullet",
+        // ".orca-repr-main-expand",
+        // ".orca-block-expand-wrapper",
+        // ".orca-block-breadcrumb",
+        ".orca-repr-scope-line",
       ];
-      selectors.forEach((s) => {
-        container.querySelectorAll(s).forEach((el: any) => {
+      uiSelectors.forEach((sel) => {
+        // rootBlock.querySelectorAll<HTMLElement>(sel).forEach((el) => {
+        //   el.style.display = "none";
+        // });
+        container.querySelectorAll<HTMLElement>(sel).forEach((el) => {
           el.style.display = "none";
-          el.style.width = "0";
-          el.style.height = "0";
-          el.style.overflow = "hidden";
         });
       });
 
-      // 3. 强制显示子块
-      const children = container.querySelectorAll<HTMLElement>(
-        ".orca-block-children, .orca-repr-children, [data-role='children']",
-      );
-      children.forEach((el) => {
-        el.style.display = "";
-        el.style.visibility = "";
-      });
-    };
+      // 3. 核心切换逻辑：隐藏/显示主内容与子块
+      const repr = rootBlock.querySelector<HTMLElement>(".orca-repr");
+      if (repr) {
+        // const main = repr.querySelector<HTMLElement>(
+        //   ":scope > .orca-repr-main",
+        // );
+        const children = repr.querySelector<HTMLElement>(
+          ":scope > .orca-block-children, :scope > .orca-repr-children",
+        );
 
-    hideParent();
-    const observer = new MutationObserver(hideParent);
+        // if (main) {
+        //   main.style.display = showAnswer ? "none" : "";
+        // }
+        if (children) {
+          children.style.display = showAnswer ? "" : "none";
+        }
+      }
+    };;
+
+    const observer = new MutationObserver(updateVisibility);
     observer.observe(container, { childList: true, subtree: true });
+
+    updateVisibility();
+
     return () => observer.disconnect();
-  }, [blockId]);
+  }, [showAnswer]);
 
   return (
-    <div
-      ref={containerRef}
-      className="srs-answer-block"
-      style={{ marginLeft: "-24px" }}
-      data-orca-block-root="true"
-    >
+    <div ref={containerRef} className="srs-review-card" data-orca-block-root>
       <Block
         panelId={panelId}
         blockId={blockId}
         blockLevel={0}
         indentLevel={0}
-        renderingMode="normal"
-        initiallyCollapsed={false}
       />
     </div>
   );
@@ -174,9 +120,6 @@ function AnswerBlock({ blockId, panelId }: AnswerBlockProps) {
 export function ReviewPanel(props: RendererProps) {
   const Button = orca.components.Button;
   const BlockShell = orca.components.BlockShell;
-
-  const { useSnapshot } = window.Valtio;
-  const snapshot = useSnapshot(orca.state);
 
   const [cards, setCards] = useState<SrsCardData[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -204,7 +147,6 @@ export function ReviewPanel(props: RendererProps) {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in a block
       if (
         document.activeElement?.getAttribute("contenteditable") === "true" ||
         document.activeElement?.tagName === "INPUT" ||
@@ -220,7 +162,6 @@ export function ReviewPanel(props: RendererProps) {
         if (!showAnswer && activeCard.type !== "Topic") {
           setShowAnswer(true);
         } else {
-          // Space is "Good" if answer is shown
           handleGrade("good");
         }
       } else if (showAnswer || activeCard.type === "Topic") {
@@ -235,7 +176,6 @@ export function ReviewPanel(props: RendererProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activeCard, showAnswer, cards, currentIndex]);
 
-  // Auto-show answer if it's a Topic card
   useEffect(() => {
     if (activeCard && activeCard.type === "Topic") {
       setShowAnswer(true);
@@ -247,7 +187,6 @@ export function ReviewPanel(props: RendererProps) {
   const loadCards = async () => {
     try {
       setLoading(true);
-      // pluginName 可以从 snapshot 或其他地方获取，这里硬编码或从 props 尝试
       await ensureCardTagSchema("lets-srs");
       const dueCards = await fetchDueCards();
       logger.debug("due cards:", dueCards);
@@ -268,22 +207,11 @@ export function ReviewPanel(props: RendererProps) {
       grade,
     );
 
-    console.log("[lets-srs] next state:", activeCard);
-
-    // Save properties back to the block/tag
     try {
       const tagProperties = [
         { name: "due", value: nextDue },
-        // {
-        //   name: "type",
-        //   type: PropType.TextChoices,
-        //   value: [activeCard.type],
-        //   typeArgs: { choices: ["Auto", "Topic", "Item"], subType: "single" },
-        // },
         { name: "fsrsData", value: JSON.stringify(nextState) },
       ];
-
-      console.log("[lets-srs] tag properties:", tagProperties);
 
       if (activeCard.cardRef) {
         await orca.commands.invokeEditorCommand(
@@ -292,17 +220,8 @@ export function ReviewPanel(props: RendererProps) {
           activeCard.cardRef,
           tagProperties,
         );
-      } else {
-        // await orca.commands.invokeEditorCommand(
-        //   "core.editor.insertTag",
-        //   null,
-        //   activeCard.blockId,
-        //   "Card",
-        //   tagProperties,
-        // );
       }
 
-      // Move to next card
       setCurrentIndex((prev) => prev + 1);
       setShowAnswer(false);
     } catch (err) {
@@ -316,7 +235,6 @@ export function ReviewPanel(props: RendererProps) {
     const el = containerRef.current;
     if (!el) return;
 
-    // 借鉴 vendor 方案：找到父级 .orca-block-editor 并隐藏相关块级 UI
     const blockEditor = el.closest(".orca-block-editor") as HTMLElement;
     if (!blockEditor) return;
 
@@ -364,6 +282,7 @@ export function ReviewPanel(props: RendererProps) {
     if (cards.length === 0 || currentIndex >= cards.length) {
       return (
         <div
+          contentEditable={false}
           ref={containerRef}
           style={{
             padding: 32,
@@ -390,9 +309,9 @@ export function ReviewPanel(props: RendererProps) {
 
     const isTopic = activeCard.type === "Topic";
     const remainingCount = cards.length - currentIndex;
-    const blockData = snapshot.blocks[activeCard.blockId];
+    const blockData = activeCard.block;
 
-    if (!blockData || !Array.isArray(blockData.children)) {
+    if (!blockData) {
       return (
         <div
           ref={containerRef}
@@ -466,7 +385,7 @@ export function ReviewPanel(props: RendererProps) {
             style={{
               fontSize: 13,
               color: "white",
-              background: "#1e88e5", // Consistent blue
+              background: "#1e88e5",
               padding: "4px 12px",
               borderRadius: 20,
               fontWeight: 500,
@@ -494,28 +413,11 @@ export function ReviewPanel(props: RendererProps) {
               transition: "all 0.3s ease",
             }}
           >
-            {/* 题目区域 */}
-            <QuestionBlock
+            <ReviewCard
               blockId={activeCard.blockId}
               panelId={props.panelId}
+              showAnswer={showAnswer}
             />
-
-            {/* 答案部分 */}
-            {showAnswer && (
-              <div
-                style={{
-                  marginTop: 24,
-                  paddingTop: 24,
-                  borderTop: "1px dashed var(--orca-border)",
-                  animation: "fadeIn 0.4s ease-out",
-                }}
-              >
-                <AnswerBlock
-                  blockId={activeCard.blockId}
-                  panelId={props.panelId}
-                />
-              </div>
-            )}
           </div>
         </div>
 
@@ -538,7 +440,7 @@ export function ReviewPanel(props: RendererProps) {
                 padding: "14px",
                 fontSize: 16,
                 borderRadius: 8,
-                background: "#1e88e5", // Consistent blue
+                background: "#1e88e5",
                 color: "white",
                 boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
               }}
@@ -558,7 +460,7 @@ export function ReviewPanel(props: RendererProps) {
                   onClick={() => handleGrade("good")}
                   className="srs-grade-btn"
                   style={{
-                    background: "#1e88e5", // Consistent blue
+                    background: "#1e88e5",
                     color: "white",
                     borderRadius: 8,
                   }}
@@ -575,7 +477,7 @@ export function ReviewPanel(props: RendererProps) {
                     onClick={() => handleGrade("again")}
                     className="srs-grade-btn"
                     style={{
-                      background: "#e53935", // More solid red
+                      background: "#e53935",
                       color: "white",
                       borderRadius: 8,
                     }}
@@ -590,7 +492,7 @@ export function ReviewPanel(props: RendererProps) {
                     onClick={() => handleGrade("hard")}
                     className="srs-grade-btn"
                     style={{
-                      background: "#fb8c00", // More solid orange
+                      background: "#fb8c00",
                       color: "white",
                       borderRadius: 8,
                     }}
@@ -605,7 +507,7 @@ export function ReviewPanel(props: RendererProps) {
                     onClick={() => handleGrade("good")}
                     className="srs-grade-btn"
                     style={{
-                      background: "#43a047", // More solid green
+                      background: "#43a047",
                       color: "white",
                       borderRadius: 8,
                     }}
@@ -620,7 +522,7 @@ export function ReviewPanel(props: RendererProps) {
                     onClick={() => handleGrade("easy")}
                     className="srs-grade-btn"
                     style={{
-                      background: "#1e88e5", // More solid blue
+                      background: "#1e88e5",
                       color: "white",
                       borderRadius: 8,
                     }}
