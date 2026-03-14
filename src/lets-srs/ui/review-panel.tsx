@@ -4,7 +4,8 @@ import { calculateNextReview, FsrsGrade, CardState } from "../core/fsrs";
 import { t } from "../../libs/l10n";
 import { ensureCardTagSchema } from "../core/tagSchema";
 import { PropType } from "@/libs/consts";
-
+import { Logger } from "@/libs/logger";
+const logger = new Logger("lets-srs");
 interface RendererProps {
   panelId: string;
   blockId: number;
@@ -14,6 +15,18 @@ interface RendererProps {
   mirrorId?: number;
   initiallyCollapsed?: boolean;
   renderingMode?: "normal" | "simple" | "simple-children";
+}
+
+function formatInterval(days: number): string {
+  if (days < 1) {
+    const minutes = Math.round(days * 24 * 60);
+    if (minutes < 1) return "<1m";
+    return `${minutes}m`;
+  }
+  const rounded = Math.round(days);
+  if (rounded < 30) return `${rounded}d`;
+  if (rounded < 365) return `${(rounded / 30.44).toFixed(1)}mo`;
+  return `${(rounded / 365.25).toFixed(1)}y`;
 }
 
 interface QuestionBlockProps {
@@ -79,14 +92,13 @@ function AnswerBlock({ blockId, panelId }: AnswerBlockProps) {
 
     const ensureExpanded = () => {
       const rootBlock = container.querySelector<HTMLElement>(
-        ":scope > .orca-block"
+        ":scope > .orca-block",
       );
       if (rootBlock) {
         const collapseSelector =
           ".orca-repr-collapse, [data-role='collapse'], [data-testid='collapse']";
-        const collapseEl = rootBlock.querySelector<HTMLElement>(
-          collapseSelector
-        );
+        const collapseEl =
+          rootBlock.querySelector<HTMLElement>(collapseSelector);
         if (collapseEl) {
           const isCollapsed =
             collapseEl.getAttribute("aria-expanded") === "false" ||
@@ -104,7 +116,7 @@ function AnswerBlock({ blockId, panelId }: AnswerBlockProps) {
 
       // 1. 隐藏父块的主内容
       const main = container.querySelector<HTMLElement>(
-        ":scope > .orca-block > .orca-repr > .orca-repr-main"
+        ":scope > .orca-block > .orca-repr > .orca-repr-main",
       );
       if (main) main.style.display = "none";
 
@@ -126,7 +138,7 @@ function AnswerBlock({ blockId, panelId }: AnswerBlockProps) {
 
       // 3. 强制显示子块
       const children = container.querySelectorAll<HTMLElement>(
-        ".orca-block-children, .orca-repr-children, [data-role='children']"
+        ".orca-block-children, .orca-repr-children, [data-role='children']",
       );
       children.forEach((el) => {
         el.style.display = "";
@@ -173,9 +185,55 @@ export function ReviewPanel(props: RendererProps) {
 
   const activeCard = cards[currentIndex];
 
+  // 计算预览间隔
+  const predictedIntervals = React.useMemo(() => {
+    if (!activeCard) return null;
+    const grades: FsrsGrade[] = ["again", "hard", "good", "easy"];
+    const results: Record<string, string> = {};
+    grades.forEach((g) => {
+      const { nextState } = calculateNextReview(activeCard.fsrsData, g);
+      results[g] = formatInterval(nextState.interval);
+    });
+    return results;
+  }, [activeCard]);
+
   useEffect(() => {
     loadCards();
   }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in a block
+      if (
+        document.activeElement?.getAttribute("contenteditable") === "true" ||
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA"
+      ) {
+        return;
+      }
+
+      if (!activeCard) return;
+
+      if (e.code === "Space") {
+        e.preventDefault();
+        if (!showAnswer && activeCard.type !== "Topic") {
+          setShowAnswer(true);
+        } else {
+          // Space is "Good" if answer is shown
+          handleGrade("good");
+        }
+      } else if (showAnswer || activeCard.type === "Topic") {
+        if (e.key === "1") handleGrade("again");
+        if (e.key === "2") handleGrade("hard");
+        if (e.key === "3") handleGrade("good");
+        if (e.key === "4") handleGrade("easy");
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeCard, showAnswer, cards, currentIndex]);
 
   // Auto-show answer if it's a Topic card
   useEffect(() => {
@@ -192,6 +250,7 @@ export function ReviewPanel(props: RendererProps) {
       // pluginName 可以从 snapshot 或其他地方获取，这里硬编码或从 props 尝试
       await ensureCardTagSchema("lets-srs");
       const dueCards = await fetchDueCards();
+      logger.debug("due cards:", dueCards);
       setCards(dueCards || []);
       setCurrentIndex(0);
     } catch (err) {
@@ -209,18 +268,22 @@ export function ReviewPanel(props: RendererProps) {
       grade,
     );
 
+    console.log("[lets-srs] next state:", activeCard);
+
     // Save properties back to the block/tag
     try {
       const tagProperties = [
-        { name: "due", type: PropType.DateTime, value: nextDue.getTime() },
-        {
-          name: "type",
-          type: PropType.TextChoices,
-          value: [activeCard.type],
-          typeArgs: { choices: ["Auto", "Topic", "Item"], subType: "single" },
-        },
-        { name: "fsrsData", type: PropType.JSON, value: nextState },
+        { name: "due", value: nextDue },
+        // {
+        //   name: "type",
+        //   type: PropType.TextChoices,
+        //   value: [activeCard.type],
+        //   typeArgs: { choices: ["Auto", "Topic", "Item"], subType: "single" },
+        // },
+        { name: "fsrsData", value: JSON.stringify(nextState) },
       ];
+
+      console.log("[lets-srs] tag properties:", tagProperties);
 
       if (activeCard.cardRef) {
         await orca.commands.invokeEditorCommand(
@@ -230,13 +293,13 @@ export function ReviewPanel(props: RendererProps) {
           tagProperties,
         );
       } else {
-        await orca.commands.invokeEditorCommand(
-          "core.editor.insertTag",
-          null,
-          activeCard.blockId,
-          "Card",
-          tagProperties,
-        );
+        // await orca.commands.invokeEditorCommand(
+        //   "core.editor.insertTag",
+        //   null,
+        //   activeCard.blockId,
+        //   "Card",
+        //   tagProperties,
+        // );
       }
 
       // Move to next card
@@ -347,31 +410,67 @@ export function ReviewPanel(props: RendererProps) {
           display: "flex",
           flexDirection: "column",
           height: "100%",
-          padding: "16px",
+          padding: "24px",
           boxSizing: "border-box",
+          maxWidth: 800,
+          margin: "0 auto",
+          width: "100%",
+          animation: "fadeIn 0.3s ease-out",
         }}
       >
+        <style>
+          {`
+            @keyframes fadeIn {
+              from { opacity: 0; transform: translateY(10px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+            .srs-grade-btn {
+              transition: all 0.2s ease;
+              flex: 1;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 4px;
+              padding: 12px 8px !important;
+              height: auto !important;
+            }
+            .srs-grade-btn:hover {
+              transform: translateY(-2px);
+              filter: brightness(1.1);
+            }
+            .srs-interval-hint {
+              font-size: 10px;
+              opacity: 0.8;
+              font-weight: 400;
+            }
+          `}
+        </style>
         {/* Header */}
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: 16,
+            marginBottom: 24,
             paddingBottom: 16,
             borderBottom: "1px solid var(--orca-border)",
           }}
         >
-          <div contentEditable={false} style={{ fontWeight: 500 }}>
-            {t("Review")}
+          <div
+            contentEditable={false}
+            style={{ fontWeight: 600, fontSize: 18 }}
+          >
+            {t("SRS Review")}
           </div>
           <div
             style={{
-              fontSize: 12,
-              color: "var(--orca-text-secondary)",
-              background: "var(--orca-bg-tertiary)",
-              padding: "2px 8px",
-              borderRadius: 12,
+              fontSize: 13,
+              color: "white",
+              background: "#1e88e5", // Consistent blue
+              padding: "4px 12px",
+              borderRadius: 20,
+              fontWeight: 500,
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
             }}
           >
             {remainingCount} {t("cards left")}
@@ -380,16 +479,19 @@ export function ReviewPanel(props: RendererProps) {
 
         {/* Card Content Area */}
         <div style={{ flex: 1, overflowY: "auto", position: "relative" }}>
-          <div style={{ marginBottom: 16, opacity: 0.7, fontSize: 13 }}>
+          <div style={{ marginBottom: 12, opacity: 0.6, fontSize: 12 }}>
             <orca.components.BlockBreadcrumb blockId={activeCard.blockId} />
           </div>
 
           <div
             style={{
               border: "1px solid var(--orca-border)",
-              borderRadius: 8,
-              padding: 16,
+              borderRadius: 12,
+              padding: 24,
               background: "var(--orca-bg-secondary)",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+              minHeight: 180,
+              transition: "all 0.3s ease",
             }}
           >
             {/* 题目区域 */}
@@ -402,10 +504,10 @@ export function ReviewPanel(props: RendererProps) {
             {showAnswer && (
               <div
                 style={{
-                  marginTop: 16,
-                  paddingTop: 16,
+                  marginTop: 24,
+                  paddingTop: 24,
                   borderTop: "1px dashed var(--orca-border)",
-                  opacity: 0.9,
+                  animation: "fadeIn 0.4s ease-out",
                 }}
               >
                 <AnswerBlock
@@ -420,8 +522,8 @@ export function ReviewPanel(props: RendererProps) {
         {/* Footer Controls */}
         <div
           style={{
-            marginTop: 16,
-            paddingTop: 16,
+            marginTop: 32,
+            paddingBottom: 16,
             display: "flex",
             justifyContent: "center",
           }}
@@ -430,63 +532,103 @@ export function ReviewPanel(props: RendererProps) {
             <Button
               variant="solid"
               onClick={() => setShowAnswer(true)}
-              style={{ width: "100%", maxWidth: 300, padding: 12 }}
+              style={{
+                width: "100%",
+                maxWidth: 400,
+                padding: "14px",
+                fontSize: 16,
+                borderRadius: 8,
+                background: "#1e88e5", // Consistent blue
+                color: "white",
+                boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+              }}
             >
               {t("Show Answer")}
+              <span style={{ fontSize: 11, marginLeft: 8, opacity: 0.8 }}>
+                [Space]
+              </span>
             </Button>
           ) : (
             <div
-              style={{ display: "flex", gap: 12, width: "100%", maxWidth: 400 }}
+              style={{ display: "flex", gap: 12, width: "100%", maxWidth: 500 }}
             >
               {isTopic ? (
                 <Button
                   variant="solid"
                   onClick={() => handleGrade("good")}
+                  className="srs-grade-btn"
                   style={{
-                    flex: 1,
-                    background: "var(--orca-blue)",
+                    background: "#1e88e5", // Consistent blue
                     color: "white",
+                    borderRadius: 8,
                   }}
                 >
-                  {t("Mark as Read")}
+                  <div style={{ fontWeight: 600 }}>{t("Mark as Read")}</div>
+                  <div className="srs-interval-hint">
+                    {predictedIntervals?.good}
+                  </div>
                 </Button>
               ) : (
                 <>
                   <Button
-                    variant="outline"
+                    variant="solid"
                     onClick={() => handleGrade("again")}
+                    className="srs-grade-btn"
                     style={{
-                      flex: 1,
-                      color: "var(--orca-red)",
-                      borderColor: "var(--orca-red)",
+                      background: "#e53935", // More solid red
+                      color: "white",
+                      borderRadius: 8,
                     }}
                   >
-                    {t("Again")}
+                    <div style={{ fontWeight: 600 }}>{t("Again")}</div>
+                    <div className="srs-interval-hint">
+                      {predictedIntervals?.again}
+                    </div>
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="solid"
                     onClick={() => handleGrade("hard")}
+                    className="srs-grade-btn"
                     style={{
-                      flex: 1,
-                      color: "var(--orca-orange)",
-                      borderColor: "var(--orca-orange)",
+                      background: "#fb8c00", // More solid orange
+                      color: "white",
+                      borderRadius: 8,
                     }}
                   >
-                    {t("Hard")}
+                    <div style={{ fontWeight: 600 }}>{t("Hard")}</div>
+                    <div className="srs-interval-hint">
+                      {predictedIntervals?.hard}
+                    </div>
                   </Button>
                   <Button
-                    variant="soft"
+                    variant="solid"
                     onClick={() => handleGrade("good")}
-                    style={{ flex: 1, color: "var(--orca-green)" }}
+                    className="srs-grade-btn"
+                    style={{
+                      background: "#43a047", // More solid green
+                      color: "white",
+                      borderRadius: 8,
+                    }}
                   >
-                    {t("Good")}
+                    <div style={{ fontWeight: 600 }}>{t("Good")}</div>
+                    <div className="srs-interval-hint">
+                      {predictedIntervals?.good}
+                    </div>
                   </Button>
                   <Button
-                    variant="soft"
+                    variant="solid"
                     onClick={() => handleGrade("easy")}
-                    style={{ flex: 1, color: "var(--orca-blue)" }}
+                    className="srs-grade-btn"
+                    style={{
+                      background: "#1e88e5", // More solid blue
+                      color: "white",
+                      borderRadius: 8,
+                    }}
                   >
-                    {t("Easy")}
+                    <div style={{ fontWeight: 600 }}>{t("Easy")}</div>
+                    <div className="srs-interval-hint">
+                      {predictedIntervals?.easy}
+                    </div>
                   </Button>
                 </>
               )}

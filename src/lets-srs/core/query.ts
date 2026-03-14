@@ -20,36 +20,15 @@ export interface SrsCardData {
  */
 export async function fetchDueCards(): Promise<SrsCardData[]> {
   const now = Date.now();
+  // 1. 查询所有带有 #Card 标签的块。
+  // 注意：我们先查出所有，然后在内存中过滤，以确保对比精度和逻辑的一致性。
   const query: QueryDescription2 = {
     q: {
-      kind: 101 as any, // QueryKindSelfOr
-      conditions: [
-        {
-          kind: 4, // QueryKindTag
-          name: CARD_TAG_ALIAS,
-          properties: [
-            {
-              name: "due",
-              op: 10, // QueryLe (LessEqual)
-              value: now,
-            },
-          ],
-          selfOnly: true,
-        },
-        {
-          kind: 4, // QueryKindTag
-          name: CARD_TAG_ALIAS,
-          properties: [
-            {
-              name: "due",
-              op: 11, // QueryNull (Is null or undefined)
-            },
-          ],
-          selfOnly: true,
-        },
-      ],
-    },
-    pageSize: 1000,
+      kind: 4 as any, // QueryKindTag
+      name: CARD_TAG_ALIAS,
+      selfOnly: true,
+    } as any,
+    pageSize: 2000,
   };
 
   try {
@@ -76,8 +55,7 @@ export async function fetchDueCards(): Promise<SrsCardData[]> {
         continue;
       }
 
-      // 🛡️ 强制数据归一化 (直接作用于 orca.state 以确保全局一致)
-      // 这能彻底解决 "ur is not iterable" 错误，因为该错误通常源于 children/refs 为 null
+      // 🛡️ 强制数据归一化
       if (!Array.isArray(block.children)) block.children = [];
       if (!Array.isArray(block.refs)) block.refs = [];
       if (!Array.isArray(block.properties)) block.properties = [];
@@ -92,7 +70,7 @@ export async function fetchDueCards(): Promise<SrsCardData[]> {
       cardRef = refs.find(
         (ref: any) => ref.type === 2 && ref.alias === CARD_TAG_ALIAS,
       );
-      
+
       if (cardRef && cardRef.data && Array.isArray(cardRef.data)) {
         for (const prop of cardRef.data) {
           if (prop.name === "due") dueDate = prop.value;
@@ -114,37 +92,50 @@ export async function fetchDueCards(): Promise<SrsCardData[]> {
       const srsDataRaw = fsrsProp?.value;
       let srsData = null;
       if (typeof srsDataRaw === "string" && srsDataRaw) {
-        try { srsData = JSON.parse(srsDataRaw); } catch (e) {}
+        try {
+          srsData = JSON.parse(srsDataRaw);
+        } catch (e) {}
       } else if (typeof srsDataRaw === "object" && srsDataRaw !== null) {
         srsData = srsDataRaw;
       }
 
       const parsedDue = dueDate != null ? new Date(dueDate).getTime() : null;
       const blockValue = typeProp?.value;
-      const blockType = (Array.isArray(blockValue) ? blockValue[0] : blockValue) || "Auto";
+      const blockType =
+        (Array.isArray(blockValue) ? blockValue[0] : blockValue) || "Auto";
 
       dueCards.push({
         blockId,
         due: parsedDue,
         type: blockType as "Auto" | "Topic" | "Item",
         fsrsData: srsData,
-        block, // 保留引用
+        block,
         isNew: parsedDue === null,
         cardRef: cardRef,
       });
     } // 结束 resultIds 遍历
 
-    logger.debug(`[lets-srs] fetched ${dueCards.length} due cards`);
+    // 3. 进入内存过滤阶段：只保留 Due <= 现在 或 新卡 (Due 为空) 的内容
+    const filteredCards = dueCards.filter((card) => {
+      // 如果没有到期时间，视为新卡，直接加入
+      if (card.due === null) return true;
+      // 否则，对比时间戳
+      return card.due <= now;
+    });
 
-    // 默认排序：先复习旧卡片（按到期日排序），再复习新卡片
-    dueCards.sort((a, b) => {
+    console.log(
+      `[lets-srs] total found: ${dueCards.length}, due/new: ${filteredCards.length}`,
+    );
+
+    // 默认排序：先复习旧卡片（按到期日从小到大），再复习新卡片
+    filteredCards.sort((a, b) => {
       if (a.isNew && !b.isNew) return 1;
       if (!a.isNew && b.isNew) return -1;
       if (!a.isNew && !b.isNew) return a.due! - b.due!;
       return 0;
     });
 
-    return dueCards;
+    return filteredCards;
   } catch (err) {
     console.error(`[lets-srs] failed to fetch cards`, err);
     return [];
