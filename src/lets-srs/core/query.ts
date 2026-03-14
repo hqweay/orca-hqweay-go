@@ -126,11 +126,10 @@ export async function fetchDueCards(): Promise<SrsCardData[]> {
 
       const parsedDue = dueDate != null ? new Date(dueDate).getTime() : null;
       const blockValue = typeProp?.value;
-      let blockType =
-        (Array.isArray(blockValue) ? blockValue[0] : blockValue) || "Auto";
+      let blockType = Array.isArray(blockValue) ? blockValue[0] : blockValue;
 
-      if (blockType === "Auto") {
-        // 如果是 Auto，根据是否有子块来区分：有子块为 Item (QA)，没子块为 Topic (Read)
+      if (!blockType) {
+        // 如果没有显式设置类型（空即 Auto），根据是否有子块来区分：有子块为 Item (QA)，没子块为 Topic (Read)
         const hasChildren = block.children && block.children.length > 0;
         blockType = hasChildren ? "Item" : "Topic";
       }

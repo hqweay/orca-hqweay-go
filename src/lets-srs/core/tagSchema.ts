@@ -12,9 +12,9 @@ export const CARD_PROPERTIES: BlockProperty[] = [
   {
     name: "type",
     type: PropType.TextChoices,
-    value: ["Auto"], // 默认为 Auto，依靠层级关系判断
+    value: [] as string[], // 默认为空，由层级关系自动判断
     typeArgs: {
-      choices: ["Auto", "Topic", "Item"],
+      choices: ["Topic", "Item"],
       subType: "single",
     },
   },
