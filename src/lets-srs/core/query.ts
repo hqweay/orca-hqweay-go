@@ -14,6 +14,7 @@ export interface SrsCardData {
   cardRef?: any; // The BlockRef object for the Card tag
   status: string[]; // multi-select options: suspend, archived, marked, leech
   remark?: string;
+  snapshotProps?: any[]; // Original property values for Undo
 }
 
 /**
@@ -100,8 +101,14 @@ export async function fetchDueCards(): Promise<SrsCardData[]> {
         (ref: any) => ref.type === 2 && ref.alias === CARD_TAG_ALIAS,
       );
 
+      const srsPropNames = ["due", "type", "fsrsData", "status", "remark"];
+      let snapshotProps: any[] = [];
+
       if (cardRef && cardRef.data && Array.isArray(cardRef.data)) {
         for (const prop of cardRef.data) {
+          if (srsPropNames.includes(prop.name)) {
+            snapshotProps.push({ ...prop });
+          }
           if (prop.name === "due") dueDate = prop.value;
           else if (prop.name === "type") typeProp = prop;
           else if (prop.name === "fsrsData") fsrsProp = prop;
@@ -113,6 +120,9 @@ export async function fetchDueCards(): Promise<SrsCardData[]> {
       // 备选方案：检查顶层属性
       if (!dueDate && block.properties) {
         for (const prop of block.properties) {
+          if (srsPropNames.includes(prop.name)) {
+            snapshotProps.push({ ...prop });
+          }
           if (prop.name === "due") dueDate = prop.value;
           else if (prop.name === "type") typeProp = prop;
           else if (prop.name === "fsrsData") fsrsProp = prop;
@@ -166,6 +176,7 @@ export async function fetchDueCards(): Promise<SrsCardData[]> {
         cardRef: cardRef,
         status: currentStatus,
         remark: remarkProp?.value || "",
+        snapshotProps: snapshotProps,
       });
     } // 结束 resultIds 遍历
 

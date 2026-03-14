@@ -63,6 +63,17 @@ export async function saveCardRemark(
 }
 
 /**
+ * 将卡片属性还原为初始状态（用于撤销）
+ */
+export async function revertCardToState(card: SrsCardData): Promise<void> {
+  if (!card.snapshotProps || !Array.isArray(card.snapshotProps)) {
+    console.warn("[lets-srs] No snapshot found for card undo", card.blockId);
+    return;
+  }
+  await updateCardProperties(card, card.snapshotProps);
+}
+
+/**
  * 内部工具：更新或插入卡片标签数据
  */
 async function updateCardProperties(

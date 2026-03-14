@@ -78,7 +78,6 @@ export async function ensureCardTagSchema(pluginName: string): Promise<void> {
     }
 
     // Add missing properties
-    // for (const prop of missingProps) {
     try {
       await orca.commands.invokeEditorCommand(
         "core.editor.setProperties",
@@ -88,11 +87,10 @@ export async function ensureCardTagSchema(pluginName: string): Promise<void> {
       );
     } catch (err) {
       console.error(
-        `[${pluginName}] Failed to inject property "${prop.name}" for #Card schema.`,
+        `[${pluginName}] Failed to inject missing properties for #Card schema.`,
         err,
       );
     }
-    // }
 
     isInitialized = true;
   } catch (error) {

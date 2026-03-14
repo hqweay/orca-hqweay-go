@@ -5,6 +5,7 @@ import { ensureCardTagSchema } from "../core/tagSchema";
 import { PropType } from "@/libs/consts";
 import { Logger } from "@/libs/logger";
 import { ReviewCard } from "./components/ReviewCard";
+import { revertCardToState } from "../core/storage";
 
 const logger = new Logger("lets-srs");
 interface RendererProps {
@@ -60,12 +61,21 @@ export function ReviewPanel(props: RendererProps) {
     setCurrentIndex((prev) => prev + 1);
   };
 
-  const handleGoBack = () => {
+  const handleGoBack = async () => {
     if (history.length === 0) return;
     const newHistory = [...history];
     const prevIndex = newHistory.pop();
-    setHistory(newHistory);
+    
     if (prevIndex !== undefined) {
+      const cardToRevert = cards[prevIndex];
+      if (cardToRevert) {
+        try {
+          await revertCardToState(cardToRevert);
+        } catch (err) {
+          console.error("[lets-srs] failed to revert card state during undo", err);
+        }
+      }
+      setHistory(newHistory);
       setCurrentIndex(prevIndex);
     }
   };
