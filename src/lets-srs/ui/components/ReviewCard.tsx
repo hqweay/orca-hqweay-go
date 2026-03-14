@@ -4,7 +4,13 @@ import { ItemRenderer } from "./ItemRenderer";
 import { TopicRenderer } from "./TopicRenderer";
 import { t } from "../../../libs/l10n";
 import { FsrsGrade, calculateNextReview, CardState } from "../../core/fsrs";
-import { saveCardReview, postponeCard, toggleCardStatus, saveCardRemark, ensureCardTag } from "../../core/storage";
+import {
+  saveCardReview,
+  postponeCard,
+  toggleCardStatus,
+  saveCardRemark,
+  ensureCardTag,
+} from "../../core/storage";
 import { SrsCardData } from "../../core/query";
 
 const { Button, Tooltip } = orca.components;
@@ -298,14 +304,23 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
             </span>
           )}
           {activeCard.isVirtual && (
-            <Tooltip text={t("Convert this block to a flashcard [U]")}>
+            // <Tooltip text={t("Convert this block to a flashcard [U]")}>
+            //   <Button
+            //     variant="solid"
+            //     onClick={handleUpgrade}
+            //     style={{ fontSize: 10, padding: "2px 6px", background: "var(--orca-color-primary-6)" }}
+            //   >
+            //     <i className="ti ti-bolt" style={{ marginRight: 4 }} />
+            //     {t("Convert to Card")}
+            //   </Button>
+            // </Tooltip>
+            <Tooltip text={t("Convert to Card [U]")}>
               <Button
-                variant="solid"
-                onClick={handleUpgrade}
-                style={{ fontSize: 10, padding: "2px 6px", background: "var(--orca-color-primary-6)" }}
+                variant="plain"
+                onClick={() => handleUpgrade}
+                style={{ color: "var(--orca-color-primary-6)" }}
               >
-                <i className="ti ti-bolt" style={{ marginRight: 4 }} />
-                {t("Convert to Card")}
+                <i className="ti ti-bolt" style={{ fontSize: 16 }} />
               </Button>
             </Tooltip>
           )}
