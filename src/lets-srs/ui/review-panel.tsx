@@ -95,7 +95,7 @@ function ReviewCard({ blockId, panelId, showAnswer }: ReviewCardProps) {
           children.style.display = showAnswer ? "" : "none";
         }
       }
-    };;
+    };
 
     const observer = new MutationObserver(updateVisibility);
     observer.observe(container, { childList: true, subtree: true });
@@ -164,6 +164,8 @@ export function ReviewPanel(props: RendererProps) {
         } else {
           handleGrade("good");
         }
+      } else if (e.key.toLowerCase() === "s") {
+        handleSkip();
       } else if (showAnswer || activeCard.type === "Topic") {
         if (e.key === "1") handleGrade("again");
         if (e.key === "2") handleGrade("hard");
@@ -197,6 +199,11 @@ export function ReviewPanel(props: RendererProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSkip = () => {
+    setCurrentIndex((prev) => prev + 1);
+    setShowAnswer(false);
   };
 
   const handleGrade = async (grade: FsrsGrade) => {
@@ -431,95 +438,51 @@ export function ReviewPanel(props: RendererProps) {
           }}
         >
           {!showAnswer && !isTopic ? (
-            <Button
-              variant="solid"
-              onClick={() => setShowAnswer(true)}
-              style={{
-                width: "100%",
-                maxWidth: 400,
-                padding: "14px",
-                fontSize: 16,
-                borderRadius: 8,
-                background: "#1e88e5",
-                color: "white",
-                boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-              }}
+            <div
+              style={{ display: "flex", gap: 12, width: "100%", maxWidth: 600 }}
             >
-              {t("Show Answer")}
-              <span style={{ fontSize: 11, marginLeft: 8, opacity: 0.8 }}>
-                [Space]
-              </span>
-            </Button>
+              <Button
+                variant="outline"
+                onClick={handleSkip}
+                style={{
+                  flex: 1,
+                  borderRadius: 8,
+                  borderColor: "var(--orca-border)",
+                }}
+              >
+                {t("Skip")}
+                <span style={{ fontSize: 10, marginLeft: 4, opacity: 0.6 }}>
+                  [S]
+                </span>
+              </Button>
+              <Button
+                variant="solid"
+                onClick={() => setShowAnswer(true)}
+                style={{
+                  flex: 3,
+                  padding: "14px",
+                  fontSize: 16,
+                  borderRadius: 8,
+                  background: "#1e88e5",
+                  color: "white",
+                  boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+                }}
+              >
+                {t("Show Answer")}
+                <span style={{ fontSize: 11, marginLeft: 8, opacity: 0.8 }}>
+                  [Space]
+                </span>
+              </Button>
+            </div>
           ) : (
             <div
-              style={{ display: "flex", gap: 12, width: "100%", maxWidth: 500 }}
+              style={{ display: "flex", gap: 12, width: "100%", maxWidth: 600 }}
             >
-              {isTopic ? (
-                <Button
-                  variant="solid"
-                  onClick={() => handleGrade("good")}
-                  className="srs-grade-btn"
-                  style={{
-                    background: "#1e88e5",
-                    color: "white",
-                    borderRadius: 8,
-                  }}
-                >
-                  <div style={{ fontWeight: 600 }}>{t("Mark as Read")}</div>
-                  <div className="srs-interval-hint">
-                    {predictedIntervals?.good}
-                  </div>
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    variant="solid"
-                    onClick={() => handleGrade("again")}
-                    className="srs-grade-btn"
-                    style={{
-                      background: "#e53935",
-                      color: "white",
-                      borderRadius: 8,
-                    }}
-                  >
-                    <div style={{ fontWeight: 600 }}>{t("Again")}</div>
-                    <div className="srs-interval-hint">
-                      {predictedIntervals?.again}
-                    </div>
-                  </Button>
-                  <Button
-                    variant="solid"
-                    onClick={() => handleGrade("hard")}
-                    className="srs-grade-btn"
-                    style={{
-                      background: "#fb8c00",
-                      color: "white",
-                      borderRadius: 8,
-                    }}
-                  >
-                    <div style={{ fontWeight: 600 }}>{t("Hard")}</div>
-                    <div className="srs-interval-hint">
-                      {predictedIntervals?.hard}
-                    </div>
-                  </Button>
+              <div style={{ display: "flex", gap: 12, flex: 4 }}>
+                {isTopic ? (
                   <Button
                     variant="solid"
                     onClick={() => handleGrade("good")}
-                    className="srs-grade-btn"
-                    style={{
-                      background: "#43a047",
-                      color: "white",
-                      borderRadius: 8,
-                    }}
-                  >
-                    <div style={{ fontWeight: 600 }}>{t("Good")}</div>
-                    <div className="srs-interval-hint">
-                      {predictedIntervals?.good}
-                    </div>
-                  </Button>
-                  <Button
-                    variant="solid"
-                    onClick={() => handleGrade("easy")}
                     className="srs-grade-btn"
                     style={{
                       background: "#1e88e5",
@@ -527,13 +490,90 @@ export function ReviewPanel(props: RendererProps) {
                       borderRadius: 8,
                     }}
                   >
-                    <div style={{ fontWeight: 600 }}>{t("Easy")}</div>
+                    <div style={{ fontWeight: 600 }}>{t("Mark as Read")}</div>
                     <div className="srs-interval-hint">
-                      {predictedIntervals?.easy}
+                      {predictedIntervals?.good}
                     </div>
                   </Button>
-                </>
-              )}
+                ) : (
+                  <>
+                    <Button
+                      variant="solid"
+                      onClick={() => handleGrade("again")}
+                      className="srs-grade-btn"
+                      style={{
+                        background: "#e53935",
+                        color: "white",
+                        borderRadius: 8,
+                      }}
+                    >
+                      <div style={{ fontWeight: 600 }}>{t("Again")}</div>
+                      <div className="srs-interval-hint">
+                        {predictedIntervals?.again}
+                      </div>
+                    </Button>
+                    <Button
+                      variant="solid"
+                      onClick={() => handleGrade("hard")}
+                      className="srs-grade-btn"
+                      style={{
+                        background: "#fb8c00",
+                        color: "white",
+                        borderRadius: 8,
+                      }}
+                    >
+                      <div style={{ fontWeight: 600 }}>{t("Hard")}</div>
+                      <div className="srs-interval-hint">
+                        {predictedIntervals?.hard}
+                      </div>
+                    </Button>
+                    <Button
+                      variant="solid"
+                      onClick={() => handleGrade("good")}
+                      className="srs-grade-btn"
+                      style={{
+                        background: "#43a047",
+                        color: "white",
+                        borderRadius: 8,
+                      }}
+                    >
+                      <div style={{ fontWeight: 600 }}>{t("Good")}</div>
+                      <div className="srs-interval-hint">
+                        {predictedIntervals?.good}
+                      </div>
+                    </Button>
+                    <Button
+                      variant="solid"
+                      onClick={() => handleGrade("easy")}
+                      className="srs-grade-btn"
+                      style={{
+                        background: "#1e88e5",
+                        color: "white",
+                        borderRadius: 8,
+                      }}
+                    >
+                      <div style={{ fontWeight: 600 }}>{t("Easy")}</div>
+                      <div className="srs-interval-hint">
+                        {predictedIntervals?.easy}
+                      </div>
+                    </Button>
+                  </>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                onClick={handleSkip}
+                style={{
+                  flex: 1,
+                  borderRadius: 8,
+                  borderColor: "var(--orca-border)",
+                }}
+              >
+                {t("Skip")}
+                <span style={{ fontSize: 10, marginLeft: 4, opacity: 0.6 }}>
+                  [S]
+                </span>
+              </Button>
             </div>
           )}
         </div>

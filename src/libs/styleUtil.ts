@@ -57,11 +57,11 @@ function applyCSSRule(
   options: CSSRuleOptions = {},
 ): CSSRuleInstance {
   const {
-    id = null,
+    id = undefined,
     scope = "global",
     priority = "normal",
     replace = false,
-    media = null,
+    media = undefined,
     disabled = false,
     onLoad = null,
     onError = null,
@@ -228,7 +228,7 @@ function applyCSSRule(
       return applyCSSRule(cleanedCssText, {
         ...options,
         ...cloneOptions,
-        id: null,
+        id: undefined,
       });
     },
   };
@@ -364,7 +364,7 @@ function getAllCSSRules(): CSSRuleInstance[] {
       clone: (cloneOptions: Partial<CSSRuleOptions> = {}) => {
         return applyCSSRule(style.textContent || "", {
           ...cloneOptions,
-          id: null,
+          id: undefined,
         });
       },
     };
