@@ -1,6 +1,7 @@
 import React from "react";
 import { BasePlugin } from "@/libs/BasePlugin";
 import { t } from "@/libs/l10n";
+import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import { BazaarModal } from "./BazaarModal";
 
 export default class BazaarPlugin extends BasePlugin {
@@ -62,7 +63,36 @@ export default class BazaarPlugin extends BasePlugin {
       React.createElement(BazaarModal, {
         onClose: handleClose,
         pluginName: this.name,
+        plugin: this,
       }),
+    );
+  }
+
+  public getDefaultSettings() {
+    return {
+      ...super.getDefaultSettings(),
+      bazaarUrl: "https://raw.githubusercontent.com/hqweay/orca-bazaar/refs/heads/main/plugins.json",
+    };
+  }
+
+  protected renderCustomSettings(): React.ReactNode {
+    const settings = this.getSettings();
+
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+        <SettingsSection title={t("Bazaar Settings")}>
+          <SettingsItem 
+            label={t("Plugins Source URL")} 
+            description={t("The URL to fetch the plugins JSON list from.")}
+          >
+            <orca.components.Input
+              value={settings.bazaarUrl || ""}
+              onChange={(e) => this.updateSettings({ bazaarUrl: e.target.value })}
+              placeholder="https://raw.githubusercontent.com/.../plugins.json"
+            />
+          </SettingsItem>
+        </SettingsSection>
+      </div>
     );
   }
 

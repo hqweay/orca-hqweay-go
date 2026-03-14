@@ -11,6 +11,12 @@ The **Orca Bazaar** is a plugin marketplace for Orca Notes, allowing users to di
 - **Caching**: Caches the plugin list locally for instant loading.
 - **Offline Capable**: Works even if GitHub is temporarily unreachable (if cached).
 
+## Configuration
+
+You can configure the behavior of the Bazaar in the plugin settings:
+
+- **Plugins Source URL**: Customize the `plugins.json` endpoint if you want to use a private marketplace or mirror (defaults to the official GitHub repository).
+
 ## Usage
 
 1.  Open **Command Palette** (`Cmd+P`) -> `Open Bazaar`.

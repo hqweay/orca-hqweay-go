@@ -73,6 +73,7 @@ The community plugin marketplace for Orca, discover more possibilities:
 
 - **Browse & Install**: Browse and one-click install community plugins directly within the app.
 - **Auto Management**: Supports plugin updates and uninstallation.
+- **Custom Source**: Supports configuring a custom URL source for the `plugins.json` list via Plugin Settings. 
 - **Contribute**: Developers are welcome to submit their plugins to the bazaar.
 
 ### 8. 🏷️ Quick Tag Shortcuts

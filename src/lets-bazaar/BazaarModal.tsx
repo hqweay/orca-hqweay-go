@@ -17,9 +17,10 @@ interface ReleaseData {
 interface BazaarModalProps {
   onClose: () => void;
   pluginName: string;
+  plugin: any;
 }
 
-export function BazaarModal({ onClose, pluginName }: BazaarModalProps) {
+export function BazaarModal({ onClose, pluginName, plugin }: BazaarModalProps) {
   const [plugins, setPlugins] = useState<PluginInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [installing, setInstalling] = useState<string | null>(null);
@@ -55,9 +56,14 @@ export function BazaarModal({ onClose, pluginName }: BazaarModalProps) {
   const fetchPlugins = async () => {
     try {
       setLoading(true);
-      const response = await fetch(
-        `https://raw.githubusercontent.com/hqweay/orca-bazaar/refs/heads/main/plugins.json?t=${Date.now()}`,
-      );
+      const settings = plugin.getSettings();
+      const bazaarUrl = settings.bazaarUrl || "https://raw.githubusercontent.com/hqweay/orca-bazaar/refs/heads/main/plugins.json";
+      
+      // Append cache-busting timestamp safely depending on whether URL already has query params
+      const separator = bazaarUrl.includes("?") ? "&" : "?";
+      const fetchUrl = `${bazaarUrl}${separator}t=${Date.now()}`;
+
+      const response = await fetch(fetchUrl);
       const text = await response.text();
       const parsed = parsePluginsJson(text);
       setPlugins(parsed);
