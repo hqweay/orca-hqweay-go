@@ -390,6 +390,7 @@ export function ReviewPanel(props: RendererProps) {
             {t("SRS Review")}
           </div>
           <div
+            contentEditable={false}
             style={{
               fontSize: 13,
               color: "white",
@@ -402,6 +403,11 @@ export function ReviewPanel(props: RendererProps) {
           >
             {remainingCount} {t("cards left")}
           </div>
+          <orca.components.Tooltip text={t("Refresh")}>
+            <Button variant="plain" onClick={() => loadCards()}>
+              <i className="ti ti-refresh" style={{ fontSize: "16px" }} />
+            </Button>
+          </orca.components.Tooltip>
         </div>
 
         {/* Card Content Area */}
