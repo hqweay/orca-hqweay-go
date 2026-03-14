@@ -1,6 +1,33 @@
-## [1.12.11](/compare/v1.12.10...v1.12.11) (2026-03-14)
+# [1.13.0](/compare/v1.12.11...v1.13.0) (2026-03-14)
 
-Update to 1.12.11
+新增 srs roam
+
+
+### Bug Fixes
+
+* prevent hiding `.orca-repr-scope-line` in SRS review sessions. c8541a6
+
+
+### Features
+
+* Add 'Skip' card functionality to the review panel with 'S' keybind and UI buttons; refactor style utility default options from null to undefined. 66bbbe6
+* add orca-random-walk submodule. 0e8224e
+* Add orca-srs-plugin and update orca-plugin-template submodules to vendor paths. 85693a6
+* Add refresh button to the review panel header and disable content editing for the remaining card count. 118d4db
+* Add Skip button to the review card's answer-shown state, disabled when saving. 162d439
+* Add smart roaming for single selected blocks, including query results or related blocks (references/backlinks). eb8204b
+* hide editor non-editable, go-btns, and sidetools during SRS review sessions. 5312a51
+* Implement card status and remark properties, adding functions for postponing, status toggling, remark saving, and filtering suspended/archived cards. 523efdf
+* Implement Spaced Repetition System (SRS) plugin with FSRS algorithm, card schema, and a dedicated review panel. 41feccf
+* Implement SRS card review UI including grading, progress saving, and keyboard shortcuts. 707ec28
+* Implement undo functionality for card reviews by storing and reverting card properties. ac89b1b
+* Improve automatic block type detection and persistence, and update fsrsData storage type. 4c57c1d
+* Internationalize SRS module strings and add a dedicated translation file. 47a9664
+* Introduce keyboard shortcuts, predicted interval display, and UI refinements to the SRS review panel, updating FSRS data persistence. d960d62
+* introduce Spaced Repetition System (SRS) plugin with card querying, FSRS logic, and a review panel UI. c73aa6a
+* Introduce virtual cards and a "Roam in SRS" block menu command to convert blocks into reviewable SRS cards. a23b1e9
+
+## [1.12.11](/compare/v1.12.10...v1.12.11) (2026-03-14)
 
 
 ### Features
