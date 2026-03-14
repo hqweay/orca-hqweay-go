@@ -1,3 +1,6 @@
-[submodule "orca-plugin-template"]
-	path = orca-plugin-template
+[submodule "vendor/orca-srs-plugin"]
+	path = vendor/orca-srs-plugin
+	url = git@github.com:Samuelxiaozhuofeng/orca-srs-plugin.git
+[submodule "vendor/orca-plugin-template"]
+	path = vendor/orca-plugin-template
 	url = git@github.com:sethyuan/orca-plugin-template.git

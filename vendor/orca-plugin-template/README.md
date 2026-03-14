@@ -1,1 +1,0 @@
-# Orca Note plugin template
