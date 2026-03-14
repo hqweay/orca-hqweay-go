@@ -36,7 +36,7 @@ export default class SrsPlugin extends BasePlugin {
 
     applyCSSRule(
       `
-    div[repr="lets-srs.review-session"] .orca-repr-scope-line {
+    div[repr="lets-srs.review-session"] .orca-repr-scope-line, .orca-block-editor-none-editable, .orca-block-editor-go-btns, .orca-block-editor-sidetools {
         display: none;
     }`,
       { id: RENDERER_TYPE },
