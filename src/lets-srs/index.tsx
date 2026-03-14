@@ -112,47 +112,60 @@ export default class SrsPlugin extends BasePlugin {
                   close();
                   if (!blockIds || blockIds.length === 0) return;
 
-                  // 如果只选择了一个块且是查询块，则漫游其结果
+                  // 如果只选择了一个块，执行智能漫游逻辑
                   if (blockIds.length === 1) {
                     const blockId = blockIds[0];
+                    const block =
+                      orca.state.blocks[blockId] ||
+                      (await orca.invokeBackend("get-block", blockId));
+                    if (!block) return;
 
-                    const block = orca.state.blocks[blockId];
-                    const queryBlockRepr = block?.properties.find(
+                    const repr = block.properties.find(
                       (p: any) => p.name === "_repr",
                     )?.value;
 
-                    this.logger.info("Query block repr", queryBlockRepr);
-                    if (queryBlockRepr?.type !== "query") {
-                      orca.notify(
-                        "error",
-                        t("Please give a valid query block."),
-                      );
-                      return;
+                    // 场景 A：查询块 - 漫游其结果
+                    if (repr?.type === "query") {
+                      try {
+                        const queryResults = (await orca.invokeBackend(
+                          "query",
+                          {
+                            q: JSON.parse(JSON.stringify(repr.q.q)),
+                            page: 1,
+                            pageSize: 1000,
+                            sort: [],
+                          } as QueryDescription2,
+                        )) as DbId[];
+
+                        if (!queryResults?.length) {
+                          orca.notify(
+                            "warn",
+                            t("No results found for the query."),
+                          );
+                          return;
+                        }
+                        this.handleRoam(queryResults);
+                        return;
+                      } catch (err) {
+                        console.error("[lets-srs] Failed to query items", err);
+                      }
                     }
 
-                    queryBlockRepr.q.page = 1;
-                    queryBlockRepr.q.pageSize = 500;
-                    // const queryResults: DbId[] = await orca.invokeBackend(
-                    //   "query",
-                    //   queryBlockRepr.q,
-                    // );
-
-                    const queryResults = (await orca.invokeBackend("query", {
-                      q: JSON.parse(JSON.stringify(queryBlockRepr.q.q)),
-                      page: 1,
-                      pageSize: 1000,
-                      sort: [],
-                    } as QueryDescription2)) as DbId[];
-
-                    this.logger.info("Query results22", queryResults);
-                    if (!queryResults?.length) {
-                      orca.notify("warn", t("No results found for the query."));
-                      return;
+                    // 场景 B：普通块 - 漫游相关块（引用 + 反链）
+                    try {
+                      const relatedIds = await this.getRelatedBlockIds(blockId);
+                      if (relatedIds.length > 0) {
+                        this.handleRoam(relatedIds);
+                      } else {
+                        // 如果没有相关块，至少漫游它自己
+                        this.handleRoam([blockId]);
+                      }
+                    } catch (err) {
+                      console.error("[lets-srs] smart roam failed", err);
+                      this.handleRoam([blockId]);
                     }
-
-                    this.logger.info("Query results", queryResults);
-                    this.handleRoam(queryResults);
                   } else {
+                    // 否则漫游所有选中的块
                     this.handleRoam(blockIds);
                   }
                 }}
@@ -162,6 +175,73 @@ export default class SrsPlugin extends BasePlugin {
         },
       );
     }
+  }
+
+  private async getRelatedBlockIds(rootId: DbId): Promise<DbId[]> {
+    const ids = new Set<DbId>();
+    ids.add(rootId);
+
+    // 1. 获取块树以递归处理子块
+    const rootTree = await orca.invokeBackend("get-block-tree", rootId);
+    rootTree.push(rootId);
+
+    this.logger.info("Root tree", rootTree);
+    const traverse = (node: any) => {
+      console.log("traverse", node);
+      if (!node) return;
+      ids.add(node.id);
+
+      // 收集出链 (Outgoing References)
+      if (node.refs && Array.isArray(node.refs)) {
+        node.refs.forEach((r: any) => {
+          this.logger.info("Ref", r);
+          if (r.to) ids.add(r.to);
+        });
+      }
+
+      // 递归子块
+      if (node.children && Array.isArray(node.children)) {
+        // 如果 get-block-tree 返回的是展开的 Block 对象数组
+        node.children.forEach((child: any) => {
+          if (typeof child === "object") {
+            traverse(child);
+          } else {
+            // 如果只有 ID，可能需要进一步获取，但 get-block-tree 通常是递归好的
+            // 我们姑且认为它是递归的
+          }
+        });
+      }
+    };
+
+    // traverse(rootTree);
+    rootTree.forEach(async (blockId: any) => {
+      let block = orca.state.blocks[blockId];
+      // if (!block) {
+      //   block = await orca.invokeBackend("get-block", blockId);
+      // }
+      traverse(block);
+    });
+
+    // 2. 获取根块的反链 (Incoming References / Backlinks)
+    // 注意：backRefs 可能已经在 rootTree 中，由 get-block-tree 返回）
+    if (
+      orca.state.blocks[rootId]?.backRefs &&
+      Array.isArray(orca.state.blocks[rootId].backRefs)
+    ) {
+      orca.state.blocks[rootId].backRefs.forEach((r: any) => {
+        this.logger.info("Back ref", r);
+        if (r.from) ids.add(r.from);
+      });
+    }
+
+    this.logger.info("Related ids", ids);
+
+    // 过滤掉 session 块自己（防止循环复习）
+    if (this.sessionBlockId) {
+      ids.delete(this.sessionBlockId);
+    }
+
+    return Array.from(ids);
   }
 
   private async handleRoam(blockIds: number[]) {
