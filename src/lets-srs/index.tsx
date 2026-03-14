@@ -1,6 +1,6 @@
 import { DbId, PanelProps, QueryDescription2 } from "@/orca";
 import { BasePlugin } from "../libs/BasePlugin";
-import { t } from "../libs/l10n";
+import { setupL10N, t } from "../libs/l10n";
 import { ensureCardTagSchema } from "./core/tagSchema";
 import { ReviewPanel } from "./ui/review-panel";
 import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
@@ -341,7 +341,7 @@ export default class SrsPlugin extends BasePlugin {
       null,
       null,
       null,
-      [{ t: "t", v: `[SRS Review Session]` }],
+      [{ t: "t", v: t("[SRS Review Session]") }],
       { type: RENDERER_TYPE },
     )) as number;
 

@@ -280,7 +280,7 @@ export function ReviewPanel(props: RendererProps) {
               marginLeft: 12,
             }}
           >
-            {remainingCount} {t("cards left")}
+            {t("${count} cards left", { count: remainingCount.toString() })}
           </div>
 
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>

@@ -26,13 +26,14 @@ interface ReviewCardProps {
 function formatInterval(days: number): string {
   if (days < 1) {
     const minutes = Math.round(days * 24 * 60);
-    if (minutes < 1) return "<1m";
-    return `${minutes}m`;
+    if (minutes < 1) return t("<1m");
+    return t("${minutes}m", { minutes: minutes.toString() });
   }
   const rounded = Math.round(days);
-  if (rounded < 30) return `${rounded}d`;
-  if (rounded < 365) return `${(rounded / 30.44).toFixed(1)}mo`;
-  return `${(rounded / 365.25).toFixed(1)}y`;
+  if (rounded < 30) return t("${days}d", { days: rounded.toString() });
+  if (rounded < 365)
+    return t("${months}mo", { months: (rounded / 30.44).toFixed(1) });
+  return t("${years}y", { years: (rounded / 365.25).toFixed(1) });
 }
 
 function formatDateTime(date: number | null): string {
@@ -499,7 +500,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
             >
               {t("Skip")}
               <span style={{ fontSize: 10, marginLeft: 4, opacity: 0.6 }}>
-                [S]
+                {t("[S]")}
               </span>
             </Button>
             <Button
@@ -517,7 +518,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
             >
               {t("Show Answer")}
               <span style={{ fontSize: 11, marginLeft: 8, opacity: 0.8 }}>
-                [Space]
+                {t("[Space]")}
               </span>
             </Button>
           </div>
@@ -536,7 +537,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
                 contentEditable={false}
                 style={{ fontSize: 10, marginLeft: 4, opacity: 0.6 }}
               >
-                [S]
+                {t("[S]")}
               </span>
             </Button>
 
