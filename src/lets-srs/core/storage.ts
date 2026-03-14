@@ -69,26 +69,7 @@ export async function saveCardRemark(
  */
 export async function ensureCardTag(card: SrsCardData): Promise<void> {
   if (!card.isVirtual && card.cardRef) return;
-
-  const tabBlockId = (await orca.commands.invokeEditorCommand(
-    "core.editor.insertTag",
-    null,
-    card.blockId,
-    CARD_TAG_ALIAS,
-    CARD_PROPERTIES,
-  )) as number;
-
-  // 获取新创建的组件块数据
-  const tagBlock = await orca.invokeBackend("get-block", tabBlockId);
-  if (tagBlock) {
-    card.cardRef = {
-      id: tabBlockId,
-      type: 2,
-      alias: CARD_TAG_ALIAS,
-      data: tagBlock.properties || [],
-    };
-    card.isVirtual = false;
-  }
+  await updateCardProperties(card, []);
 }
 
 /**
@@ -109,6 +90,7 @@ async function updateCardProperties(
   card: SrsCardData,
   tagProperties: any[],
 ): Promise<void> {
+  // 1. 如果已有 cardRef，优先尝试更新现有标签
   if (card.cardRef) {
     try {
       await orca.commands.invokeEditorCommand(
@@ -117,15 +99,43 @@ async function updateCardProperties(
         card.cardRef,
         tagProperties,
       );
+      return;
     } catch (e) {
-      // 容错：如果 Ref 已失效，尝试重新插入标签
-      await orca.commands.invokeEditorCommand(
-        "core.editor.insertTag",
-        null,
-        card.blockId,
-        "Card",
-        tagProperties,
+      // 容错：如果 Ref 已失效（标签被手动删了），进入下面的插入逻辑
+      console.warn(
+        "[lets-srs] setRefData failed, falling back to insertTag",
+        e,
       );
     }
+  }
+
+  // 2. 如果是虚拟内容或者更新失败，执行插入/重新注入标签
+  // 构造完整的属性列表，合并 默认值 与 传入的覆盖值
+  const finalProps = CARD_PROPERTIES.map((p) => {
+    const override = tagProperties.find((tp) => tp.name === p.name);
+    return {
+      name: p.name,
+      value: override ? override.value : p.typeArgs?.default,
+    };
+  });
+
+  const tabBlockId = (await orca.commands.invokeEditorCommand(
+    "core.editor.insertTag",
+    null,
+    card.blockId,
+    CARD_TAG_ALIAS,
+    finalProps,
+  )) as number;
+
+  // 3. 更新内存中的状态
+  const tagBlock = await orca.invokeBackend("get-block", tabBlockId);
+  if (tagBlock) {
+    card.cardRef = {
+      id: tabBlockId,
+      type: 2,
+      alias: CARD_TAG_ALIAS,
+      data: tagBlock.properties || [],
+    };
+    card.isVirtual = false;
   }
 }
