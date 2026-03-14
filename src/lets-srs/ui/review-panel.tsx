@@ -218,6 +218,7 @@ export function ReviewPanel(props: RendererProps) {
       const tagProperties = [
         { name: "due", value: nextDue },
         { name: "fsrsData", value: JSON.stringify(nextState) },
+        { name: "type", value: activeCard.type },
       ];
 
       if (activeCard.cardRef) {

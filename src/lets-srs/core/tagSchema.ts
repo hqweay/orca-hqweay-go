@@ -20,7 +20,7 @@ export const CARD_PROPERTIES: BlockProperty[] = [
   },
   {
     name: "fsrsData",
-    type: PropType.JSON,
+    type: PropType.Text,
     value: null as any, // 存储完整 FSRS 对象的序列化内容
   },
 ];
