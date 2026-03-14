@@ -4,6 +4,7 @@ import { t } from "../libs/l10n";
 import { ensureCardTagSchema } from "./core/tagSchema";
 import { ReviewPanel } from "./ui/review-panel";
 import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
+import React from "react";
 
 /**
  * 虎鲸笔记 - 记忆卡片 (SRS) 插件
@@ -19,6 +20,7 @@ const COMMAND_OPEN = "lets-srs.openReview";
 const STORAGE_KEY_SESSION_BLOCK = "reviewSessionBlockId";
 
 export default class SrsPlugin extends BasePlugin {
+  protected headbarButtonId = `${this.name}.srs`;
   private sessionBlockId: number | null = null;
 
   constructor(pluginName: string, subPluginName: string) {
@@ -90,24 +92,37 @@ export default class SrsPlugin extends BasePlugin {
         t("Open SRS Review Panel"),
       );
     }
+  }
 
-    // 注册顶部图标
-    orca.headbar.registerHeadbarButton("lets-srs.headbarOpen", () => {
-      const React = window.React;
-      const Button = orca.components.Button;
-      return React.createElement(
-        Button,
-        {
-          variant: "plain",
-          title: t("Spaced Repetition"),
-          onClick: () => orca.commands.invokeCommand(COMMAND_OPEN),
+  public renderHeadbarButton(): React.ReactNode {
+    const Button = orca.components.Button;
+    return (
+      <Button
+        variant="plain"
+        onClick={() => orca.commands.invokeCommand(COMMAND_OPEN)}
+        title={t("Spaced Repetition")}
+      >
+        <i className="ti ti-cards" style={{ fontSize: "16px" }} />
+      </Button>
+    );
+  }
+
+  protected renderHeadbarMenuItems(closeMenu: () => void): React.ReactNode[] {
+    const MenuText = orca.components.MenuText;
+    return [
+      React.createElement(MenuText, {
+        key: "open-bazaar",
+        title: t("Spaced Repetition"),
+        preIcon: "ti ti-cards",
+        onClick: () => {
+          closeMenu();
+          orca.commands.invokeCommand(COMMAND_OPEN);
         },
-        React.createElement("i", {
-          className: "ti ti-cards",
-          style: { fontSize: "16px" },
-        }),
-      );
-    });
+      }),
+      React.createElement(orca.components.MenuSeparator, {
+        key: "sep-settings",
+      }),
+    ];
   }
 
   private async getOrCreateSessionBlock(): Promise<number> {
@@ -171,6 +186,5 @@ export default class SrsPlugin extends BasePlugin {
     if (orca.state.commands[COMMAND_OPEN]) {
       orca.commands.unregisterCommand(COMMAND_OPEN);
     }
-    orca.headbar.unregisterHeadbarButton("lets-srs.headbarOpen");
   }
 }
