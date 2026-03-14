@@ -30,27 +30,27 @@ export const ItemRenderer: React.FC<ItemRendererProps> = ({
       const mainContent = container.querySelector<HTMLElement>(
         ":scope > .orca-block > .orca-repr > .orca-repr-main",
       );
-      if (mainContent) {
-        // 如果 showAnswer 为 true，隐藏题目（可选，vendor 模式是显示答案时隐藏题目）
-        // 这里遵循之前的逻辑：显示答案时隐藏题目内容，仅展示子块
-        mainContent.style.display = showAnswer ? "none" : "";
-      }
+      // if (mainContent) {
+      //   // 如果 showAnswer 为 true，隐藏题目（可选，vendor 模式是显示答案时隐藏题目）
+      //   // 这里遵循之前的逻辑：显示答案时隐藏题目内容，仅展示子块
+      //   mainContent.style.display = showAnswer ? "none" : "";
+      // }
 
       // 2. 隐藏块的 UI 杂项 (Bullet, Handle, Breadcrumb)
-      const breadcrumb =
-        container.querySelector<HTMLElement>(".orca-breadcrumb");
-      if (breadcrumb) breadcrumb.style.display = "none";
+      // const breadcrumb =
+      //   container.querySelector<HTMLElement>(".orca-breadcrumb");
+      // if (breadcrumb) breadcrumb.style.display = "none";
 
-      const uiSelectors = `
-        :scope > .orca-block > .orca-block-handle,
-        :scope > .orca-block > .orca-block-bullet,
-        :scope > .orca-block > .orca-repr > .orca-repr-handle,
-        :scope > .orca-block > .orca-repr > .orca-repr-collapse
-      `;
-      const uiElements = container.querySelectorAll<HTMLElement>(uiSelectors);
-      uiElements.forEach((el) => {
-        el.style.display = "none";
-      });
+      // const uiSelectors = `
+      //   :scope > .orca-block > .orca-block-handle,
+      //   :scope > .orca-block > .orca-block-bullet,
+      //   :scope > .orca-block > .orca-repr > .orca-repr-handle,
+      //   :scope > .orca-block > .orca-repr > .orca-repr-collapse
+      // `;
+      // const uiElements = container.querySelectorAll<HTMLElement>(uiSelectors);
+      // uiElements.forEach((el) => {
+      //   el.style.display = "none";
+      // });
 
       // 3. 处理子块 (Answer)
       const childrenSelector = `
