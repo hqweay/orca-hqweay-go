@@ -4,3 +4,6 @@
 [submodule "vendor/orca-plugin-template"]
 	path = vendor/orca-plugin-template
 	url = git@github.com:sethyuan/orca-plugin-template.git
+[submodule "vendor/orca-plugin-task-planner"]
+	path = vendor/orca-plugin-task-planner
+	url = git@github.com:litcu/orca-plugin-task-planner.git
