@@ -1,6 +1,13 @@
-## [1.12.10](/compare/v1.12.9...v1.12.10) (2026-03-13)
+## [1.12.11](/compare/v1.12.10...v1.12.11) (2026-03-14)
 
-Update to 1.12.10
+Update to 1.12.11
+
+
+### Features
+
+* Allow configuring a custom source URL for the plugin bazaar. 04447c6
+
+## [1.12.10](/compare/v1.12.9...v1.12.10) (2026-03-13)
 
 ## [1.12.9](/compare/v1.12.8...v1.12.9) (2026-03-13)
 
