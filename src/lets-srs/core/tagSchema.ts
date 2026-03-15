@@ -14,6 +14,7 @@ export const CARD_PROPERTIES: BlockProperty[] = [
   {
     name: "due",
     type: PropType.DateTime,
+    typeArgs: { subType: "datetime" },
   },
   {
     name: "type",
