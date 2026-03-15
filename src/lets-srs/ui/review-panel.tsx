@@ -230,13 +230,14 @@ export function ReviewPanel(props: RendererProps) {
         style={{
           display: "flex",
           flexDirection: "column",
-          height: "100%",
+          height: "95vh",
           padding: "24px",
           boxSizing: "border-box",
           maxWidth: 800,
           margin: "0 auto",
           width: "100%",
           animation: "fadeIn 0.3s ease-out",
+          // overflow: "hidden", // 防止全局滚动
         }}
       >
         <style>
@@ -256,6 +257,7 @@ export function ReviewPanel(props: RendererProps) {
             marginBottom: 24,
             paddingBottom: 16,
             borderBottom: "1px solid var(--orca-border)",
+            flexShrink: 0, // 头部不缩放
           }}
         >
           <div
@@ -329,20 +331,37 @@ export function ReviewPanel(props: RendererProps) {
         </div>
 
         {/* Card Content Area */}
-        <div style={{ flex: 1, overflowY: "auto", position: "relative" }}>
-          <div style={{ marginBottom: 12, opacity: 0.6, fontSize: 12 }}>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            position: "relative",
+          }}
+        >
+          <div
+            style={{
+              marginBottom: 12,
+              opacity: 0.6,
+              fontSize: 12,
+              flexShrink: 0,
+            }}
+          >
             <orca.components.BlockBreadcrumb blockId={activeCard.blockId} />
           </div>
 
           <div
             style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
               border: "1px solid var(--orca-border)",
               borderRadius: 12,
-              padding: 24,
+              // padding: "24px 24px 0 24px",
               background: "var(--orca-bg-secondary)",
-              // boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-              // minHeight: 180,
               transition: "all 0.3s ease",
+              overflow: "hidden",
             }}
           >
             <ReviewCard

@@ -17,12 +17,19 @@ export const TopicRenderer: React.FC<TopicRendererProps> = ({
   panelId,
 }) => {
   return (
-    <div className="srs-topic-renderer">
+    <div
+      className="srs-topic-renderer"
+      style={{
+        marginLeft: "38px",
+      }}
+    >
       <Block
         panelId={panelId}
         blockId={blockId}
         blockLevel={0}
         indentLevel={0}
+        // renderingMode="normal"
+        initiallyCollapsed={false}
       />
     </div>
   );

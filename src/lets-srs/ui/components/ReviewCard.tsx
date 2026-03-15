@@ -243,9 +243,9 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
       style={{
         display: "flex",
         flexDirection: "column",
-        height: "60vh",
-        gap: "16px",
+        height: "100%",
         position: "relative",
+        overflow: "hidden", // 防止外部滚动
       }}
     >
       <style>{`
@@ -266,14 +266,15 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
         </div>
       )}
 
-      {/* 卡片顶部工具栏 */}
+      {/* 卡片顶部工具栏 - 固定在顶部 */}
       <div
         contentEditable={false}
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: -4,
+          marginBottom: 12,
+          flexShrink: 0,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -305,16 +306,6 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
             </span>
           )}
           {activeCard.isVirtual && (
-            // <Tooltip text={t("Convert this block to a flashcard [U]")}>
-            //   <Button
-            //     variant="solid"
-            //     onClick={handleUpgrade}
-            //     style={{ fontSize: 10, padding: "2px 6px", background: "var(--orca-color-primary-6)" }}
-            //   >
-            //     <i className="ti ti-bolt" style={{ marginRight: 4 }} />
-            //     {t("Convert to Card")}
-            //   </Button>
-            // </Tooltip>
             <Tooltip text={t("Convert to Card [U]")}>
               <Button
                 variant="plain"
@@ -381,118 +372,126 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
         </div>
       </div>
 
-      {/* 卡片详情面板 */}
-      {showInfo && (
-        <div
-          contentEditable={false}
-          style={{
-            padding: 16,
-            background: "var(--orca-bg-tertiary)",
-            borderRadius: 8,
-            fontSize: 12,
-            animation: "fadeIn 0.2s ease-out",
-            display: "flex",
-            flexDirection: "column",
-            gap: 12,
-          }}
-        >
+      {/* 内部滚动区 - 包含详情和主内容 */}
+      <div
+        className="srs-card-scroll-body"
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          // paddingRight: "8px", // 为滚动条预留一点空间
+          display: "flex",
+          flexDirection: "column",
+          gap: "16px",
+        }}
+      >
+        {/* 卡片详情面板 */}
+        {showInfo && (
           <div
+            contentEditable={false}
             style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "8px 16px",
+              padding: 16,
+              background: "var(--orca-bg-tertiary)",
+              borderRadius: 8,
+              fontSize: 12,
+              animation: "fadeIn 0.2s ease-out",
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
             }}
           >
-            <div className="srs-info-item">
-              <span>{t("Retention Lapses")}</span>
-              <span style={{ fontWeight: 600 }}>{fsrsData?.lapses || 0}</span>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "8px 16px",
+              }}
+            >
+              <div className="srs-info-item">
+                <span>{t("Retention Lapses")}</span>
+                <span style={{ fontWeight: 600 }}>{fsrsData?.lapses || 0}</span>
+              </div>
+              <div className="srs-info-item">
+                <span>{t("Review Counts")}</span>
+                <span style={{ fontWeight: 600 }}>{fsrsData?.reps || 0}</span>
+              </div>
+              <div className="srs-info-item">
+                <span>{t("Last Reviewed")}</span>
+                <span style={{ fontWeight: 600 }}>
+                  {formatDateTime(fsrsData?.lastReviewed)}
+                </span>
+              </div>
+              <div className="srs-info-item">
+                <span>{t("State")}</span>
+                <span style={{ fontWeight: 600 }}>
+                  {formatCardState(fsrsData?.state)}
+                </span>
+              </div>
+              <div className="srs-info-item">
+                <span>{t("Stability")}</span>
+                <span style={{ fontWeight: 600 }}>
+                  {fsrsData?.stability?.toFixed(2) || "0.00"}
+                </span>
+              </div>
+              <div className="srs-info-item">
+                <span>{t("Difficulty")}</span>
+                <span style={{ fontWeight: 600 }}>
+                  {fsrsData?.difficulty?.toFixed(2) || "0.00"}
+                </span>
+              </div>
             </div>
-            <div className="srs-info-item">
-              <span>{t("Review Counts")}</span>
-              <span style={{ fontWeight: 600 }}>{fsrsData?.reps || 0}</span>
-            </div>
-            <div className="srs-info-item">
-              <span>{t("Last Reviewed")}</span>
-              <span style={{ fontWeight: 600 }}>
-                {formatDateTime(fsrsData?.lastReviewed)}
-              </span>
-            </div>
-            <div className="srs-info-item">
-              <span>{t("State")}</span>
-              <span style={{ fontWeight: 600 }}>
-                {formatCardState(fsrsData?.state)}
-              </span>
-            </div>
-            <div className="srs-info-item">
-              <span>{t("Stability")}</span>
-              <span style={{ fontWeight: 600 }}>
-                {fsrsData?.stability?.toFixed(2) || "0.00"}
-              </span>
-            </div>
-            <div className="srs-info-item">
-              <span>{t("Difficulty")}</span>
-              <span style={{ fontWeight: 600 }}>
-                {fsrsData?.difficulty?.toFixed(2) || "0.00"}
-              </span>
+
+            <div style={{ marginTop: 4 }}>
+              <div style={{ marginBottom: 4, opacity: 0.7, fontWeight: 500 }}>
+                {t("Remark")}
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  type="text"
+                  value={localRemark}
+                  onChange={(e) => setLocalRemark(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSaveRemark()}
+                  onBlur={handleSaveRemark}
+                  style={{
+                    flex: 1,
+                    background: "var(--orca-bg-primary)",
+                    border: "1px solid var(--orca-border-low)",
+                    borderRadius: 4,
+                    padding: "4px 8px",
+                    fontSize: 12,
+                    color: "var(--orca-text-primary)",
+                  }}
+                  placeholder={t("Add a remark...")}
+                />
+              </div>
             </div>
           </div>
-
-          <div style={{ marginTop: 4 }}>
-            <div style={{ marginBottom: 4, opacity: 0.7, fontWeight: 500 }}>
-              {t("Remark")}
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <input
-                type="text"
-                value={localRemark}
-                onChange={(e) => setLocalRemark(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSaveRemark()}
-                onBlur={handleSaveRemark}
-                style={{
-                  flex: 1,
-                  background: "var(--orca-bg-primary)",
-                  border: "1px solid var(--orca-border-low)",
-                  borderRadius: 4,
-                  padding: "4px 8px",
-                  fontSize: 12,
-                  color: "var(--orca-text-primary)",
-                }}
-                placeholder={t("Add a remark...")}
-              />
-              {/* <Button
-                variant="solid"
-                onClick={handleSaveRemark}
-                style={{ padding: "4px 8px", fontSize: 11 }}
-              >
-                {t("Save")}
-              </Button> */}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 内容展示区 */}
-      <div className="srs-card-content" style={{ flex: 1 }}>
-        {isTopic ? (
-          <TopicRenderer blockId={blockId} panelId={panelId} />
-        ) : (
-          <ItemRenderer
-            blockId={blockId}
-            panelId={panelId}
-            showAnswer={showAnswer}
-          />
         )}
+
+        {/* 内容展示区 */}
+        <div className="srs-card-content" style={{ flex: 1 }}>
+          {isTopic ? (
+            <TopicRenderer blockId={blockId} panelId={panelId} />
+          ) : (
+            <ItemRenderer
+              blockId={blockId}
+              panelId={panelId}
+              showAnswer={showAnswer}
+            />
+          )}
+        </div>
       </div>
 
-      {/* 底部控制栏 */}
+      {/* 底部控制栏 - 固定在底部 */}
       <div
         className="srs-card-footer"
         style={{
           display: "flex",
           justifyContent: "center",
-          marginTop: 8,
-          position: "sticky",
-          bottom: 0,
+          padding: "16px 0",
+          flexShrink: 0,
+          borderTop: "1px solid var(--orca-border-low)",
+          backgroundColor: "var(--orca-bg-secondary)",
+          zIndex: 10,
         }}
       >
         {!showAnswer && !isTopic ? (
@@ -532,7 +531,6 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
           <div
             style={{ display: "flex", gap: 12, width: "100%", maxWidth: 600 }}
           >
-            {/* 目前颜色是透明的，给个合适的背景色 */}
             <Button
               variant="outline"
               onClick={onSkip}

@@ -103,6 +103,9 @@ export const ItemRenderer: React.FC<ItemRendererProps> = ({
       ref={containerRef}
       className="srs-item-renderer"
       data-orca-block-root="true"
+      style={{
+        marginLeft: "38px",
+      }}
     >
       <Block
         key={blockId}
@@ -110,7 +113,7 @@ export const ItemRenderer: React.FC<ItemRendererProps> = ({
         blockId={blockId}
         blockLevel={0}
         indentLevel={0}
-        // renderingMode="normal"
+        renderingMode="normal"
         initiallyCollapsed={false}
       />
     </div>
