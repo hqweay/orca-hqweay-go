@@ -261,11 +261,11 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
         .srs-marked-flag { position: absolute; top: -10px; right: -10px; color: #f44336; font-size: 24px; pointer-events: none; z-index: 10; }
       `}</style>
 
-      {isMarked && (
+      {/* {isMarked && (
         <div className="srs-marked-flag">
           <i className="ti ti-flag-filled" />
         </div>
-      )}
+      )} */}
 
       {/* 卡片顶部工具栏 - 固定在顶部 */}
       <div
