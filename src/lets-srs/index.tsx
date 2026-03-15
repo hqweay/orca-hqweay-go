@@ -148,17 +148,20 @@ export default class SrsPlugin extends BasePlugin {
                     // 场景 A：查询块 - 漫游其结果
                     if (repr?.type === "query") {
                       try {
+                        const queryDescription: QueryDescription2 = {
+                          q: cloneDeep(repr.q.q),
+                          page: 1,
+                          pageSize: 1000,
+                          sort: repr.viewOpts?.list?.sort
+                            ? cloneDeep(repr.viewOpts?.list?.sort)
+                            : [["_random", "DESC"]],
+                          randomSeed: Date.now(),
+                        } as QueryDescription2;
+
+                        console.log("queryDescription", queryDescription);
                         const queryResults = (await orca.invokeBackend(
                           "query",
-                          {
-                            q: cloneDeep(repr.q.q),
-                            page: 1,
-                            pageSize: 1000,
-                            sort: repr.viewOpts?.list?.sort
-                              ? cloneDeep(repr.viewOpts?.list?.sort)
-                              : [["_random", "DESC"]],
-                            randomSeed: 0.5,
-                          } as QueryDescription2,
+                          queryDescription,
                         )) as DbId[];
 
                         if (!queryResults?.length) {
@@ -168,7 +171,7 @@ export default class SrsPlugin extends BasePlugin {
                           );
                           return;
                         }
-                        this.handleRoam(queryResults);
+                        this.handleRoam(queryResults, queryDescription);
                         return;
                       } catch (err) {
                         console.error("[lets-srs] Failed to query items", err);
@@ -268,7 +271,7 @@ export default class SrsPlugin extends BasePlugin {
     return Array.from(ids);
   }
 
-  private async handleRoam(blockIds: number[]) {
+  private async handleRoam(blockIds: number[], query?: any) {
     const activePanelId = orca.state.activePanel;
     if (!activePanelId) return;
 
@@ -292,6 +295,7 @@ export default class SrsPlugin extends BasePlugin {
           blockId,
           repr: RENDERER_TYPE,
           initialBlockIds: blockIds,
+          query,
         },
         viewState: {},
       } as any);

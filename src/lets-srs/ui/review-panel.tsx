@@ -9,6 +9,7 @@ import { ensureCardTagSchema } from "../core/tagSchema";
 import { Logger } from "@/libs/logger";
 import { ReviewCard } from "./components/ReviewCard";
 import { revertCardToState } from "../core/storage";
+import cloneDeep from "lodash.clonedeep";
 
 const logger = new Logger("lets-srs");
 interface RendererProps {
@@ -46,14 +47,28 @@ export function ReviewPanel(props: RendererProps) {
         orca.state.panels,
       );
       const viewArgs = viewPanel?.viewArgs;
-      const initialBlockIds = viewArgs?.initialBlockIds;
+      let blockIds = viewArgs?.initialBlockIds;
+
+      // 如果有查询描述符，则重新查询以刷新数据（例如漫游模式随机换一波）
+      if (viewArgs?.query) {
+        logger.debug("Refreshing dynamic query results", viewArgs.query);
+        const queryReq = cloneDeep(viewArgs.query);
+        queryReq.randomSeed = Date.now();
+        const queryResults = (await orca.invokeBackend(
+          "query",
+          queryReq,
+        )) as number[];
+        if (Array.isArray(queryResults)) {
+          blockIds = queryResults;
+        }
+      }
 
       logger.debug("viewArgs", viewArgs);
-      logger.debug("initialBlockIds", initialBlockIds);
+      logger.debug("blockIds to load", blockIds);
 
-      if (Array.isArray(initialBlockIds) && initialBlockIds.length > 0) {
+      if (Array.isArray(blockIds) && blockIds.length > 0) {
         const roamingCards: SrsCardData[] = [];
-        for (const bid of initialBlockIds) {
+        for (const bid of blockIds) {
           const card = await normalizeBlockToCard(bid);
           if (card) roamingCards.push(card);
         }
