@@ -1,6 +1,19 @@
-## [1.13.2](/compare/v1.13.1...v1.13.2) (2026-03-15)
+## [1.13.3](/compare/v1.13.2...v1.13.3) (2026-03-15)
 
-Update to 1.13.2
+Update to 1.13.3
+
+
+### Bug Fixes
+
+* Add key prop to Block component within TopicRenderer for proper list rendering. ef990e7
+
+
+### Features
+
+* Add `typeArgs.subType` "datetime" to the "due" tag schema. 2c03f16
+* Synchronize in-memory card state with updated properties and correct `handleUpgrade` function invocation. 4cd3836
+
+## [1.13.2](/compare/v1.13.1...v1.13.2) (2026-03-15)
 
 
 ### Features
