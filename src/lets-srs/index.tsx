@@ -143,7 +143,12 @@ div[repr="lets-srs.review-session"] .orca-block-editor-sidetools {
                             q: JSON.parse(JSON.stringify(repr.q.q)),
                             page: 1,
                             pageSize: 1000,
-                            sort: [],
+                            sort: repr.viewOpts?.list?.sort
+                              ? JSON.parse(
+                                  JSON.stringify(repr.viewOpts?.list?.sort),
+                                )
+                              : [["_random", "DESC"]],
+                            randomSeed: 0.5,
                           } as QueryDescription2,
                         )) as DbId[];
 
