@@ -154,32 +154,22 @@ function RuleEditor({
 }
 
 export default function Settings({ plugin }: { plugin: LinkMetadataPlugin }) {
-  const [rules, setRules] = useState<Rule[]>([]);
-  const [quickLinks, setQuickLinks] = useState<{ name: string; url: string }[]>(
-    [],
-  );
-  const [homepage, setHomepage] = useState("");
+  const settings = plugin.getSettings();
+  const rules = settings.rules;
+  const quickLinks = settings.quickLinks;
+  const homepage = settings.homepage || "";
+
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
-  useEffect(() => {
-    const settings = plugin.getSettings();
-    setRules(settings.rules);
-    setQuickLinks(settings.quickLinks);
-    setHomepage(settings.homepage || "");
-  }, []);
-
   const saveHomepage = async (newHomepage: string) => {
-    setHomepage(newHomepage);
     await plugin.updateSettings({ homepage: newHomepage });
   };
 
   const saveRules = async (newRules: Rule[]) => {
-    setRules(newRules);
     await plugin.updateSettings({ rules: newRules });
   };
 
   const saveQuickLinks = async (newLinks: { name: string; url: string }[]) => {
-    setQuickLinks(newLinks);
     await plugin.updateSettings({ quickLinks: newLinks });
   };
 
@@ -215,8 +205,6 @@ export default function Settings({ plugin }: { plugin: LinkMetadataPlugin }) {
     setEditingIndex(null);
     orca.notify("success", t("Rule saved"));
   };
-
-
 
   if (editingIndex !== null && rules[editingIndex]) {
     return (

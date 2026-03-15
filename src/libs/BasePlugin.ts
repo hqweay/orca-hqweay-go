@@ -321,14 +321,19 @@ export abstract class BasePlugin {
    */
   public renderSettings(): React.ReactNode | null {
     const content = this.settingsComponent
-      ? React.createElement(this.settingsComponent, { plugin: this })
+      ? React.createElement(this.settingsComponent, {
+          plugin: this,
+          key: this.name,
+        })
       : React.createElement(PluginSettings, {
           plugin: this as any,
+          key: this.name,
         });
 
     return React.createElement(SettingWrapper, {
       plugin: this,
       children: content,
+      key: this.name,
     });
   }
 

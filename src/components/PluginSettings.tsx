@@ -17,11 +17,6 @@ interface PluginSettingsProps {
 export function PluginSettings({ plugin }: PluginSettingsProps) {
   const [settings, setSettings] = useState(plugin.getSettings());
 
-  // Sync state when plugin prop changes
-  React.useEffect(() => {
-    setSettings(plugin.getSettings());
-  }, [plugin]);
-
   const updateLocalSettings = async (partial: any) => {
     const nextSettings = { ...settings, ...partial };
     setSettings(nextSettings);
