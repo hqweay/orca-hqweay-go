@@ -61,6 +61,9 @@ const zhCN = {
   "[I]": "[I]",
   "Lock Shortcuts": "锁定快捷键",
   "Unlock Shortcuts": "启用快捷键",
+  "Confirm and Create Tag": "确认并创建标签",
+  "Card Tag": "闪卡标签",
+  "SRS Settings": "SRS 设置",
 };
 
 export default zhCN;

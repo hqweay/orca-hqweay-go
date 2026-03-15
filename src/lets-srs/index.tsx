@@ -1,7 +1,11 @@
 import { DbId, PanelProps, QueryDescription2 } from "@/orca";
 import { BasePlugin } from "../libs/BasePlugin";
 import { setupL10N, t } from "../libs/l10n";
-import { ensureCardTagSchema, setCardTagAlias } from "./core/tagSchema";
+import {
+  ensureCardTagSchema,
+  getOrCreateTagBlock,
+  setCardTagAlias,
+} from "./core/tagSchema";
 import { ReviewPanel } from "./ui/review-panel";
 import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
 import React, { useEffect, useState } from "react";
@@ -377,20 +381,11 @@ div[repr="lets-srs.review-session"] .orca-block-editor-sidetools {
     updateSettings: (val: any) => void,
   ): React.ReactNode {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-        <SettingsSection title={t("Bazaar Settings")}>
-          <SettingsItem
-            label={t("Card Tag")}
-            description={t("The tag used for cards.")}
-          >
-            <orca.components.Input
-              value={settings.cardTag || "Card"}
-              onChange={(e) => updateSettings({ cardTag: e.target.value })}
-              placeholder="Card"
-            />
-          </SettingsItem>
-        </SettingsSection>
-      </div>
+      <SrsSettingsUI
+        settings={settings}
+        updateSettings={updateSettings}
+        pluginName={this.name}
+      />
     );
   }
 
@@ -410,4 +405,45 @@ div[repr="lets-srs.review-session"] .orca-block-editor-sidetools {
       );
     }
   }
+}
+
+function SrsSettingsUI({
+  settings,
+  updateSettings,
+  pluginName,
+}: {
+  settings: any;
+  updateSettings: (val: any) => void;
+  pluginName: string;
+}) {
+  const [localTag, setLocalTag] = useState(settings.cardTag || "Card");
+
+  const handleConfirm = async () => {
+    setCardTagAlias(localTag);
+    updateSettings({ cardTag: localTag });
+    await getOrCreateTagBlock(pluginName, localTag);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      <SettingsSection title={t("SRS Settings")}>
+        <SettingsItem
+          label={t("Card Tag")}
+          description={t("The tag used for cards.")}
+        >
+          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            <orca.components.Input
+              value={localTag}
+              onChange={(e: any) => setLocalTag(e.target.value)}
+              placeholder="Card"
+              style={{ flex: 1 }}
+            />
+            <orca.components.Button variant="solid" onClick={handleConfirm}>
+              {t("Confirm and Create Tag")}
+            </orca.components.Button>
+          </div>
+        </SettingsItem>
+      </SettingsSection>
+    </div>
+  );
 }

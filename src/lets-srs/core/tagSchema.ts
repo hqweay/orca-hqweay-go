@@ -4,7 +4,10 @@ import { PropType } from "@/libs/consts";
 export let CARD_TAG_ALIAS = "Card";
 
 export function setCardTagAlias(alias: string) {
-  CARD_TAG_ALIAS = alias;
+  if (CARD_TAG_ALIAS !== alias) {
+    CARD_TAG_ALIAS = alias;
+    isInitialized = false;
+  }
 }
 
 export const CARD_PROPERTIES: BlockProperty[] = [
@@ -46,90 +49,117 @@ let isInitialized = false;
 let isInitializing = false;
 
 /**
- * 确保 #Card 标签块存在必要的属性定义
+ * 获取或创建标签块
  */
-export async function ensureCardTagSchema(pluginName: string): Promise<void> {
-  if (isInitialized || isInitializing) {
-    return;
-  }
-  isInitializing = true;
-
+export async function getOrCreateTagBlock(
+  pluginName: string,
+  alias: string,
+): Promise<Block | null> {
   try {
     const cardTagBlock = (await orca.invokeBackend(
       "get-block-by-alias",
-      CARD_TAG_ALIAS,
+      alias,
     )) as Block | null;
 
-    let currentTagBlock = cardTagBlock;
-    if (!currentTagBlock) {
-      console.log(`[${pluginName}] #Card tag not found, creating...`);
-      const newBlockId = (await orca.commands.invokeEditorCommand(
-        "core.editor.insertBlock",
-        null,
-        null,
-        "lastChild",
-        [{ t: "t", v: CARD_TAG_ALIAS }],
-        { type: "text" },
-      )) as number;
+    if (cardTagBlock) return cardTagBlock;
 
-      if (newBlockId) {
-        await orca.commands.invokeEditorCommand(
-          "core.editor.createAlias",
-          null,
-          CARD_TAG_ALIAS,
-          newBlockId,
-          true,
-        );
-        // Refetch to get the block object
-        currentTagBlock = (await orca.invokeBackend(
-          "get-block",
-          newBlockId,
-        )) as Block | null;
-      }
+    console.log(`[${pluginName}] Tag ${alias} not found, creating...`);
+    const newBlockId = (await orca.commands.invokeEditorCommand(
+      "core.editor.insertBlock",
+      null,
+      null,
+      "lastChild",
+      [{ t: "t", v: alias }],
+      { type: "text" },
+    )) as number;
 
-      if (!currentTagBlock) {
-        console.error(`[${pluginName}] Failed to create #Card tag block.`);
-        return;
-      }
-      orca.notify("success", `${CARD_TAG_ALIAS} srs tag created successfully.`);
-    }
-
-    const existingProps =
-      currentTagBlock.properties && Array.isArray(currentTagBlock.properties)
-        ? currentTagBlock.properties
-        : [];
-    const existingPropNames = new Set(existingProps.map((p) => p.name));
-    const missingProps = CARD_PROPERTIES.filter(
-      (prop) => !existingPropNames.has(prop.name),
-    );
-    console.log("Missing properties:", missingProps);
-    if (missingProps.length === 0) {
-      isInitialized = true;
-      return;
-    }
-
-    // Add missing properties
-    try {
+    if (newBlockId) {
       await orca.commands.invokeEditorCommand(
-        "core.editor.setProperties",
+        "core.editor.createAlias",
         null,
-        [currentTagBlock.id],
-        missingProps,
+        alias,
+        newBlockId,
+        true,
       );
-    } catch (err) {
-      console.error(
-        `[${pluginName}] Failed to inject missing properties for #Card schema.`,
-        err,
-      );
+      // Refetch to get the block object
+      const currentTagBlock = (await orca.invokeBackend(
+        "get-block",
+        newBlockId,
+      )) as Block | null;
+
+      if (currentTagBlock) {
+        orca.notify(
+          "success",
+          `[${pluginName}] ${alias} srs tag created successfully.`,
+        );
+        return currentTagBlock;
+      }
     }
 
-    isInitialized = true;
+    console.error(`[${pluginName}] Failed to create ${alias} tag block.`);
+    return null;
+  } catch (error) {
+    console.error(`[${pluginName}] Failed to get/create tag ${alias}:`, error);
+    return null;
+  }
+}
+
+/**
+ * 为标签块注入必要的属性定义
+ */
+export async function injectPropertiesToTag(
+  pluginName: string,
+  tagBlock: Block,
+): Promise<void> {
+  const existingProps =
+    tagBlock.properties && Array.isArray(tagBlock.properties)
+      ? tagBlock.properties
+      : [];
+  const existingPropNames = new Set(existingProps.map((p) => p.name));
+  const missingProps = CARD_PROPERTIES.filter(
+    (prop) => !existingPropNames.has(prop.name),
+  );
+
+  if (missingProps.length === 0) return;
+
+  console.log(`[${pluginName}] Injecting missing properties:`, missingProps);
+  try {
+    await orca.commands.invokeEditorCommand(
+      "core.editor.setProperties",
+      null,
+      [tagBlock.id],
+      missingProps,
+    );
+  } catch (err) {
+    console.error(
+      `[${pluginName}] Failed to inject missing properties for tag ${tagBlock.id}`,
+      err,
+    );
+  }
+}
+
+/**
+ * 确保 #Card 标签块存在必要的属性定义
+ */
+export async function ensureCardTagSchema(pluginName: string): Promise<void> {
+  if (isInitialized || isInitializing) return;
+  isInitializing = true;
+
+  try {
+    const currentTagBlock = await getOrCreateTagBlock(
+      pluginName,
+      CARD_TAG_ALIAS,
+    );
+    if (currentTagBlock) {
+      await injectPropertiesToTag(pluginName, currentTagBlock);
+    }
   } catch (error) {
     console.error(
-      `[${pluginName}] Failed to initialize #Card tag schema:`,
+      `[${pluginName}] Failed to initialize card tag schema:`,
       error,
     );
   } finally {
     isInitializing = false;
+    isInitialized = true;
   }
 }
