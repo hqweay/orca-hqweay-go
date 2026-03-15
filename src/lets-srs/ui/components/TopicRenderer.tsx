@@ -24,6 +24,7 @@ export const TopicRenderer: React.FC<TopicRendererProps> = ({
       }}
     >
       <Block
+        key={blockId}
         panelId={panelId}
         blockId={blockId}
         blockLevel={0}
