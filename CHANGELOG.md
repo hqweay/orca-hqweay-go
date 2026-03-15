@@ -1,6 +1,15 @@
-## [1.13.1](/compare/v1.13.0...v1.13.1) (2026-03-15)
+## [1.13.2](/compare/v1.13.1...v1.13.2) (2026-03-15)
 
-Update to 1.13.1
+Update to 1.13.2
+
+
+### Features
+
+* Allow dynamic refreshing of review cards in roaming mode by passing query descriptors and re-executing queries with new random seeds. 73659ef
+* random schedule 0bdb066
+* Register a plain text block converter for SRS review sessions. 04f11f8
+
+## [1.13.1](/compare/v1.13.0...v1.13.1) (2026-03-15)
 
 
 ### Features
