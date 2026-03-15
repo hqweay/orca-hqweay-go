@@ -173,8 +173,9 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
   };
 
   const handleUpgrade = async () => {
+    console.log("isSaving", isSaving);
     if (isSaving) return;
-    setIsSaving(true);
+    setIsSaving(true); 
     try {
       await ensureCardTag(activeCard);
       // 将 isVirtual 设为 false 以刷新 UI
@@ -310,7 +311,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
             <Tooltip text={t("Convert to Card [U]")}>
               <Button
                 variant="plain"
-                onClick={() => handleUpgrade}
+                onClick={() => handleUpgrade()}
                 style={{ color: "var(--orca-color-primary-6)" }}
               >
                 <i className="ti ti-bolt" style={{ fontSize: 16 }} />

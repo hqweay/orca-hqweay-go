@@ -69,6 +69,7 @@ export async function saveCardRemark(
  * 确保块带有 #Card 标签（用于漫游模式下的“转化为闪卡”）
  */
 export async function ensureCardTag(card: SrsCardData): Promise<void> {
+  console.log("ensureCardTag", card);
   if (!card.isVirtual && card.cardRef) return;
   await updateCardProperties(card, []);
 }
@@ -92,6 +93,7 @@ async function updateCardProperties(
   tagProperties: any[],
 ): Promise<void> {
   // 1. 如果已有 cardRef，优先尝试更新现有标签
+
   if (card.cardRef) {
     try {
       console.log("updateCardProperties", card.cardRef, tagProperties);
@@ -101,6 +103,19 @@ async function updateCardProperties(
         card.cardRef,
         tagProperties,
       );
+      // 3. 更新内存中的状态
+
+      card.cardRef = {
+        ...card.cardRef,
+        data: tagProperties,
+      };
+      card.status = tagProperties.find((p) => p.name === "status")?.value || [];
+      // card.remark = tagProperties.find((p) => p.name === "remark")?.value || "";
+      // card.fsrsData =
+        // tagProperties.find((p) => p.name === "fsrsData")?.value || "";
+      // card.due = tagProperties.find((p) => p.name === "due")?.value || "";
+      // card.type = tagProperties.find((p) => p.name === "type")?.value || "";
+
       return;
     } catch (e) {
       // 容错：如果 Ref 已失效（标签被手动删了），进入下面的插入逻辑
