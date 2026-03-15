@@ -56,16 +56,43 @@ export async function ensureCardTagSchema(pluginName: string): Promise<void> {
       CARD_TAG_ALIAS,
     )) as Block | null;
 
-    if (!cardTagBlock) {
-      // TODO: If block doesn't exist, we might need to tell user to create it first,
-      // or we just wait for the first insertTag action.
-      // Usually Orca users will type #Card which creates the tag.
-      return;
+    let currentTagBlock = cardTagBlock;
+    if (!currentTagBlock) {
+      console.log(`[${pluginName}] #Card tag not found, creating...`);
+      const newBlockId = (await orca.commands.invokeEditorCommand(
+        "core.editor.insertBlock",
+        null,
+        null,
+        "lastChild",
+        [{ t: "t", v: CARD_TAG_ALIAS }],
+        { type: "text" },
+      )) as number;
+
+      if (newBlockId) {
+        await orca.commands.invokeEditorCommand(
+          "core.editor.createAlias",
+          null,
+          CARD_TAG_ALIAS,
+          newBlockId,
+          true,
+        );
+        // Refetch to get the block object
+        currentTagBlock = (await orca.invokeBackend(
+          "get-block",
+          newBlockId,
+        )) as Block | null;
+      }
+
+      if (!currentTagBlock) {
+        console.error(`[${pluginName}] Failed to create #Card tag block.`);
+        return;
+      }
+      orca.notify("success", "#Card tag created successfully.");
     }
 
     const existingProps =
-      cardTagBlock.properties && Array.isArray(cardTagBlock.properties)
-        ? cardTagBlock.properties
+      currentTagBlock.properties && Array.isArray(currentTagBlock.properties)
+        ? currentTagBlock.properties
         : [];
     const existingPropNames = new Set(existingProps.map((p) => p.name));
     const missingProps = CARD_PROPERTIES.filter(
@@ -82,7 +109,7 @@ export async function ensureCardTagSchema(pluginName: string): Promise<void> {
       await orca.commands.invokeEditorCommand(
         "core.editor.setProperties",
         null,
-        [cardTagBlock.id],
+        [currentTagBlock.id],
         missingProps,
       );
     } catch (err) {
