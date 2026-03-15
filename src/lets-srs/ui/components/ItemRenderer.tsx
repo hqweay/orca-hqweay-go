@@ -110,7 +110,7 @@ export const ItemRenderer: React.FC<ItemRendererProps> = ({
         blockId={blockId}
         blockLevel={0}
         indentLevel={0}
-        renderingMode="normal"
+        // renderingMode="normal"
         initiallyCollapsed={false}
       />
     </div>

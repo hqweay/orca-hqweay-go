@@ -75,7 +75,10 @@ export async function fetchDueCards(): Promise<SrsCardData[]> {
       const card = await normalizeBlockToCard(blockId);
       if (card) {
         // 过滤掉已暂停或已归档的卡片
-        if (card.status.includes("suspend") || card.status.includes("archived")) {
+        if (
+          card.status.includes("suspend") ||
+          card.status.includes("archived")
+        ) {
           continue;
         }
         dueCards.push(card);
@@ -162,18 +165,18 @@ export async function normalizeBlockToCard(
   }
 
   // 备选方案：检查顶层属性
-  if (!dueDate && block.properties) {
-    for (const prop of block.properties) {
-      if (srsPropNames.includes(prop.name)) {
-        snapshotProps.push({ ...prop });
-      }
-      if (prop.name === "due") dueDate = prop.value;
-      else if (prop.name === "type") typeProp = prop;
-      else if (prop.name === "fsrsData") fsrsProp = prop;
-      else if (prop.name === "status") statusProp = prop;
-      else if (prop.name === "remark") remarkProp = prop;
-    }
-  }
+  // if (!dueDate && block.properties) {
+  //   for (const prop of block.properties) {
+  //     if (srsPropNames.includes(prop.name)) {
+  //       snapshotProps.push({ ...prop });
+  //     }
+  //     if (prop.name === "due") dueDate = prop.value;
+  //     else if (prop.name === "type") typeProp = prop;
+  //     else if (prop.name === "fsrsData") fsrsProp = prop;
+  //     else if (prop.name === "status") statusProp = prop;
+  //     else if (prop.name === "remark") remarkProp = prop;
+  //   }
+  // }
 
   // 解析多选状态
   let currentStatus: string[] = [];
@@ -201,7 +204,8 @@ export async function normalizeBlockToCard(
 
   if (!blockType) {
     const hasChildren = block.children && block.children.length > 0;
-    blockType = hasChildren ? "Item" : "Topic";
+    // 如果有子块且有 #Card 标签，则为 Item，否则为 Topic：随机浏览时默认都当作 Topic 处理
+    blockType = hasChildren && cardRef ? "Item" : "Topic";
   }
 
   return {

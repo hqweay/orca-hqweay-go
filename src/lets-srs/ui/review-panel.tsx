@@ -6,7 +6,6 @@ import {
 } from "../core/query";
 import { t } from "../../libs/l10n";
 import { ensureCardTagSchema } from "../core/tagSchema";
-import { PropType } from "@/libs/consts";
 import { Logger } from "@/libs/logger";
 import { ReviewCard } from "./components/ReviewCard";
 import { revertCardToState } from "../core/storage";
@@ -136,37 +135,37 @@ export function ReviewPanel(props: RendererProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleGoBack, shortcutsEnabled]);
 
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
+  // useEffect(() => {
+  //   const el = containerRef.current;
+  //   if (!el) return;
 
-    const blockEditor = el.closest(".orca-block-editor") as HTMLElement;
-    if (!blockEditor) return;
+  //   const blockEditor = el.closest(".orca-block-editor") as HTMLElement;
+  //   if (!blockEditor) return;
 
-    const selectors = [
-      ".orca-block-handle",
-      // ".orca-repr-handle",
-      // ".orca-block-bullet",
-      // '[data-role="bullet"]',
-      // ".orca-block-drag-handle",
-      // ".orca-repr-collapse",
-      // ".orca-breadcrumb",
-    ];
+  //   const selectors = [
+  //     // ".orca-block-handle",
+  //     // ".orca-repr-handle",
+  //     // ".orca-block-bullet",
+  //     // '[data-role="bullet"]',
+  //     // ".orca-block-drag-handle",
+  //     // ".orca-repr-collapse",
+  //     // ".orca-breadcrumb",
+  //   ];
 
-    const hiddenElements: HTMLElement[] = [];
-    selectors.forEach((selector) => {
-      blockEditor.querySelectorAll(selector).forEach((item: any) => {
-        if (item.style.display !== "none") {
-          item.style.display = "none";
-          hiddenElements.push(item);
-        }
-      });
-    });
+  //   const hiddenElements: HTMLElement[] = [];
+  //   selectors.forEach((selector) => {
+  //     blockEditor.querySelectorAll(selector).forEach((item: any) => {
+  //       if (item.style.display !== "none") {
+  //         item.style.display = "none";
+  //         hiddenElements.push(item);
+  //       }
+  //     });
+  //   });
 
-    return () => {
-      hiddenElements.forEach((item) => (item.style.display = ""));
-    };
-  }, []);
+  //   return () => {
+  //     hiddenElements.forEach((item) => (item.style.display = ""));
+  //   };
+  // }, []);
 
   const renderContent = () => {
     if (loading) {
@@ -359,19 +358,34 @@ export function ReviewPanel(props: RendererProps) {
     );
   };
 
+  // console.log("activeCard", activeCard);
+  // const childrenBlocks = useMemo(
+  //   () => (
+  //     <orca.components.BlockChildren
+  //       block={orca.state.blocks[8874] as Block}
+  //       panelId={props.panelId}
+  //       blockLevel={0}
+  //       indentLevel={0}
+  //     />
+  //   ),
+  //   [orca.state.blocks[8874]?.children],
+  // );
+
   return renderContent();
-  // <BlockShell
-  //   panelId={props.panelId}
-  //   blockId={props.blockId}
-  //   rndId={props.rndId}
-  //   mirrorId={props.mirrorId}
-  //   blockLevel={props.blockLevel}
-  //   indentLevel={props.indentLevel}
-  //   initiallyCollapsed={props.initiallyCollapsed}
-  //   renderingMode={props.renderingMode}
-  //   reprClassName="lets-srs-review-session"
-  //   contentClassName="lets-srs-review-session-content"
-  //   contentJsx={renderContent()}
-  //   childrenJsx={null}
-  // />
+  // return (
+  //   <BlockShell
+  //     panelId={props.panelId}
+  //     blockId={props.blockId}
+  //     rndId={props.rndId}
+  //     mirrorId={props.mirrorId}
+  //     blockLevel={props.blockLevel}
+  //     indentLevel={props.indentLevel}
+  //     initiallyCollapsed={props.initiallyCollapsed}
+  //     renderingMode={props.renderingMode}
+  //     reprClassName="lets-srs-review-session"
+  //     contentClassName="lets-srs-review-session-content"
+  //     contentJsx={renderContent()}
+  //     childrenJsx={childrenBlocks}
+  //   />
+  // );
 }
