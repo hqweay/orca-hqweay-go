@@ -243,7 +243,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
       style={{
         display: "flex",
         flexDirection: "column",
-        height: "100%",
+        height: "60vh",
         gap: "16px",
         position: "relative",
       }}
@@ -487,7 +487,13 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
       {/* 底部控制栏 */}
       <div
         className="srs-card-footer"
-        style={{ display: "flex", justifyContent: "center", marginTop: 8 }}
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          marginTop: 8,
+          position: "sticky",
+          bottom: 0,
+        }}
       >
         {!showAnswer && !isTopic ? (
           <div
@@ -496,7 +502,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
             <Button
               variant="outline"
               onClick={onSkip}
-              style={{ flex: 1, borderRadius: 8 }}
+              style={{ flex: 1, borderRadius: 8, background: "#f5f5f5" }}
             >
               {t("Skip")}
               <span style={{ fontSize: 10, marginLeft: 4, opacity: 0.6 }}>
@@ -526,11 +532,17 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
           <div
             style={{ display: "flex", gap: 12, width: "100%", maxWidth: 600 }}
           >
+            {/* 目前颜色是透明的，给个合适的背景色 */}
             <Button
               variant="outline"
               onClick={onSkip}
               disabled={isSaving}
-              style={{ flex: 1, borderRadius: 8 }}
+              style={{
+                flex: 1,
+                borderRadius: 8,
+                background: "#f5f5f5",
+              }}
+              className="srs-grade-btn"
             >
               {t("Skip")}
               <span

@@ -340,8 +340,8 @@ export function ReviewPanel(props: RendererProps) {
               borderRadius: 12,
               padding: 24,
               background: "var(--orca-bg-secondary)",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-              minHeight: 180,
+              // boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+              // minHeight: 180,
               transition: "all 0.3s ease",
             }}
           >

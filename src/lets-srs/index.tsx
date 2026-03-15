@@ -45,10 +45,15 @@ export default class SrsPlugin extends BasePlugin {
     applyCSSRule(
       `
         div[repr="lets-srs.review-session"] .orca-block-editor-none-editable,
+        div[repr="lets-srs.review-session"] .orca-block-editor-go-btns,
         div[repr="lets-srs.review-session"] ~ .orca-block-editor-go-btns,
         div[repr="lets-srs.review-session"] ~ .orca-block-editor-sidetools {
           display: none;
-        }`,
+        }
+        div[repr="lets-srs.review-session"]{
+          overflow-y: hidden;
+        } 
+        `,
       { id: RENDERER_TYPE },
     );
 
