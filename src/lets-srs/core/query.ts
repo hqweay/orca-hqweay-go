@@ -99,10 +99,23 @@ export async function fetchDueCards(): Promise<SrsCardData[]> {
 
     // 默认排序：先复习旧卡片（按到期日从小到大），再复习新卡片
     filteredCards.sort((a, b) => {
+      // 1. 新卡固定排在旧卡后面
       if (a.isNew && !b.isNew) return 1;
       if (!a.isNew && b.isNew) return -1;
-      if (!a.isNew && !b.isNew) return a.due! - b.due!;
-      return 0;
+
+      // 2. 如果都是新卡，直接随机
+      if (a.isNew && b.isNew) return Math.random() - 0.5;
+
+      // 3. 如果都是旧卡：
+      const diff = a.due! - b.due!;
+      // 如果到期时间相差在 1 小时内，视为「同时到期」，进行随机
+      // 这样可以打破由于批量导入或批量复习导致的固定序列
+      if (Math.abs(diff) < 1000 * 60 * 60) {
+        return Math.random() - 0.5;
+      }
+
+      // 否则，还是让更「过期」的排在前面
+      return diff;
     });
 
     return filteredCards;
