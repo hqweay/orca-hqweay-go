@@ -1,5 +1,6 @@
 import { Logger } from "./logger";
 import { PropType } from "./consts";
+import cloneDeep from "lodash.clonedeep";
 
 export interface PropertyData {
   name: string;
@@ -225,7 +226,7 @@ export class DataImporter {
         "core.editor.setProperties",
         null,
         [tagBlockId],
-        JSON.parse(JSON.stringify(propsToUpdate)),
+        cloneDeep(propsToUpdate),
       );
     }
   }

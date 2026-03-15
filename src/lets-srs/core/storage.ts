@@ -2,6 +2,7 @@ import { SrsCardData } from "./query";
 import { CARD_TAG_ALIAS, CARD_PROPERTIES } from "./tagSchema";
 import { Logger } from "@/libs/logger";
 import { FsrsGrade, calculateNextReview } from "./fsrs";
+import cloneDeep from "lodash.clonedeep";
 
 /**
  * 保存卡片的复习结果进度
@@ -80,7 +81,7 @@ export async function revertCardToState(card: SrsCardData): Promise<void> {
     console.warn("[lets-srs] No snapshot found for card undo", card.blockId);
     return;
   }
-  await updateCardProperties(card, card.snapshotProps);
+  await updateCardProperties(card, cloneDeep(card.snapshotProps));
 }
 
 /**
@@ -93,6 +94,7 @@ async function updateCardProperties(
   // 1. 如果已有 cardRef，优先尝试更新现有标签
   if (card.cardRef) {
     try {
+      console.log("updateCardProperties", card.cardRef, tagProperties);
       await orca.commands.invokeEditorCommand(
         "core.editor.setRefData",
         null,

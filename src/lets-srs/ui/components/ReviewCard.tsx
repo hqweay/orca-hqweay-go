@@ -190,17 +190,18 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!shortcutsEnabled) return;
-      if (
-        document.activeElement?.getAttribute("contenteditable") === "true" ||
-        document.activeElement?.tagName === "INPUT" ||
-        document.activeElement?.tagName === "TEXTAREA"
-      ) {
-        return;
-      }
+      // const target = e.target as HTMLElement;
 
+      // if (
+      //   target.tagName === "INPUT" ||
+      //   target.tagName === "TEXTAREA" ||
+      //   target.isContentEditable
+      // ) {
+      //   return;
+      // }
+      e.preventDefault();
       const key = e.key.toLowerCase();
       if (e.code === "Space") {
-        e.preventDefault();
         if (!showAnswer && !isTopic) setShowAnswer(true);
         else handleGradeAction("good");
       } else if (key === "s") {

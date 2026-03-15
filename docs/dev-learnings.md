@@ -105,7 +105,7 @@ During the refactoring of the data insertion layer (`DataImporter`), several int
 ### 1. JSON Hierarchy and Proxy Traps
 Orca's state objects (e.g., objects from `orca.state.blocks`) usually carry Proxies or internal markers.
 - **Trap**: Passing these objects directly back to `invokeEditorCommand` or `invokeBackend` can result in cloning errors ("Illegal invocation" or "could not clone") or execution failures.
-- **Solution**: Always use `JSON.parse(JSON.stringify(obj))` to "clean" complex objects (especially Properties) before passing them to system commands.
+- **Solution**: Always use `cloneDeep(obj)` to "clean" complex objects (especially Properties) before passing them to system commands.
 
 ### 2. Tag Properties and Schema Sync
 In Orca, simply calling `insertTag` with property values is often insufficient.

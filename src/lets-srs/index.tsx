@@ -10,6 +10,7 @@ import { ReviewPanel } from "./ui/review-panel";
 import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
 import React, { useEffect, useState } from "react";
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
+import cloneDeep from "lodash.clonedeep";
 
 /**
  * 虎鲸笔记 - 记忆卡片 (SRS) 插件
@@ -144,13 +145,11 @@ export default class SrsPlugin extends BasePlugin {
                         const queryResults = (await orca.invokeBackend(
                           "query",
                           {
-                            q: JSON.parse(JSON.stringify(repr.q.q)),
+                            q: cloneDeep(repr.q.q),
                             page: 1,
                             pageSize: 1000,
                             sort: repr.viewOpts?.list?.sort
-                              ? JSON.parse(
-                                  JSON.stringify(repr.viewOpts?.list?.sort),
-                                )
+                              ? cloneDeep(repr.viewOpts?.list?.sort)
                               : [["_random", "DESC"]],
                             randomSeed: 0.5,
                           } as QueryDescription2,

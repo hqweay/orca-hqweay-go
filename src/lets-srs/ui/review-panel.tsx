@@ -113,16 +113,16 @@ export function ReviewPanel(props: RendererProps) {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      if (
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable
-      ) {
-        return;
-      }
-
       if (!shortcutsEnabled) return;
+      const target = e.target as HTMLElement;
+
+      // if (
+      //   target.tagName === "INPUT" ||
+      //   target.tagName === "TEXTAREA" ||
+      //   target.isContentEditable
+      // ) {
+      //   return;
+      // }
 
       const key = e.key.toLowerCase();
       if (key === "z") {

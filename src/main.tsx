@@ -4,6 +4,7 @@ import zhCN from "./translations/zhCN";
 import { BasePlugin } from "./libs/BasePlugin";
 import { SettingsBoard } from "./components/SettingsBoard";
 import { DbId, QueryDescription2 } from "./orca";
+import cloneDeep from "lodash.clonedeep";
 
 // Auto-scan sub-plugins. Test plugins (lets-test-*) are only included in development.
 const pluginModules: Record<string, any> =
@@ -33,7 +34,7 @@ async function fixData() {
       "core.editor.setProperties",
       null,
       [27074],
-      JSON.parse(JSON.stringify(targetBlock.properties)),
+      cloneDeep(targetBlock.properties),
     );
   }
 }
