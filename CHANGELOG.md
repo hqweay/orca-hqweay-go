@@ -1,6 +1,17 @@
-# [1.13.0](/compare/v1.12.11...v1.13.0) (2026-03-14)
+## [1.13.1](/compare/v1.13.0...v1.13.1) (2026-03-15)
 
-新增 srs roam
+Update to 1.13.1
+
+
+### Features
+
+* automatically create the #Card tag block and its alias if it does not exist. 209e543, closes #Card
+* Enhance review session layout by adjusting card height, making footer sticky, hiding editor elements, and improving button visibility. 434ab54
+* Implement random sorting and a random seed for queries, defaulting to view options sort if available. 3774f56
+* Refactor card tag schema initialization into modular functions and add UI for custom tag creation. 9ca7f92
+* Refine card type classification, update CSS selectors for editor element visibility, and simplify review panel rendering. 2ac40a2
+
+# [1.13.0](/compare/v1.12.11...v1.13.0) (2026-03-14)
 
 
 ### Bug Fixes
