@@ -167,8 +167,17 @@ export default class LinkMetadataPlugin extends BasePlugin {
     };
   }
 
-  protected renderCustomSettings(): React.ReactNode {
-    return React.createElement(Settings, { plugin: this as any });
+  public renderCustomSettings(
+    settings: any,
+    updateSettings: (val: any) => void,
+  ): React.ReactNode {
+    return React.createElement(Settings, {
+      plugin: {
+        ...this,
+        getSettings: () => settings,
+        updateSettings,
+      } as any,
+    });
   }
 
   public renderHeadbarButton(): React.ReactNode {

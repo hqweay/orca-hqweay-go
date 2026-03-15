@@ -289,7 +289,10 @@ export abstract class BasePlugin {
    * Render custom settings UI for this sub-plugin.
    * Override this instead of renderSettings for standard layout.
    */
-  protected renderCustomSettings(): React.ReactNode {
+  public renderCustomSettings(
+    _settings: any,
+    _updateSettings: (val: any) => void,
+  ): React.ReactNode {
     return null;
   }
 
@@ -299,8 +302,10 @@ export abstract class BasePlugin {
   public hasSettings(): boolean {
     if (this.settingsComponent) return true;
     if (this.headbarButtonId) return true;
-    if (this.renderCustomSettings() !== null) return true;
-    return false;
+    // 检测子类是否覆盖了 renderCustomSettings
+    return (
+      this.renderCustomSettings !== BasePlugin.prototype.renderCustomSettings
+    );
   }
 
   /**
@@ -319,7 +324,6 @@ export abstract class BasePlugin {
       ? React.createElement(this.settingsComponent, { plugin: this })
       : React.createElement(PluginSettings, {
           plugin: this as any,
-          customSettings: this.renderCustomSettings(),
         });
 
     return React.createElement(SettingWrapper, {

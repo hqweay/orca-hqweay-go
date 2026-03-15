@@ -1,10 +1,11 @@
 import { DbId, PanelProps, QueryDescription2 } from "@/orca";
 import { BasePlugin } from "../libs/BasePlugin";
 import { setupL10N, t } from "../libs/l10n";
-import { ensureCardTagSchema } from "./core/tagSchema";
+import { ensureCardTagSchema, setCardTagAlias } from "./core/tagSchema";
 import { ReviewPanel } from "./ui/review-panel";
 import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 
 /**
  * 虎鲸笔记 - 记忆卡片 (SRS) 插件
@@ -22,13 +23,16 @@ const STORAGE_KEY_SESSION_BLOCK = "reviewSessionBlockId";
 export default class SrsPlugin extends BasePlugin {
   protected headbarButtonId = `${this.name}.srs`;
   private sessionBlockId: number | null = null;
-
   constructor(pluginName: string, subPluginName: string) {
     super(pluginName, subPluginName);
   }
 
   async load() {
     console.log(`[${this.name}] plugin loaded`);
+    const settings = this.getSettings();
+    if (settings.cardTag) {
+      setCardTagAlias(settings.cardTag);
+    }
 
     // orca.themes.injectCSSResource("./ui/srs.css", this.name);
 
@@ -308,6 +312,13 @@ export default class SrsPlugin extends BasePlugin {
     ];
   }
 
+  public getDefaultSettings(): any {
+    return {
+      ...super.getDefaultSettings(),
+      cardTag: "Card",
+    };
+  }
+
   private async getOrCreateSessionBlock(): Promise<number> {
     if (this.sessionBlockId) {
       const block = orca.state.blocks[this.sessionBlockId];
@@ -357,6 +368,28 @@ export default class SrsPlugin extends BasePlugin {
     if (block) (block as any)._repr = { type: RENDERER_TYPE };
 
     return newBlockId;
+  }
+
+  public renderCustomSettings(
+    settings: any,
+    updateSettings: (val: any) => void,
+  ): React.ReactNode {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+        <SettingsSection title={t("Bazaar Settings")}>
+          <SettingsItem
+            label={t("Card Tag")}
+            description={t("The tag used for cards.")}
+          >
+            <orca.components.Input
+              value={settings.cardTag || "Card"}
+              onChange={(e) => updateSettings({ cardTag: e.target.value })}
+              placeholder="Card"
+            />
+          </SettingsItem>
+        </SettingsSection>
+      </div>
+    );
   }
 
   async unload() {

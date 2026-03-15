@@ -32,7 +32,7 @@ export async function fetchDueCards(): Promise<SrsCardData[]> {
       conditions: [
         {
           kind: 4, // QueryKindTag
-          name: "Card",
+          name: CARD_TAG_ALIAS,
           properties: [
             {
               name: "due",
@@ -45,7 +45,7 @@ export async function fetchDueCards(): Promise<SrsCardData[]> {
         },
         {
           kind: 4, // QueryKindTag
-          name: "Card",
+          name: CARD_TAG_ALIAS,
           properties: [
             {
               name: "due",

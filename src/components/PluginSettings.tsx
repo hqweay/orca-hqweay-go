@@ -7,34 +7,28 @@ interface PluginSettingsProps {
     headbarButtonId?: string | null;
     getSettings: () => any;
     updateSettings: (settings: any) => Promise<void>;
+    renderCustomSettings: (
+      settings: any,
+      updateSettings: (val: any) => void,
+    ) => React.ReactNode;
   };
-  customSettings?: React.ReactNode;
 }
 
-export function PluginSettings({
-  plugin,
-  customSettings,
-}: PluginSettingsProps) {
-  const settings = plugin.getSettings();
-  const hasHeadbar = !!plugin.headbarButtonId;
-  const [headbarMode, setHeadbarMode] = useState(
-    settings.headbarMode || "both",
-  );
+export function PluginSettings({ plugin }: PluginSettingsProps) {
+  const [settings, setSettings] = useState(plugin.getSettings());
 
-  // Sync state when plugin prop changes (e.g. switching plugins in settings)
-  // useState initializer only runs on mount, so without this,
-  // the mode would be stale when reusing the component.
+  // Sync state when plugin prop changes
   React.useEffect(() => {
-    const currentSettings = plugin.getSettings();
-    setHeadbarMode(currentSettings.headbarMode || "both");
+    setSettings(plugin.getSettings());
   }, [plugin]);
 
-  const updateMode = async (value: string) => {
-    setHeadbarMode(value);
-    await plugin.updateSettings({ headbarMode: value });
+  const updateLocalSettings = async (partial: any) => {
+    const nextSettings = { ...settings, ...partial };
+    setSettings(nextSettings);
+    await plugin.updateSettings(partial);
   };
 
-  if (!hasHeadbar && !customSettings) return null;
+  const hasHeadbar = !!plugin.headbarButtonId;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -42,18 +36,20 @@ export function PluginSettings({
         <SettingsSection title={t("Headbar Display Mode")}>
           <SettingsItem label={t("Display Mode")}>
             <orca.components.Select
-              selected={[headbarMode]}
+              selected={[settings.headbarMode || "both"]}
               options={[
                 { value: "actions", label: t("Actions Menu") },
                 { value: "standalone", label: t("Standalone Button") },
                 { value: "both", label: t("Both") },
               ]}
-              onChange={(selected) => updateMode(selected[0])}
+              onChange={(selected) =>
+                updateLocalSettings({ headbarMode: selected[0] })
+              }
             />
           </SettingsItem>
         </SettingsSection>
       )}
-      {customSettings}
+      {plugin.renderCustomSettings(settings, updateLocalSettings)}
     </div>
   );
 }

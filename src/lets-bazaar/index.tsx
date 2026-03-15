@@ -71,23 +71,25 @@ export default class BazaarPlugin extends BasePlugin {
   public getDefaultSettings() {
     return {
       ...super.getDefaultSettings(),
-      bazaarUrl: "https://raw.githubusercontent.com/hqweay/orca-bazaar/refs/heads/main/plugins.json",
+      bazaarUrl:
+        "https://raw.githubusercontent.com/hqweay/orca-bazaar/refs/heads/main/plugins.json",
     };
   }
 
-  protected renderCustomSettings(): React.ReactNode {
-    const settings = this.getSettings();
-
+  public renderCustomSettings(
+    settings: any,
+    updateSettings: (val: any) => void,
+  ): React.ReactNode {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
         <SettingsSection title={t("Bazaar Settings")}>
-          <SettingsItem 
-            label={t("Plugins Source URL")} 
+          <SettingsItem
+            label={t("Plugins Source URL")}
             description={t("The URL to fetch the plugins JSON list from.")}
           >
             <orca.components.Input
               value={settings.bazaarUrl || ""}
-              onChange={(e) => this.updateSettings({ bazaarUrl: e.target.value })}
+              onChange={(e) => updateSettings({ bazaarUrl: e.target.value })}
               placeholder="https://raw.githubusercontent.com/.../plugins.json"
             />
           </SettingsItem>

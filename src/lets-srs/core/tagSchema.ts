@@ -1,7 +1,11 @@
 import type { Block, BlockProperty } from "../../orca.d.ts";
 import { PropType } from "@/libs/consts";
 
-export const CARD_TAG_ALIAS = "Card";
+export let CARD_TAG_ALIAS = "Card";
+
+export function setCardTagAlias(alias: string) {
+  CARD_TAG_ALIAS = alias;
+}
 
 export const CARD_PROPERTIES: BlockProperty[] = [
   {
@@ -87,7 +91,7 @@ export async function ensureCardTagSchema(pluginName: string): Promise<void> {
         console.error(`[${pluginName}] Failed to create #Card tag block.`);
         return;
       }
-      orca.notify("success", "#Card tag created successfully.");
+      orca.notify("success", `${CARD_TAG_ALIAS} srs tag created successfully.`);
     }
 
     const existingProps =
