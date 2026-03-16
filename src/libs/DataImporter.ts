@@ -1,6 +1,7 @@
 import { Logger } from "./logger";
 import { PropType } from "./consts";
 import cloneDeep from "lodash.clonedeep";
+import { getMirrorId } from "./block-utils";
 
 export interface PropertyData {
   name: string;
@@ -76,10 +77,12 @@ export class DataImporter {
 
     if (!blockId) return null;
 
+    // 🛡️ 镜像转换：如果 blockId 是镜像块，则转为原始块 ID
+    const originalId = getMirrorId(blockId);
     // 2. Apply Tags
     if (data.tags && data.tags.length > 0) {
       for (const tag of data.tags) {
-        await this.applyTag(blockId, tag);
+        await this.applyTag(originalId, tag);
       }
     }
 
