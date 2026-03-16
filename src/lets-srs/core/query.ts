@@ -1,6 +1,7 @@
 import { Logger } from "@/libs/logger.ts";
 import type { DbId, Block, QueryDescription2 } from "../../orca.d.ts";
 import { CARD_TAG_ALIAS } from "./tagSchema";
+import { getMirrorId } from "@/libs/block-utils";
 
 const logger = new Logger("lets-srs");
 
@@ -61,11 +62,12 @@ export async function fetchDueCards(): Promise<SrsCardData[]> {
   };
 
   try {
-    const resultIds = (await orca.invokeBackend("query", query)) as DbId[];
+    const queryResultIds = (await orca.invokeBackend("query", query)) as DbId[];
+    const resultIds = Array.from(new Set((queryResultIds || []).map(id => getMirrorId(id))));
 
-    logger.debug(`[lets-srs] query result:`, resultIds);
+    logger.debug(`[lets-srs] query result (deduped):`, resultIds);
 
-    if (!resultIds || !Array.isArray(resultIds)) {
+    if (!resultIds.length) {
       return [];
     }
 
@@ -133,13 +135,16 @@ export async function normalizeBlockToCard(
 ): Promise<SrsCardData | null> {
   if (!blockId) return null;
 
+  // 🛡️ 镜像转换：如果 blockId 是镜像块，则转为原始块 ID
+  const originalId = getMirrorId(blockId);
+
   // 获取或加载块数据
-  let block = orca.state.blocks[blockId];
+  let block = orca.state.blocks[originalId];
   if (!block) {
-    block = await orca.invokeBackend("get-block", blockId);
+    block = await orca.invokeBackend("get-block", originalId);
   }
   if (!block) {
-    logger.warn(`[lets-srs] failed to find block: ${blockId}`);
+    logger.warn(`[lets-srs] failed to find block: ${originalId}`);
     return null;
   }
 
@@ -222,7 +227,7 @@ export async function normalizeBlockToCard(
   }
 
   return {
-    blockId,
+    blockId: originalId,
     due: parsedDue,
     type: blockType as "Auto" | "Topic" | "Item",
     fsrsData: srsData,
