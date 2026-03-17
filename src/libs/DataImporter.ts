@@ -1,5 +1,6 @@
 import { Logger } from "./logger";
 import { PropType } from "./consts";
+import type { Block } from "../orca.d.ts";
 import cloneDeep from "lodash.clonedeep";
 import { getMirrorId } from "./block-utils";
 
@@ -37,56 +38,57 @@ export class DataImporter {
     data: BlockData,
     target: InsertTarget,
   ): Promise<number | null> {
-    let blockId: number | null = null;
-
     // 1. Resolve or Create Block
-    if (data.content !== undefined) {
-      if (target.type === "cursor") {
-        const fragments = this.normalizeContent(data.content);
-        await orca.commands.invokeEditorCommand(
-          "core.editor.insertFragments",
-          target.cursor || null,
-          fragments,
-        );
-        const { anchor } = target.cursor;
-        blockId = anchor.blockId;
-      } else {
-        const parentId = target.blockId;
-
-        const parentBlock = parentId ? orca.state.blocks[parentId] : null;
-        const fragments = this.normalizeContent(data.content);
-
-        blockId = await orca.commands.invokeEditorCommand(
-          "core.editor.insertBlock",
-          target.cursor || null,
-          parentBlock,
-          target.position || "lastChild",
-          fragments,
-          { type: "text" },
-        );
-      }
-    } else {
-      // No content provided, resolve existing block to tag
-      if (target.type === "block") {
-        blockId = target.blockId || null;
-      } else {
-        // Cursor-based target, tag the block at anchor
-        blockId = target.cursor?.anchor?.blockId || null;
-      }
-    }
-
+    const blockId = await this.ensureBlock(data, target);
     if (!blockId) return null;
 
     // 🛡️ 镜像转换：如果 blockId 是镜像块，则转为原始块 ID
     const originalId = getMirrorId(blockId);
+
     // 2. Apply Tags
-    if (data.tags && data.tags.length > 0) {
-      for (const tag of data.tags) {
-        await this.applyTag(originalId, tag);
-      }
+    for (const tag of data.tags || []) {
+      await this.applyTag(originalId, tag);
     }
 
     return blockId;
+  }
+
+  /**
+   * Resolves an existing block ID or creates a new one based on the target.
+   */
+  private static async ensureBlock(
+    data: BlockData,
+    target: InsertTarget,
+  ): Promise<number | null> {
+    const { content } = data;
+    const { type, cursor, blockId, position } = target;
+
+    // Case A: Just tagging an existing block (no content provided)
+    if (content === undefined) {
+      return type === "cursor" ? cursor?.anchor?.blockId : blockId || null;
+    }
+
+    // Case B: Inserting content at the current cursor
+    const fragments = this.normalizeContent(content);
+    if (type === "cursor") {
+      await orca.commands.invokeEditorCommand(
+        "core.editor.insertFragments",
+        cursor || null,
+        fragments,
+      );
+      return cursor?.anchor?.blockId || null;
+    }
+
+    // Case C: Creating a new block at a specific target
+    const parentBlock = blockId ? orca.state.blocks[blockId] : null;
+    return await orca.commands.invokeEditorCommand(
+      "core.editor.insertBlock",
+      cursor || null,
+      parentBlock,
+      position || "lastChild",
+      fragments,
+      { type: "text" },
+    );
   }
 
   /**
@@ -96,67 +98,9 @@ export class DataImporter {
     const tagName = tag.name.trim();
     if (!tagName) return;
 
-    // Format properties for insertTag
-    const formattedProperties = tag.properties.map((p) => {
-      let val = p.value;
-
-      // 1. Handle parsing for standard types
-      if (p.type === PropType.DateTime && typeof val === "string") {
-        const d = new Date();
-        if (!isNaN(d.getTime())) val = d;
-      } else if (p.type === PropType.Number && typeof val === "string") {
-        val = parseFloat(val);
-      } else if (p.type === PropType.Boolean && typeof val === "string") {
-        val = ["true", "yes", "1", "ok"].includes(val.toLowerCase());
-      }
-
-      // 2. Format based on type
-      if (p.type === PropType.TextChoices) {
-        let choicesValues: string[] = [];
-        if (Array.isArray(val)) {
-          choicesValues = val;
-        } else if (typeof val === "string") {
-          choicesValues = val
-            .split(" ")
-            .map((v) => v.trim())
-            .filter((v) => v);
-        }
-
-        return {
-          name: p.name,
-          type: p.type,
-          value: choicesValues,
-          typeArgs: {
-            choices: choicesValues,
-            subType: "multi",
-          },
-          pos: 0,
-        };
-      }
-
-      const typeArgs = p.typeArgs || {};
-      let pos = p.pos || undefined;
-
-      if (p.type === PropType.DateTime) {
-        if (!typeArgs.subType) {
-          typeArgs.subType = "datetime";
-        }
-        // subType: 'time' pos:0, 'date' pos:1, 'datetime' pos:2
-        // if (typeArgs.subType === "time") pos = 0;
-        // else if (typeArgs.subType === "date") pos = 1;
-        // else if (typeArgs.subType === "datetime") pos = 2;
-        // else pos = 2; // default
-        pos = undefined;
-      }
-
-      return {
-        name: p.name,
-        value: val,
-        type: p.type,
-        typeArgs: Object.keys(typeArgs).length > 0 ? typeArgs : undefined,
-        // pos: pos,
-      };
-    });
+    const formattedProperties = tag.properties.map((p) =>
+      this.formatProperty(p),
+    );
 
     // 1. Insert Tag
     const tagBlockId = await orca.commands.invokeEditorCommand(
@@ -164,7 +108,6 @@ export class DataImporter {
       null,
       blockId,
       tagName,
-      // Stripping Proxy markers
       formattedProperties,
     );
 
@@ -175,10 +118,83 @@ export class DataImporter {
   }
 
   /**
-   * Sync property definitions and choices to a Tag Block.
+   * Formats raw property data into the structure expected by Orca.
    */
-  private static async syncTagSchema(tagBlockId: number, props: any[]) {
-    const tagBlock = await orca.invokeBackend("get-block", tagBlockId);
+  private static formatProperty(p: PropertyData): any {
+    let { name, type, value, typeArgs = {} } = p;
+
+    // 1. Parse string values based on type
+    if (typeof value === "string") {
+      if (type === PropType.DateTime) {
+        const d = new Date(value);
+        if (!isNaN(d.getTime())) value = d;
+      } else if (type === PropType.Number) {
+        value = parseFloat(value);
+      } else if (type === PropType.Boolean) {
+        value = ["true", "yes", "1", "ok"].includes(value.toLowerCase());
+      }
+    }
+
+    // 2. Handle Multi-select (TextChoices) specific structure
+    if (type === PropType.TextChoices) {
+      const rawChoices = Array.isArray(value)
+        ? value
+        : typeof value === "string"
+          ? value
+              .split(" ")
+              .map((v) => v.trim())
+              .filter(Boolean)
+          : [];
+
+      // 兼容逻辑：确保选项符合 { n: string, c: string } 格式
+      // TODO: 待所有数据归一化后可移除此判断以提升性能
+      const normalizedChoices = rawChoices.map((c: any) =>
+        typeof c === "string" ? { n: c, c: "" } : c,
+      );
+
+      return {
+        name,
+        type,
+        value: Array.isArray(value) ? value : rawChoices,
+        typeArgs: {
+          ...typeArgs,
+          choices: normalizedChoices,
+          subType: typeArgs.subType || "multi",
+        },
+        pos: 0,
+      };
+    }
+
+    // 3. Handle DateTime subType default
+    if (type === PropType.DateTime && !typeArgs.subType) {
+      typeArgs.subType = "datetime";
+    }
+
+    return {
+      name,
+      type,
+      value,
+      typeArgs: Object.keys(typeArgs).length > 0 ? typeArgs : undefined,
+    };
+  }
+
+  /**
+   * Sync property definitions and choices to a Tag Block.
+   * Can be used to initialize or update a tag's schema.
+   * @param target Block ID or the Block object itself to avoid redundant backend calls.
+   */
+  public static async syncTagSchema(target: number | Block, props: any[]) {
+    let tagBlock: Block | null = null;
+    let tagBlockId: number;
+
+    if (typeof target === "number") {
+      tagBlockId = target;
+      tagBlock = await orca.invokeBackend("get-block", tagBlockId);
+    } else {
+      tagBlock = target;
+      tagBlockId = target.id;
+    }
+
     if (!tagBlock) return;
 
     const existingProps = tagBlock.properties || [];
@@ -197,12 +213,21 @@ export class DataImporter {
         prop.type === PropType.TextChoices &&
         existingProp.type === PropType.TextChoices
       ) {
-        // Merge choices
+        // 合并多选选项
         const existingChoices = existingProp.typeArgs?.choices || [];
-        const existingNames = new Set(existingChoices.map((c: any) => c.n));
+        // 兼容性提取：旧数据可能是字符串数组，标准格式是 {n, c} 对象数组
+        // TODO: 性能优化点 - 确定数据格式统一后可简化
+        const existingNames = new Set(
+          existingChoices.map((c: any) => (typeof c === "string" ? c : c.n)),
+        );
         let hasNew = false;
 
-        const newChoices = prop.typeArgs?.choices || [];
+        let newChoices = prop.typeArgs?.choices || [];
+        // 归一化新选项格式
+        newChoices = newChoices.map((c: any) =>
+          typeof c === "string" ? { n: c, c: "" } : c,
+        );
+
         for (const nc of newChoices) {
           if (!existingNames.has(nc.n)) {
             existingChoices.push(nc);
@@ -217,7 +242,7 @@ export class DataImporter {
             typeArgs: {
               ...existingProp.typeArgs,
               choices: existingChoices,
-              subType: "multi",
+              subType: existingProp.typeArgs?.subType || "multi",
             },
           });
         }
@@ -235,8 +260,7 @@ export class DataImporter {
   }
 
   private static normalizeContent(content: string | any[] | undefined): any[] {
-    if (!content) return [{ t: "t", v: "" }];
     if (typeof content === "string") return [{ t: "t", v: content }];
-    return content;
+    return content || [{ t: "t", v: "" }];
   }
 }

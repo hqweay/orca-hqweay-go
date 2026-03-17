@@ -1,5 +1,6 @@
 import type { Block, BlockProperty } from "../../orca.d.ts";
 import { PropType } from "@/libs/consts";
+import { DataImporter } from "@/libs/DataImporter";
 
 export let CARD_TAG_ALIAS = "Card";
 
@@ -112,25 +113,9 @@ export async function injectPropertiesToTag(
   pluginName: string,
   tagBlock: Block,
 ): Promise<void> {
-  const existingProps =
-    tagBlock.properties && Array.isArray(tagBlock.properties)
-      ? tagBlock.properties
-      : [];
-  const existingPropNames = new Set(existingProps.map((p) => p.name));
-  const missingProps = CARD_PROPERTIES.filter(
-    (prop) => !existingPropNames.has(prop.name),
-  );
-
-  if (missingProps.length === 0) return;
-
-  console.log(`[${pluginName}] Injecting missing properties:`, missingProps);
   try {
-    await orca.commands.invokeEditorCommand(
-      "core.editor.setProperties",
-      null,
-      [tagBlock.id],
-      missingProps,
-    );
+    // 使用 DataImporter 统一的同步逻辑，支持属性补全和多选选项合并
+    await DataImporter.syncTagSchema(tagBlock, CARD_PROPERTIES);
   } catch (err) {
     console.error(
       `[${pluginName}] Failed to inject missing properties for tag ${tagBlock.id}`,
