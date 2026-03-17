@@ -137,7 +137,7 @@ export class DataImporter {
 
     // 2. Handle Multi-select (TextChoices) specific structure
     if (type === PropType.TextChoices) {
-      const rawChoices = Array.isArray(value)
+      const choices = Array.isArray(value)
         ? value
         : typeof value === "string"
           ? value
@@ -146,19 +146,13 @@ export class DataImporter {
               .filter(Boolean)
           : [];
 
-      // 兼容逻辑：确保选项符合 { n: string, c: string } 格式
-      // TODO: 待所有数据归一化后可移除此判断以提升性能
-      const normalizedChoices = rawChoices.map((c: any) =>
-        typeof c === "string" ? { n: c, c: "" } : c,
-      );
-
       return {
         name,
         type,
-        value: Array.isArray(value) ? value : rawChoices,
+        value: choices,
         typeArgs: {
           ...typeArgs,
-          choices: normalizedChoices,
+          choices,
           subType: typeArgs.subType || "multi",
         },
         pos: 0,
@@ -213,24 +207,17 @@ export class DataImporter {
         prop.type === PropType.TextChoices &&
         existingProp.type === PropType.TextChoices
       ) {
-        // 合并多选选项
-        const existingChoices = existingProp.typeArgs?.choices || [];
-        // 兼容性提取：旧数据可能是字符串数组，标准格式是 {n, c} 对象数组
-        // TODO: 性能优化点 - 确定数据格式统一后可简化
-        const existingNames = new Set(
-          existingChoices.map((c: any) => (typeof c === "string" ? c : c.n)),
-        );
+        // 合并多选选项（使用纯字符串数组格式）
+        const existingChoices = (existingProp.typeArgs?.choices ||
+          []) as string[];
+        const existingNames = new Set(existingChoices);
         let hasNew = false;
 
-        let newChoices = prop.typeArgs?.choices || [];
-        // 归一化新选项格式
-        newChoices = newChoices.map((c: any) =>
-          typeof c === "string" ? { n: c, c: "" } : c,
-        );
+        const newChoices = (prop.typeArgs?.choices || []) as string[];
 
-        for (const nc of newChoices) {
-          if (!existingNames.has(nc.n)) {
-            existingChoices.push(nc);
+        for (const choice of newChoices) {
+          if (!existingNames.has(choice)) {
+            existingChoices.push(choice);
             hasNew = true;
           }
         }
