@@ -39,7 +39,7 @@ export class DataImporter {
     target: InsertTarget,
   ): Promise<number | null> {
     // 1. Resolve or Create Block
-    const blockId = await this.ensureBlock(data, target);
+    const blockId = await this.ensureBlock(data.content, target);
     if (!blockId) return null;
 
     // 🛡️ 镜像转换：如果 blockId 是镜像块，则转为原始块 ID
@@ -55,12 +55,23 @@ export class DataImporter {
 
   /**
    * Resolves an existing block ID or creates a new one based on the target.
+   * 
+   * @param (
+    {
+      "t": "l",
+      "v": "测试",
+      "l": "https://leay.net"
+    }
+  }, {
+            type: "cursor",
+            cursor,
+          }
+   * @returns 
    */
   private static async ensureBlock(
-    data: BlockData,
+    content: string | any[] | undefined,
     target: InsertTarget,
   ): Promise<number | null> {
-    const { content } = data;
     const { type, cursor, blockId, position } = target;
 
     // Case A: Just tagging an existing block (no content provided)
@@ -93,6 +104,29 @@ export class DataImporter {
 
   /**
    * Apply a single tag with properties to a block and sync its schema.
+   * 
+   * @param (123, {
+    "name": "link",
+    "properties": [
+      {
+        "name": "url",
+        "type": 1,
+        "value": "https://leay.net",
+        "typeArgs": {
+          "subType": "url"
+        }
+      },
+      {
+          "name": "测试标签",
+          "type": 6,
+          "value": [
+            "选型一",
+            "选型二",
+            "选型三"
+          ]
+        }
+    ]
+  })
    */
   static async applyTag(blockId: number, tag: TagData) {
     const tagName = tag.name.trim();
