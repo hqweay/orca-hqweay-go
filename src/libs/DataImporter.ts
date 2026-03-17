@@ -33,6 +33,8 @@ export class DataImporter {
   /**
    * Universal method to insert data into the editor.
    * Handles block creation, fragment insertion, tagging, and schema syncing.
+   * 
+   * data.content 为空时，只处理标签
    */
   static async importBlock(
     data: BlockData,
