@@ -75,6 +75,7 @@ export default class SrsPlugin extends BasePlugin {
     orca.converters.registerBlock("plain", RENDERER_TYPE, (block, repr) => {
       // 返回代表这个块的纯文本字符串。
       // 如果你的 repr 里存储了有用的信息，也可以提取出来返回，比如 return `[复习卡组: ${repr.title}]`;
+      // 会被索引可搜索
       return "[SRS Review Session]";
     });
 

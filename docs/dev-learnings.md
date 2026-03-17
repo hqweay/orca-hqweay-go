@@ -126,3 +126,21 @@ Block content is more than just raw strings in Orca.
 
 ### 5. Architectural Logic Reuse
 - **Observation**: When multiple features (CSV Import, Quick Tags, Metadata Extraction) share the "create -> tag -> sync" workflow, abstracting it into a shared `libs/DataImporter.ts` is essential. It not only reduces boilerplate but also ensures that critical fixes (like Proxy cleaning and Schema syncing) are applied consistently across the entire project.
+
+## SRS & Incremental Reading (FSRS)
+
+### 1. Topic vs. Item Semantics
+Topic (Notes/Sources) and Item (Flashcards) use the same FSRS engine but require different interactive semantics:
+- **Item**: Focuses on **Retention**. Ratings (Again/Hard/Good/Easy) measure "Do I remember?".
+- **Topic**: Focuses on **Digestion/Processing**. Ratings should measure "How difficult is this to process?" or "How soon do I want to see this again?". 
+- **Design Proposal**: Use "Semantic Overlays" for Topic buttons (e.g., "Again" -> "In-depth/Hard", "Easy" -> "Skim/Soon").
+
+### 2. Feature Backlog for Topic Cards
+- **Priority**: A 0-1 weight to sort the review queue, helping users handle "Topic Overload" when thousands of notes are due.
+- **Reading Points**: Persistence of scroll position or the last processed sub-block ID within a Topic to support "Incremental Reading".
+- **Dismiss vs. Archive**: Decoupling "I'm done reading this today" (FSRS schedule) from "This topic is fully processed/drained" (Permanent removal from SRS).
+
+### 3. FSRS Weights Management
+- **Anti-pattern**: Avoid storing weights (the 17 parameters) per-card. It wastes space and prevents global optimization.
+- **Solution**: Store weights in Global Settings. Users can paste a comma-separated string of 17 numbers (v5 standard) into a single Textarea.
+- **Advanced**: Supporting separate weight sets for `Topic` vs. `Item` types to allow for gentler or stricter scheduling patterns for different content types.
