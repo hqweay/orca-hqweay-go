@@ -64,6 +64,10 @@ const zhCN = {
   "Confirm and Create Tag": "确认并创建标签",
   "Card Tag": "闪卡标签",
   "SRS Settings": "SRS 设置",
+  Soon: "待续",
+  Done: "完成",
+  Priority: "优先级",
+  "The tag used for cards.": "用于卡片的标签名。",
 };
 
 export default zhCN;
