@@ -91,7 +91,9 @@ export default class SrsPlugin extends BasePlugin {
 
           // 尝试查找是否已经打开了复习面板
           let existingPanelId: string | null = null;
-          for (const [id, panel] of Object.entries(orca.state.panels)) {
+          for (const [id, panel] of Object.entries(
+            orca.state.panels.children,
+          )) {
             if ((panel as any).viewArgs?.blockId === blockId) {
               existingPanelId = id;
               break;
