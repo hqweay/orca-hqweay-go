@@ -206,70 +206,121 @@ export default class SrsPlugin extends BasePlugin {
   }
 
   private async getRelatedBlockIds(rootId: DbId): Promise<DbId[]> {
-    const ids = new Set<DbId>();
-    ids.add(rootId);
+    const weights: Record<number, number> = {};
+    const addWeight = (id: number, weight: number) => {
+      weights[id] = (weights[id] || 0) + weight;
+    };
 
-    // 1. 获取块树以递归处理子块
-    const rootTree = await orca.invokeBackend("get-block-tree", rootId);
-    rootTree.push(rootId);
+    // 1. 获取块树（包含自己及所有子孙节点 ID）
+    const rootTreeIds: number[] = (await orca.invokeBackend("get-block-tree", rootId)) || [];
+    if (!rootTreeIds.includes(rootId)) {
+      rootTreeIds.push(rootId);
+    }
 
-    this.logger.info("Root tree", rootTree);
-    const traverse = (node: any) => {
-      console.log("traverse", node);
-      if (!node) return;
-      ids.add(node.id);
+    // 2. 分配基础权重
+    addWeight(rootId, 100); // 根节点权重最高
+    rootTreeIds.forEach((id) => {
+      if (id !== rootId) addWeight(id, 80); // 树内子孙节点权重极高
+    });
 
-      // 收集出链 (Outgoing References)
-      if (node.refs && Array.isArray(node.refs)) {
-        node.refs.forEach((r: any) => {
-          this.logger.info("Ref", r);
-          if (r.to) ids.add(r.to);
-        });
+    const fetchedBlocks = new Map<number, any>();
+    const processedIds = new Set<number>();
+
+    // 3. 安全获取所有树内节点的实际内容（解决老代码 forEach+async 的严重丢块 bug）
+    for (const id of rootTreeIds) {
+      if (processedIds.has(id)) continue;
+      processedIds.add(id);
+
+      let block = orca.state.blocks[id];
+      if (!block) {
+        try {
+          block = await orca.invokeBackend("get-block", id);
+        } catch (e) {
+          // ignore
+        }
       }
+      if (block) fetchedBlocks.set(id, block);
+    }
 
-      // 递归子块
-      if (node.children && Array.isArray(node.children)) {
-        // 如果 get-block-tree 返回的是展开的 Block 对象数组
-        node.children.forEach((child: any) => {
-          if (typeof child === "object") {
-            traverse(child);
-          } else {
-            // 如果只有 ID，可能需要进一步获取，但 get-block-tree 通常是递归好的
-            // 我们姑且认为它是递归的
+    // 4. 收集出链 (Outgoing References) 和分配权重
+    for (const block of fetchedBlocks.values()) {
+      if (block.refs && Array.isArray(block.refs)) {
+        block.refs.forEach((r: any) => {
+          if (r.to) {
+            addWeight(r.to, 50); // 树内节点向外的出链权重中等
           }
         });
       }
-    };
+    }
 
-    // traverse(rootTree);
-    rootTree.forEach(async (blockId: any) => {
-      let block = orca.state.blocks[blockId];
-      // if (!block) {
-      //   block = await orca.invokeBackend("get-block", blockId);
-      // }
-      traverse(block);
-    });
-
-    // 2. 获取根块的反链 (Incoming References / Backlinks)
-    // 注意：backRefs 可能已经在 rootTree 中，由 get-block-tree 返回）
-    if (
-      orca.state.blocks[rootId]?.backRefs &&
-      Array.isArray(orca.state.blocks[rootId].backRefs)
-    ) {
-      orca.state.blocks[rootId].backRefs.forEach((r: any) => {
-        this.logger.info("Back ref", r);
-        if (r.from) ids.add(r.from);
+    // 5. 收集根节点的反链 (Incoming References)
+    const rootBlock = fetchedBlocks.get(rootId);
+    if (rootBlock && rootBlock.backRefs && Array.isArray(rootBlock.backRefs)) {
+      rootBlock.backRefs.forEach((r: any) => {
+        if (r.from) {
+          addWeight(r.from, 30); // 别人链向根节点，权重较低（作为扩展阅读）
+        }
       });
     }
 
-    this.logger.info("Related ids", ids);
+    // 整理收集到的所有侯选 ID
+    let candidateIds = Object.keys(weights).map(Number);
 
-    // 过滤掉 session 块自己（防止循环复习）
+    // 过滤掉当前用于临时会话自身的块
     if (this.sessionBlockId) {
-      ids.delete(this.sessionBlockId);
+      candidateIds = candidateIds.filter((id) => id !== this.sessionBlockId);
     }
 
-    return Array.from(ids);
+    const finalIds: number[] = [];
+
+    // 6. 防空壳节点过滤与合法性校验
+    for (const id of candidateIds) {
+      let b = fetchedBlocks.get(id);
+      if (!b) {
+        b = orca.state.blocks[id];
+        if (!b) {
+          try {
+            b = await orca.invokeBackend("get-block", id);
+          } catch (e) {
+            continue;
+          }
+        }
+      }
+      if (!b) continue;
+
+      // 判断空壳：没有正文、不是文档节点、没有子节点，就丢弃
+      const hasContent = !!(b.content && b.content.length > 0);
+      const isDocument = b.repr?.type === "document";
+      const hasChildren = !!(b.children && b.children.length > 0);
+
+      if (!hasContent && !isDocument && !hasChildren) {
+        // this.logger.info("Filtered empty shell block:", id);
+        continue;
+      }
+      finalIds.push(id);
+    }
+
+    // 7. 权重衰减排序 + 局部洗牌算法 (Local Shuffle)
+    finalIds.sort((a, b) => {
+      const wA = weights[a] || 0;
+      const wB = weights[b] || 0;
+      const diff = wB - wA;
+
+      // 如果权重非常接近 (差异 <= 20)，引入随机扰动，达到局部洗牌效果，每次漫游有一点随机连结感
+      if (Math.abs(diff) <= 20) {
+        return Math.random() - 0.5;
+      }
+      
+      // 差异大的严格按照权重降序排列
+      return diff;
+    });
+
+    this.logger.info(
+      "Smart sorted roaming blocks:",
+      finalIds.map((id) => ({ id, weight: weights[id] }))
+    );
+
+    return finalIds;
   }
 
   private async handleRoam(blockIds: number[], query?: any) {
@@ -286,6 +337,7 @@ export default class SrsPlugin extends BasePlugin {
         break;
       }
     }
+    console.log("existingPanelId", existingPanelId);
 
     if (existingPanelId) {
       orca.nav.switchFocusTo(existingPanelId);
