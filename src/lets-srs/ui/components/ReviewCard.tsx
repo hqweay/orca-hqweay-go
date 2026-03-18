@@ -21,9 +21,12 @@ import { SrsCardData } from "../../core/query";
 
 const { Button, Tooltip } = orca.components;
 
+export type CardDisplayMode = "srs-item" | "srs-topic" | "roaming";
+
 interface ReviewCardProps {
   activeCard: SrsCardData;
   panelId: string;
+  displayMode: CardDisplayMode;
   onCardCompleted: () => void;
   onSkip: () => void;
   shortcutsEnabled: boolean;
@@ -77,6 +80,7 @@ function formatCardState(state?: number): string {
 export const ReviewCard: React.FC<ReviewCardProps> = ({
   activeCard,
   panelId,
+  displayMode,
   onCardCompleted,
   onSkip,
   shortcutsEnabled,
@@ -88,9 +92,8 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
     status: cardStatus,
     remark: cardRemark,
   } = activeCard;
-  const isTopic = type === "Topic";
 
-  const [showAnswer, setShowAnswer] = useState(isTopic);
+  const [showAnswer, setShowAnswer] = useState(displayMode !== "srs-item");
   const [isSaving, setIsSaving] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [localRemark, setLocalRemark] = useState(cardRemark || "");
@@ -101,15 +104,16 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
 
   // 重置状态
   useEffect(() => {
-    setShowAnswer(isTopic);
+    setShowAnswer(displayMode !== "srs-item");
     setIsSaving(false);
     setShowInfo(false);
     setLocalRemark(cardRemark || "");
-  }, [blockId, isTopic, cardRemark]);
+  }, [blockId, displayMode, cardRemark]);
 
   // 计算预测间隔
   const predictedIntervals = useMemo(() => {
-    if (isTopic) {
+    if (displayMode === "roaming") return null;
+    if (displayMode === "srs-topic") {
       // Topic 使用递增间隔调度器
       const topicState = isTopicState(srsData) ? srsData : null;
       const intervals = predictTopicIntervals(topicState);
@@ -118,7 +122,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
         done: formatInterval(intervals.done),
         easy: formatInterval(intervals.easy),
       };
-    } else {
+    } else if (displayMode === "srs-item") {
       // Item 使用 FSRS
       if (!srsData) return null;
       const grades: FsrsGrade[] = ["again", "hard", "good", "easy"];
@@ -129,7 +133,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
       });
       return results;
     }
-  }, [srsData, isTopic]);
+  }, [srsData, displayMode]);
 
   // 动作处理
   const handleGradeAction = async (grade: CardGrade) => {
@@ -140,6 +144,23 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
       onCardCompleted();
     } catch (err) {
       console.error("[lets-srs] failed to save card review", err);
+      setIsSaving(false);
+    }
+  };
+
+  const handleCaptureCard = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      if (activeCard.isVirtual) {
+        await ensureCardTag(activeCard);
+      } else {
+        // 对于已有的卡片，评 Soon 来提升优先级并缩短间隔
+        await saveCardReview(activeCard, "soon");
+      }
+      onCardCompleted();
+    } catch (err) {
+      console.error("[lets-srs] failed to capture card", err);
       setIsSaving(false);
     }
   };
@@ -221,8 +242,18 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
       e.preventDefault();
       const key = e.key.toLowerCase();
       if (e.code === "Space") {
-        if (!showAnswer && !isTopic) setShowAnswer(true);
-        else handleGradeAction(isTopic ? "done" : "good");
+        switch (displayMode) {
+          case "roaming":
+            handleCaptureCard();
+            break;
+          case "srs-item":
+            if (!showAnswer) setShowAnswer(true);
+            else handleGradeAction("good");
+            break;
+          case "srs-topic":
+            handleGradeAction("done");
+            break;
+        }
       } else if (key === "s") {
         onSkip();
       } else if (key === "b" || key === "p") {
@@ -237,19 +268,17 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
         setShowInfo(!showInfo);
       } else if (key === "u" && activeCard.isVirtual) {
         handleUpgrade();
-      } else if (showAnswer || isTopic) {
-        if (isTopic) {
-          // Topic 快捷键：1=Soon, 2=Done, 3=Easy
-          if (e.key === "1") handleGradeAction("soon");
-          if (e.key === "2") handleGradeAction("done");
-          if (e.key === "3") handleGradeAction("easy");
-        } else {
-          // Item 快捷键：1=Again, 2=Hard, 3=Good, 4=Easy
-          if (e.key === "1") handleGradeAction("again");
-          if (e.key === "2") handleGradeAction("hard");
-          if (e.key === "3") handleGradeAction("good");
-          if (e.key === "4") handleGradeAction("easy");
-        }
+      } else if (displayMode === "srs-topic") {
+        // Topic 快捷键：1=Soon, 2=Done, 3=Easy
+        if (e.key === "1") handleGradeAction("soon");
+        if (e.key === "2") handleGradeAction("done");
+        if (e.key === "3") handleGradeAction("easy");
+      } else if (displayMode === "srs-item" && showAnswer) {
+        // Item 快捷键：1=Again, 2=Hard, 3=Good, 4=Easy
+        if (e.key === "1") handleGradeAction("again");
+        if (e.key === "2") handleGradeAction("hard");
+        if (e.key === "3") handleGradeAction("good");
+        if (e.key === "4") handleGradeAction("easy");
       }
     };
 
@@ -257,7 +286,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
     showAnswer,
-    isTopic,
+    displayMode,
     activeCard,
     isSaving,
     onSkip,
@@ -305,20 +334,24 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
           flexShrink: 0,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span
+            className="srs-card-type-badge"
             style={{
-              fontSize: 10,
+              padding: "4px 8px",
+              background: displayMode === "srs-topic"
+                ? "var(--orca-color-warning-transparent-2)"
+                : "var(--orca-color-success-transparent-2)",
+              color: displayMode === "srs-topic"
+                ? "var(--orca-color-warning-5)"
+                : "var(--orca-color-success-5)",
+              borderRadius: "4px",
+              fontSize: "12px",
               fontWeight: 600,
-              color: "white",
-              background: isTopic ? "#43a047" : "#fb8c00",
-              padding: "2px 8px",
-              borderRadius: 4,
-              textTransform: "uppercase",
             }}
           >
-            {isTopic ? t("Topic") : t("Item")}
-          </div>
+            {displayMode === "srs-topic" ? t("Topic") : displayMode === "roaming" ? "Roam" : t("Item")}
+          </span>
           {isSuspended && (
             <span
               style={{ fontSize: 10, color: "var(--orca-color-warning-5)" }}
@@ -501,14 +534,14 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
 
         {/* 内容展示区 */}
         <div className="srs-card-content" style={{ flex: 1 }}>
-          {isTopic ? (
-            <TopicRenderer blockId={blockId} panelId={panelId} />
-          ) : (
+          {displayMode === "srs-item" ? (
             <ItemRenderer
               blockId={blockId}
               panelId={panelId}
               showAnswer={showAnswer}
             />
+          ) : (
+            <TopicRenderer blockId={blockId} panelId={panelId} />
           )}
         </div>
       </div>
@@ -526,186 +559,175 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
           zIndex: 10,
         }}
       >
-        {!showAnswer && !isTopic ? (
-          <div
-            style={{ display: "flex", gap: 12, width: "100%", maxWidth: 600 }}
-          >
-            <Button
-              variant="outline"
-              onClick={onSkip}
-              style={{ flex: 1, borderRadius: 8, background: "#f5f5f5" }}
-            >
-              {t("Skip")}
-              <span style={{ fontSize: 10, marginLeft: 4, opacity: 0.6 }}>
-                {t("[S]")}
-              </span>
-            </Button>
-            <Button
-              variant="solid"
-              onClick={() => setShowAnswer(true)}
-              style={{
-                flex: 3,
-                padding: "14px",
-                fontSize: 16,
-                borderRadius: 8,
-                background: "#1e88e5",
-                color: "white",
-                boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-              }}
-            >
-              {t("Show Answer")}
-              <span style={{ fontSize: 11, marginLeft: 8, opacity: 0.8 }}>
-                {t("[Space]")}
-              </span>
-            </Button>
-          </div>
-        ) : (
-          <div
-            style={{ display: "flex", gap: 12, width: "100%", maxWidth: 600 }}
-          >
-            <Button
-              variant="outline"
-              onClick={onSkip}
-              disabled={isSaving}
-              style={{
-                flex: 1,
-                borderRadius: 8,
-                background: "#f5f5f5",
-              }}
-              className="srs-grade-btn"
-            >
-              {t("Skip")}
-              <span
-                contentEditable={false}
-                style={{ fontSize: 10, marginLeft: 4, opacity: 0.6 }}
-              >
-                {t("[S]")}
-              </span>
-            </Button>
+        {(() => {
+          switch (displayMode) {
+            case "roaming":
+              return (
+                <div style={{ display: "flex", gap: 12, width: "100%", maxWidth: 600 }}>
+                  <Button
+                    variant="outline"
+                    onClick={onSkip}
+                    disabled={isSaving}
+                    style={{ flex: 1, borderRadius: 8, background: "#f5f5f5" }}
+                    className="srs-grade-btn"
+                  >
+                    <div style={{ fontWeight: 600 }}>{t("Next")}</div>
+                    <div className="srs-interval-hint">{t("[S]")}</div>
+                  </Button>
+                  <Button
+                    variant="solid"
+                    onClick={handleCaptureCard}
+                    disabled={isSaving}
+                    className="srs-grade-btn"
+                    style={{ flex: 3, background: "#1e88e5", color: "white", borderRadius: 8 }}
+                  >
+                    <div style={{ fontWeight: 600 }}>{activeCard.isVirtual ? t("Add to SRS") : t("Boost Priority")}</div>
+                    <div className="srs-interval-hint">{t("[Space]")}</div>
+                  </Button>
+                </div>
+              );
 
-            <div style={{ display: "flex", gap: 12, flex: 4 }}>
-              {isTopic ? (
-                <>
+            case "srs-topic":
+              return (
+                <div style={{ display: "flex", gap: 12, width: "100%", maxWidth: 600 }}>
                   <Button
-                    variant="solid"
-                    onClick={() => handleGradeAction("soon")}
+                    variant="outline"
+                    onClick={onSkip}
                     disabled={isSaving}
+                    style={{ flex: 1, borderRadius: 8, background: "#f5f5f5" }}
                     className="srs-grade-btn"
-                    style={{
-                      background: "#fb8c00",
-                      color: "white",
-                      borderRadius: 8,
-                    }}
                   >
-                    <div style={{ fontWeight: 600 }}>{t("Soon")}</div>
-                    <div className="srs-interval-hint">
-                      {predictedIntervals?.soon}
-                    </div>
+                    {t("Skip")}
+                    <span contentEditable={false} style={{ fontSize: 10, marginLeft: 4, opacity: 0.6 }}>
+                      {t("[S]")}
+                    </span>
                   </Button>
+                  <div style={{ display: "flex", gap: 12, flex: 4 }}>
+                    <Button
+                      variant="solid"
+                      onClick={() => handleGradeAction("soon")}
+                      disabled={isSaving}
+                      className="srs-grade-btn"
+                      style={{ background: "#fb8c00", color: "white", borderRadius: 8 }}
+                    >
+                      <div style={{ fontWeight: 600 }}>{t("Soon")}</div>
+                      <div className="srs-interval-hint">{predictedIntervals?.soon}</div>
+                    </Button>
+                    <Button
+                      variant="solid"
+                      onClick={() => handleGradeAction("done")}
+                      disabled={isSaving}
+                      className="srs-grade-btn"
+                      style={{ background: "#43a047", color: "white", borderRadius: 8 }}
+                    >
+                      <div style={{ fontWeight: 600 }}>{t("Done")}</div>
+                      <div className="srs-interval-hint">{predictedIntervals?.done}</div>
+                    </Button>
+                    <Button
+                      variant="solid"
+                      onClick={() => handleGradeAction("easy")}
+                      disabled={isSaving}
+                      className="srs-grade-btn"
+                      style={{ background: "#1e88e5", color: "white", borderRadius: 8 }}
+                    >
+                      <div style={{ fontWeight: 600 }}>{t("Easy")}</div>
+                      <div className="srs-interval-hint">{predictedIntervals?.easy}</div>
+                    </Button>
+                  </div>
+                </div>
+              );
+
+            case "srs-item":
+              if (!showAnswer) {
+                return (
+                  <div style={{ display: "flex", gap: 12, width: "100%", maxWidth: 600 }}>
+                    <Button
+                      variant="outline"
+                      onClick={onSkip}
+                      style={{ flex: 1, borderRadius: 8, background: "#f5f5f5" }}
+                    >
+                      {t("Skip")}
+                      <span style={{ fontSize: 10, marginLeft: 4, opacity: 0.6 }}>{t("[S]")}</span>
+                    </Button>
+                    <Button
+                      variant="solid"
+                      onClick={() => setShowAnswer(true)}
+                      style={{
+                        flex: 3,
+                        padding: "14px",
+                        fontSize: 16,
+                        borderRadius: 8,
+                        background: "#1e88e5",
+                        color: "white",
+                        boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+                      }}
+                    >
+                      {t("Show Answer")}
+                      <span style={{ fontSize: 11, marginLeft: 8, opacity: 0.8 }}>{t("[Space]")}</span>
+                    </Button>
+                  </div>
+                );
+              }
+              return (
+                <div style={{ display: "flex", gap: 12, width: "100%", maxWidth: 600 }}>
                   <Button
-                    variant="solid"
-                    onClick={() => handleGradeAction("done")}
+                    variant="outline"
+                    onClick={onSkip}
                     disabled={isSaving}
+                    style={{ flex: 1, borderRadius: 8, background: "#f5f5f5" }}
                     className="srs-grade-btn"
-                    style={{
-                      background: "#43a047",
-                      color: "white",
-                      borderRadius: 8,
-                    }}
                   >
-                    <div style={{ fontWeight: 600 }}>{t("Done")}</div>
-                    <div className="srs-interval-hint">
-                      {predictedIntervals?.done}
-                    </div>
+                    {t("Skip")}
+                    <span contentEditable={false} style={{ fontSize: 10, marginLeft: 4, opacity: 0.6 }}>
+                      {t("[S]")}
+                    </span>
                   </Button>
-                  <Button
-                    variant="solid"
-                    onClick={() => handleGradeAction("easy")}
-                    disabled={isSaving}
-                    className="srs-grade-btn"
-                    style={{
-                      background: "#1e88e5",
-                      color: "white",
-                      borderRadius: 8,
-                    }}
-                  >
-                    <div style={{ fontWeight: 600 }}>{t("Easy")}</div>
-                    <div className="srs-interval-hint">
-                      {predictedIntervals?.easy}
-                    </div>
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    variant="solid"
-                    onClick={() => handleGradeAction("again")}
-                    disabled={isSaving}
-                    className="srs-grade-btn"
-                    style={{
-                      background: "#e53935",
-                      color: "white",
-                      borderRadius: 8,
-                    }}
-                  >
-                    <div style={{ fontWeight: 600 }}>{t("Again")}</div>
-                    <div className="srs-interval-hint">
-                      {predictedIntervals?.again}
-                    </div>
-                  </Button>
-                  <Button
-                    variant="solid"
-                    onClick={() => handleGradeAction("hard")}
-                    disabled={isSaving}
-                    className="srs-grade-btn"
-                    style={{
-                      background: "#fb8c00",
-                      color: "white",
-                      borderRadius: 8,
-                    }}
-                  >
-                    <div style={{ fontWeight: 600 }}>{t("Hard")}</div>
-                    <div className="srs-interval-hint">
-                      {predictedIntervals?.hard}
-                    </div>
-                  </Button>
-                  <Button
-                    variant="solid"
-                    onClick={() => handleGradeAction("good")}
-                    disabled={isSaving}
-                    className="srs-grade-btn"
-                    style={{
-                      background: "#43a047",
-                      color: "white",
-                      borderRadius: 8,
-                    }}
-                  >
-                    <div style={{ fontWeight: 600 }}>{t("Good")}</div>
-                    <div className="srs-interval-hint">
-                      {predictedIntervals?.good}
-                    </div>
-                  </Button>
-                  <Button
-                    variant="solid"
-                    onClick={() => handleGradeAction("easy")}
-                    disabled={isSaving}
-                    className="srs-grade-btn"
-                    style={{
-                      background: "#1e88e5",
-                      color: "white",
-                      borderRadius: 8,
-                    }}
-                  >
-                    <div style={{ fontWeight: 600 }}>{t("Easy")}</div>
-                    <div className="srs-interval-hint">
-                      {predictedIntervals?.easy}
-                    </div>
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-        )}
+                  <div style={{ display: "flex", gap: 12, flex: 4 }}>
+                    <Button
+                      variant="solid"
+                      onClick={() => handleGradeAction("again")}
+                      disabled={isSaving}
+                      className="srs-grade-btn"
+                      style={{ background: "#e53935", color: "white", borderRadius: 8 }}
+                    >
+                      <div style={{ fontWeight: 600 }}>{t("Again")}</div>
+                      <div className="srs-interval-hint">{predictedIntervals?.again}</div>
+                    </Button>
+                    <Button
+                      variant="solid"
+                      onClick={() => handleGradeAction("hard")}
+                      disabled={isSaving}
+                      className="srs-grade-btn"
+                      style={{ background: "#fb8c00", color: "white", borderRadius: 8 }}
+                    >
+                      <div style={{ fontWeight: 600 }}>{t("Hard")}</div>
+                      <div className="srs-interval-hint">{predictedIntervals?.hard}</div>
+                    </Button>
+                    <Button
+                      variant="solid"
+                      onClick={() => handleGradeAction("good")}
+                      disabled={isSaving}
+                      className="srs-grade-btn"
+                      style={{ background: "#43a047", color: "white", borderRadius: 8 }}
+                    >
+                      <div style={{ fontWeight: 600 }}>{t("Good")}</div>
+                      <div className="srs-interval-hint">{predictedIntervals?.good}</div>
+                    </Button>
+                    <Button
+                      variant="solid"
+                      onClick={() => handleGradeAction("easy")}
+                      disabled={isSaving}
+                      className="srs-grade-btn"
+                      style={{ background: "#1e88e5", color: "white", borderRadius: 8 }}
+                    >
+                      <div style={{ fontWeight: 600 }}>{t("Easy")}</div>
+                      <div className="srs-interval-hint">{predictedIntervals?.easy}</div>
+                    </Button>
+                  </div>
+                </div>
+              );
+          }
+        })()}
       </div>
     </div>
   );

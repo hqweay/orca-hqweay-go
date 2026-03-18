@@ -68,6 +68,8 @@ const zhCN = {
   Done: "完成",
   Priority: "优先级",
   "The tag used for cards.": "用于卡片的标签名。",
+  "Add to SRS": "加为闪卡",
+  "Boost Priority": "提升优先级",
 };
 
 export default zhCN;

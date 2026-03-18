@@ -239,6 +239,16 @@ export function ReviewPanel(props: RendererProps) {
       );
     }
 
+    const viewPanel = orca.nav.findViewPanel(props.panelId, orca.state.panels);
+    const viewArgs = viewPanel?.viewArgs;
+    const isRoamingSession = Array.isArray(viewArgs?.initialBlockIds) || !!viewArgs?.query;
+
+    const displayMode: any = isRoamingSession 
+      ? "roaming" 
+      : activeCard.type === "Item" 
+        ? "srs-item" 
+        : "srs-topic";
+
     return (
       <div
         ref={containerRef}
@@ -281,7 +291,7 @@ export function ReviewPanel(props: RendererProps) {
           >
             {history.length > 0
               ? t("SRS Review")
-              : cards[0]?.isVirtual
+              : isRoamingSession
                 ? t("Roaming Mode")
                 : t("SRS Review")}
           </div>
@@ -382,6 +392,7 @@ export function ReviewPanel(props: RendererProps) {
             <ReviewCard
               activeCard={activeCard}
               panelId={props.panelId}
+              displayMode={displayMode}
               onCardCompleted={handleCardCompleted}
               onSkip={handleSkip}
               shortcutsEnabled={shortcutsEnabled}
