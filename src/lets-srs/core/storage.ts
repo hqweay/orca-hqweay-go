@@ -132,7 +132,7 @@ export async function revertCardToState(card: SrsCardData): Promise<void> {
 /**
  * 内部工具：更新或插入卡片标签数据
  */
-async function updateCardProperties(
+export async function updateCardProperties(
   card: SrsCardData,
   tagProperties: any[],
 ): Promise<void> {
@@ -140,7 +140,7 @@ async function updateCardProperties(
 
   if (card.cardRef) {
     try {
-      console.log("updateCardProperties", card.cardRef, tagProperties);
+      console.log("updateCardProperties11", card.cardRef, tagProperties);
       await orca.commands.invokeEditorCommand(
         "core.editor.setRefData",
         null,
@@ -156,7 +156,7 @@ async function updateCardProperties(
       card.status = tagProperties.find((p) => p.name === "status")?.value || [];
       // card.remark = tagProperties.find((p) => p.name === "remark")?.value || "";
       // card.srsData =
-        // tagProperties.find((p) => p.name === "srsData")?.value || "";
+      // tagProperties.find((p) => p.name === "srsData")?.value || "";
       // card.due = tagProperties.find((p) => p.name === "due")?.value || "";
       // card.type = tagProperties.find((p) => p.name === "type")?.value || "";
 
@@ -189,14 +189,16 @@ async function updateCardProperties(
   )) as number;
 
   // 3. 更新内存中的状态
-  const tagBlock = await orca.invokeBackend("get-block", tabBlockId);
-  if (tagBlock) {
-    card.cardRef = {
-      id: tabBlockId,
-      type: 2,
-      alias: CARD_TAG_ALIAS,
-      data: tagBlock.properties || [],
-    };
-    card.isVirtual = false;
+  const updatedBlock = await orca.invokeBackend("get-block", card.blockId);
+  if (updatedBlock && updatedBlock.refs) {
+    const cardRef = updatedBlock.refs.find(
+      (ref: any) => ref.type === 2 && ref.alias === CARD_TAG_ALIAS,
+    );
+    if (cardRef) {
+      card.cardRef = cardRef;
+      card.status = tagProperties.find((p) => p.name === "status")?.value || [];
+      card.isVirtual = false;
+    }
   }
+  console.log("updateCardProperties22", card);
 }

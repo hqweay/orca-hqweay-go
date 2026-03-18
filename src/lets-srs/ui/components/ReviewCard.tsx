@@ -16,6 +16,7 @@ import {
   toggleCardStatus,
   saveCardRemark,
   ensureCardTag,
+  updateCardProperties,
 } from "../../core/storage";
 import { SrsCardData } from "../../core/query";
 
@@ -97,10 +98,12 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [localRemark, setLocalRemark] = useState(cardRemark || "");
+  const [localStatus, setLocalStatus] = useState(cardStatus || []);
+  const [localIsVirtual, setLocalIsVirtual] = useState(activeCard.isVirtual);
 
-  const isMarked = cardStatus?.includes("marked");
-  const isArchived = cardStatus?.includes("archived");
-  const isSuspended = cardStatus?.includes("suspend");
+  const isMarked = localStatus.includes("marked");
+  const isArchived = localStatus.includes("archived");
+  const isSuspended = localStatus.includes("suspend");
 
   // 重置状态
   useEffect(() => {
@@ -108,7 +111,9 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
     setIsSaving(false);
     setShowInfo(false);
     setLocalRemark(cardRemark || "");
-  }, [blockId, displayMode, cardRemark]);
+    setLocalStatus(cardStatus || []);
+    setLocalIsVirtual(activeCard.isVirtual);
+  }, [blockId, displayMode, cardRemark, cardStatus, activeCard.isVirtual]);
 
   // 计算预测间隔
   const predictedIntervals = useMemo(() => {
@@ -151,9 +156,15 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
   const handleCaptureCard = async () => {
     if (isSaving) return;
     setIsSaving(true);
+
+    // 乐观更新（如果是由于捕获触发的话，虽然马上会翻页，但在动画或微小延迟期间确保 UI 不闪烁）
+    const previousVirtual = localIsVirtual;
+    setLocalIsVirtual(false);
+
     try {
-      if (activeCard.isVirtual) {
+      if (previousVirtual) {
         await ensureCardTag(activeCard);
+        activeCard.isVirtual = false;
       } else {
         // 对于已有的卡片，评 Soon 来提升优先级并缩短间隔
         await saveCardReview(activeCard, "soon");
@@ -161,6 +172,8 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
       onCardCompleted();
     } catch (err) {
       console.error("[lets-srs] failed to capture card", err);
+      // 捕获失败，回退 UI 状态
+      setLocalIsVirtual(previousVirtual);
       setIsSaving(false);
     }
   };
@@ -182,16 +195,21 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
     setIsSaving(true);
     try {
       await toggleCardStatus(activeCard, status);
-      // 如果切换的是 suspend 或 archived，通常意味着不再复习
-      if (status === "suspend" || status === "archived") {
+
+      console.log("handleToggleStatus", activeCard);
+      // 强制触发组件重新渲染以更新 UI（不论是否跳过）
+      setLocalStatus([...(activeCard.status || [])]);
+
+      // 在「漫游模式」下，点击任意状态调整按钮（标记/暂停/归档），都意味着你处理完了这个块，自动进入下一张。
+      // 在「复习模式」下，只有暂停/归档会跳过当前卡。
+      if (
+        // displayMode === "roaming" ||
+        status === "suspend" ||
+        status === "archived"
+      ) {
         onCardCompleted();
       } else {
         setIsSaving(false);
-        // 注意：此处需要让外部刷新状态，但由于 Orca 的响应式特性，
-        // 如果标签数据更新了，fetchDueCards 下次运行时会反映出来。
-        // 在当前的单次渲染中，我们由于是从 activeCard 读的 status，
-        // 除非父组件 reload，否则 UI 不会立刻显示“已标记”。
-        // TODO: 考虑触发父组件 reloadCard(activeCard)
       }
     } catch (err) {
       console.error(`[lets-srs] failed to toggle status: ${status}`, err);
@@ -212,16 +230,22 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
   };
 
   const handleUpgrade = async () => {
-    console.log("isSaving", isSaving);
     if (isSaving) return;
-    setIsSaving(true); 
+
+    // 极致的乐观更新：点下去的瞬间（0延迟）UI 直接进入 "实体卡" 状态
+    const previousState = localIsVirtual;
+    setLocalIsVirtual(false);
+    setIsSaving(true);
+
     try {
       await ensureCardTag(activeCard);
-      // 将 isVirtual 设为 false 以刷新 UI
+      // 同时别忘了保证底层内存的数据一致性，以免被后手逻辑或者 storage.ts 操作坑了
       activeCard.isVirtual = false;
       setIsSaving(false);
     } catch (err) {
       console.error("[lets-srs] failed to upgrade card", err);
+      // 如果报错了，则默默地把刚刚吹出去的牛皮（前端UI展示）兜回来
+      setLocalIsVirtual(previousState);
       setIsSaving(false);
     }
   };
@@ -266,7 +290,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
         handleToggleStatus("archived");
       } else if (key === "i") {
         setShowInfo(!showInfo);
-      } else if (key === "u" && activeCard.isVirtual) {
+      } else if (key === "u" && localIsVirtual) {
         handleUpgrade();
       } else if (displayMode === "srs-topic") {
         // Topic 快捷键：1=Soon, 2=Done, 3=Easy
@@ -339,18 +363,24 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
             className="srs-card-type-badge"
             style={{
               padding: "4px 8px",
-              background: displayMode === "srs-topic"
-                ? "var(--orca-color-warning-transparent-2)"
-                : "var(--orca-color-success-transparent-2)",
-              color: displayMode === "srs-topic"
-                ? "var(--orca-color-warning-5)"
-                : "var(--orca-color-success-5)",
+              background:
+                displayMode === "srs-topic"
+                  ? "var(--orca-color-warning-transparent-2)"
+                  : "var(--orca-color-success-transparent-2)",
+              color:
+                displayMode === "srs-topic"
+                  ? "var(--orca-color-warning-5)"
+                  : "var(--orca-color-success-5)",
               borderRadius: "4px",
               fontSize: "12px",
               fontWeight: 600,
             }}
           >
-            {displayMode === "srs-topic" ? t("Topic") : displayMode === "roaming" ? "Roam" : t("Item")}
+            {displayMode === "srs-topic"
+              ? t("Topic")
+              : displayMode === "roaming"
+                ? "Roam"
+                : t("Item")}
           </span>
           {isSuspended && (
             <span
@@ -403,15 +433,17 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
               <i className="ti ti-archive" style={{ fontSize: 16 }} />
             </Button>
           </Tooltip>
-          <Tooltip text={t("Postpone to tomorrow [B/P]")}>
-            <Button
-              variant="plain"
-              onClick={handlePostpone}
-              className="srs-card-toolbar-btn"
-            >
-              <i className="ti ti-calendar-pause" style={{ fontSize: 16 }} />
-            </Button>
-          </Tooltip>
+          {displayMode !== "roaming" && (
+            <Tooltip text={t("Postpone to tomorrow [B/P]")}>
+              <Button
+                variant="plain"
+                onClick={handlePostpone}
+                className="srs-card-toolbar-btn"
+              >
+                <i className="ti ti-calendar-pause" style={{ fontSize: 16 }} />
+              </Button>
+            </Tooltip>
+          )}
           <Tooltip text={t("Suspend Card [H]")}>
             <Button
               variant="plain"
@@ -469,7 +501,9 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
             >
               <div className="srs-info-item">
                 <span>{t("Priority")}</span>
-                <span style={{ fontWeight: 600 }}>{activeCard.priority ?? 3}</span>
+                <span style={{ fontWeight: 600 }}>
+                  {activeCard.priority ?? 3}
+                </span>
               </div>
               <div className="srs-info-item">
                 <span>{t("Retention Lapses")}</span>
@@ -563,7 +597,14 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
           switch (displayMode) {
             case "roaming":
               return (
-                <div style={{ display: "flex", gap: 12, width: "100%", maxWidth: 600 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 12,
+                    width: "100%",
+                    maxWidth: 600,
+                  }}
+                >
                   <Button
                     variant="outline"
                     onClick={onSkip}
@@ -579,9 +620,16 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
                     onClick={handleCaptureCard}
                     disabled={isSaving}
                     className="srs-grade-btn"
-                    style={{ flex: 3, background: "#1e88e5", color: "white", borderRadius: 8 }}
+                    style={{
+                      flex: 3,
+                      background: "#1e88e5",
+                      color: "white",
+                      borderRadius: 8,
+                    }}
                   >
-                    <div style={{ fontWeight: 600 }}>{activeCard.isVirtual ? t("Add to SRS") : t("Boost Priority")}</div>
+                    <div style={{ fontWeight: 600 }}>
+                      {localIsVirtual ? t("Add to SRS") : t("Boost Priority")}
+                    </div>
                     <div className="srs-interval-hint">{t("[Space]")}</div>
                   </Button>
                 </div>
@@ -589,7 +637,14 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
 
             case "srs-topic":
               return (
-                <div style={{ display: "flex", gap: 12, width: "100%", maxWidth: 600 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 12,
+                    width: "100%",
+                    maxWidth: 600,
+                  }}
+                >
                   <Button
                     variant="outline"
                     onClick={onSkip}
@@ -598,7 +653,10 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
                     className="srs-grade-btn"
                   >
                     {t("Skip")}
-                    <span contentEditable={false} style={{ fontSize: 10, marginLeft: 4, opacity: 0.6 }}>
+                    <span
+                      contentEditable={false}
+                      style={{ fontSize: 10, marginLeft: 4, opacity: 0.6 }}
+                    >
                       {t("[S]")}
                     </span>
                   </Button>
@@ -608,30 +666,48 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
                       onClick={() => handleGradeAction("soon")}
                       disabled={isSaving}
                       className="srs-grade-btn"
-                      style={{ background: "#fb8c00", color: "white", borderRadius: 8 }}
+                      style={{
+                        background: "#fb8c00",
+                        color: "white",
+                        borderRadius: 8,
+                      }}
                     >
                       <div style={{ fontWeight: 600 }}>{t("Soon")}</div>
-                      <div className="srs-interval-hint">{predictedIntervals?.soon}</div>
+                      <div className="srs-interval-hint">
+                        {predictedIntervals?.soon}
+                      </div>
                     </Button>
                     <Button
                       variant="solid"
                       onClick={() => handleGradeAction("done")}
                       disabled={isSaving}
                       className="srs-grade-btn"
-                      style={{ background: "#43a047", color: "white", borderRadius: 8 }}
+                      style={{
+                        background: "#43a047",
+                        color: "white",
+                        borderRadius: 8,
+                      }}
                     >
                       <div style={{ fontWeight: 600 }}>{t("Done")}</div>
-                      <div className="srs-interval-hint">{predictedIntervals?.done}</div>
+                      <div className="srs-interval-hint">
+                        {predictedIntervals?.done}
+                      </div>
                     </Button>
                     <Button
                       variant="solid"
                       onClick={() => handleGradeAction("easy")}
                       disabled={isSaving}
                       className="srs-grade-btn"
-                      style={{ background: "#1e88e5", color: "white", borderRadius: 8 }}
+                      style={{
+                        background: "#1e88e5",
+                        color: "white",
+                        borderRadius: 8,
+                      }}
                     >
                       <div style={{ fontWeight: 600 }}>{t("Easy")}</div>
-                      <div className="srs-interval-hint">{predictedIntervals?.easy}</div>
+                      <div className="srs-interval-hint">
+                        {predictedIntervals?.easy}
+                      </div>
                     </Button>
                   </div>
                 </div>
@@ -640,14 +716,29 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
             case "srs-item":
               if (!showAnswer) {
                 return (
-                  <div style={{ display: "flex", gap: 12, width: "100%", maxWidth: 600 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 12,
+                      width: "100%",
+                      maxWidth: 600,
+                    }}
+                  >
                     <Button
                       variant="outline"
                       onClick={onSkip}
-                      style={{ flex: 1, borderRadius: 8, background: "#f5f5f5" }}
+                      style={{
+                        flex: 1,
+                        borderRadius: 8,
+                        background: "#f5f5f5",
+                      }}
                     >
                       {t("Skip")}
-                      <span style={{ fontSize: 10, marginLeft: 4, opacity: 0.6 }}>{t("[S]")}</span>
+                      <span
+                        style={{ fontSize: 10, marginLeft: 4, opacity: 0.6 }}
+                      >
+                        {t("[S]")}
+                      </span>
                     </Button>
                     <Button
                       variant="solid"
@@ -663,13 +754,24 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
                       }}
                     >
                       {t("Show Answer")}
-                      <span style={{ fontSize: 11, marginLeft: 8, opacity: 0.8 }}>{t("[Space]")}</span>
+                      <span
+                        style={{ fontSize: 11, marginLeft: 8, opacity: 0.8 }}
+                      >
+                        {t("[Space]")}
+                      </span>
                     </Button>
                   </div>
                 );
               }
               return (
-                <div style={{ display: "flex", gap: 12, width: "100%", maxWidth: 600 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 12,
+                    width: "100%",
+                    maxWidth: 600,
+                  }}
+                >
                   <Button
                     variant="outline"
                     onClick={onSkip}
@@ -678,7 +780,10 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
                     className="srs-grade-btn"
                   >
                     {t("Skip")}
-                    <span contentEditable={false} style={{ fontSize: 10, marginLeft: 4, opacity: 0.6 }}>
+                    <span
+                      contentEditable={false}
+                      style={{ fontSize: 10, marginLeft: 4, opacity: 0.6 }}
+                    >
                       {t("[S]")}
                     </span>
                   </Button>
@@ -688,40 +793,64 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
                       onClick={() => handleGradeAction("again")}
                       disabled={isSaving}
                       className="srs-grade-btn"
-                      style={{ background: "#e53935", color: "white", borderRadius: 8 }}
+                      style={{
+                        background: "#e53935",
+                        color: "white",
+                        borderRadius: 8,
+                      }}
                     >
                       <div style={{ fontWeight: 600 }}>{t("Again")}</div>
-                      <div className="srs-interval-hint">{predictedIntervals?.again}</div>
+                      <div className="srs-interval-hint">
+                        {predictedIntervals?.again}
+                      </div>
                     </Button>
                     <Button
                       variant="solid"
                       onClick={() => handleGradeAction("hard")}
                       disabled={isSaving}
                       className="srs-grade-btn"
-                      style={{ background: "#fb8c00", color: "white", borderRadius: 8 }}
+                      style={{
+                        background: "#fb8c00",
+                        color: "white",
+                        borderRadius: 8,
+                      }}
                     >
                       <div style={{ fontWeight: 600 }}>{t("Hard")}</div>
-                      <div className="srs-interval-hint">{predictedIntervals?.hard}</div>
+                      <div className="srs-interval-hint">
+                        {predictedIntervals?.hard}
+                      </div>
                     </Button>
                     <Button
                       variant="solid"
                       onClick={() => handleGradeAction("good")}
                       disabled={isSaving}
                       className="srs-grade-btn"
-                      style={{ background: "#43a047", color: "white", borderRadius: 8 }}
+                      style={{
+                        background: "#43a047",
+                        color: "white",
+                        borderRadius: 8,
+                      }}
                     >
                       <div style={{ fontWeight: 600 }}>{t("Good")}</div>
-                      <div className="srs-interval-hint">{predictedIntervals?.good}</div>
+                      <div className="srs-interval-hint">
+                        {predictedIntervals?.good}
+                      </div>
                     </Button>
                     <Button
                       variant="solid"
                       onClick={() => handleGradeAction("easy")}
                       disabled={isSaving}
                       className="srs-grade-btn"
-                      style={{ background: "#1e88e5", color: "white", borderRadius: 8 }}
+                      style={{
+                        background: "#1e88e5",
+                        color: "white",
+                        borderRadius: 8,
+                      }}
                     >
                       <div style={{ fontWeight: 600 }}>{t("Easy")}</div>
-                      <div className="srs-interval-hint">{predictedIntervals?.easy}</div>
+                      <div className="srs-interval-hint">
+                        {predictedIntervals?.easy}
+                      </div>
                     </Button>
                   </div>
                 </div>
