@@ -212,7 +212,8 @@ export default class SrsPlugin extends BasePlugin {
     };
 
     // 1. 获取块树（包含自己及所有子孙节点 ID）
-    const rootTreeIds: number[] = (await orca.invokeBackend("get-block-tree", rootId)) || [];
+    const rootTreeIds: number[] =
+      (await orca.invokeBackend("get-block-tree", rootId)) || [];
     if (!rootTreeIds.includes(rootId)) {
       rootTreeIds.push(rootId);
     }
@@ -310,14 +311,14 @@ export default class SrsPlugin extends BasePlugin {
       if (Math.abs(diff) <= 20) {
         return Math.random() - 0.5;
       }
-      
+
       // 差异大的严格按照权重降序排列
       return diff;
     });
 
     this.logger.info(
       "Smart sorted roaming blocks:",
-      finalIds.map((id) => ({ id, weight: weights[id] }))
+      finalIds.map((id) => ({ id, weight: weights[id] })),
     );
 
     return finalIds;
@@ -330,32 +331,31 @@ export default class SrsPlugin extends BasePlugin {
     const blockId = await this.getOrCreateSessionBlock();
 
     // 尝试查找是否已经打开了复习面板
-    let existingPanelId: string | null = null;
-    for (const [id, panel] of Object.entries(orca.state.panels)) {
-      if ((panel as any).viewArgs?.blockId === blockId) {
-        existingPanelId = id;
-        break;
-      }
-    }
-    console.log("existingPanelId", existingPanelId);
+    // let existingPanelId: string | null = null;
+    // for (const [id, panel] of Object.entries(orca.state.panels.children)) {
+    //   if ((panel as any).viewArgs?.blockId === blockId) {
+    //     existingPanelId = id;
+    //     break;
+    //   }
+    // }
 
-    if (existingPanelId) {
-      orca.nav.switchFocusTo(existingPanelId);
-    } else {
-      const newPanelId = orca.nav.addTo(activePanelId, "right", {
-        view: "block",
-        viewArgs: {
-          blockId,
-          repr: RENDERER_TYPE,
-          initialBlockIds: blockIds,
-          query,
-        },
-        viewState: {},
-      } as any);
-      if (newPanelId) {
-        orca.nav.switchFocusTo(newPanelId);
-      }
+    // if (existingPanelId) {
+    //   orca.nav.switchFocusTo(existingPanelId);
+    // } else {
+    const newPanelId = orca.nav.addTo(activePanelId, "right", {
+      view: "block",
+      viewArgs: {
+        blockId,
+        repr: RENDERER_TYPE,
+        initialBlockIds: blockIds,
+        query,
+      },
+      viewState: {},
+    } as any);
+    if (newPanelId) {
+      orca.nav.switchFocusTo(newPanelId);
     }
+    // }
   }
 
   public renderHeadbarButton(): React.ReactNode {
@@ -410,12 +410,14 @@ export default class SrsPlugin extends BasePlugin {
       this.name,
       STORAGE_KEY_SESSION_BLOCK,
     );
+
     if (typeof storedId === "number") {
       const block =
         orca.state.blocks[storedId] ||
         (await orca.invokeBackend("get-block", storedId));
       if (block) {
         this.sessionBlockId = storedId;
+
         // 注入渲染器标记
         const stateBlock = orca.state.blocks[storedId];
         if (stateBlock) (stateBlock as any)._repr = { type: RENDERER_TYPE };
