@@ -17,7 +17,7 @@
 export type TopicGrade = "soon" | "done" | "easy";
 
 /**
- * Topic 的持久化状态（存储在 fsrsData 字段中）
+ * Topic 的持久化状态（存储在 srsData 字段中）
  */
 export interface TopicState {
   type: "topic"; // 用于区分 FSRS 和 Topic 状态
@@ -63,7 +63,7 @@ export function createEmptyTopicState(): TopicState {
 }
 
 /**
- * 判断一个 fsrsData 对象是否为 TopicState
+ * 判断一个 srsData 对象是否为 TopicState
  */
 export function isTopicState(data: any): data is TopicState {
   return data && data.type === "topic";

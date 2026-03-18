@@ -22,7 +22,7 @@ const GRADE_MAP: Record<FsrsGrade, Rating> = {
 const fsrs = new FSRS({})
 
 /**
- * 我们存储在标签属性 `fsrsData` 中的持久化状态结构
+ * 我们存储在标签属性 `srsData` 中的持久化状态结构
  */
 export interface CardState {
   stability: number

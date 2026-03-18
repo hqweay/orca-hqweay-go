@@ -28,7 +28,15 @@ export const CARD_PROPERTIES: BlockProperty[] = [
     },
   },
   {
-    name: "fsrsData",
+    name: "interval",
+    type: PropType.Number,
+  },
+  {
+    name: "reps",
+    type: PropType.Number,
+  },
+  {
+    name: "srsData",
     type: PropType.Text,
   },
   {

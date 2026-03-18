@@ -28,21 +28,25 @@ export async function saveCardReview(
   if (card.type === "Topic") {
     // Topic 使用递增间隔调度器
     const topicGrade = grade as TopicGrade;
-    const currentState = isTopicState(card.fsrsData) ? card.fsrsData : null;
+    const currentState = isTopicState(card.srsData) ? card.srsData : null;
     const result = calculateTopicNextReview(currentState, topicGrade);
     nextDue = result.nextDue;
     nextStateJson = JSON.stringify(result.nextState);
   } else {
     // Item 使用 FSRS 算法
     const fsrsGrade = grade as FsrsGrade;
-    const result = calculateNextReview(card.fsrsData, fsrsGrade);
+    const result = calculateNextReview(card.srsData, fsrsGrade);
     nextDue = result.nextDue;
     nextStateJson = JSON.stringify(result.nextState);
   }
 
+  const nextState = JSON.parse(nextStateJson);
+
   const tagProperties = [
     { name: "due", value: nextDue },
-    { name: "fsrsData", value: nextStateJson },
+    { name: "interval", value: nextState.interval ?? 0 },
+    { name: "reps", value: nextState.reps ?? 0 },
+    { name: "srsData", value: nextStateJson },
     { name: "type", value: card.type },
   ];
 
@@ -138,8 +142,8 @@ async function updateCardProperties(
       };
       card.status = tagProperties.find((p) => p.name === "status")?.value || [];
       // card.remark = tagProperties.find((p) => p.name === "remark")?.value || "";
-      // card.fsrsData =
-        // tagProperties.find((p) => p.name === "fsrsData")?.value || "";
+      // card.srsData =
+        // tagProperties.find((p) => p.name === "srsData")?.value || "";
       // card.due = tagProperties.find((p) => p.name === "due")?.value || "";
       // card.type = tagProperties.find((p) => p.name === "type")?.value || "";
 

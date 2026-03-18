@@ -16,7 +16,7 @@ import cloneDeep from "lodash.clonedeep";
  * 虎鲸笔记 - 记忆卡片 (SRS) 插件
  *
  * 核心功能：
- * 1. 自动注册 #Card 标签 Schema（属性：Due, Type, fsrsData）
+ * 1. 自动注册 #Card 标签 Schema（属性：Due, Type, Interval, Reps, srsData）
  * 2. 侧边栏原生的复习看板 (Review Panel)
  * 3. 基于 ts-fsrs 算法的进度调度
  */

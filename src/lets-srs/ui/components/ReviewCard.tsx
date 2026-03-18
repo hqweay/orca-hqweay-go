@@ -84,7 +84,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
   const {
     blockId,
     type,
-    fsrsData,
+    srsData,
     status: cardStatus,
     remark: cardRemark,
   } = activeCard;
@@ -111,7 +111,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
   const predictedIntervals = useMemo(() => {
     if (isTopic) {
       // Topic 使用递增间隔调度器
-      const topicState = isTopicState(fsrsData) ? fsrsData : null;
+      const topicState = isTopicState(srsData) ? srsData : null;
       const intervals = predictTopicIntervals(topicState);
       return {
         soon: formatInterval(intervals.soon),
@@ -120,16 +120,16 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
       };
     } else {
       // Item 使用 FSRS
-      if (!fsrsData) return null;
+      if (!srsData) return null;
       const grades: FsrsGrade[] = ["again", "hard", "good", "easy"];
       const results: Record<string, string> = {};
       grades.forEach((g) => {
-        const { nextState } = calculateNextReview(fsrsData, g);
+        const { nextState } = calculateNextReview(srsData, g);
         results[g] = formatInterval(nextState.interval);
       });
       return results;
     }
-  }, [fsrsData, isTopic]);
+  }, [srsData, isTopic]);
 
   // 动作处理
   const handleGradeAction = async (grade: CardGrade) => {
@@ -436,34 +436,34 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
             >
               <div className="srs-info-item">
                 <span>{t("Retention Lapses")}</span>
-                <span style={{ fontWeight: 600 }}>{fsrsData?.lapses || 0}</span>
+                <span style={{ fontWeight: 600 }}>{srsData?.lapses || 0}</span>
               </div>
               <div className="srs-info-item">
                 <span>{t("Review Counts")}</span>
-                <span style={{ fontWeight: 600 }}>{fsrsData?.reps || 0}</span>
+                <span style={{ fontWeight: 600 }}>{srsData?.reps || 0}</span>
               </div>
               <div className="srs-info-item">
                 <span>{t("Last Reviewed")}</span>
                 <span style={{ fontWeight: 600 }}>
-                  {formatDateTime(fsrsData?.lastReviewed)}
+                  {formatDateTime(srsData?.lastReviewed)}
                 </span>
               </div>
               <div className="srs-info-item">
                 <span>{t("State")}</span>
                 <span style={{ fontWeight: 600 }}>
-                  {formatCardState(fsrsData?.state)}
+                  {formatCardState(srsData?.state)}
                 </span>
               </div>
               <div className="srs-info-item">
                 <span>{t("Stability")}</span>
                 <span style={{ fontWeight: 600 }}>
-                  {fsrsData?.stability?.toFixed(2) || "0.00"}
+                  {srsData?.stability?.toFixed(2) || "0.00"}
                 </span>
               </div>
               <div className="srs-info-item">
                 <span>{t("Difficulty")}</span>
                 <span style={{ fontWeight: 600 }}>
-                  {fsrsData?.difficulty?.toFixed(2) || "0.00"}
+                  {srsData?.difficulty?.toFixed(2) || "0.00"}
                 </span>
               </div>
             </div>

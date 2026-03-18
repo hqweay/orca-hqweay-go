@@ -9,7 +9,9 @@ export interface SrsCardData {
   blockId: number;
   due: number | null;
   type: "Auto" | "Topic" | "Item";
-  fsrsData: any | null;
+  interval: number;
+  reps: number;
+  srsData: any | null;
   block: any;
   isNew: boolean;
   cardRef?: any; // The BlockRef object for the Card tag
@@ -154,7 +156,9 @@ export async function normalizeBlockToCard(
   if (!Array.isArray(block.properties)) block.properties = [];
 
   let typeProp: { name: string; value?: any } | undefined;
-  let fsrsProp: { name: string; value?: any } | undefined;
+  let srsProp: { name: string; value?: any } | undefined;
+  let intervalProp: { name: string; value?: any } | undefined;
+  let repsProp: { name: string; value?: any } | undefined;
   let statusProp: { name: string; value?: any } | undefined;
   let remarkProp: { name: string; value?: any } | undefined;
   let dueDate: string | number | null = null;
@@ -166,7 +170,7 @@ export async function normalizeBlockToCard(
     (ref: any) => ref.type === 2 && ref.alias === CARD_TAG_ALIAS,
   );
 
-  const srsPropNames = ["due", "type", "fsrsData", "status", "remark"];
+  const srsPropNames = ["due", "type", "interval", "reps", "srsData", "status", "remark"];
   let snapshotProps: any[] = [];
 
   if (cardRef && cardRef.data && Array.isArray(cardRef.data)) {
@@ -176,25 +180,15 @@ export async function normalizeBlockToCard(
       }
       if (prop.name === "due") dueDate = prop.value;
       else if (prop.name === "type") typeProp = prop;
-      else if (prop.name === "fsrsData") fsrsProp = prop;
+      else if (prop.name === "interval") intervalProp = prop;
+      else if (prop.name === "reps") repsProp = prop;
+      else if (prop.name === "srsData") srsProp = prop;
       else if (prop.name === "status") statusProp = prop;
       else if (prop.name === "remark") remarkProp = prop;
     }
   }
 
-  // 备选方案：检查顶层属性
-  // if (!dueDate && block.properties) {
-  //   for (const prop of block.properties) {
-  //     if (srsPropNames.includes(prop.name)) {
-  //       snapshotProps.push({ ...prop });
-  //     }
-  //     if (prop.name === "due") dueDate = prop.value;
-  //     else if (prop.name === "type") typeProp = prop;
-  //     else if (prop.name === "fsrsData") fsrsProp = prop;
-  //     else if (prop.name === "status") statusProp = prop;
-  //     else if (prop.name === "remark") remarkProp = prop;
-  //   }
-  // }
+
 
   // 解析多选状态
   let currentStatus: string[] = [];
@@ -205,8 +199,8 @@ export async function normalizeBlockToCard(
     currentStatus = [rawStatus];
   }
 
-  // 提取 FSRS 数据
-  const srsDataRaw = fsrsProp?.value;
+  // 提取 SRS 调度数据
+  const srsDataRaw = srsProp?.value;
   let srsData = null;
   if (typeof srsDataRaw === "string" && srsDataRaw) {
     try {
@@ -230,7 +224,9 @@ export async function normalizeBlockToCard(
     blockId: originalId,
     due: parsedDue,
     type: blockType as "Auto" | "Topic" | "Item",
-    fsrsData: srsData,
+    interval: intervalProp?.value ?? srsData?.interval ?? 0,
+    reps: repsProp?.value ?? srsData?.reps ?? 0,
+    srsData: srsData,
     block,
     isNew: parsedDue === null,
     cardRef: cardRef,
