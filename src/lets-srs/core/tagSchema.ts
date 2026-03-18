@@ -36,6 +36,11 @@ export const CARD_PROPERTIES: BlockProperty[] = [
     type: PropType.Number,
   },
   {
+    name: "priority",
+    type: PropType.Number,
+    typeArgs: { default: 3 },
+  },
+  {
     name: "srsData",
     type: PropType.Text,
   },

@@ -42,10 +42,23 @@ export async function saveCardReview(
 
   const nextState = JSON.parse(nextStateJson);
 
+  // Topic 卡根据评分自动调整优先级
+  // Soon → 优先级提升（数字减小），Easy → 优先级降低（数字增大）
+  let nextPriority = card.priority ?? 3;
+  if (card.type === "Topic") {
+    const topicGrade = grade as TopicGrade;
+    if (topicGrade === "soon") {
+      nextPriority = Math.max(1, nextPriority - 1);
+    } else if (topicGrade === "easy") {
+      nextPriority = Math.min(5, nextPriority + 1);
+    }
+  }
+
   const tagProperties = [
     { name: "due", value: nextDue },
     { name: "interval", value: nextState.interval ?? 0 },
     { name: "reps", value: nextState.reps ?? 0 },
+    { name: "priority", value: nextPriority },
     { name: "srsData", value: nextStateJson },
     { name: "type", value: card.type },
   ];

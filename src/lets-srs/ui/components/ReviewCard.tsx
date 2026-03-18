@@ -435,6 +435,10 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
               }}
             >
               <div className="srs-info-item">
+                <span>{t("Priority")}</span>
+                <span style={{ fontWeight: 600 }}>{activeCard.priority ?? 3}</span>
+              </div>
+              <div className="srs-info-item">
                 <span>{t("Retention Lapses")}</span>
                 <span style={{ fontWeight: 600 }}>{srsData?.lapses || 0}</span>
               </div>

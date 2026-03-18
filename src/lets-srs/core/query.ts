@@ -11,6 +11,7 @@ export interface SrsCardData {
   type: "Auto" | "Topic" | "Item";
   interval: number;
   reps: number;
+  priority: number;
   srsData: any | null;
   block: any;
   isNew: boolean;
@@ -101,28 +102,41 @@ export async function fetchDueCards(): Promise<SrsCardData[]> {
       `[lets-srs] total found: ${dueCards.length}, due/new: ${filteredCards.length}`,
     );
 
-    // 默认排序：先复习旧卡片（按到期日从小到大），再复习新卡片
-    filteredCards.sort((a, b) => {
-      // 1. 新卡固定排在旧卡后面
-      if (a.isNew && !b.isNew) return 1;
-      if (!a.isNew && b.isNew) return -1;
+    // 排序策略：优先级分组 + 局部洗牌
+    // 1. 新卡固定排在最后
+    // 2. 旧卡按 priority 分组（1=最高，5=最低）
+    // 3. 同 priority 组内随机洗牌（局部洗牌）
+    const oldCards = filteredCards.filter((c) => !c.isNew);
+    const newCards = filteredCards.filter((c) => c.isNew);
 
-      // 2. 如果都是新卡，直接随机
-      if (a.isNew && b.isNew) return Math.random() - 0.5;
+    // 按 priority 分桶
+    const buckets = new Map<number, SrsCardData[]>();
+    for (const card of oldCards) {
+      const p = card.priority;
+      if (!buckets.has(p)) buckets.set(p, []);
+      buckets.get(p)!.push(card);
+    }
 
-      // 3. 如果都是旧卡：
-      const diff = a.due! - b.due!;
-      // 如果到期时间相差在 1 小时内，视为「同时到期」，进行随机
-      // 这样可以打破由于批量导入或批量复习导致的固定序列
-      if (Math.abs(diff) < 1000 * 60 * 60) {
-        return Math.random() - 0.5;
+    // 每个桶内 Fisher-Yates 洗牌
+    const shuffle = (arr: SrsCardData[]) => {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
       }
+      return arr;
+    };
 
-      // 否则，还是让更「过期」的排在前面
-      return diff;
-    });
+    // 按优先级从高到低（1→5）拼接，每组内已洗牌
+    const sortedOld: SrsCardData[] = [];
+    const sortedKeys = Array.from(buckets.keys()).sort((a, b) => a - b);
+    for (const key of sortedKeys) {
+      sortedOld.push(...shuffle(buckets.get(key)!));
+    }
 
-    return filteredCards;
+    // 新卡也洗牌，放在最后
+    shuffle(newCards);
+
+    return [...sortedOld, ...newCards];
   } catch (err) {
     console.error(`[lets-srs] failed to fetch cards`, err);
     return [];
@@ -159,6 +173,7 @@ export async function normalizeBlockToCard(
   let srsProp: { name: string; value?: any } | undefined;
   let intervalProp: { name: string; value?: any } | undefined;
   let repsProp: { name: string; value?: any } | undefined;
+  let priorityProp: { name: string; value?: any } | undefined;
   let statusProp: { name: string; value?: any } | undefined;
   let remarkProp: { name: string; value?: any } | undefined;
   let dueDate: string | number | null = null;
@@ -170,7 +185,7 @@ export async function normalizeBlockToCard(
     (ref: any) => ref.type === 2 && ref.alias === CARD_TAG_ALIAS,
   );
 
-  const srsPropNames = ["due", "type", "interval", "reps", "srsData", "status", "remark"];
+  const srsPropNames = ["due", "type", "interval", "reps", "priority", "srsData", "status", "remark"];
   let snapshotProps: any[] = [];
 
   if (cardRef && cardRef.data && Array.isArray(cardRef.data)) {
@@ -182,6 +197,7 @@ export async function normalizeBlockToCard(
       else if (prop.name === "type") typeProp = prop;
       else if (prop.name === "interval") intervalProp = prop;
       else if (prop.name === "reps") repsProp = prop;
+      else if (prop.name === "priority") priorityProp = prop;
       else if (prop.name === "srsData") srsProp = prop;
       else if (prop.name === "status") statusProp = prop;
       else if (prop.name === "remark") remarkProp = prop;
@@ -226,6 +242,7 @@ export async function normalizeBlockToCard(
     type: blockType as "Auto" | "Topic" | "Item",
     interval: intervalProp?.value ?? srsData?.interval ?? 0,
     reps: repsProp?.value ?? srsData?.reps ?? 0,
+    priority: priorityProp?.value ?? 3,
     srsData: srsData,
     block,
     isNew: parsedDue === null,
