@@ -5,6 +5,12 @@ import { TopicRenderer } from "./TopicRenderer";
 import { t } from "../../../libs/l10n";
 import { FsrsGrade, calculateNextReview, CardState } from "../../core/fsrs";
 import {
+  TopicGrade,
+  predictTopicIntervals,
+  isTopicState,
+} from "../../core/topic-scheduler";
+import { CardGrade } from "../../core/storage";
+import {
   saveCardReview,
   postponeCard,
   toggleCardStatus,
@@ -103,18 +109,30 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
 
   // 计算预测间隔
   const predictedIntervals = useMemo(() => {
-    if (!fsrsData) return null;
-    const grades: FsrsGrade[] = ["again", "hard", "good", "easy"];
-    const results: Record<string, string> = {};
-    grades.forEach((g) => {
-      const { nextState } = calculateNextReview(fsrsData, g);
-      results[g] = formatInterval(nextState.interval);
-    });
-    return results;
-  }, [fsrsData]);
+    if (isTopic) {
+      // Topic 使用递增间隔调度器
+      const topicState = isTopicState(fsrsData) ? fsrsData : null;
+      const intervals = predictTopicIntervals(topicState);
+      return {
+        soon: formatInterval(intervals.soon),
+        done: formatInterval(intervals.done),
+        easy: formatInterval(intervals.easy),
+      };
+    } else {
+      // Item 使用 FSRS
+      if (!fsrsData) return null;
+      const grades: FsrsGrade[] = ["again", "hard", "good", "easy"];
+      const results: Record<string, string> = {};
+      grades.forEach((g) => {
+        const { nextState } = calculateNextReview(fsrsData, g);
+        results[g] = formatInterval(nextState.interval);
+      });
+      return results;
+    }
+  }, [fsrsData, isTopic]);
 
   // 动作处理
-  const handleGradeAction = async (grade: FsrsGrade) => {
+  const handleGradeAction = async (grade: CardGrade) => {
     if (isSaving) return;
     setIsSaving(true);
     try {
@@ -204,7 +222,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
       const key = e.key.toLowerCase();
       if (e.code === "Space") {
         if (!showAnswer && !isTopic) setShowAnswer(true);
-        else handleGradeAction("good");
+        else handleGradeAction(isTopic ? "done" : "good");
       } else if (key === "s") {
         onSkip();
       } else if (key === "b" || key === "p") {
@@ -220,10 +238,18 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
       } else if (key === "u" && activeCard.isVirtual) {
         handleUpgrade();
       } else if (showAnswer || isTopic) {
-        if (e.key === "1") handleGradeAction("again");
-        if (e.key === "2") handleGradeAction("hard");
-        if (e.key === "3") handleGradeAction("good");
-        if (e.key === "4") handleGradeAction("easy");
+        if (isTopic) {
+          // Topic 快捷键：1=Soon, 2=Done, 3=Easy
+          if (e.key === "1") handleGradeAction("soon");
+          if (e.key === "2") handleGradeAction("done");
+          if (e.key === "3") handleGradeAction("easy");
+        } else {
+          // Item 快捷键：1=Again, 2=Hard, 3=Good, 4=Easy
+          if (e.key === "1") handleGradeAction("again");
+          if (e.key === "2") handleGradeAction("hard");
+          if (e.key === "3") handleGradeAction("good");
+          if (e.key === "4") handleGradeAction("easy");
+        }
       }
     };
 
@@ -555,22 +581,56 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
 
             <div style={{ display: "flex", gap: 12, flex: 4 }}>
               {isTopic ? (
-                <Button
-                  variant="solid"
-                  onClick={() => handleGradeAction("good")}
-                  disabled={isSaving}
-                  className="srs-grade-btn"
-                  style={{
-                    background: "#1e88e5",
-                    color: "white",
-                    borderRadius: 8,
-                  }}
-                >
-                  <div style={{ fontWeight: 600 }}>{t("Mark as Read")}</div>
-                  <div className="srs-interval-hint">
-                    {predictedIntervals?.good}
-                  </div>
-                </Button>
+                <>
+                  <Button
+                    variant="solid"
+                    onClick={() => handleGradeAction("soon")}
+                    disabled={isSaving}
+                    className="srs-grade-btn"
+                    style={{
+                      background: "#fb8c00",
+                      color: "white",
+                      borderRadius: 8,
+                    }}
+                  >
+                    <div style={{ fontWeight: 600 }}>{t("Soon")}</div>
+                    <div className="srs-interval-hint">
+                      {predictedIntervals?.soon}
+                    </div>
+                  </Button>
+                  <Button
+                    variant="solid"
+                    onClick={() => handleGradeAction("done")}
+                    disabled={isSaving}
+                    className="srs-grade-btn"
+                    style={{
+                      background: "#43a047",
+                      color: "white",
+                      borderRadius: 8,
+                    }}
+                  >
+                    <div style={{ fontWeight: 600 }}>{t("Done")}</div>
+                    <div className="srs-interval-hint">
+                      {predictedIntervals?.done}
+                    </div>
+                  </Button>
+                  <Button
+                    variant="solid"
+                    onClick={() => handleGradeAction("easy")}
+                    disabled={isSaving}
+                    className="srs-grade-btn"
+                    style={{
+                      background: "#1e88e5",
+                      color: "white",
+                      borderRadius: 8,
+                    }}
+                  >
+                    <div style={{ fontWeight: 600 }}>{t("Easy")}</div>
+                    <div className="srs-interval-hint">
+                      {predictedIntervals?.easy}
+                    </div>
+                  </Button>
+                </>
               ) : (
                 <>
                   <Button

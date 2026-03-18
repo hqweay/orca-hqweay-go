@@ -2,20 +2,47 @@ import { SrsCardData } from "./query";
 import { CARD_TAG_ALIAS, CARD_PROPERTIES } from "./tagSchema";
 import { Logger } from "@/libs/logger";
 import { FsrsGrade, calculateNextReview } from "./fsrs";
+import {
+  TopicGrade,
+  calculateTopicNextReview,
+  isTopicState,
+} from "./topic-scheduler";
 import cloneDeep from "lodash.clonedeep";
+
+/** 统一的评分类型 */
+export type CardGrade = FsrsGrade | TopicGrade;
 
 /**
  * 保存卡片的复习结果进度
+ * 根据卡片类型自动选择调度算法：
+ * - Topic → topic-scheduler（递增间隔）
+ * - Item  → FSRS（遗忘曲线）
  */
 export async function saveCardReview(
   card: SrsCardData,
-  grade: FsrsGrade,
+  grade: CardGrade,
 ): Promise<void> {
-  const { nextState, nextDue } = calculateNextReview(card.fsrsData, grade);
+  let nextDue: Date;
+  let nextStateJson: string;
+
+  if (card.type === "Topic") {
+    // Topic 使用递增间隔调度器
+    const topicGrade = grade as TopicGrade;
+    const currentState = isTopicState(card.fsrsData) ? card.fsrsData : null;
+    const result = calculateTopicNextReview(currentState, topicGrade);
+    nextDue = result.nextDue;
+    nextStateJson = JSON.stringify(result.nextState);
+  } else {
+    // Item 使用 FSRS 算法
+    const fsrsGrade = grade as FsrsGrade;
+    const result = calculateNextReview(card.fsrsData, fsrsGrade);
+    nextDue = result.nextDue;
+    nextStateJson = JSON.stringify(result.nextState);
+  }
 
   const tagProperties = [
     { name: "due", value: nextDue },
-    { name: "fsrsData", value: JSON.stringify(nextState) },
+    { name: "fsrsData", value: nextStateJson },
     { name: "type", value: card.type },
   ];
 
