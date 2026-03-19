@@ -1,6 +1,29 @@
-## [1.13.3](/compare/v1.13.2...v1.13.3) (2026-03-15)
+# [1.14.0](/compare/v1.13.3...v1.14.0) (2026-03-19)
 
-Update to 1.13.3
+Update to 1.14.0
+
+
+### Bug Fixes
+
+* add cleanup to destroy Markmap instance on component unmount 98e2109
+
+
+### Features
+
+* add block utility functions for mirror ID resolution, ID validation, and deduplication. 58b7eca
+* Add roaming review mode and refactor card behavior based on display mode (srs-item, srs-topic, roaming). c82292b
+* Implement optimistic UI updates for card status and virtual state in `ReviewCard` and import `updateCardProperties`. ddaa6fc
+* Implement topic-based scheduling with distinct review card UI and logic. 7e2c21c
+* Implement Zettelkasten-style related block roaming using a BFS algorithm with depth limiting, exponential weight decay, and backlink capping. c138e54
+* Introduce a new plugin to render blocks as mind maps, adding `markmap-common` and `markmap-view` dependencies. 91b5c2e
+* introduce card priority for SRS and implement priority-based review sorting. 729c541
+* Randomly sample hub backlinks when exceeding capacity and filter out backlinks lacking content or children. 06de84b
+* Refactor `DataImporter` to centralize block creation, property formatting, and tag schema synchronization, including multi-select option merging, and utilize it for injecting missing card properties. 9a65342
+* register plain block type converter for Mindmap plugin 8ca1c65
+* Remove in-memory due date filtering for SRS cards, add `status` and `remark` to SRS properties, and adjust remaining card count in the review panel. 05e76cc
+* Resolve mirror block IDs to their original IDs before applying tags. 62386e5
+
+## [1.13.3](/compare/v1.13.2...v1.13.3) (2026-03-15)
 
 
 ### Bug Fixes
