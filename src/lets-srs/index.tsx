@@ -183,7 +183,10 @@ export default class SrsPlugin extends BasePlugin {
 
                     // 场景 B：普通块 - 漫游相关块（引用 + 反链）
                     try {
-                      const relatedIds = await this.getRelatedBlockIds(blockId);
+                      const currentSettings = this.getSettings();
+                      const depth = currentSettings?.roamDepth ?? 3;
+                      const hubCap = currentSettings?.roamHubCap ?? 50;
+                      const relatedIds = await this.getRelatedBlockIds(blockId, depth, hubCap);
                       if (relatedIds.length > 0) {
                         this.handleRoam(relatedIds);
                       } else {
@@ -210,6 +213,7 @@ export default class SrsPlugin extends BasePlugin {
   private async getRelatedBlockIds(
     rootId: DbId,
     maxDepth: number = 3,
+    hubCap: number = 50,
   ): Promise<DbId[]> {
     const weights: Record<number, number> = {};
     const addWeight = (id: number, weight: number) => {
@@ -295,12 +299,12 @@ export default class SrsPlugin extends BasePlugin {
       // 如果漫游碰到了像 #Idea 或者 #Card 这种含有上千的反链的全局巨无霸节点，
       // 我们强行把流入队列的支流限制在 50 条以内，以防内存或者查询耗时爆炸。
       let incomingArray = Array.from(incomingRefs);
-      if (incomingArray.length > 50) {
+      if (incomingArray.length > hubCap) {
         this.logger.warn(
-          `[lets-srs] Hub ${currentHubId} exploded with ${incomingArray.length} backlinks. Capped to 50.`,
+          `[lets-srs] Hub ${currentHubId} exploded with ${incomingArray.length} backlinks. Capped to ${hubCap}.`,
         );
-        // 最好是取点随机样本，这里简单截断前 50
-        incomingArray = incomingArray.slice(0, 50);
+        // 最好是取点随机样本，这里简单截断前 hubCap
+        incomingArray = incomingArray.slice(0, hubCap);
       }
 
       for (const targetId of outgoingRefs) {
@@ -425,6 +429,8 @@ export default class SrsPlugin extends BasePlugin {
     return {
       ...super.getDefaultSettings(),
       cardTag: "Card",
+      roamDepth: 3,
+      roamHubCap: 50,
     };
   }
 
@@ -547,6 +553,36 @@ function SrsSettingsUI({
               {t("Confirm and Create Tag")}
             </orca.components.Button>
           </div>
+        </SettingsItem>
+        <SettingsItem
+          label={t("Roam Depth (1-5)")}
+          description={t("How deep the roaming algorithm explores related blocks. Higher means broadly related (but much slower).")}
+        >
+          <orca.components.Input
+            type="number"
+            min={2}
+            max={8}
+            value={settings.roamDepth ?? 2}
+            onChange={(e: any) => {
+              const val = parseInt(e.target.value, 10);
+              if (!isNaN(val)) updateSettings({ roamDepth: val });
+            }}
+          />
+        </SettingsItem>
+        <SettingsItem
+          label={t("Roam Hub Cap (10-500)")}
+          description={t("Maximum number of backlinks to explore per node (protects against tag blackholes).")}
+        >
+          <orca.components.Input
+            type="number"
+            min={10}
+            max={500}
+            value={settings.roamHubCap ?? 50}
+            onChange={(e: any) => {
+              const val = parseInt(e.target.value, 10);
+              if (!isNaN(val)) updateSettings({ roamHubCap: val });
+            }}
+          />
         </SettingsItem>
       </SettingsSection>
     </div>

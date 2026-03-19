@@ -226,7 +226,7 @@ export function ReviewPanel(props: RendererProps) {
       );
     }
 
-    const remainingCount = cards.length - currentIndex - 1;
+    const remainingCount = cards.length - currentIndex;
 
     if (!activeCard || !activeCard.block) {
       return (
