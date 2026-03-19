@@ -55,6 +55,10 @@ export default class MindmapPlugin extends BasePlugin {
       );
     }
 
+    orca.converters.registerBlock("plain", RENDERER_TYPE, (block, repr) => {
+      return "[Mindmap]";
+    });
+
     this.logger.info("Mindmap Plugin loaded");
   }
 
