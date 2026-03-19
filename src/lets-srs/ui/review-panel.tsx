@@ -226,7 +226,7 @@ export function ReviewPanel(props: RendererProps) {
       );
     }
 
-    const remainingCount = cards.length - currentIndex;
+    const remainingCount = cards.length - currentIndex - 1;
 
     if (!activeCard || !activeCard.block) {
       return (
@@ -241,12 +241,13 @@ export function ReviewPanel(props: RendererProps) {
 
     const viewPanel = orca.nav.findViewPanel(props.panelId, orca.state.panels);
     const viewArgs = viewPanel?.viewArgs;
-    const isRoamingSession = Array.isArray(viewArgs?.initialBlockIds) || !!viewArgs?.query;
+    const isRoamingSession =
+      Array.isArray(viewArgs?.initialBlockIds) || !!viewArgs?.query;
 
-    const displayMode: any = isRoamingSession 
-      ? "roaming" 
-      : activeCard.type === "Item" 
-        ? "srs-item" 
+    const displayMode: any = isRoamingSession
+      ? "roaming"
+      : activeCard.type === "Item"
+        ? "srs-item"
         : "srs-topic";
 
     return (

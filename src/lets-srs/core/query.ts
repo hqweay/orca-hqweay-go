@@ -66,7 +66,9 @@ export async function fetchDueCards(): Promise<SrsCardData[]> {
 
   try {
     const queryResultIds = (await orca.invokeBackend("query", query)) as DbId[];
-    const resultIds = Array.from(new Set((queryResultIds || []).map(id => getMirrorId(id))));
+    const resultIds = Array.from(
+      new Set((queryResultIds || []).map((id) => getMirrorId(id))),
+    );
 
     logger.debug(`[lets-srs] query result (deduped):`, resultIds);
 
@@ -90,24 +92,24 @@ export async function fetchDueCards(): Promise<SrsCardData[]> {
       }
     } // 结束 resultIds 遍历
 
-    // 3. 进入内存过滤阶段：只保留 Due <= 现在 或 新卡 (Due 为空) 的内容
-    const filteredCards = dueCards.filter((card) => {
-      // 如果没有到期时间，视为新卡，直接加入
-      if (card.due === null) return true;
-      // 否则，对比时间戳
-      return card.due <= now;
-    });
+    // // 3. 进入内存过滤阶段：只保留 Due <= 现在 或 新卡 (Due 为空) 的内容
+    // const filteredCards = dueCards.filter((card) => {
+    //   // 如果没有到期时间，视为新卡，直接加入
+    //   if (card.due === null) return true;
+    //   // 否则，对比时间戳
+    //   return card.due <= now;
+    // });
 
-    console.log(
-      `[lets-srs] total found: ${dueCards.length}, due/new: ${filteredCards.length}`,
-    );
+    // console.log(
+    //   `[lets-srs] total found: ${dueCards.length}, due/new: ${filteredCards.length}`,
+    // );
 
     // 排序策略：优先级分组 + 局部洗牌
     // 1. 新卡固定排在最后
     // 2. 旧卡按 priority 分组（1=最高，5=最低）
     // 3. 同 priority 组内随机洗牌（局部洗牌）
-    const oldCards = filteredCards.filter((c) => !c.isNew);
-    const newCards = filteredCards.filter((c) => c.isNew);
+    const oldCards = dueCards.filter((c) => !c.isNew);
+    const newCards = dueCards.filter((c) => c.isNew);
 
     // 按 priority 分桶
     const buckets = new Map<number, SrsCardData[]>();
@@ -185,7 +187,16 @@ export async function normalizeBlockToCard(
     (ref: any) => ref.type === 2 && ref.alias === CARD_TAG_ALIAS,
   );
 
-  const srsPropNames = ["due", "type", "interval", "reps", "priority", "srsData", "status", "remark"];
+  const srsPropNames = [
+    "due",
+    "type",
+    "interval",
+    "reps",
+    "priority",
+    "srsData",
+    "status",
+    "remark",
+  ];
   let snapshotProps: any[] = [];
 
   if (cardRef && cardRef.data && Array.isArray(cardRef.data)) {
@@ -203,8 +214,6 @@ export async function normalizeBlockToCard(
       else if (prop.name === "remark") remarkProp = prop;
     }
   }
-
-
 
   // 解析多选状态
   let currentStatus: string[] = [];
