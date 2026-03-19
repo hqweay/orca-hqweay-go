@@ -140,6 +140,17 @@ function MindmapRenderer(props: any) {
   }, [blockId]);
 
   useEffect(() => {
+    return () => {
+      if (markmapRef.current) {
+        try {
+          markmapRef.current.destroy();
+        } catch (e) {}
+        markmapRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isHydrated) return;
 
     if (svgRef.current) {
