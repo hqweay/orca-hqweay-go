@@ -36,6 +36,8 @@
     "gray-matter": "^4.0.3",
     "jszip": "^3.10.1",
     "lodash.clonedeep": "^4.5.0",
+    "markmap-common": "^0.18.9",
+    "markmap-view": "^0.18.12",
     "pinyin-pro": "^3.28.0",
     "ts-fsrs": "^5.2.3",
     "vite-plugin-zip-pack": "^1.2.4"
