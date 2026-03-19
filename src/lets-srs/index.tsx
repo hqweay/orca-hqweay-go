@@ -207,119 +207,149 @@ export default class SrsPlugin extends BasePlugin {
     }
   }
 
-  private async getRelatedBlockIds(rootId: DbId): Promise<DbId[]> {
+  private async getRelatedBlockIds(
+    rootId: DbId,
+    maxDepth: number = 3,
+  ): Promise<DbId[]> {
     const weights: Record<number, number> = {};
     const addWeight = (id: number, weight: number) => {
       weights[id] = (weights[id] || 0) + weight;
     };
 
-    // 1. 获取块树（包含自己及所有子孙节点 ID）
-    const rootTreeIds: number[] =
-      (await orca.invokeBackend("get-block-tree", rootId)) || [];
-    if (!rootTreeIds.includes(rootId)) {
-      rootTreeIds.push(rootId);
-    }
+    const visitedHubs = new Set<number>();
+    const queue: { id: number; depth: number }[] = [{ id: rootId, depth: 0 }];
 
-    // 2. 分配基础权重
-    addWeight(rootId, 100); // 根节点权重最高
-    rootTreeIds.forEach((id) => {
-      if (id !== rootId) addWeight(id, 80); // 树内子孙节点权重极高
-    });
-
+    // 全局缓存，避免深搜时反复调接口
     const fetchedBlocks = new Map<number, any>();
-    const processedIds = new Set<number>();
 
-    // 3. 安全获取所有树内节点的实际内容（解决老代码 forEach+async 的严重丢块 bug）
-    for (const id of rootTreeIds) {
-      if (processedIds.has(id)) continue;
-      processedIds.add(id);
-
-      let block = orca.state.blocks[id];
-      if (!block) {
+    const fetchBlockSafely = async (id: number) => {
+      if (fetchedBlocks.has(id)) return fetchedBlocks.get(id);
+      let b = orca.state.blocks[id];
+      if (!b) {
         try {
-          block = await orca.invokeBackend("get-block", id);
+          b = await orca.invokeBackend("get-block", id);
         } catch (e) {
           // ignore
         }
       }
-      if (block) fetchedBlocks.set(id, block);
-    }
+      if (b) fetchedBlocks.set(id, b);
+      return b;
+    };
 
-    // 4. 收集出链 (Outgoing References) 和分配权重
-    for (const block of fetchedBlocks.values()) {
-      if (block.refs && Array.isArray(block.refs)) {
-        block.refs.forEach((r: any) => {
-          if (r.to) {
-            addWeight(r.to, 50); // 树内节点向外的出链权重中等
-          }
-        });
+    // 广度优先搜索 (BFS) 遍历语义群组
+    while (queue.length > 0) {
+      const { id: currentHubId, depth } = queue.shift()!;
+
+      // 1. 直观且致命的熔断：如果节点超过最大深度限制（maxDepth=1表示最远跳跃0步），
+      // 则连成为结果候选人的基础分数都不发给它，直接腰斩后续探索！
+      if (depth >= maxDepth) continue;
+
+      // 2. 每深一层，关联程度减半（100 -> 50 -> 25）
+      const currentWeight = 100 * Math.pow(0.5, depth);
+      addWeight(currentHubId, currentWeight);
+
+      // 深层防死循环：如果该语义群组已被彻底解析过（或者作为 Hub 访问过了），则跳过子级展开
+      // 但上面那行依然允许它累加由于多条路径跳过来的权重积分！
+      if (visitedHubs.has(currentHubId)) continue;
+      visitedHubs.add(currentHubId);
+
+      // 如果到达限制深度，停止向外发出新的辐射（探索结束边界）
+      if (depth >= maxDepth) continue;
+
+      // --- 关键抽象：语义群组作为统一采集器 ---
+      // 不把子节点当做漫游目标，但把子节点里包藏的所有引线全挖出来
+      let treeIds: number[] = [];
+      try {
+        treeIds =
+          (await orca.invokeBackend("get-block-tree", currentHubId)) || [];
+      } catch (e) {}
+      if (!treeIds.includes(currentHubId)) treeIds.push(currentHubId);
+
+      const outgoingRefs = new Set<number>();
+      const incomingRefs = new Set<number>();
+
+      for (const tId of treeIds) {
+        const block = await fetchBlockSafely(tId);
+        if (!block) continue;
+
+        // 收集出链 (标签也是一种类型特殊的 refs)
+        if (block.refs && Array.isArray(block.refs)) {
+          block.refs.forEach((r: any) => {
+            if (r.to) {
+              // 特殊：我们给予正链（你主动提到的事物）略高一点优先权，
+              // 在压入队列时可以在这做分化，目前靠衰减已经很优雅了
+              outgoingRefs.add(r.to);
+            }
+          });
+        }
+
+        // 收集反链 (指向我们的节点，即有谁引用了这个群组的内容)
+        if (block.backRefs && Array.isArray(block.backRefs)) {
+          block.backRefs.forEach((r: any) => {
+            if (r.from) incomingRefs.add(r.from);
+          });
+        }
+      }
+
+      // --- 熔断保护：Hub 黑洞防御 ---
+      // 如果漫游碰到了像 #Idea 或者 #Card 这种含有上千的反链的全局巨无霸节点，
+      // 我们强行把流入队列的支流限制在 50 条以内，以防内存或者查询耗时爆炸。
+      let incomingArray = Array.from(incomingRefs);
+      if (incomingArray.length > 50) {
+        this.logger.warn(
+          `[lets-srs] Hub ${currentHubId} exploded with ${incomingArray.length} backlinks. Capped to 50.`,
+        );
+        // 最好是取点随机样本，这里简单截断前 50
+        incomingArray = incomingArray.slice(0, 50);
+      }
+
+      for (const targetId of outgoingRefs) {
+        queue.push({ id: targetId, depth: depth + 1 });
+      }
+      for (const targetId of incomingArray) {
+        queue.push({ id: targetId, depth: depth + 1 });
       }
     }
 
-    // 5. 收集根节点的反链 (Incoming References)
-    const rootBlock = fetchedBlocks.get(rootId);
-    if (rootBlock && rootBlock.backRefs && Array.isArray(rootBlock.backRefs)) {
-      rootBlock.backRefs.forEach((r: any) => {
-        if (r.from) {
-          addWeight(r.from, 30); // 别人链向根节点，权重较低（作为扩展阅读）
-        }
-      });
-    }
-
-    // 整理收集到的所有侯选 ID
+    // 后处理阶段
     let candidateIds = Object.keys(weights).map(Number);
-
-    // 过滤掉当前用于临时会话自身的块
     if (this.sessionBlockId) {
       candidateIds = candidateIds.filter((id) => id !== this.sessionBlockId);
     }
 
     const finalIds: number[] = [];
 
-    // 6. 防空壳节点过滤与合法性校验
+    // 防空壳过滤 (保留了老配方：既不是文档又没内容，再见！)
     for (const id of candidateIds) {
-      let b = fetchedBlocks.get(id);
-      if (!b) {
-        b = orca.state.blocks[id];
-        if (!b) {
-          try {
-            b = await orca.invokeBackend("get-block", id);
-          } catch (e) {
-            continue;
-          }
-        }
-      }
+      const b = await fetchBlockSafely(id);
       if (!b) continue;
 
-      // 判断空壳：没有正文、不是文档节点、没有子节点，就丢弃
       const hasContent = !!(b.content && b.content.length > 0);
       const isDocument = b.repr?.type === "document";
       const hasChildren = !!(b.children && b.children.length > 0);
 
       if (!hasContent && !isDocument && !hasChildren) {
-        // this.logger.info("Filtered empty shell block:", id);
         continue;
       }
       finalIds.push(id);
     }
 
-    // 7. 权重衰减排序 + 局部洗牌算法 (Local Shuffle)
+    // 严谨排序与局部洗牌
     finalIds.sort((a, b) => {
       const wA = weights[a] || 0;
       const wB = weights[b] || 0;
       const diff = wB - wA;
 
-      // 如果权重非常接近 (差异 <= 20)，引入随机扰动，达到局部洗牌效果，每次漫游有一点随机连结感
-      if (Math.abs(diff) <= 20) {
+      // 衰减算法下的局部洗牌：当两个块的积分差只有不到 15 分时
+      // （例如都是从上一层发散出来的平行分支）让它们随机乱序
+      if (Math.abs(diff) <= 15) {
         return Math.random() - 0.5;
       }
-
-      // 差异大的严格按照权重降序排列
       return diff;
     });
 
     this.logger.info(
-      "Smart sorted roaming blocks:",
+      "Zettelkasten BFS roamed blocks:",
       finalIds.map((id) => ({ id, weight: weights[id] })),
     );
 
