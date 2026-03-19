@@ -178,6 +178,8 @@ export async function normalizeBlockToCard(
   let priorityProp: { name: string; value?: any } | undefined;
   let statusProp: { name: string; value?: any } | undefined;
   let remarkProp: { name: string; value?: any } | undefined;
+  let dueProp: { name: string; value?: any } | undefined;
+
   let dueDate: string | number | null = null;
   let cardRef: any = null;
 
@@ -193,27 +195,30 @@ export async function normalizeBlockToCard(
     "interval",
     "reps",
     "priority",
-    "srsData",
+    "_srsData",
     "status",
     "remark",
   ];
+
   let snapshotProps: any[] = [];
 
-  if (cardRef && cardRef.data && Array.isArray(cardRef.data)) {
-    for (const prop of cardRef.data) {
-      if (srsPropNames.includes(prop.name)) {
-        snapshotProps.push({ ...prop });
-      }
-      if (prop.name === "due") dueDate = prop.value;
-      else if (prop.name === "type") typeProp = prop;
-      else if (prop.name === "interval") intervalProp = prop;
-      else if (prop.name === "reps") repsProp = prop;
-      else if (prop.name === "priority") priorityProp = prop;
-      else if (prop.name === "srsData") srsProp = prop;
-      else if (prop.name === "status") statusProp = prop;
-      else if (prop.name === "remark") remarkProp = prop;
+  for (const prop of block.properties) {
+    if (srsPropNames.includes(prop.name)) {
+      snapshotProps.push({ ...prop });
     }
+    if (prop.name === "due") dueProp = prop;
+    else if (prop.name === "type") typeProp = prop;
+    else if (prop.name === "interval") intervalProp = prop;
+    else if (prop.name === "reps") repsProp = prop;
+    else if (prop.name === "_srsData") srsProp = prop;
+    else if (prop.name === "status") statusProp = prop;
+    else if (prop.name === "priority") priorityProp = prop;
+    else if (prop.name === "remark") remarkProp = prop;
   }
+
+  // Parse attributes
+  const type = typeProp?.value || "item";
+  dueDate = dueProp?.value;
 
   // 解析多选状态
   let currentStatus: string[] = [];
@@ -227,11 +232,7 @@ export async function normalizeBlockToCard(
   // 提取 SRS 调度数据
   const srsDataRaw = srsProp?.value;
   let srsData = null;
-  if (typeof srsDataRaw === "string" && srsDataRaw) {
-    try {
-      srsData = JSON.parse(srsDataRaw);
-    } catch (e) {}
-  } else if (typeof srsDataRaw === "object" && srsDataRaw !== null) {
+  if (typeof srsDataRaw === "object" && srsDataRaw !== null) {
     srsData = srsDataRaw;
   }
 

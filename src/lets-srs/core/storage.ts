@@ -59,7 +59,7 @@ export async function saveCardReview(
     { name: "interval", value: nextState.interval ?? 0 },
     { name: "reps", value: nextState.reps ?? 0 },
     { name: "priority", value: nextPriority },
-    { name: "srsData", value: nextStateJson },
+    { name: "_srsData", type: 0, value: nextState },
     { name: "type", value: card.type },
   ];
 
