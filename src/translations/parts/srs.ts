@@ -70,6 +70,10 @@ const zhCN = {
   "The tag used for cards.": "用于卡片的标签名。",
   "Add to SRS": "加为闪卡",
   "Boost Priority": "提升优先级",
+  "Roam Depth (1-5)": "漫游深度 (1-5)",
+  "How deep the roaming algorithm explores related blocks. Higher means broadly related (but much slower).": "漫游算法探索关联块的层数。越深意味着漫游范围越广（但检索会显著变慢）。",
+  "Roam Hub Cap (10-500)": "黑洞截断值 (10-500)",
+  "Maximum number of backlinks to explore per node (protects against tag blackholes).": "每个节点允许探索的最大反链数（用于防范标签页等超级节点引发内存黑洞）。",
 };
 
 export default zhCN;

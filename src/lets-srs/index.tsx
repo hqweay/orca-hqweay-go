@@ -301,9 +301,13 @@ export default class SrsPlugin extends BasePlugin {
       let incomingArray = Array.from(incomingRefs);
       if (incomingArray.length > hubCap) {
         this.logger.warn(
-          `[lets-srs] Hub ${currentHubId} exploded with ${incomingArray.length} backlinks. Capped to ${hubCap}.`,
+          `[lets-srs] Hub ${currentHubId} exploded with ${incomingArray.length} backlinks. Randomly sampled ${hubCap} items.`,
         );
-        // 最好是取点随机样本，这里简单截断前 hubCap
+        // Fisher-Yates 洗牌算法，保证这截杀的 hubCap 个名额每次都是完全随机抽样！
+        for (let i = incomingArray.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [incomingArray[i], incomingArray[j]] = [incomingArray[j], incomingArray[i]];
+        }
         incomingArray = incomingArray.slice(0, hubCap);
       }
 
@@ -329,10 +333,9 @@ export default class SrsPlugin extends BasePlugin {
       if (!b) continue;
 
       const hasContent = !!(b.content && b.content.length > 0);
-      const isDocument = b.repr?.type === "document";
       const hasChildren = !!(b.children && b.children.length > 0);
 
-      if (!hasContent && !isDocument && !hasChildren) {
+      if (!hasContent && !hasChildren) {
         continue;
       }
       finalIds.push(id);
