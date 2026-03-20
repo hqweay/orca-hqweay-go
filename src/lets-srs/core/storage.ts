@@ -136,7 +136,11 @@ export async function ensureCardTag(card: SrsCardData): Promise<void> {
  * 将卡片属性还原为初始状态（用于撤销）
  */
 export async function revertCardToState(card: SrsCardData): Promise<void> {
-  if (!card.snapshotProps || !Array.isArray(card.snapshotProps)) {
+  if (
+    !card.snapshotProps ||
+    !Array.isArray(card.snapshotProps) ||
+    card.snapshotProps.length === 0
+  ) {
     console.warn("[lets-srs] No snapshot found for card undo", card.blockId);
     return;
   }
