@@ -23,7 +23,7 @@ export async function saveCardReview(
   grade: CardGrade,
 ): Promise<void> {
   let nextDue: Date;
-  let nextStateJson: string;
+  let nextState: any;
 
   if (card.type === "Topic") {
     // Topic 使用递增间隔调度器
@@ -31,16 +31,20 @@ export async function saveCardReview(
     const currentState = isTopicState(card.srsData) ? card.srsData : null;
     const result = calculateTopicNextReview(currentState, topicGrade);
     nextDue = result.nextDue;
-    nextStateJson = JSON.stringify(result.nextState);
+    nextState = result.nextState;
   } else {
     // Item 使用 FSRS 算法
-    const fsrsGrade = grade as FsrsGrade;
+    // 兼容 TopicGrade 映射到 FSRSGrade
+    let fsrsGrade: FsrsGrade;
+    if (grade === "soon") fsrsGrade = "again";
+    else if (grade === "done") fsrsGrade = "good";
+    else if (grade === "easy") fsrsGrade = "easy";
+    else fsrsGrade = grade as FsrsGrade;
+
     const result = calculateNextReview(card.srsData, fsrsGrade);
     nextDue = result.nextDue;
-    nextStateJson = JSON.stringify(result.nextState);
+    nextState = result.nextState;
   }
-
-  const nextState = JSON.parse(nextStateJson);
 
   // Topic 卡根据评分自动调整优先级
   // Soon → 优先级提升（数字减小），Easy → 优先级降低（数字增大）
