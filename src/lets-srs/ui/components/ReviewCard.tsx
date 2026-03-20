@@ -567,7 +567,11 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
         )}
 
         {/* 内容展示区 */}
-        <div className="srs-card-content" style={{ flex: 1 }}>
+        <div
+          className="srs-card-content"
+          style={{ flex: 1 }}
+          contentEditable={!shortcutsEnabled}
+        >
           {displayMode === "srs-item" ? (
             <ItemRenderer
               blockId={blockId}
