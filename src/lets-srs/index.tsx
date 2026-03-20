@@ -11,6 +11,7 @@ import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
 import React, { useEffect, useState, useRef } from "react";
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import cloneDeep from "lodash.clonedeep";
+import { getRelatedBlockIds } from "./core/query";
 
 /**
  * 虎鲸笔记 - 记忆卡片 (SRS) 插件
@@ -241,16 +242,27 @@ export default class SrsPlugin extends BasePlugin {
                       const currentSettings = this.getSettings();
                       const depth = currentSettings?.roamDepth ?? 3;
                       const hubCap = currentSettings?.roamHubCap ?? 50;
-                      const relatedIds = await this.getRelatedBlockIds(
+
+                      // --- Tiered Loading Stage 1: Level 1 only ---
+                      const { ids: relatedIds } = await getRelatedBlockIds(
                         blockId,
-                        depth,
+                        1, // Shallow search for instant open
                         hubCap,
                       );
+
                       if (relatedIds.length > 0) {
-                        this.handleRoam(relatedIds);
+                        this.handleRoam(relatedIds, {
+                          roamSeedId: blockId,
+                          roamMaxDepth: depth,
+                          roamHubCap: hubCap,
+                        });
                       } else {
                         // 如果没有相关块，至少漫游它自己
-                        this.handleRoam([blockId]);
+                        this.handleRoam([blockId], {
+                          roamSeedId: blockId,
+                          roamMaxDepth: depth,
+                          roamHubCap: hubCap,
+                        });
                       }
                     } catch (err) {
                       console.error("[lets-srs] smart roam failed", err);
@@ -269,194 +281,25 @@ export default class SrsPlugin extends BasePlugin {
     }
   }
 
-  private async getRelatedBlockIds(
-    rootId: DbId,
-    maxDepth: number = 3,
-    hubCap: number = 50,
-  ): Promise<DbId[]> {
-    const weights: Record<number, number> = {};
-    const addWeight = (id: number, weight: number) => {
-      weights[id] = (weights[id] || 0) + weight;
-    };
-
-    const visitedHubs = new Set<number>();
-    const queue: { id: number; depth: number }[] = [{ id: rootId, depth: 0 }];
-
-    // 全局缓存，避免深搜时反复调接口
-    const fetchedBlocks = new Map<number, any>();
-
-    const fetchBlockSafely = async (id: number) => {
-      if (fetchedBlocks.has(id)) return fetchedBlocks.get(id);
-      let b = orca.state.blocks[id];
-      if (!b) {
-        try {
-          b = await orca.invokeBackend("get-block", id);
-        } catch (e) {
-          // ignore
-        }
-      }
-      if (b) fetchedBlocks.set(id, b);
-      return b;
-    };
-
-    // 广度优先搜索 (BFS) 遍历语义群组
-    while (queue.length > 0) {
-      const { id: currentHubId, depth } = queue.shift()!;
-
-      // 1. 直观且致命的熔断：如果节点超过最大深度限制（maxDepth=1表示最远跳跃0步），
-      // 则连成为结果候选人的基础分数都不发给它，直接腰斩后续探索！
-      if (depth >= maxDepth) continue;
-
-      // 2. 每深一层，关联程度减半（100 -> 50 -> 25）
-      const currentWeight = 100 * Math.pow(0.5, depth);
-      addWeight(currentHubId, currentWeight);
-
-      // 深层防死循环：如果该语义群组已被彻底解析过（或者作为 Hub 访问过了），则跳过子级展开
-      // 但上面那行依然允许它累加由于多条路径跳过来的权重积分！
-      if (visitedHubs.has(currentHubId)) continue;
-      visitedHubs.add(currentHubId);
-
-      // 如果到达限制深度，停止向外发出新的辐射（探索结束边界）
-      if (depth >= maxDepth) continue;
-
-      // --- 关键抽象：语义群组作为统一采集器 ---
-      // 不把子节点当做漫游目标，但把子节点里包藏的所有引线全挖出来
-      let treeIds: number[] = [];
-      try {
-        treeIds =
-          (await orca.invokeBackend("get-block-tree", currentHubId)) || [];
-      } catch (e) {}
-      if (!treeIds.includes(currentHubId)) treeIds.push(currentHubId);
-
-      const outgoingRefs = new Set<number>();
-      const incomingRefs = new Set<number>();
-
-      for (const tId of treeIds) {
-        const block = await fetchBlockSafely(tId);
-        if (!block) continue;
-
-        // 收集出链 (标签也是一种类型特殊的 refs)
-        if (block.refs && Array.isArray(block.refs)) {
-          block.refs.forEach((r: any) => {
-            if (r.to) {
-              // 特殊：我们给予正链（你主动提到的事物）略高一点优先权，
-              // 在压入队列时可以在这做分化，目前靠衰减已经很优雅了
-              outgoingRefs.add(r.to);
-            }
-          });
-        }
-
-        // 收集反链 (指向我们的节点，即有谁引用了这个群组的内容)
-        if (block.backRefs && Array.isArray(block.backRefs)) {
-          block.backRefs.forEach((r: any) => {
-            if (r.from) incomingRefs.add(r.from);
-          });
-        }
-      }
-
-      // --- 熔断保护：Hub 黑洞防御 ---
-      // 如果漫游碰到了像 #Idea 或者 #Card 这种含有上千的反链的全局巨无霸节点，
-      // 我们强行把流入队列的支流限制在 50 条以内，以防内存或者查询耗时爆炸。
-      let incomingArray = Array.from(incomingRefs);
-      if (incomingArray.length > hubCap) {
-        this.logger.warn(
-          `[lets-srs] Hub ${currentHubId} exploded with ${incomingArray.length} backlinks. Randomly sampled ${hubCap} items.`,
-        );
-        // Fisher-Yates 洗牌算法，保证这截杀的 hubCap 个名额每次都是完全随机抽样！
-        for (let i = incomingArray.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [incomingArray[i], incomingArray[j]] = [
-            incomingArray[j],
-            incomingArray[i],
-          ];
-        }
-        incomingArray = incomingArray.slice(0, hubCap);
-      }
-
-      for (const targetId of outgoingRefs) {
-        queue.push({ id: targetId, depth: depth + 1 });
-      }
-      for (const targetId of incomingArray) {
-        queue.push({ id: targetId, depth: depth + 1 });
-      }
-    }
-
-    // 后处理阶段
-    let candidateIds = Object.keys(weights).map(Number);
-    if (this.sessionBlockId) {
-      candidateIds = candidateIds.filter((id) => id !== this.sessionBlockId);
-    }
-
-    const finalIds: number[] = [];
-
-    // 防空壳过滤 (保留了老配方：既不是文档又没内容，再见！)
-    for (const id of candidateIds) {
-      const b = await fetchBlockSafely(id);
-      if (!b) continue;
-
-      const hasContent = !!(b.content && b.content.length > 0);
-      const hasChildren = !!(b.children && b.children.length > 0);
-
-      if (!hasContent && !hasChildren) {
-        continue;
-      }
-      finalIds.push(id);
-    }
-
-    // 严谨排序与局部洗牌
-    finalIds.sort((a, b) => {
-      const wA = weights[a] || 0;
-      const wB = weights[b] || 0;
-      const diff = wB - wA;
-
-      // 衰减算法下的局部洗牌：当两个块的积分差只有不到 15 分时
-      // （例如都是从上一层发散出来的平行分支）让它们随机乱序
-      if (Math.abs(diff) <= 15) {
-        return Math.random() - 0.5;
-      }
-      return diff;
-    });
-
-    this.logger.info(
-      "Zettelkasten BFS roamed blocks:",
-      finalIds.map((id) => ({ id, weight: weights[id] })),
-    );
-
-    return finalIds;
-  }
-
-  private async handleRoam(blockIds: number[], query?: any) {
+  private async handleRoam(blockIds: number[], roamArgs?: any) {
     const activePanelId = orca.state.activePanel;
     if (!activePanelId) return;
 
     const blockId = await this.getOrCreateSessionBlock();
 
-    // 尝试查找是否已经打开了复习面板
-    // let existingPanelId: string | null = null;
-    // for (const [id, panel] of Object.entries(orca.state.panels.children)) {
-    //   if ((panel as any).viewArgs?.blockId === blockId) {
-    //     existingPanelId = id;
-    //     break;
-    //   }
-    // }
-
-    // if (existingPanelId) {
-    //   orca.nav.switchFocusTo(existingPanelId);
-    // } else {
     const newPanelId = orca.nav.addTo(activePanelId, "right", {
       view: "block",
       viewArgs: {
         blockId,
         repr: RENDERER_TYPE,
         initialBlockIds: blockIds,
-        query,
+        ...roamArgs,
       },
       viewState: {},
     } as any);
     if (newPanelId) {
       orca.nav.switchFocusTo(newPanelId);
     }
-    // }
   }
 
   public renderHeadbarButton(): React.ReactNode {
@@ -611,7 +454,7 @@ function SrsSettingsUI({
           </div>
         </SettingsItem>
         <SettingsItem
-          label={t("Roam Depth (1-5)")}
+          label={t("Roam Depth (2-9)")}
           description={t(
             "How deep the roaming algorithm explores related blocks. Higher means broadly related (but much slower).",
           )}
@@ -619,7 +462,7 @@ function SrsSettingsUI({
           <orca.components.Input
             type="number"
             min={2}
-            max={8}
+            max={9}
             value={settings.roamDepth ?? 2}
             onChange={(e: any) => {
               const val = parseInt(e.target.value, 10);

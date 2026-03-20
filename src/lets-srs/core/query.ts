@@ -259,3 +259,140 @@ export async function normalizeBlockToCard(
     isVirtual: !cardRef, // 没有 #Card 标签即为虚构卡片
   };
 }
+
+/**
+ * 漫游算法：基于 BFS 寻找关联块
+ */
+export async function getRelatedBlockIds(
+  rootId: number,
+  maxDepth: number = 3,
+  hubCap: number = 50,
+  excludeIds: Set<number> = new Set(),
+): Promise<{ ids: number[]; weights: Record<number, number> }> {
+  const weights: Record<number, number> = {};
+  const addWeight = (id: number, weight: number) => {
+    weights[id] = (weights[id] || 0) + weight;
+  };
+
+  const visitedHubs = new Set<number>();
+  const queue: { id: number; depth: number }[] = [{ id: rootId, depth: 0 }];
+
+  // 全局缓存，避免深搜时反复调接口 (在一次漫游调用中有效)
+  const fetchedBlocks = new Map<number, any>();
+
+  const fetchBlockSafely = async (id: number) => {
+    if (fetchedBlocks.has(id)) return fetchedBlocks.get(id);
+    let b = orca.state.blocks[id];
+    if (!b) {
+      try {
+        b = await orca.invokeBackend("get-block", id);
+      } catch (e) {
+        // ignore
+      }
+    }
+    if (b) fetchedBlocks.set(id, b);
+    return b;
+  };
+
+  // 广度优先搜索 (BFS) 遍历语义群组
+  while (queue.length > 0) {
+    const { id: currentHubId, depth } = queue.shift()!;
+
+    if (depth >= maxDepth) continue;
+
+    // 每深一层，关联程度减半（100 -> 50 -> 25）
+    const currentWeight = 100 * Math.pow(0.5, depth);
+    if (!excludeIds.has(currentHubId)) {
+      addWeight(currentHubId, currentWeight);
+    }
+
+    if (visitedHubs.has(currentHubId)) continue;
+    visitedHubs.add(currentHubId);
+
+    if (depth >= maxDepth) continue;
+
+    // --- 关键抽象：语义群组作为统一采集器 ---
+    let treeIds: number[] = [];
+    try {
+      treeIds = (await orca.invokeBackend("get-block-tree", currentHubId)) || [];
+    } catch (e) {}
+    if (!treeIds.includes(currentHubId)) treeIds.push(currentHubId);
+
+    const outgoingRefs = new Set<number>();
+    const incomingRefs = new Set<number>();
+
+    for (const tId of treeIds) {
+      const block = await fetchBlockSafely(tId);
+      if (!block) continue;
+
+      if (block.refs && Array.isArray(block.refs)) {
+        block.refs.forEach((r: any) => {
+          if (r.to) outgoingRefs.add(r.to);
+        });
+      }
+
+      if (block.backRefs && Array.isArray(block.backRefs)) {
+        block.backRefs.forEach((r: any) => {
+          if (r.from) incomingRefs.add(r.from);
+        });
+      }
+    }
+
+    // --- 熔断保护：Hub 黑洞防御 ---
+    let incomingArray = Array.from(incomingRefs);
+    if (incomingArray.length > hubCap) {
+      // Fisher-Yates 洗牌随机抽样
+      for (let i = incomingArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [incomingArray[i], incomingArray[j]] = [
+          incomingArray[j],
+          incomingArray[i],
+        ];
+      }
+      incomingArray = incomingArray.slice(0, hubCap);
+    }
+
+    for (const targetId of outgoingRefs) {
+      queue.push({ id: targetId, depth: depth + 1 });
+    }
+    for (const targetId of incomingArray) {
+      queue.push({ id: targetId, depth: depth + 1 });
+    }
+  }
+
+  // 准备返回结果
+  let candidateIds = Object.keys(weights).map(Number);
+  if (rootId) {
+    candidateIds = candidateIds.filter((id) => id !== rootId);
+  }
+
+  const finalIds: number[] = [];
+
+  // 防空壳过滤
+  for (const id of candidateIds) {
+    if (excludeIds.has(id)) continue;
+
+    const b = await fetchBlockSafely(id);
+    if (!b) continue;
+
+    const hasContent = !!(b.content && b.content.length > 0);
+    const hasChildren = !!(b.children && b.children.length > 0);
+
+    if (!hasContent && !hasChildren) continue;
+    finalIds.push(id);
+  }
+
+  // 严谨排序与局部洗牌
+  finalIds.sort((a, b) => {
+    const wA = weights[a] || 0;
+    const wB = weights[b] || 0;
+    const diff = wB - wA;
+
+    if (Math.abs(diff) <= 15) {
+      return Math.random() - 0.5;
+    }
+    return diff;
+  });
+
+  return { ids: finalIds, weights };
+}

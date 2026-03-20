@@ -3,6 +3,7 @@ import {
   fetchDueCards,
   SrsCardData,
   normalizeBlockToCard,
+  getRelatedBlockIds,
 } from "../core/query";
 import { t } from "../../libs/l10n";
 import { ensureCardTagSchema } from "../core/tagSchema";
@@ -32,8 +33,14 @@ export function ReviewPanel(props: RendererProps) {
   const [history, setHistory] = useState<number[]>([]);
   const [shortcutsEnabled, setShortcutsEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [currentRoamDepth, setCurrentRoamDepth] = useState(1);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const loadedIdsRef = React.useRef<Set<number>>(new Set());
 
   const activeCard = cards[currentIndex];
+
+  const viewPanel = orca.nav.findViewPanel(props.panelId, orca.state.panels);
+  const viewArgs = viewPanel?.viewArgs;
 
   const loadCards = async () => {
     try {
@@ -42,11 +49,6 @@ export function ReviewPanel(props: RendererProps) {
 
       logger.debug("props", props);
       // 检查是否有外部传入的块列表（漫游模式）
-      const viewPanel = orca.nav.findViewPanel(
-        props.panelId,
-        orca.state.panels,
-      );
-      const viewArgs = viewPanel?.viewArgs;
       let blockIds = viewArgs?.initialBlockIds;
 
       // 如果有查询描述符，则重新查询以刷新数据（例如漫游模式随机换一波）
@@ -70,11 +72,18 @@ export function ReviewPanel(props: RendererProps) {
 
       if (Array.isArray(blockIds) && blockIds.length > 0) {
         const roamingCards: SrsCardData[] = [];
+        loadedIdsRef.current.clear();
+        if (viewArgs?.roamSeedId) loadedIdsRef.current.add(viewArgs.roamSeedId);
+
         for (const bid of blockIds) {
           const card = await normalizeBlockToCard(bid);
-          if (card) roamingCards.push(card);
+          if (card) {
+            roamingCards.push(card);
+            loadedIdsRef.current.add(card.blockId);
+          }
         }
         setCards(roamingCards);
+        setCurrentRoamDepth(1);
       } else {
         const dueCards = await fetchDueCards(sessionMode);
         logger.debug("due cards:", dueCards);
@@ -92,7 +101,60 @@ export function ReviewPanel(props: RendererProps) {
 
   useEffect(() => {
     loadCards();
-  }, []);
+  }, [viewArgs?.roamSeedId, viewArgs?.sessionMode]);
+
+  const loadMoreRoamingCards = async (seedId: number, nextDepth: number) => {
+    if (isFetchingMore) return;
+    setIsFetchingMore(true);
+    logger.info(`Fetching more roaming cards for depth: ${nextDepth}`);
+
+    try {
+      const hubCap = viewArgs?.roamHubCap || 50;
+
+      const { ids } = await getRelatedBlockIds(
+        seedId,
+        nextDepth,
+        hubCap,
+        loadedIdsRef.current,
+      );
+
+      if (ids.length > 0) {
+        const newCards: SrsCardData[] = [];
+        for (const id of ids) {
+          const card = await normalizeBlockToCard(id);
+          if (card) {
+            newCards.push(card);
+            loadedIdsRef.current.add(card.blockId);
+          }
+        }
+
+        if (newCards.length > 0) {
+          setCards((prev) => [...prev, ...newCards]);
+        }
+      }
+      setCurrentRoamDepth(nextDepth);
+    } catch (err) {
+      logger.error("Failed to load more roaming cards", err);
+    } finally {
+      setIsFetchingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    const seedId = viewArgs?.roamSeedId;
+
+    if (
+      seedId &&
+      !isFetchingMore &&
+      currentIndex >= cards.length - 3 &&
+      cards.length > 0
+    ) {
+      const maxDepth = viewArgs.roamMaxDepth || 3;
+      if (currentRoamDepth < maxDepth) {
+        loadMoreRoamingCards(seedId, currentRoamDepth + 1);
+      }
+    }
+  }, [currentIndex, cards.length, isFetchingMore, currentRoamDepth, viewArgs?.roamSeedId]);
 
   const handleSkip = () => {
     setHistory((prev) => [...prev, currentIndex]);
