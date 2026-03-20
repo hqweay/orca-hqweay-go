@@ -632,47 +632,54 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
                         background: "#fb8c00",
                         color: "white",
                         borderRadius: 8,
+                        flex: localIsVirtual ? 1 : "initial",
                       }}
                     >
                       <div style={{ fontWeight: 600 }}>
                         {localIsVirtual ? t("Add to SRS") : t("Soon")}
                       </div>
-                      <div className="srs-interval-hint">
-                        {predictedIntervals?.soon}
-                      </div>
+                      {!localIsVirtual && (
+                        <div className="srs-interval-hint">
+                          {predictedIntervals?.soon}
+                        </div>
+                      )}
                     </Button>
-                    <Button
-                      variant="solid"
-                      onClick={() => handleGradeAction("done")}
-                      disabled={isSaving}
-                      className="srs-grade-btn"
-                      style={{
-                        background: "#43a047",
-                        color: "white",
-                        borderRadius: 8,
-                      }}
-                    >
-                      <div style={{ fontWeight: 600 }}>{t("Done")}</div>
-                      <div className="srs-interval-hint">
-                        {predictedIntervals?.done}
-                      </div>
-                    </Button>
-                    <Button
-                      variant="solid"
-                      onClick={() => handleGradeAction("easy")}
-                      disabled={isSaving}
-                      className="srs-grade-btn"
-                      style={{
-                        background: "#1e88e5",
-                        color: "white",
-                        borderRadius: 8,
-                      }}
-                    >
-                      <div style={{ fontWeight: 600 }}>{t("Easy")}</div>
-                      <div className="srs-interval-hint">
-                        {predictedIntervals?.easy}
-                      </div>
-                    </Button>
+                    {!localIsVirtual && (
+                      <React.Fragment>
+                        <Button
+                          variant="solid"
+                          onClick={() => handleGradeAction("done")}
+                          disabled={isSaving}
+                          className="srs-grade-btn"
+                          style={{
+                            background: "#43a047",
+                            color: "white",
+                            borderRadius: 8,
+                          }}
+                        >
+                          <div style={{ fontWeight: 600 }}>{t("Done")}</div>
+                          <div className="srs-interval-hint">
+                            {predictedIntervals?.done}
+                          </div>
+                        </Button>
+                        <Button
+                          variant="solid"
+                          onClick={() => handleGradeAction("easy")}
+                          disabled={isSaving}
+                          className="srs-grade-btn"
+                          style={{
+                            background: "#1e88e5",
+                            color: "white",
+                            borderRadius: 8,
+                          }}
+                        >
+                          <div style={{ fontWeight: 600 }}>{t("Easy")}</div>
+                          <div className="srs-interval-hint">
+                            {predictedIntervals?.easy}
+                          </div>
+                        </Button>
+                      </React.Fragment>
+                    )}
                   </div>
                 </div>
               );
