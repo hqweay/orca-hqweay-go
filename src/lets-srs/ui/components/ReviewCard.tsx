@@ -28,7 +28,7 @@ interface ReviewCardProps {
   activeCard: SrsCardData;
   panelId: string;
   displayMode: CardDisplayMode;
-  onCardCompleted: () => void;
+  onCardCompleted: (grade?: CardGrade) => void;
   onSkip: () => void;
   shortcutsEnabled: boolean;
 }
@@ -117,9 +117,8 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
 
   // 计算预测间隔
   const predictedIntervals = useMemo(() => {
-    if (displayMode === "roaming") return null;
-    if (displayMode === "srs-topic") {
-      // Topic 使用递增间隔调度器
+    // Topic 类型或漫游模式使用递增间隔调度器
+    if (activeCard.type === "Topic" || displayMode === "roaming") {
       const topicState = isTopicState(srsData) ? srsData : null;
       const intervals = predictTopicIntervals(topicState);
       return {
@@ -127,7 +126,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
         done: formatInterval(intervals.done),
         easy: formatInterval(intervals.easy),
       };
-    } else if (displayMode === "srs-item") {
+    } else {
       // Item 使用 FSRS
       if (!srsData) return null;
       const grades: FsrsGrade[] = ["again", "hard", "good", "easy"];
@@ -138,7 +137,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
       });
       return results;
     }
-  }, [srsData, displayMode]);
+  }, [srsData, displayMode, activeCard.type]);
 
   // 动作处理
   const handleGradeAction = async (grade: CardGrade) => {
@@ -146,7 +145,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
     setIsSaving(true);
     try {
       await saveCardReview(activeCard, grade);
-      onCardCompleted();
+      onCardCompleted(grade);
     } catch (err) {
       console.error("[lets-srs] failed to save card review", err);
       setIsSaving(false);
@@ -168,8 +167,8 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
       } else {
         // 对于已有的卡片，评 Soon 来提升优先级并缩短间隔
         await saveCardReview(activeCard, "soon");
+        onCardCompleted("soon");
       }
-      onCardCompleted();
     } catch (err) {
       console.error("[lets-srs] failed to capture card", err);
       // 捕获失败，回退 UI 状态
@@ -183,7 +182,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
     setIsSaving(true);
     try {
       await postponeCard(activeCard);
-      onCardCompleted();
+      onCardCompleted(); // No grade for postpone
     } catch (err) {
       console.error("[lets-srs] failed to postpone card", err);
       setIsSaving(false);
@@ -207,7 +206,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
         status === "suspend" ||
         status === "archived"
       ) {
-        onCardCompleted();
+        onCardCompleted(); // No grade for status toggle skip
       } else {
         setIsSaving(false);
       }
@@ -572,14 +571,14 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
           style={{ flex: 1 }}
           contentEditable={!shortcutsEnabled}
         >
-          {displayMode === "srs-item" ? (
+          {activeCard.type === "Topic" || displayMode === "roaming" ? (
+            <TopicRenderer blockId={blockId} panelId={panelId} />
+          ) : (
             <ItemRenderer
               blockId={blockId}
               panelId={panelId}
               showAnswer={showAnswer}
             />
-          ) : (
-            <TopicRenderer blockId={blockId} panelId={panelId} />
           )}
         </div>
       </div>
@@ -619,55 +618,14 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
                     <div style={{ fontWeight: 600 }}>{t("Next")}</div>
                     <div className="srs-interval-hint">{t("[S]")}</div>
                   </Button>
-                  <Button
-                    variant="solid"
-                    onClick={handleCaptureCard}
-                    disabled={isSaving}
-                    className="srs-grade-btn"
-                    style={{
-                      flex: 3,
-                      background: "#1e88e5",
-                      color: "white",
-                      borderRadius: 8,
-                    }}
-                  >
-                    <div style={{ fontWeight: 600 }}>
-                      {localIsVirtual ? t("Add to SRS") : t("Boost Priority")}
-                    </div>
-                    <div className="srs-interval-hint">{t("[Space]")}</div>
-                  </Button>
-                </div>
-              );
-
-            case "srs-topic":
-              return (
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 12,
-                    width: "100%",
-                    maxWidth: 600,
-                  }}
-                >
-                  <Button
-                    variant="outline"
-                    onClick={onSkip}
-                    disabled={isSaving}
-                    style={{ flex: 1, borderRadius: 8, background: "#f5f5f5" }}
-                    className="srs-grade-btn"
-                  >
-                    {t("Skip")}
-                    <span
-                      contentEditable={false}
-                      style={{ fontSize: 10, marginLeft: 4, opacity: 0.6 }}
-                    >
-                      {t("[S]")}
-                    </span>
-                  </Button>
                   <div style={{ display: "flex", gap: 12, flex: 4 }}>
                     <Button
                       variant="solid"
-                      onClick={() => handleGradeAction("soon")}
+                      onClick={() =>
+                        localIsVirtual
+                          ? handleCaptureCard()
+                          : handleGradeAction("soon")
+                      }
                       disabled={isSaving}
                       className="srs-grade-btn"
                       style={{
@@ -676,7 +634,9 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
                         borderRadius: 8,
                       }}
                     >
-                      <div style={{ fontWeight: 600 }}>{t("Soon")}</div>
+                      <div style={{ fontWeight: 600 }}>
+                        {localIsVirtual ? t("Add to SRS") : t("Soon")}
+                      </div>
                       <div className="srs-interval-hint">
                         {predictedIntervals?.soon}
                       </div>
@@ -716,8 +676,163 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
                   </div>
                 </div>
               );
+            case "srs-topic":
+              return (
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 12,
+                    width: "100%",
+                    maxWidth: 600,
+                  }}
+                >
+                  <Button
+                    variant="outline"
+                    onClick={onSkip}
+                    disabled={isSaving}
+                    style={{ flex: 1, borderRadius: 8, background: "#f5f5f5" }}
+                    className="srs-grade-btn"
+                  >
+                    <div style={{ fontWeight: 600 }}>{t("Skip")}</div>
+                    <div className="srs-interval-hint">{t("[S]")}</div>
+                  </Button>
+                  <div style={{ display: "flex", gap: 12, flex: 4 }}>
+                    <Button
+                      variant="solid"
+                      onClick={() => handleGradeAction("soon")}
+                      disabled={isSaving}
+                      className="srs-grade-btn"
+                      style={{
+                        background: "#fb8c00",
+                        color: "white",
+                        borderRadius: 8,
+                      }}
+                    >
+                      <div style={{ fontWeight: 600 }}>{t("Soon")}</div>
+                      <div className="srs-interval-hint">
+                        {predictedIntervals?.soon}
+                      </div>
+                      <div className="shortcut-hint">{t("[1]")}</div>
+                    </Button>
+                    <Button
+                      variant="solid"
+                      onClick={() => handleGradeAction("done")}
+                      disabled={isSaving}
+                      className="srs-grade-btn"
+                      style={{
+                        background: "#43a047",
+                        color: "white",
+                        borderRadius: 8,
+                      }}
+                    >
+                      <div style={{ fontWeight: 600 }}>{t("Done")}</div>
+                      <div className="srs-interval-hint">
+                        {predictedIntervals?.done}
+                      </div>
+                      <div className="shortcut-hint">{t("[2]")}</div>
+                    </Button>
+                    <Button
+                      variant="solid"
+                      onClick={() => handleGradeAction("easy")}
+                      disabled={isSaving}
+                      className="srs-grade-btn"
+                      style={{
+                        background: "#1e88e5",
+                        color: "white",
+                        borderRadius: 8,
+                      }}
+                    >
+                      <div style={{ fontWeight: 600 }}>{t("Easy")}</div>
+                      <div className="srs-interval-hint">
+                        {predictedIntervals?.easy}
+                      </div>
+                      <div className="shortcut-hint">{t("[3]")}</div>
+                    </Button>
+                  </div>
+                </div>
+              );
 
             case "srs-item":
+              if (activeCard.type === "Topic") {
+                return (
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 12,
+                      width: "100%",
+                      maxWidth: 600,
+                    }}
+                  >
+                    <Button
+                      variant="outline"
+                      onClick={onSkip}
+                      disabled={isSaving}
+                      style={{
+                        flex: 1,
+                        borderRadius: 8,
+                        background: "#f5f5f5",
+                      }}
+                      className="srs-grade-btn"
+                    >
+                      <div style={{ fontWeight: 600 }}>{t("Skip")}</div>
+                      <div className="srs-interval-hint">{t("[S]")}</div>
+                    </Button>
+                    <div style={{ display: "flex", gap: 12, flex: 4 }}>
+                      <Button
+                        variant="solid"
+                        onClick={() => handleGradeAction("soon")}
+                        disabled={isSaving}
+                        className="srs-grade-btn"
+                        style={{
+                          background: "#fb8c00",
+                          color: "white",
+                          borderRadius: 8,
+                        }}
+                      >
+                        <div style={{ fontWeight: 600 }}>{t("Soon")}</div>
+                        <div className="srs-interval-hint">
+                          {predictedIntervals?.soon}
+                        </div>
+                        <div className="shortcut-hint">{t("[1]")}</div>
+                      </Button>
+                      <Button
+                        variant="solid"
+                        onClick={() => handleGradeAction("done")}
+                        disabled={isSaving}
+                        className="srs-grade-btn"
+                        style={{
+                          background: "#43a047",
+                          color: "white",
+                          borderRadius: 8,
+                        }}
+                      >
+                        <div style={{ fontWeight: 600 }}>{t("Done")}</div>
+                        <div className="srs-interval-hint">
+                          {predictedIntervals?.done}
+                        </div>
+                        <div className="shortcut-hint">{t("[2]")}</div>
+                      </Button>
+                      <Button
+                        variant="solid"
+                        onClick={() => handleGradeAction("easy")}
+                        disabled={isSaving}
+                        className="srs-grade-btn"
+                        style={{
+                          background: "#1e88e5",
+                          color: "white",
+                          borderRadius: 8,
+                        }}
+                      >
+                        <div style={{ fontWeight: 600 }}>{t("Easy")}</div>
+                        <div className="srs-interval-hint">
+                          {predictedIntervals?.easy}
+                        </div>
+                        <div className="shortcut-hint">{t("[3]")}</div>
+                      </Button>
+                    </div>
+                  </div>
+                );
+              }
               if (!showAnswer) {
                 return (
                   <div

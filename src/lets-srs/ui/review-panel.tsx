@@ -8,7 +8,7 @@ import { t } from "../../libs/l10n";
 import { ensureCardTagSchema } from "../core/tagSchema";
 import { Logger } from "@/libs/logger";
 import { ReviewCard } from "./components/ReviewCard";
-import { revertCardToState } from "../core/storage";
+import { CardGrade, revertCardToState } from "../core/storage";
 import cloneDeep from "lodash.clonedeep";
 
 const logger = new Logger("lets-srs");
@@ -97,8 +97,26 @@ export function ReviewPanel(props: RendererProps) {
     setCurrentIndex((prev) => prev + 1);
   };
 
-  const handleCardCompleted = () => {
+  const handleCardCompleted = async (grade?: CardGrade) => {
     setHistory((prev) => [...prev, currentIndex]);
+
+    const currentCard = cards[currentIndex];
+    if (currentCard && (grade === "again" || grade === "soon")) {
+      // Momo-style: Re-queue with randomized gap (3-7 cards)
+      const gap = Math.floor(Math.random() * 5) + 3;
+      const targetIndex = Math.min(currentIndex + gap + 1, cards.length);
+
+      // Fetch latest state from database for the repeated card
+      const updatedCard = await normalizeBlockToCard(currentCard.blockId);
+      if (updatedCard) {
+        setCards((prev) => {
+          const next = [...prev];
+          next.splice(targetIndex, 0, updatedCard);
+          return next;
+        });
+      }
+    }
+
     setCurrentIndex((prev) => prev + 1);
   };
 
@@ -394,7 +412,7 @@ export function ReviewPanel(props: RendererProps) {
               activeCard={activeCard}
               panelId={props.panelId}
               displayMode={displayMode}
-              onCardCompleted={handleCardCompleted}
+              onCardCompleted={(grade) => handleCardCompleted(grade)}
               onSkip={handleSkip}
               shortcutsEnabled={shortcutsEnabled}
             />

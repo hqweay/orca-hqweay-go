@@ -24,6 +24,7 @@ export async function saveCardReview(
 ): Promise<void> {
   let nextDue: Date;
   let nextState: any;
+  let nextPriority = card.priority ?? 3;
 
   if (card.type === "Topic") {
     // Topic 使用递增间隔调度器
@@ -32,29 +33,38 @@ export async function saveCardReview(
     const result = calculateTopicNextReview(currentState, topicGrade);
     nextDue = result.nextDue;
     nextState = result.nextState;
-  } else {
-    // Item 使用 FSRS 算法
-    // 兼容 TopicGrade 映射到 FSRSGrade
-    let fsrsGrade: FsrsGrade;
-    if (grade === "soon") fsrsGrade = "again";
-    else if (grade === "done") fsrsGrade = "good";
-    else if (grade === "easy") fsrsGrade = "easy";
-    else fsrsGrade = grade as FsrsGrade;
 
-    const result = calculateNextReview(card.srsData, fsrsGrade);
-    nextDue = result.nextDue;
-    nextState = result.nextState;
-  }
-
-  // Topic 卡根据评分自动调整优先级
-  // Soon → 优先级提升（数字减小），Easy → 优先级降低（数字增大）
-  let nextPriority = card.priority ?? 3;
-  if (card.type === "Topic") {
-    const topicGrade = grade as TopicGrade;
+    // Topic 卡根据评分自动调整优先级
     if (topicGrade === "soon") {
       nextPriority = Math.max(1, nextPriority - 1);
     } else if (topicGrade === "easy") {
       nextPriority = Math.min(5, nextPriority + 1);
+    }
+  } else {
+    // Item 类型
+    const fsrsGrades: FsrsGrade[] = ["again", "hard", "good", "easy"];
+    const isTopicGrade = ["soon", "done", "easy"].includes(grade);
+
+    if (isTopicGrade) {
+      // 漫游模式下的“非破坏性”处理：不更新 FSRS，仅调整优先级和 Due Date
+      const topicGrade = grade as TopicGrade;
+      nextState = { ...card.srsData }; // 保持原样
+
+      if (topicGrade === "soon") {
+        nextPriority = Math.max(1, nextPriority - 1);
+        nextDue = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000); // 设为明天
+      } else if (topicGrade === "easy") {
+        nextPriority = Math.min(5, nextPriority + 1);
+        nextDue = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 设为一周后推迟
+      } else {
+        // done
+        nextDue = new Date(Date.now() + 1 * 60 * 60 * 1000); // 暂时移出队列（1小时后）
+      }
+    } else {
+      // 复习模式：严格走 FSRS 算法
+      const result = calculateNextReview(card.srsData, grade as FsrsGrade);
+      nextDue = result.nextDue;
+      nextState = result.nextState;
     }
   }
 

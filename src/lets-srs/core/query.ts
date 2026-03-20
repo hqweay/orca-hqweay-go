@@ -201,8 +201,9 @@ export async function normalizeBlockToCard(
   ];
 
   let snapshotProps: any[] = [];
+  const srsProperties = cardRef?.data || [];
 
-  for (const prop of block.properties) {
+  for (const prop of srsProperties) {
     if (srsPropNames.includes(prop.name)) {
       snapshotProps.push({ ...prop });
     }
