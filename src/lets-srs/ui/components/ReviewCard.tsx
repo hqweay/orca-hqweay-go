@@ -156,7 +156,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
     if (isSaving) return;
     setIsSaving(true);
 
-    // 乐观更新（如果是由于捕获触发的话，虽然马上会翻页，但在动画或微小延迟期间确保 UI 不闪烁）
+    // 乐观更新
     const previousVirtual = localIsVirtual;
     setLocalIsVirtual(false);
 
@@ -173,6 +173,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
       console.error("[lets-srs] failed to capture card", err);
       // 捕获失败，回退 UI 状态
       setLocalIsVirtual(previousVirtual);
+    } finally {
       setIsSaving(false);
     }
   };
