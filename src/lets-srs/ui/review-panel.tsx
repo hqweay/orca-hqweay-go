@@ -66,6 +66,8 @@ export function ReviewPanel(props: RendererProps) {
       logger.debug("viewArgs", viewArgs);
       logger.debug("blockIds to load", blockIds);
 
+      const sessionMode = viewArgs?.sessionMode || "mixed";
+
       if (Array.isArray(blockIds) && blockIds.length > 0) {
         const roamingCards: SrsCardData[] = [];
         for (const bid of blockIds) {
@@ -74,7 +76,7 @@ export function ReviewPanel(props: RendererProps) {
         }
         setCards(roamingCards);
       } else {
-        const dueCards = await fetchDueCards();
+        const dueCards = await fetchDueCards(sessionMode);
         logger.debug("due cards:", dueCards);
         setCards(dueCards || []);
       }

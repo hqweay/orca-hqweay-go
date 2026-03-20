@@ -8,7 +8,7 @@ import {
 } from "./core/tagSchema";
 import { ReviewPanel } from "./ui/review-panel";
 import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import cloneDeep from "lodash.clonedeep";
 
@@ -24,6 +24,53 @@ import cloneDeep from "lodash.clonedeep";
 const RENDERER_TYPE = "lets-srs.review-session";
 const COMMAND_OPEN = "lets-srs.openReview";
 const STORAGE_KEY_SESSION_BLOCK = "reviewSessionBlockId";
+
+const SrsHeadbarButton = () => {
+  return (
+    <orca.components.HoverContextMenu
+      alignment="center"
+      defaultPlacement="bottom"
+      menu={(close: () => void) => (
+        <React.Fragment>
+          <orca.components.MenuText
+            key="mixed"
+            title={t("Mixed Review")}
+            preIcon="ti ti-layers-subtract"
+            onClick={() => {
+              close();
+              orca.commands.invokeCommand(COMMAND_OPEN, "mixed");
+            }}
+          />
+          <orca.components.MenuText
+            key="item"
+            title={t("Only Items")}
+            preIcon="ti ti-square-check"
+            onClick={() => {
+              close();
+              orca.commands.invokeCommand(COMMAND_OPEN, "item");
+            }}
+          />
+          <orca.components.MenuText
+            key="topic"
+            title={t("Only Topics")}
+            preIcon="ti ti-book"
+            onClick={() => {
+              close();
+              orca.commands.invokeCommand(COMMAND_OPEN, "topic");
+            }}
+          />
+        </React.Fragment>
+      )}
+    >
+      <orca.components.Button
+        variant="plain"
+        onClick={() => orca.commands.invokeCommand(COMMAND_OPEN)}
+      >
+        <i className="ti ti-cards" style={{ fontSize: "16px" }} />
+      </orca.components.Button>
+    </orca.components.HoverContextMenu>
+  );
+};
 
 export default class SrsPlugin extends BasePlugin {
   protected headbarButtonId = `${this.name}.srs`;
@@ -82,19 +129,23 @@ export default class SrsPlugin extends BasePlugin {
     if (!orca.state.commands[COMMAND_OPEN]) {
       orca.commands.registerCommand(
         COMMAND_OPEN,
-        async () => {
+        async (mode: "mixed" | "item" | "topic" = "mixed") => {
           const activePanelId = orca.state.activePanel;
           if (!activePanelId) return;
 
           // 获取或创建会话块
           const blockId = await this.getOrCreateSessionBlock();
 
-          // 尝试查找是否已经打开了复习面板
+          // 尝试查找是否已经打开了带有相同模式的复习面板
           let existingPanelId: string | null = null;
           for (const [id, panel] of Object.entries(
-            orca.state.panels.children,
+            (orca.state.panels as any).children || {},
           )) {
-            if ((panel as any).viewArgs?.blockId === blockId) {
+            const p = panel as any;
+            if (
+              p.viewArgs?.blockId === blockId &&
+              p.viewArgs?.sessionMode === mode
+            ) {
               existingPanelId = id;
               break;
             }
@@ -105,7 +156,11 @@ export default class SrsPlugin extends BasePlugin {
           } else {
             const newPanelId = orca.nav.addTo(activePanelId, "right", {
               view: "block",
-              viewArgs: { blockId, repr: RENDERER_TYPE },
+              viewArgs: {
+                blockId,
+                repr: RENDERER_TYPE,
+                sessionMode: mode,
+              },
               viewState: {},
             } as any);
 
@@ -186,7 +241,11 @@ export default class SrsPlugin extends BasePlugin {
                       const currentSettings = this.getSettings();
                       const depth = currentSettings?.roamDepth ?? 3;
                       const hubCap = currentSettings?.roamHubCap ?? 50;
-                      const relatedIds = await this.getRelatedBlockIds(blockId, depth, hubCap);
+                      const relatedIds = await this.getRelatedBlockIds(
+                        blockId,
+                        depth,
+                        hubCap,
+                      );
                       if (relatedIds.length > 0) {
                         this.handleRoam(relatedIds);
                       } else {
@@ -306,7 +365,10 @@ export default class SrsPlugin extends BasePlugin {
         // Fisher-Yates 洗牌算法，保证这截杀的 hubCap 个名额每次都是完全随机抽样！
         for (let i = incomingArray.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
-          [incomingArray[i], incomingArray[j]] = [incomingArray[j], incomingArray[i]];
+          [incomingArray[i], incomingArray[j]] = [
+            incomingArray[j],
+            incomingArray[i],
+          ];
         }
         incomingArray = incomingArray.slice(0, hubCap);
       }
@@ -398,16 +460,7 @@ export default class SrsPlugin extends BasePlugin {
   }
 
   public renderHeadbarButton(): React.ReactNode {
-    const Button = orca.components.Button;
-    return (
-      <Button
-        variant="plain"
-        onClick={() => orca.commands.invokeCommand(COMMAND_OPEN)}
-        title={t("Spaced Repetition")}
-      >
-        <i className="ti ti-cards" style={{ fontSize: "16px" }} />
-      </Button>
-    );
+    return <SrsHeadbarButton />;
   }
 
   protected renderHeadbarMenuItems(closeMenu: () => void): React.ReactNode[] {
@@ -559,7 +612,9 @@ function SrsSettingsUI({
         </SettingsItem>
         <SettingsItem
           label={t("Roam Depth (1-5)")}
-          description={t("How deep the roaming algorithm explores related blocks. Higher means broadly related (but much slower).")}
+          description={t(
+            "How deep the roaming algorithm explores related blocks. Higher means broadly related (but much slower).",
+          )}
         >
           <orca.components.Input
             type="number"
@@ -574,7 +629,9 @@ function SrsSettingsUI({
         </SettingsItem>
         <SettingsItem
           label={t("Roam Hub Cap (10-500)")}
-          description={t("Maximum number of backlinks to explore per node (protects against tag blackholes).")}
+          description={t(
+            "Maximum number of backlinks to explore per node (protects against tag blackholes).",
+          )}
         >
           <orca.components.Input
             type="number"

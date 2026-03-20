@@ -26,7 +26,9 @@ export interface SrsCardData {
  * 核心查询：找出所有需要复习的卡片。
  * 条件：带有 #Card 标签，且 Due <= Today 或 Due 尚未设置 (New Card)
  */
-export async function fetchDueCards(): Promise<SrsCardData[]> {
+export async function fetchDueCards(
+  mode: "item" | "topic" | "mixed" = "mixed",
+): Promise<SrsCardData[]> {
   const now = Date.now();
   // 1. 查询所有带有 #Card 标签的块。
   // 注意：我们先查出所有，然后在内存中过滤，以确保对比精度和逻辑的一致性。
@@ -88,21 +90,14 @@ export async function fetchDueCards(): Promise<SrsCardData[]> {
         ) {
           continue;
         }
+
+        // --- Mode Filtering ---
+        if (mode === "item" && card.type !== "Item") continue;
+        if (mode === "topic" && card.type !== "Topic") continue;
+
         dueCards.push(card);
       }
     } // 结束 resultIds 遍历
-
-    // // 3. 进入内存过滤阶段：只保留 Due <= 现在 或 新卡 (Due 为空) 的内容
-    // const filteredCards = dueCards.filter((card) => {
-    //   // 如果没有到期时间，视为新卡，直接加入
-    //   if (card.due === null) return true;
-    //   // 否则，对比时间戳
-    //   return card.due <= now;
-    // });
-
-    // console.log(
-    //   `[lets-srs] total found: ${dueCards.length}, due/new: ${filteredCards.length}`,
-    // );
 
     // 排序策略：优先级分组 + 局部洗牌
     // 1. 新卡固定排在最后

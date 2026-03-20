@@ -74,6 +74,10 @@ const zhCN = {
   "How deep the roaming algorithm explores related blocks. Higher means broadly related (but much slower).": "漫游算法探索关联块的层数。越深意味着漫游范围越广（但检索会显著变慢）。",
   "Roam Hub Cap (10-500)": "黑洞截断值 (10-500)",
   "Maximum number of backlinks to explore per node (protects against tag blackholes).": "每个节点允许探索的最大反链数（用于防范标签页等超级节点引发内存黑洞）。",
+  "Mixed Review": "混合复习",
+  "Only Items": "仅闪卡",
+  "Only Topics": "仅文章",
+  "Spaced Repetition (Right click for modes)": "间隔重复 (悬停/右键选择模式)",
 };
 
 export default zhCN;
