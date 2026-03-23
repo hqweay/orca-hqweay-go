@@ -1,6 +1,22 @@
-# [1.14.0](/compare/v1.13.3...v1.14.0) (2026-03-19)
+## [1.14.1](/compare/v1.14.0...v1.14.1) (2026-03-23)
 
-Update to 1.14.0
+Update to 1.14.1
+
+
+### Bug Fixes
+
+* ensure saving state is always reset after card capture by moving `setIsSaving(false)` to a `finally` block. 2a6d99b
+
+
+### Features
+
+* Conditionally render SRS grade buttons and interval hints, and adjust the 'Soon' button's flex property based on `localIsVirtual`. 6b7fb8e
+* Implement BFS-based roaming algorithm in core and introduce tiered loading for related blocks. b7b2e7d
+* Implement SRS review modes (mixed, item, topic) selectable from a new headbar button. 67a0c69
+* Make ReviewCard content conditionally editable based on `shortcutsEnabled`. 1391ee5
+* Standardize SRS card grading options and interval prediction across card types and display modes, and pass grade to the completion handler. 76f64f2
+
+# [1.14.0](/compare/v1.13.3...v1.14.0) (2026-03-19)
 
 
 ### Bug Fixes
