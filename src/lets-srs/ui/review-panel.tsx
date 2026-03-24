@@ -154,7 +154,13 @@ export function ReviewPanel(props: RendererProps) {
         loadMoreRoamingCards(seedId, currentRoamDepth + 1);
       }
     }
-  }, [currentIndex, cards.length, isFetchingMore, currentRoamDepth, viewArgs?.roamSeedId]);
+  }, [
+    currentIndex,
+    cards.length,
+    isFetchingMore,
+    currentRoamDepth,
+    viewArgs?.roamSeedId,
+  ]);
 
   const handleSkip = () => {
     setHistory((prev) => [...prev, currentIndex]);
@@ -165,7 +171,8 @@ export function ReviewPanel(props: RendererProps) {
     setHistory((prev) => [...prev, currentIndex]);
 
     const currentCard = cards[currentIndex];
-    if (currentCard && (grade === "again" || grade === "soon")) {
+    //  不对 Topic 的grade === "soon"进行重排列
+    if (currentCard && grade === "again") {
       // Momo-style: Re-queue with randomized gap (3-7 cards)
       const gap = Math.floor(Math.random() * 5) + 3;
       const targetIndex = Math.min(currentIndex + gap + 1, cards.length);
@@ -182,7 +189,7 @@ export function ReviewPanel(props: RendererProps) {
     }
 
     setCurrentIndex((prev) => prev + 1);
-  };
+  };;
 
   const handleGoBack = async () => {
     if (history.length === 0) return;
@@ -473,6 +480,7 @@ export function ReviewPanel(props: RendererProps) {
             }}
           >
             <ReviewCard
+              key={currentIndex}
               activeCard={activeCard}
               panelId={props.panelId}
               displayMode={displayMode}

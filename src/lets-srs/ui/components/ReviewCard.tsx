@@ -148,6 +148,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
       onCardCompleted(grade);
     } catch (err) {
       console.error("[lets-srs] failed to save card review", err);
+    } finally {
       setIsSaving(false);
     }
   };
@@ -186,6 +187,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
       onCardCompleted(); // No grade for postpone
     } catch (err) {
       console.error("[lets-srs] failed to postpone card", err);
+    } finally {
       setIsSaving(false);
     }
   };
@@ -208,11 +210,10 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
         status === "archived"
       ) {
         onCardCompleted(); // No grade for status toggle skip
-      } else {
-        setIsSaving(false);
       }
     } catch (err) {
       console.error(`[lets-srs] failed to toggle status: ${status}`, err);
+    } finally {
       setIsSaving(false);
     }
   };
