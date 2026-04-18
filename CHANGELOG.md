@@ -1,6 +1,18 @@
-## [1.14.1](/compare/v1.14.0...v1.14.1) (2026-03-23)
+## [1.14.2](/compare/v1.14.1...v1.14.2) (2026-04-18)
 
-Update to 1.14.1
+Update to 1.14.2
+
+
+### Bug Fixes
+
+* Ensure `isSaving` state resets in `ReviewCard` and prevent 'soon' graded cards from re-queuing in `ReviewPanel`. 9a22e19
+
+
+### Features
+
+* add pluginAsRoot parameter to listFiles method in orca interface f216586
+
+## [1.14.1](/compare/v1.14.0...v1.14.1) (2026-03-23)
 
 
 ### Bug Fixes
