@@ -1428,7 +1428,7 @@ export interface Orca {
      * console.log("Plugin files:", files)
      * ```
      */
-    listFiles(name: string): Promise<string[]>;
+    listFiles(name: string, pluginAsRoot?: boolean): Promise<string[]>;
 
     /**
      * Checks if a file exists in the plugin's data directory.
