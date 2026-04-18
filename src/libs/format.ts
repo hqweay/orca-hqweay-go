@@ -412,7 +412,9 @@ class FormatUtil {
         if (
           ignoreBlocks.some(({ start, end }) => {
             return index >= start && index <= end;
-          })
+          }) ||
+          // 避免 虎鲸笔记中的时间戳格式化：28:23-32:57 这种格式被误加空格
+          line.trim() === "-"
         ) {
           return line;
         }
