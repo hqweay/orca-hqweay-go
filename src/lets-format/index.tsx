@@ -69,7 +69,12 @@ export default class FormatPlugin extends BasePlugin {
           ) {
             let hasChanged = false;
             const newContent = block.content.map((fragment: any) => {
-              if (fragment.t === "t" && typeof fragment.v === "string") {
+              // 行内元素代码块：'c'
+              if (
+                fragment.t === "t" &&
+                typeof fragment.v === "string" &&
+                fragment.f !== "c"
+              ) {
                 const formattedText = formatUtil.formatContent(fragment.v);
                 if (formattedText !== fragment.v) {
                   hasChanged = true;
