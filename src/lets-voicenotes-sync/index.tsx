@@ -445,6 +445,38 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
       );
     }
 
+    // Subnotes
+    if (note.subnotes?.length) {
+      // Header
+      const subnotesBlockId = await orca.commands.invokeEditorCommand(
+        "core.editor.insertBlock",
+        null,
+        noteBlock,
+        "firstChild",
+        [{ t: "t", v: "Subnotes" }],
+        { type: "heading", level: -1 },
+      );
+
+      const subnotesBlock = orca.state.blocks[subnotesBlockId];
+      for (const subnote of note.subnotes) {
+        const subBlockId = await this.syncNote(
+          subnote,
+          subnotesBlock || noteBlock,
+          noteTag,
+        );
+        if (subBlockId) {
+          // Link to it using reference
+          // await orca.commands.invokeEditorCommand(
+          //   "core.editor.insertBlock",
+          //   null,
+          //   subnotesBlock,
+          //   "firstChild",
+          //   [{ t: "r", v: `${subBlockId}` }],
+          // );
+        }
+      }
+    }
+
     // Creations: Append after transcript
     if (note.creations?.length) {
       for (const creation of note.creations) {
@@ -464,7 +496,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
             // [{ t: "t", v: `## ${title}` }],
             // { type: "text" },
             [{ t: "t", v: `${title}` }],
-            { type: "heading", level: 2 },
+            { type: "heading", level: -1 },
             new Date(note.created_at),
             new Date(note.updated_at),
           );
@@ -493,7 +525,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
         // [{ t: "t", v: `## ${title}` }],
         // { type: "text" },
         [{ t: "t", v: `Attachments` }],
-        { type: "heading", level: 2 },
+        { type: "heading", level: -1 },
         new Date(note.created_at),
         new Date(note.updated_at),
       );
@@ -544,7 +576,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
         // [{ t: "t", v: `## ${title}` }],
         // { type: "text" },
         [{ t: "t", v: `Transcript` }],
-        { type: "heading", level: 2 },
+        { type: "heading", level: -1 },
         new Date(note.created_at),
         new Date(note.updated_at),
       );
@@ -561,37 +593,6 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
       }
     }
 
-    // subnotes 先不同步了
-    // Subnotes
-    // if (note.subnotes?.length) {
-    //   // Header
-    //   await orca.commands.invokeEditorCommand(
-    //     "core.editor.insertBlock",
-    //     null,
-    //     noteBlock,
-    //     "lastChild",
-    //     [{ t: "t", v: "Subnotes" }],
-    //     { type: "heading", level: 2 },
-    //   );
-
-    //   for (const subnote of note.subnotes) {
-    //     const subBlockId = await this.syncNote(subnote, inbox, noteTag);
-    //     if (subBlockId) {
-    //       // Link to it using reference
-    //       await orca.commands.invokeEditorCommand(
-    //         "core.editor.insertBlock",
-    //         null,
-    //         noteBlock,
-    //         "lastChild",
-    //         [
-    //           { t: "t", v: "- " },
-    //           { t: "r", v: subnote.title || "Untitled", id: subBlockId },
-    //         ],
-    //       );
-    //     }
-    //   }
-    // }
-
     // Related Notes
     // if (note.related_notes?.length) {
     //   await orca.commands.invokeEditorCommand(
@@ -600,7 +601,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
     //     noteBlock,
     //     "lastChild",
     //     [{ t: "t", v: "Related Notes" }],
-    //     { type: "heading", level: 2 },
+    //     { type: "heading", level: -1 },
     //   );
 
     // for (const related of note.related_notes) {
