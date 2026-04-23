@@ -40,7 +40,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
 
     let lastSyncTime = await this.getData("syncKey");
     // for test
-    lastSyncTime = "2026-04-16T12:24:45.000000Z";
+    // lastSyncTime = "2026-04-16T12:24:45.000000Z";
     if (fullSync) {
       lastSyncTime = undefined;
     }

@@ -1,6 +1,15 @@
-## [1.14.2](/compare/v1.14.1...v1.14.2) (2026-04-18)
+## [1.14.3](/compare/v1.14.2...v1.14.3) (2026-04-23)
 
-Update to 1.14.2
+Update to 1.14.3
+
+
+### Features
+
+* enable test sync time and add related notes rendering to note sync index e1ba975
+* implement configurable include/exclude tag filtering for voice note synchronization c773a05
+* implement subnote synchronization and update heading levels to dynamic values 0f27a16
+
+## [1.14.2](/compare/v1.14.1...v1.14.2) (2026-04-18)
 
 
 ### Bug Fixes
