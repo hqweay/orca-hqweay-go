@@ -195,17 +195,48 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
 
                   const recordingId = this.getRecordingId(block);
 
-                  const repr = getRepr(block);
+                  let transcriptBlock: Block | undefined;
+                  for (const childId of block.children) {
+                    const child = orca.state.blocks[childId];
+                    if (child && child.text && child.text.length > 0) {
+                      if (child.text.startsWith("Transcript")) {
+                        transcriptBlock = child;
+                        break;
+                      }
+                    }
+                  }
 
-                  let content = await orca.converters.blockConvert(
-                    "markdown",
-                    block,
-                    repr,
-                    undefined,
-                    true,
-                  );
+                  let content = "";
+                  if (transcriptBlock) {
+                    for (const childId of transcriptBlock.children) {
+                      const child = orca.state.blocks[childId];
+                      if (child) {
+                        const childRepr = getRepr(child);
+                        const childMarkdown =
+                          await orca.converters.blockConvert(
+                            "markdown",
+                            child,
+                            childRepr,
+                            undefined,
+                            true,
+                          );
+                        content += childMarkdown + "\n";
+                      }
+                    }
+                    content = content.trim();
+                  } else {
+                    const repr = getRepr(block);
+                    content =
+                      (await orca.converters.blockConvert(
+                        "markdown",
+                        block,
+                        repr,
+                        undefined,
+                        true,
+                      )) || "";
+                  }
 
-                  await this.addOrUpdate(recordingId, blockId, content || "");
+                  await this.addOrUpdate(recordingId, blockId, content);
                 }}
               />
             );
