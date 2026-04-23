@@ -1,6 +1,13 @@
-## [1.14.5](/compare/v1.14.4...v1.14.5) (2026-04-23)
+## [1.14.6](/compare/v1.14.5...v1.14.6) (2026-04-23)
 
-Update to 1.14.5
+Update to 1.14.6
+
+
+### Features
+
+* extract and sync transcript content from nested blocks during voice note synchronization 122b9a5
+
+## [1.14.5](/compare/v1.14.4...v1.14.5) (2026-04-23)
 
 ## [1.14.4](/compare/v1.14.3...v1.14.4) (2026-04-23)
 
