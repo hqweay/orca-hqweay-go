@@ -14,7 +14,8 @@ import React, { useState } from "react";
 const DEFAULT_VN_SETTINGS = {
   inboxName: "VoiceNotes Inbox",
   noteTag: "VoiceNote",
-  excludeTags: "orca",
+  filterTags: "orca",
+  tagFilterMode: "exclude",
   headbarMode: "both",
 };
 
@@ -38,13 +39,26 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
     const noteTag = settings.noteTag;
 
     let lastSyncTime = await this.getData("syncKey");
+    // for test
+    // lastSyncTime = "2026-04-16T12:24:45.000000Z";
     if (fullSync) {
       lastSyncTime = undefined;
     }
 
+    const tagsStr = settings.filterTags || "";
+
+    const filterTags = tagsStr
+      ? tagsStr
+          .split(",")
+          .map((t: string) => t.trim())
+          .filter((t: string) => t.length > 0)
+      : [];
+
     const api = new VoiceNotesApi({
       token: settings.token,
       lastSyncedNoteUpdatedAt: lastSyncTime,
+      filterTags: filterTags.length > 0 ? filterTags : [],
+      tagFilterMode: settings.tagFilterMode || "exclude",
     });
 
     try {
@@ -102,19 +116,6 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
           const inbox = await ensureInbox(journal, inboxName);
 
           for (const note of notes) {
-            // Check exclusion
-            if (settings.excludeTags) {
-              const excludeTags = settings.excludeTags
-                .split(",")
-                .map((t: string) => t.trim());
-              if (
-                note.tags &&
-                note.tags.some((t) => excludeTags.includes(t.name))
-              ) {
-                continue;
-              }
-            }
-
             await this.syncNote(note, inbox, noteTag);
           }
         }
@@ -740,16 +741,32 @@ function VoiceNotesSettings({ plugin }: { plugin: VoiceNotesSyncPlugin }) {
           />
         </SettingsItem>
         <SettingsItem
-          label={t("Exclude Tags (comma separated)")}
+          label={t("Tag Filter Mode")}
           vertical
           description={t(
-            "Tag used to exclude notes from syncing (comma separated).",
+            "Select whether to exclude or include notes with the specified tags.",
+          )}
+        >
+          <orca.components.Select
+            selected={[config.tagFilterMode || "exclude"]}
+            options={[
+              { value: "exclude", label: t("Exclude") },
+              { value: "include", label: t("Include") },
+            ]}
+            onChange={(selected) => updateConfig("tagFilterMode", selected[0])}
+          />
+        </SettingsItem>
+        <SettingsItem
+          label={t("Filter Tags (comma separated)")}
+          vertical
+          description={t(
+            "Tags used to filter notes from syncing (comma separated).",
           )}
         >
           <TextArea
             // @ts-ignore
-            value={config.excludeTags}
-            onChange={(e: any) => updateConfig("excludeTags", e.target.value)}
+            value={config.filterTags || ""}
+            onChange={(e: any) => updateConfig("filterTags", e.target.value)}
             style={{ width: "100%", minHeight: "60px" }}
           />
         </SettingsItem>

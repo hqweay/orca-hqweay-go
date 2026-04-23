@@ -5,6 +5,10 @@ export default {
   "Inbox Block Name": "收件箱块名称",
   "Imported Note Tag": "导入笔录标签",
   "Exclude Tags (comma separated)": "排除标签 (逗号分隔)",
+  "Filter Tags (comma separated)": "过滤标签 (逗号分隔)",
+  "Tag Filter Mode": "标签过滤模式",
+  "Exclude": "排除",
+  "Include": "包含",
   "Please provide a Voicenotes API token in plugin settings.":
     "请在插件设置中提供 Voicenotes API 令牌。",
   "Starting to sync VoiceNotes, please wait...":
@@ -27,4 +31,8 @@ export default {
   "The tag applied to imported notes.": "应用于导入笔记的标签。",
   "Tag used to exclude notes from syncing (comma separated).":
     "用于排除同步笔记的标签（用逗号分隔）。",
+  "Tags used to filter notes from syncing (comma separated).":
+    "用于过滤同步笔记的标签（用逗号分隔）。",
+  "Select whether to exclude or include notes with the specified tags.":
+    "选择是排除还是包含带有指定标签的笔记。",
 };

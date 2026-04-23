@@ -171,6 +171,14 @@ export class VoiceNotesApi {
         API_ROUTES.GET_RECORDINGS,
         options,
       );
+      
+      if (data && data.data && this.filterTags && this.filterTags.length > 0) {
+        data.data = data.data.filter((note: VoiceNote) => {
+          const hasTag = note.tags && note.tags.some(t => this.filterTags.includes(t.name));
+          return this.tagFilterMode === "exclude" ? !hasTag : hasTag;
+        });
+      }
+
       return data as VoiceNoteRecordings;
     } catch (error) {
       console.error("Failed to get recordings:", error);
@@ -190,6 +198,14 @@ export class VoiceNotesApi {
         method: "POST",
       };
       const data = await this.makeAuthenticatedRequest(link, options);
+
+      if (data && data.data && this.filterTags && this.filterTags.length > 0) {
+        data.data = data.data.filter((note: VoiceNote) => {
+          const hasTag = note.tags && note.tags.some(t => this.filterTags.includes(t.name));
+          return this.tagFilterMode === "exclude" ? !hasTag : hasTag;
+        });
+      }
+
       return data as VoiceNoteRecordings;
     } catch (error) {
       console.error("Failed to get recordings from link:", error);
