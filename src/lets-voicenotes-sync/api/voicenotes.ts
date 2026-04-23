@@ -1,4 +1,4 @@
-import { VoiceNoteRecordings, User, VoiceNote } from "../types";
+import { VoiceNoteRecordings, User, VoiceNote } from "../../types";
 
 const BASE_API_URL =
   "https://api.voicenotes.com/api/integrations/obsidian-sync";
@@ -18,6 +18,8 @@ const API_ROUTES = {
 type VoiceNotesApiOptions = {
   token?: string;
   lastSyncedNoteUpdatedAt?: string;
+  filterTags?: string[];
+  tagFilterMode?: "include" | "exclude";
   deletedLocalRecordings?: Pick<VoiceNote, "recording_id" | "updated_at">[];
 };
 
@@ -28,6 +30,8 @@ export class VoiceNotesApi {
     VoiceNote,
     "recording_id" | "updated_at"
   >[] = [];
+  private filterTags: string[] = [];
+  private tagFilterMode: "include" | "exclude" = "exclude";
 
   constructor(options: VoiceNotesApiOptions = {}) {
     if (options.token) {
@@ -40,6 +44,14 @@ export class VoiceNotesApi {
 
     if (options.deletedLocalRecordings) {
       this.deletedLocalRecordings = options.deletedLocalRecordings;
+    }
+
+    if (options.filterTags) {
+      this.filterTags = options.filterTags;
+    }
+
+    if (options.tagFilterMode) {
+      this.tagFilterMode = options.tagFilterMode;
     }
   }
 
@@ -146,8 +158,13 @@ export class VoiceNotesApi {
             (r) => r.recording_id,
           ),
           last_synced_note_updated_at: this.lastSyncedNoteUpdatedAt,
+          filter_tags: this.filterTags ? this.filterTags : [],
+          tag_filter_mode: this.tagFilterMode,
         }),
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
       };
 
       const data = await this.makeAuthenticatedRequest(
