@@ -10,3 +10,6 @@
 [submodule "vendor/orca-random-walk"]
 	path = vendor/orca-random-walk
 	url = git@github.com:sethyuan/orca-random-walk.git
+[submodule "vendor/voicenotes-sync"]
+	path = vendor/voicenotes-sync
+	url = git@github.com:voicenotes-community/voicenotes-sync.git

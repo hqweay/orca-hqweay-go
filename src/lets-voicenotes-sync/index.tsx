@@ -1,4 +1,4 @@
-import { VoiceNotesApi } from "@/api/voicenotes";
+import { VoiceNotesApi } from "@/lets-voicenotes-sync/api/voicenotes";
 import { setupL10N, t } from "@/libs/l10n";
 import { ensureInbox, getRepr } from "@/libs/utils";
 import { formatUtil } from "@/libs/format";
@@ -710,7 +710,7 @@ function VoiceNotesSettings({ plugin }: { plugin: VoiceNotesSyncPlugin }) {
         >
           <Input
             // @ts-ignore
-            type="password"
+            // type="password"
             value={config.token || ""}
             onChange={(e: any) => updateConfig("token", e.target.value)}
           />
