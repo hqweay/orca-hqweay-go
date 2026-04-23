@@ -40,7 +40,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
 
     let lastSyncTime = await this.getData("syncKey");
     // for test
-    // lastSyncTime = "2026-04-16T12:24:45.000000Z";
+    lastSyncTime = "2026-04-16T12:24:45.000000Z";
     if (fullSync) {
       lastSyncTime = undefined;
     }
@@ -83,43 +83,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
         return;
       }
 
-      // Group notes by date (created_at)
-      const notesByDate: Record<string, VoiceNote[]> = {};
-      for (const note of allNotes) {
-        // Convert to Local Time
-        const date = new Date(note.created_at);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const day = String(date.getDate()).padStart(2, "0");
-        const dateStr = `${year}-${month}-${day}`;
-
-        if (!notesByDate[dateStr]) {
-          notesByDate[dateStr] = [];
-        }
-        notesByDate[dateStr].push(note);
-      }
-
-      await orca.commands.invokeGroup(async () => {
-        for (const [dateStr, notes] of Object.entries(notesByDate)) {
-          // dateStr is YYYY-MM-DD
-          // Construct local date
-          const [y, m, d] = dateStr.split("-").map(Number);
-          const createdAt = new Date(y, m - 1, d); // safe local date construction
-
-          console.log("Syncing notes for date:", createdAt);
-          const journal: Block = await orca.invokeBackend(
-            "get-journal-block",
-            createdAt,
-          );
-          if (journal == null) continue;
-
-          const inbox = await ensureInbox(journal, inboxName);
-
-          for (const note of notes) {
-            await this.syncNote(note, inbox, noteTag);
-          }
-        }
-      });
+      await this.processVoiceNotes(allNotes);
 
       let maxUpdatedAt = lastSyncTime;
       if (allNotes.length > 0) {
@@ -140,6 +104,52 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
       this.logger.error("VOICENOTES SYNC:", err);
       orca.notify("error", t("Failed to sync VoiceNotes."));
     }
+  }
+
+  public async processVoiceNotes(allNotes: VoiceNote[]) {
+    if (!allNotes || allNotes.length === 0) return;
+
+    const settings = this.getSettings();
+    const inboxName = settings.inboxName;
+    const noteTag = settings.noteTag;
+
+    // Group notes by date (created_at)
+    const notesByDate: Record<string, VoiceNote[]> = {};
+    for (const note of allNotes) {
+      // Convert to Local Time
+      const date = new Date(note.created_at);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      const dateStr = `${year}-${month}-${day}`;
+
+      if (!notesByDate[dateStr]) {
+        notesByDate[dateStr] = [];
+      }
+      notesByDate[dateStr].push(note);
+    }
+
+    await orca.commands.invokeGroup(async () => {
+      for (const [dateStr, notes] of Object.entries(notesByDate)) {
+        // dateStr is YYYY-MM-DD
+        // Construct local date
+        const [y, m, d] = dateStr.split("-").map(Number);
+        const createdAt = new Date(y, m - 1, d); // safe local date construction
+
+        console.log("Syncing notes for date:", createdAt);
+        const journal: Block = await orca.invokeBackend(
+          "get-journal-block",
+          createdAt,
+        );
+        if (journal == null) continue;
+
+        const inbox = await ensureInbox(journal, inboxName);
+
+        for (const note of notes) {
+          await this.syncNote(note, inbox, noteTag);
+        }
+      }
+    });
   }
 
   public async load(): Promise<void> {
@@ -446,28 +456,29 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
     }
 
     // related notes
-    if (note.related_notes?.length) {
-      // Header
-      const relatedBlockId = await orca.commands.invokeEditorCommand(
-        "core.editor.insertBlock",
-        null,
-        noteBlock,
-        "firstChild",
-        [{ t: "t", v: "Related Notes" }],
-        { type: "heading", level: -1 },
-      );
+    // if (note.related_notes?.length) {
+    //   await this.processVoiceNotes(note.related_notes);
+    //   // Header
+    //   const relatedBlockId = await orca.commands.invokeEditorCommand(
+    //     "core.editor.insertBlock",
+    //     null,
+    //     noteBlock,
+    //     "firstChild",
+    //     [{ t: "t", v: "Related Notes" }],
+    //     { type: "heading", level: -1 },
+    //   );
 
-      const relatedBlock = orca.state.blocks[relatedBlockId];
-      await orca.commands.invokeEditorCommand(
-        "core.editor.batchInsertText",
-        null,
-        relatedBlock,
-        "firstChild", // Insert as child of title
-        note.related_notes
-          .map((note) => `[[${this.cleanText(note.title)}]]`)
-          .join("\n"),
-      );
-    }
+    //   const relatedBlock = orca.state.blocks[relatedBlockId];
+    //   await orca.commands.invokeEditorCommand(
+    //     "core.editor.batchInsertText",
+    //     null,
+    //     relatedBlock,
+    //     "firstChild", // Insert as child of title
+    //     note.related_notes
+    //       .map((note) => `[[${this.cleanText(note.title)}]]`)
+    //       .join("\n"),
+    //   );
+    // }
     // Subnotes
     if (note.subnotes?.length) {
       // Header
