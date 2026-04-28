@@ -33,7 +33,7 @@ export class DataImporter {
   /**
    * Universal method to insert data into the editor.
    * Handles block creation, fragment insertion, tagging, and schema syncing.
-   * 
+   *
    * data.content 为空时，只处理标签
    */
   static async importBlock(
@@ -134,9 +134,10 @@ export class DataImporter {
     const tagName = tag.name.trim();
     if (!tagName) return;
 
-    const formattedProperties = tag.properties.map((p) =>
-      this.formatProperty(p),
-    );
+    // fix: 插入标签时过滤空属性字段，因为虎鲸的属性查询判空是通过有无属性字段来做的判断，而不是属性字段值是否为空做的判断
+    const formattedProperties = tag.properties
+      .map((p) => this.formatProperty(p))
+      .filter((p) => p.value);
 
     // 1. Insert Tag
     const tagBlockId = await orca.commands.invokeEditorCommand(
