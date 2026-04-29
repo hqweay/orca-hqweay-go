@@ -13,3 +13,6 @@
 [submodule "vendor/voicenotes-sync"]
 	path = vendor/voicenotes-sync
 	url = git@github.com:voicenotes-community/voicenotes-sync.git
+[submodule "vendor/orca-tune-theme"]
+	path = vendor/orca-tune-theme
+	url = git@github.com:cordinGH/orca-tune-theme.git
