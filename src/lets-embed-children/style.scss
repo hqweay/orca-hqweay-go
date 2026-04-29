@@ -1,0 +1,92 @@
+.orca-repr-main:has(span[data-name="{{tagName}}"]) {
+  /* 2. 找到它紧邻的兄弟容器 .orca-repr-children */
+  + .orca-repr-children {
+    
+    /* 3. 找到该容器下第一层 block 里的主体内容 */
+    > .orca-block[data-type="mirror"] {
+      > .orca-repr > .orca-repr-main {
+        display: none;
+      }
+
+      > .orca-repr > .orca-repr-children {
+        /* 控制子层级的缩进量 */
+        .orca-block[data-indent="3"] {
+          --orca-block-indent: 2 !important;
+        }
+        .orca-block[data-indent="4"] {
+          --orca-block-indent: 3 !important;
+        }
+        .orca-block[data-indent="5"] {
+          --orca-block-indent: 4 !important;
+        }
+        .orca-block[data-indent="6"] {
+          --orca-block-indent: 5 !important;
+        }
+        .orca-block[data-indent="7"] {
+          --orca-block-indent: 6 !important;
+        }
+        .orca-block[data-indent="8"] {
+          --orca-block-indent: 7 !important;
+        }
+        .orca-block[data-indent="9"] {
+          --orca-block-indent: 8 !important;
+        }
+        .orca-block[data-indent="10"] {
+          --orca-block-indent: 9 !important;
+        }
+
+        > .orca-block[data-type="ul"] > .orca-repr > .orca-repr-main {
+          .orca-block-handle:not(:hover) {
+            font-family: tabler-icons !important;
+            font-style: normal;
+            font-weight: 400;
+            font-variant: normal;
+            text-transform: none;
+            line-height: 1;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+
+            --my-size-bullet: 16px;
+            width: var(--my-size-bullet);
+            height: var(--my-size-bullet);
+            font-size: 19px;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            top: calc(0.5 * (var(--orca-block-line-height) - var(--my-size-bullet)));
+
+            /* 统一icon、color、bg */
+            &:before {
+              content: "\ff8d";
+              font-size: unset;
+              /* 覆盖掉ul的特殊颜色，采用默认颜色 */
+              color: var(--orca-block-handle-passive-color);
+            }
+            &.orca-block-handle-collapsed:before {
+              width: unset;
+              height: unset;
+              background-color: unset;
+            }
+          }
+
+          /* 【重定义】镜像块的缩进线 */
+          .orca-repr-scope-line {
+            &:before {
+              border-left: 2px dashed var(--orca-color-scope-line);
+            }
+
+            &:hover {
+              background-color: unset;
+            }
+
+            &:hover:before {
+              border-left-width: 3px;
+            }
+          }
+        }
+      }
+    }
+  }
+}

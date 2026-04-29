@@ -2,7 +2,7 @@ import { BasePlugin } from "@/libs/BasePlugin";
 import { t } from "@/libs/l10n";
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import React, { useState } from "react";
-import rawCss from "./style.css?raw";
+import rawCss from "./style.scss?inline";
 
 export default class EmbedChildrenPlugin extends BasePlugin {
   protected settingsComponent = EmbedChildrenSettings;
