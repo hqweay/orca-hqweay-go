@@ -4,5 +4,6 @@ export default {
   "remove inline style": "清除内联样式",
   "remove link style": "清除链接样式",
   "remove empty lines": "清除空行",
+  "convert to auto headings": "转换为自动标题",
   "Remove Style": "清除样式",
 };

@@ -55,6 +55,7 @@ export default class FormatPlugin extends BasePlugin {
         if (!blockTree) return;
 
         const updates: { id: number; content: any[] }[] = [];
+        const reprUpdates: { id: number; _repr: any }[] = [];
         const blocksToDelete: number[] = [];
 
         const processBlock = (block: any) => {
@@ -66,6 +67,17 @@ export default class FormatPlugin extends BasePlugin {
           //   fa?: Record<string, any>;
           //   [key: string]: any;
           // };
+
+          // Handling "autoHeading"
+          if (removeTypes.includes("autoHeading")) {
+            const repr = getRepr(block);
+            if (repr && repr.type === "heading" && repr.level !== -1) {
+              reprUpdates.push({
+                id: block.id,
+                _repr: { ...repr, level: -1 },
+              });
+            }
+          }
 
           // Handling "remove empty lines"
           if (removeTypes.includes("emptyLine")) {
@@ -161,11 +173,28 @@ export default class FormatPlugin extends BasePlugin {
           );
         }
 
-        if (updates.length > 0 || blocksToDelete.length > 0) {
+        if (reprUpdates.length > 0) {
+          for (const update of reprUpdates) {
+            await orca.commands.invokeEditorCommand(
+              "core.editor.setProperties",
+              null,
+              [update.id],
+              [{ name: "_repr", value: update._repr, type: 0 }],
+            );
+          }
+        }
+
+        if (
+          updates.length > 0 ||
+          blocksToDelete.length > 0 ||
+          reprUpdates.length > 0
+        ) {
           // Notify user
           const messages = [];
           if (updates.length > 0)
             messages.push(`Updated ${updates.length} blocks`);
+          if (reprUpdates.length > 0)
+            messages.push(`Converted ${reprUpdates.length} headings`);
           if (blocksToDelete.length > 0)
             messages.push(`Deleted ${blocksToDelete.length} empty blocks`);
 
@@ -176,7 +205,7 @@ export default class FormatPlugin extends BasePlugin {
         } else {
           orca.broadcasts.broadcast("core.notify", {
             type: "info",
-            message: "No blocks needed removing styles or deleting.",
+            message: "No blocks needed processing.",
           });
         }
       },
@@ -234,6 +263,15 @@ export default class FormatPlugin extends BasePlugin {
                 closeMenu();
                 await orca.commands.invokeCommand(`${this.name}.remove-style`, [
                   "emptyLine",
+                ]);
+              }}
+            />
+            <MenuText
+              title={t("convert to auto headings")}
+              onClick={async () => {
+                closeMenu();
+                await orca.commands.invokeCommand(`${this.name}.remove-style`, [
+                  "autoHeading",
                 ]);
               }}
             />
@@ -303,6 +341,20 @@ export default class FormatPlugin extends BasePlugin {
           closeMenu();
           await orca.commands.invokeCommand(`${this.name}.remove-style`, [
             "emptyLine",
+          ]);
+        },
+      }),
+      React.createElement(orca.components.MenuSeparator, {
+        key: "sep-settings",
+      }),
+      React.createElement(MenuText, {
+        key: "convert-auto-headings",
+        preIcon: "ti ti-heading",
+        title: t("convert to auto headings"),
+        onClick: async () => {
+          closeMenu();
+          await orca.commands.invokeCommand(`${this.name}.remove-style`, [
+            "autoHeading",
           ]);
         },
       }),
