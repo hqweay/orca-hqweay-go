@@ -65,7 +65,7 @@ export async function load(_name: string) {
         const pluginInstance = new module.default(_name, pluginName);
         pluginInstances.push(pluginInstance);
 
-        console.log(`Loading sub-plugin (class) from ${path}`);
+        // console.log(`Loading sub-plugin (class) from ${path}`);
 
         // Collect settings from plugin instance
         settingsSchema = {

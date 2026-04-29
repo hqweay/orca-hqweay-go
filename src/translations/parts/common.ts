@@ -145,8 +145,9 @@ export default {
   "import.description": "从 CSV 或 Markdown 文件夹中批量导入内容。",
   publish: "GitHub 发布",
   "publish.description": "将笔记内容一键发布到您的 GitHub 博客或图床。",
-  "remove-style": "清除样式",
-  "remove-style.description": "递归清除块树中的所有内联样式。",
+  "remove-style": "格式助手",
+  "remove-style.description":
+    "快速清理笔记内容的格式，支持一键转换标题、移除多余空格、递归清除块树中的所有内联样式。",
   shortcuts: "标签快捷键",
   "shortcuts.description": "为常用标签设置全局快捷键，一键打标。",
   sort: "块排序",

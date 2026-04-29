@@ -180,10 +180,10 @@ function EmbedChildrenSettings({ plugin }: { plugin: EmbedChildrenPlugin }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
-      <SettingsSection title={t("embed-children.settings.title")}>
+      <SettingsSection title={t("Embed Children Settings")}>
         <SettingsItem
-          label={t("embed-children.settings.tagName")}
-          description={t("embed-children.settings.tagNameDesc")}
+          label={t("Tag Name")}
+          description={t("The tag name to trigger the embed children style")}
         >
           <Input
             value={config.tagName || ""}

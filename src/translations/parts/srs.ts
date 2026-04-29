@@ -1,4 +1,5 @@
 const zhCN = {
+  "srs.description": "间隔重复，支持漫游模式",
   Never: "从未复习",
   New: "新卡片",
   Learning: "学习中",

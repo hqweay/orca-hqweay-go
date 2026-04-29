@@ -136,6 +136,14 @@ An efficient tool for memory and knowledge exploration based on the FSRS algorit
   - **Intuitive Handling**: Supports shortcuts (Space, Numbers 1-4), one-click Undo (Z key), and reverting review progress.
 - **Full i18n Support**: Native English and Chinese localization, including time interval displays (e.g., "1d", "2.5mo").
 
+### 12. 🪞 Embed Children
+
+Optimize the display experience of "Mirror Blocks":
+
+- **Dynamic Children Display**: Allows blocks with a specific tag to automatically display their children blocks when embedded as a mirror block in other pages.
+- **Flexible Configuration**: Customize the exclusive tag name to trigger this feature via settings.
+- **Seamless Styling**: Optimizes the indentation and list styles of the referenced tree block to make it look more natural in the current document's layout.
+
 ## Development
 
 This project uses a modular architecture:
