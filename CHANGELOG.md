@@ -1,6 +1,19 @@
-## [1.14.6](/compare/v1.14.5...v1.14.6) (2026-04-23)
+# [2.0.0](/compare/v1.14.6...v2.0.0) (2026-04-29)
 
-Update to 1.14.6
+Update to 2.0.0
+
+
+### Bug Fixes
+
+* prevent content formatting inside inline code blocks by checking fragment type 416f103
+* 插入标签时过滤空属性字段，因为虎鲸的属性查询判空是通过有无属性字段来做的判断，而不是属性字段值是否为空做的判断 32a119a
+
+
+### Features
+
+* add functionality to convert headings to auto-headings via remove-style command 0a175c8
+
+## [1.14.6](/compare/v1.14.5...v1.14.6) (2026-04-23)
 
 
 ### Features
