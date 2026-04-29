@@ -1,6 +1,16 @@
-# [2.0.0](/compare/v1.14.6...v2.0.0) (2026-04-29)
+# [2.1.0](/compare/v2.0.0...v2.1.0) (2026-04-29)
 
-Update to 2.0.0
+新增:镜像块可以仅嵌入子块
+
+
+### Features
+
+* add auto-heading conversion feature to style removal documentation 858f091
+* add EmbedChildren plugin to dynamically style and indent mirrored block content 6c237ab
+* implement embed children feature for mirror blocks and update localization and documentation 5a86f84
+* migrate plugin styling to SCSS and add support for additional indentation levels 7f2e214
+
+# [2.0.0](/compare/v1.14.6...v2.0.0) (2026-04-29)
 
 
 ### Bug Fixes
