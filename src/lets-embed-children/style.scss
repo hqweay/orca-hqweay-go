@@ -4,7 +4,7 @@
     
     /* 3. 找到该容器下第一层 block 里的主体内容 */
     > .orca-block[data-type="mirror"] {
-      > .orca-repr > .orca-repr-main {
+      > .orca-repr > .orca-repr-main:not(.orca-repr-main-collapsed) {
         display: none;
       }
 
