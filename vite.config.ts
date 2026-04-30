@@ -79,6 +79,10 @@ export default defineConfig(({ command, mode }) => {
             src: "README.md",
             dest: "..",
           },
+          {
+            src: "LICENSE",
+            dest: "..",
+          },
         ],
       }),
       // 仅在开发模式下启用livereload
