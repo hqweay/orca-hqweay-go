@@ -80,8 +80,28 @@ export default defineConfig(({ command, mode }) => {
             dest: "..",
           },
           {
+            src: "README_en.md",
+            dest: "..",
+          },
+          {
             src: "LICENSE",
             dest: "..",
+          },
+          {
+            src: "package.json",
+            dest: "..",
+            transform: (contents) => {
+              const pkg = JSON.parse(contents.toString());
+              return JSON.stringify(
+                {
+                  name: pkg.name,
+                  version: pkg.version,
+                  description: pkg.description,
+                },
+                null,
+                2
+              );
+            },
           },
         ],
       }),
