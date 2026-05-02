@@ -436,7 +436,8 @@ class FormatUtil {
     // 结束文档整理前再删除最后一个回车
     content = content.replace(/(\n){2,}$/g, "$1");
     content = content.replace(/(\r\n){2,}$/g, "$1");
-    return content;
+    // 删除所有行尾空格和制表符
+    return content.trim();
   }
 }
 

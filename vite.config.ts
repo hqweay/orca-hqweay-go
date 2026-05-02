@@ -99,7 +99,7 @@ export default defineConfig(({ command, mode }) => {
                   description: pkg.description,
                 },
                 null,
-                2
+                2,
               );
             },
           },
