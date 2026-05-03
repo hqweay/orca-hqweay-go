@@ -27,6 +27,38 @@ export default class RandomWalkPlugin extends BasePlugin {
       return <RandomWalkHeadbarButton plugin={this} />;
     });
 
+    orca.blockMenuCommands.registerBlockMenuCommand(
+      "lets-random-walk.walkBlock",
+      {
+        worksOnMultipleBlocks: false,
+        render: (blockId, rootBlockId, close) => {
+          const block = orca.state.blocks[blockId];
+          if (!block) return null;
+
+          const repr = block.properties?.find(
+            (p: any) => p.name === "_repr",
+          )?.value;
+          const isQuery = repr?.type === "query";
+          const hasChildren = block.children && block.children.length > 0;
+
+          if (!isQuery && !hasChildren) {
+            return null;
+          }
+
+          return (
+            <orca.components.MenuText
+              title={t("Random Walk")}
+              preIcon="ti ti-dice-5"
+              onClick={() => {
+                close();
+                this.walkGroup(blockId as number);
+              }}
+            />
+          );
+        },
+      },
+    );
+
     this.ensureWalkTagSchema();
     this.logger.debug(`${this.name} loaded.`);
   }
@@ -84,6 +116,9 @@ export default class RandomWalkPlugin extends BasePlugin {
 
   public async unload(): Promise<void> {
     orca.headbar.unregisterHeadbarButton("lets-random-walk.action");
+    orca.blockMenuCommands.unregisterBlockMenuCommand(
+      "lets-random-walk.walkBlock",
+    );
     this.queryStates.clear();
     this.normalStates.clear();
     this.lastWalkedGroupId = null;
@@ -211,6 +246,17 @@ export default class RandomWalkPlugin extends BasePlugin {
   }
 
   public async walkLastOrFirst() {
+    if (this.lastWalkedGroupId != null) {
+      let block = orca.state.blocks[this.lastWalkedGroupId];
+      if (!block) {
+        block = await orca.invokeBackend("get-block", this.lastWalkedGroupId);
+      }
+      if (block) {
+        await this.walkGroup(this.lastWalkedGroupId);
+        return;
+      }
+    }
+
     const groups = await this.fetchGroups();
     if (groups.length === 0) {
       orca.notify(
@@ -218,14 +264,6 @@ export default class RandomWalkPlugin extends BasePlugin {
         t("No random walk groups found. Add tag ") + `#${this.getWalkTag()}`,
       );
       return;
-    }
-
-    if (this.lastWalkedGroupId != null) {
-      const exists = groups.some((g: any) => g.id === this.lastWalkedGroupId);
-      if (exists) {
-        await this.walkGroup(this.lastWalkedGroupId);
-        return;
-      }
     }
 
     // Default to the first group
