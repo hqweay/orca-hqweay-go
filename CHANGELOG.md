@@ -1,6 +1,17 @@
-# [2.2.0](/compare/v2.1.4...v2.2.0) (2026-04-30)
+# [2.3.0](/compare/v2.2.0...v2.3.0) (2026-05-03)
 
-Update to 2.2.0
+新增:随机漫步.打上标签的查询块和父块会被识别为随机漫步组,一键漫游
+
+
+### Features
+
+* add documentation for the new Random Walk feature across README files cb4744a
+* implement automatic schema synchronization for the random walk tag and add explanatory UI text ef68424
+* implement RandomWalkPlugin for shuffled block and query navigation 2575ed8
+* prioritize displayName property for group titles in random walk view ea9cd45
+* update group title logic to prioritize query captions and shorten default block text preview 3e754ed
+
+# [2.2.0](/compare/v2.1.4...v2.2.0) (2026-04-30)
 
 ## [2.1.4](/compare/v2.1.3...v2.1.4) (2026-04-30)
 

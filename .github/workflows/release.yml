@@ -85,3 +85,65 @@ jobs:
           token: ${{ secrets.RELEASE_TOKEN }}
           prerelease: false
           bodyFile: release_body.md
+
+      - name: Auto Create PR to Plugin Registry
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          UPSTREAM_REPO: sethyuan/awesome-orcanote
+          FORK_REPO: hqweay/awesome-orcanote
+          PLUGIN_ID: orca-hqweay-go
+        run: |
+          # 1. 提取版本号
+          VERSION=${GITHUB_REF#refs/tags/}
+          VERSION=${VERSION#v}
+          echo "Deploying version: ${VERSION}"
+
+          # 2. Clone Fork 仓库
+          git clone https://${GH_TOKEN}@github.com/${FORK_REPO}.git registry
+          cd registry
+
+          # 3. 配置 Git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # 4. 同步官方最新代码并切分支
+          git remote add upstream https://github.com/${UPSTREAM_REPO}.git
+          git fetch upstream
+          BRANCH_NAME="update-${PLUGIN_ID}-v${VERSION}"
+          git checkout -B ${BRANCH_NAME} upstream/main
+
+          # 5. 更新 plugins.json 数据
+          node -e "
+            const fs = require('fs');
+            const file = 'plugins.json';
+            const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+            const plugin = data.find(p => p.id === '${PLUGIN_ID}');
+            if (plugin) {
+              plugin.version = '${VERSION}';
+              plugin.updated = new Date().toISOString();
+              plugin.zip = \`https://github.com/hqweay/orca-hqweay-go/releases/download/v\${VERSION}/package.zip\`;
+              fs.writeFileSync(file, JSON.stringify(data, null, 2) + '\n');
+              console.log('Successfully updated plugins.json');
+            } else {
+              console.error('Plugin not found in registry!');
+              process.exit(1);
+            }
+          "
+
+          # 6. 提交修改并 Push
+          git add plugins.json
+          git commit -m "chore: update ${PLUGIN_ID} to v${VERSION}"
+          git push -f origin ${BRANCH_NAME}
+
+          # 7. 组装 PR 内容并向官方仓库发起 PR
+          echo "🚀 Automated PR to update **${PLUGIN_ID}** to version **${VERSION}**." > pr_body.md
+          echo "" >> pr_body.md
+          echo "### 📝 Changelog:" >> pr_body.md
+          cat ../release_body.md >> pr_body.md
+
+          gh pr create \
+            --repo ${UPSTREAM_REPO} \
+            --head hqweay:${BRANCH_NAME} \
+            --base main \
+            --title "Update plugin ${PLUGIN_ID} to v${VERSION}" \
+            --body-file pr_body.md
