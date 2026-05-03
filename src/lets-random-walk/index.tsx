@@ -395,7 +395,7 @@ function RandomWalkSettings({ plugin }: { plugin: RandomWalkPlugin }) {
           }}
         >
           {t(
-            "A powerful tag-based random walk tool. Usage: Add the walk tag to any block (query block or normal block). If it's a query block, it randomly walks its results. If it's a normal block, it walks its children. You can customize the 'displayName' property of the tag to rename the channel in the menu.",
+            "A powerful tag-based random walk tool. Usage: Add the walk tag to any block (query block or normal block). If it's a query block, it randomly walks its results. If it's a normal block, it walks its children. You can customize the 'displayName' property of the tag to rename the channel in the menu. Also supports right-clicking a block to start walking immediately.",
           )}
         </div>
         <SettingsItem
