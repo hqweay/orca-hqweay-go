@@ -1,8 +1,10 @@
 import { BasePlugin } from "@/libs/BasePlugin";
 import { t } from "@/libs/l10n";
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
+import { DataImporter } from "@/libs/DataImporter";
+import { PropType } from "@/libs/consts";
 import React, { useState, useEffect } from "react";
-import type { DbId, QueryDescription2 } from "../../orca.d.ts";
+import type { DbId, QueryDescription2, Block } from "../../orca.d.ts";
 
 export default class RandomWalkPlugin extends BasePlugin {
   protected settingsComponent = RandomWalkSettings;
@@ -24,7 +26,60 @@ export default class RandomWalkPlugin extends BasePlugin {
     orca.headbar.registerHeadbarButton("lets-random-walk.action", () => {
       return <RandomWalkHeadbarButton plugin={this} />;
     });
+
+    this.ensureWalkTagSchema();
     this.logger.debug(`${this.name} loaded.`);
+  }
+
+  protected async onConfigChanged(newConfig: any): Promise<void> {
+    await super.onConfigChanged(newConfig);
+    this.ensureWalkTagSchema();
+  }
+
+  private async ensureWalkTagSchema() {
+    const walkTag = this.getWalkTag();
+    if (!walkTag) return;
+    try {
+      let tagBlock = (await orca.invokeBackend(
+        "get-block-by-alias",
+        walkTag,
+      )) as Block | null;
+      if (!tagBlock) {
+        this.logger.debug(`Tag ${walkTag} not found, creating...`);
+        const newBlockId = (await orca.commands.invokeEditorCommand(
+          "core.editor.insertBlock",
+          null,
+          null,
+          "lastChild",
+          [{ t: "t", v: walkTag }],
+          { type: "text" },
+        )) as number;
+        if (newBlockId) {
+          await orca.commands.invokeEditorCommand(
+            "core.editor.createAlias",
+            null,
+            walkTag,
+            newBlockId,
+            true,
+          );
+          tagBlock = (await orca.invokeBackend(
+            "get-block",
+            newBlockId,
+          )) as Block | null;
+        }
+      }
+
+      if (tagBlock) {
+        await DataImporter.syncTagSchema(tagBlock, [
+          {
+            name: "displayName",
+            type: PropType.Text,
+          },
+        ]);
+      }
+    } catch (e) {
+      this.logger.error("Failed to ensure walk tag schema", e);
+    }
   }
 
   public async unload(): Promise<void> {
@@ -210,9 +265,9 @@ function MenuContent({
     // 1. 优先从属性 displayName 获取（检查标签属性或块属性）
     const walkTag = plugin.getWalkTag();
     const tagRef = block.refs?.find(
-      (r: any) => r.type === 2 && (r.alias === walkTag || r.name === walkTag)
+      (r: any) => r.type === 2 && (r.alias === walkTag || r.name === walkTag),
     );
-    const displayName = 
+    const displayName =
       tagRef?.data?.find((p: any) => p.name === "displayName")?.value ||
       block.properties?.find((p: any) => p.name === "displayName")?.value;
 
@@ -301,6 +356,18 @@ function RandomWalkSettings({ plugin }: { plugin: RandomWalkPlugin }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
       <SettingsSection title={t("Random Walk Settings")}>
+        <div
+          style={{
+            fontSize: "0.9em",
+            opacity: 0.8,
+            marginBottom: "24px",
+            lineHeight: "1.6",
+          }}
+        >
+          {t(
+            "A powerful tag-based random walk tool. Usage: Add the walk tag to any block (query block or normal block). If it's a query block, it randomly walks its results. If it's a normal block, it walks its children. You can customize the 'displayName' property of the tag to rename the channel in the menu.",
+          )}
+        </div>
         <SettingsItem
           label={t("Walk Tag")}
           description={t(
