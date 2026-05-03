@@ -66,6 +66,7 @@ export default class MyPlugin extends BasePlugin {
 *   所有用户可见字符串必须使用 `src/libs/l10n` 提供的 `t()` 函数包裹。
 *   翻译文件统一存放在 `src/translations/` 下。
 *   **模块化管理**: 所有新的翻译内容必须按模块拆分，放置在 `src/translations/parts/` 目录下（例如 `parts/myPlugin.ts`）。`zhCN.ts` 等主文件会通过 `import.meta.glob` 自动扫描并加载这些分片，无需手动修改主文件。
+*   **子插件基础配置项翻译**: 对于 `lets-[name]` 形式的子插件，必须在相应的翻译文件中配置 `"[name]"`（插件名称）和 `"[name].description"`（插件描述）这两个 key。主设置面板会通过这两个 key 读取并显示插件列表。
 
 ### 2.6 命名约定与环境隔离 (Naming & Environment)
 *   **正式插件**: 目录命名为 `src/lets-[name]`。
