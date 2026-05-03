@@ -10,7 +10,8 @@ A powerful tag-based random walk tool for Orca Note.
   - **Normal Blocks**: Automatically retrieves child nodes and performs a pure in-memory shuffle.
 - **Custom Naming**: Customize the `displayName` property of the walk tag to display clean and organized channel names in the list.
 - **Instant Walk via Context Menu**: Right-click any parent or query block to start a temporary walk immediately, no tagging required.
-- **Channel Memory**: The main button intelligently remembers the last walked channel (including temporary ones), allowing you to resume your exploration with a single click.
+- **Keyboard Shortcut Support**: Supports configuring a shortcut for "Random Walk" in settings for seamless exploration.
+- **Channel Memory**: The main button intelligently remembers the last walked channel (including temporary ones), allowing you to resume with a single click.
 
 ## 🚀 Usage
 

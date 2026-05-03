@@ -59,6 +59,12 @@ export default class RandomWalkPlugin extends BasePlugin {
       },
     );
 
+    orca.commands.registerCommand(
+      "lets-random-walk.walk",
+      () => this.walkLastOrFirst(),
+      t("Random Walk"),
+    );
+
     this.ensureWalkTagSchema();
     this.logger.debug(`${this.name} loaded.`);
   }
@@ -119,6 +125,7 @@ export default class RandomWalkPlugin extends BasePlugin {
     orca.blockMenuCommands.unregisterBlockMenuCommand(
       "lets-random-walk.walkBlock",
     );
+    orca.commands.unregisterCommand("lets-random-walk.walk");
     this.queryStates.clear();
     this.normalStates.clear();
     this.lastWalkedGroupId = null;
