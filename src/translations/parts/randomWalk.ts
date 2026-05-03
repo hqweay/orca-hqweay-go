@@ -1,7 +1,7 @@
 export default {
   "random-walk": "随机漫步",
   "random-walk.description":
-    "为查询块或子块打上标签，即被识别被随机漫步组，可一键点击漫游。",
+    "为查询块或父块打上标签，即被识别被随机漫步组，可一键点击漫游。",
   "Group block not found.": "未找到漫步分组块。",
   "Reshuffled query items.": "已重新洗牌查询结果。",
   "No items found in this query group.": "在此查询分组中未找到结果。",
