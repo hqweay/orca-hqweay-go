@@ -98,10 +98,7 @@ export default class RandomWalkPlugin extends BasePlugin {
   public async fetchGroups() {
     const tag = this.getWalkTag();
     const query: QueryDescription2 = {
-      q: {
-        kind: 4, // QueryKindTag
-        name: tag,
-      },
+      tagName: tag,
       page: 1,
       pageSize: 500,
     };
