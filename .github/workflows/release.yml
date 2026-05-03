@@ -121,7 +121,7 @@ jobs:
             if (plugin) {
               plugin.version = '${VERSION}';
               plugin.updated = new Date().toISOString();
-              plugin.zip = \`https://github.com/hqweay/orca-hqweay-go/releases/download/v\${VERSION}/package.zip\`;
+              plugin.zip = 'https://github.com/hqweay/orca-hqweay-go/releases/download/v${VERSION}/package.zip';
               fs.writeFileSync(file, JSON.stringify(data, null, 2) + '\n');
               console.log('Successfully updated plugins.json');
             } else {
