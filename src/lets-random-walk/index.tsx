@@ -207,14 +207,18 @@ function MenuContent({
   }, [plugin]);
 
   const getGroupTitle = (block: any) => {
-    if (block.text) {
-      let text = block.text.substring(0, 30);
-      if (block.text.length > 30) text += "...";
-      return text;
-    }
     const repr = block.properties?.find((p: any) => p.name === "_repr")?.value;
     if (repr?.type === "query") {
+      if (repr.cap) {
+        return repr.cap;
+      }
       return t("Query Group");
+    }
+
+    if (block.text) {
+      let text = block.text.substring(0, 5);
+      if (block.text.length > 5) text += "...";
+      return text;
     }
     return t("Unnamed Group");
   };
