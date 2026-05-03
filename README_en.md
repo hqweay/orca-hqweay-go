@@ -148,12 +148,13 @@ Optimize the display experience of "Mirror Blocks":
 
 A powerful tag-based random walk tool providing an exploratory experience for your knowledge base:
 
-- **Zero-config Detection**: Add a walk tag (e.g., `#RandomWalk`) to any block (query blocks or normal blocks with children), and it automatically becomes an independent random walk channel.
+- **Zero-config Detection**: Add a walk tag (e.g., `#RandomWalk`) to any block, and it automatically becomes an independent random walk channel.
 - **Dual Mode Support**:
   - **Query Blocks**: Utilizes the native random engine to deal cards, ensuring no duplicate traversals.
   - **Normal Blocks**: Automatically retrieves child nodes and performs a pure in-memory shuffle.
 - **Custom Naming**: Customize the `displayName` property of the walk tag to display clean and organized channel names in the list.
-- **Channel Memory**: The main button intelligently remembers the last walked channel, allowing you to resume your exploration with a single click.
+- **Instant Walk via Context Menu**: Right-click any parent or query block to start a temporary walk immediately, no tagging required.
+- **Channel Memory**: The main button intelligently remembers the last walked channel (including temporary ones), allowing you to resume your exploration with a single click.
 
 ## Development
 
