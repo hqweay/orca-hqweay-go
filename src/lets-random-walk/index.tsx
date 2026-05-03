@@ -97,26 +97,14 @@ export default class RandomWalkPlugin extends BasePlugin {
 
   public async fetchGroups() {
     const tag = this.getWalkTag();
-    const query: QueryDescription2 = {
-      tagName: tag,
-      page: 1,
-      pageSize: 500,
-    };
     try {
-      const ids = (await orca.invokeBackend("query", query)) as DbId[];
-      if (!ids || ids.length === 0) return [];
+      const blocks = (await orca.invokeBackend("get-blocks-with-tags", [
+        tag,
+      ])) as Block[];
 
-      const groups = [];
-      for (const id of ids) {
-        let block = orca.state.blocks[id];
-        if (!block) {
-          block = await orca.invokeBackend("get-block", id);
-        }
-        if (block) {
-          groups.push(block);
-        }
-      }
-      return groups;
+      if (!blocks || blocks.length === 0) return [];
+
+      return blocks;
     } catch (e) {
       this.logger.error("Failed to fetch groups", e);
       return [];

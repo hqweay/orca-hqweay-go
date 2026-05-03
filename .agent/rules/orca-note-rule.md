@@ -86,6 +86,7 @@ export default class MyPlugin extends BasePlugin {
     - 错误: `block.content = "text"`
     - 正确: `block.content = [{ t: 't', v: 'text' }]`
 *   **数据修改**: 修改 Block 结构（插入、删除、移动）必须调用编辑器核心命令，如 `core.editor.insertBlock`，以确保事务性和 Undo/Redo 支持。
+*   **批量查询优化**: 当需要根据标签获取完整的 `Block` 数据对象时，优先使用 `await orca.invokeBackend("get-blocks-with-tags", [tag])`，它会直接返回 `Block[]` 数组。**不要**使用 `"query"` 方法获取 `DbId[]` 然后再在循环中逐个调用 `"get-block"`，避免产生性能瓶颈。
 
 ## 5. UI 与命名规范
 *   **命名空间**: 所有 ID（命令、设置、渲染器）必须加插件名前缀 (如 `myplugin.insertDate`)，严禁使用 `_` 开头。
