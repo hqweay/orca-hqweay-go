@@ -207,6 +207,20 @@ function MenuContent({
   }, [plugin]);
 
   const getGroupTitle = (block: any) => {
+    // 1. 优先从属性 displayName 获取（检查标签属性或块属性）
+    const walkTag = plugin.getWalkTag();
+    const tagRef = block.refs?.find(
+      (r: any) => r.type === 2 && (r.alias === walkTag || r.name === walkTag)
+    );
+    const displayName = 
+      tagRef?.data?.find((p: any) => p.name === "displayName")?.value ||
+      block.properties?.find((p: any) => p.name === "displayName")?.value;
+
+    if (displayName) {
+      return displayName;
+    }
+
+    // 2. 如果是查询块，从 cap 提取
     const repr = block.properties?.find((p: any) => p.name === "_repr")?.value;
     if (repr?.type === "query") {
       if (repr.cap) {
@@ -215,6 +229,7 @@ function MenuContent({
       return t("Query Group");
     }
 
+    // 3. 兜底：从普通块文本截断提取
     if (block.text) {
       let text = block.text.substring(0, 5);
       if (block.text.length > 5) text += "...";
