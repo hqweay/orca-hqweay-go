@@ -4,7 +4,7 @@ import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import { DataImporter } from "@/libs/DataImporter";
 import { PropType } from "@/libs/consts";
 import React, { useState, useEffect } from "react";
-import type { DbId, QueryDescription2, Block } from "../../orca.d.ts";
+import type { DbId, QueryDescription2, Block } from "../orca.d.ts";
 
 export default class RandomWalkPlugin extends BasePlugin {
   protected settingsComponent = RandomWalkSettings;
