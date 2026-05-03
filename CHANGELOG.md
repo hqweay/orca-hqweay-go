@@ -1,6 +1,14 @@
-## [2.3.5](/compare/v2.3.4...v2.3.5) (2026-05-03)
+## [2.3.6](/compare/v2.3.5...v2.3.6) (2026-05-03)
 
-新增:随机漫步.打上标签的查询块和父块会被识别为随机漫步组,一键漫游;右键块菜单可临时漫游.
+新增:随机漫步.打上标签的查询块和父块会被识别为随机漫步组,一键漫游;右键块菜单可临时漫游;支持配置快捷键
+
+
+### Features
+
+* add command and keyboard shortcut support for random walk functionality aa3d20d
+* add documentation for right-click start functionality in random walk tool 70b7309
+
+## [2.3.5](/compare/v2.3.4...v2.3.5) (2026-05-03)
 
 
 ### Features
