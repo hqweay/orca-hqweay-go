@@ -110,7 +110,7 @@ export default class BlockToolsPlugin extends BasePlugin {
 
       orca.notify(
         "success",
-        t("Moved {count} blocks to target", {
+        t("Moved ${count} blocks to target", {
           count: successCount.toString(),
         }),
       );
