@@ -1,6 +1,26 @@
-## [2.3.6](/compare/v2.3.5...v2.3.6) (2026-05-03)
+# [2.4.0](/compare/v2.3.6...v2.4.0) (2026-05-05)
 
-新增:随机漫步.打上标签的查询块和父块会被识别为随机漫步组,一键漫游;右键块菜单可临时漫游;支持配置快捷键
+Update to 2.4.0
+
+
+### Bug Fixes
+
+* correct template literal syntax in block move notification message 83101b4
+
+
+### Features
+
+* add block push modes and configurable settings for moving children with delete or trace options b42c0b7
+* add Block Tools plugin to move child blocks into referenced blocks with settings support 510361d
+* add granular success notifications for block move operations with multi-target support b71b54c
+* add push children and delete command with configurable settings 13c19cf
+* add toggle setting to enable or disable the Copy Text as Block Ref feature bca5e8c
+* enable push-children-to-ref to process multiple selected blocks at once 9271587
+* expand block context menu with advanced reference management and batch processing options 9e5b73c
+* implement editor commands plugin with JSON block reference copying and update documentation 6c24d40
+* implement smart clipboard injection with deduplication and remote image downloading support b516bb4
+
+## [2.3.6](/compare/v2.3.5...v2.3.6) (2026-05-03)
 
 
 ### Features
