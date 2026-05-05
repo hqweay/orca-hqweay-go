@@ -197,6 +197,13 @@ Provides a collection of enhanced commands beyond the native editor capabilities
 - **Synergy**: Perfectly combined with the `Smart Clipboard Injection` plugin, you can paste the generated JSON anywhere to achieve lightning-fast cross-page block reference insertion.
 - **Custom Shortcuts**: Configure dedicated shortcuts for these operations directly in the settings panel.
 
+### 17. 🛠️ Block Tools
+
+Enhanced capabilities for the block context menu:
+
+- **Push Children to Referenced Block**: If the current block only contains a single block reference and has child blocks beneath it, this menu item allows you to move all children to the end of the original referenced block with one click.
+- **Config Management**: Support for enabling or disabling this feature independently in the settings panel.
+
 ## Development
 
 This project uses a modular architecture:
