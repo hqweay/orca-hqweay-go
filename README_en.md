@@ -83,9 +83,6 @@ Boost your tagging efficiency with custom shortcuts:
 
 - **One-Click Tagging**: Configure shortcuts for frequently used tags to insert at the cursor instantly.
 - **Default Properties**: Automatically attach properties (e.g., status, priority) with multi-select merging support.
-- **Paste from Clipboard**:
-  - Supports the standard `{ type: "orca-tags", tags: [...], content: ... }` format.
-  - **Rich Text Support**: Insert text fragments (ContentFragment) with links or formatting alongside tags.
 
 ### 9. 🌳 Heading Tree 🥰 [SaXz2](https://github.com/SaXz2)
 Intelligently reorganize document structure based on heading hierarchy:
@@ -156,6 +153,41 @@ A powerful tag-based random walk tool providing an exploratory experience for yo
 - **Instant Walk via Context Menu**: Right-click any parent or query block to start a temporary walk immediately, no tagging required.
 - **Keyboard Shortcut Support**: Supports configuring a shortcut for "Random Walk" in settings.
 - **Channel Memory**: The main button intelligently remembers the last walked channel (including temporary ones).
+
+### 15. 📋 Smart Clipboard Injection
+
+Empower the clipboard with JSON structure parsing, instantly transforming external formatted data into native Orca note nodes:
+
+- **Standard Format Support**: Parses and inserts `{ type: "orca-tags", tags: [...], content: ... }` formatted data from the clipboard.
+- **Custom Shortcuts**: Configure independent shortcuts for instant clipboard content conversion.
+- **Rich Text Support**: Insert text fragments (`ContentFragment`) with links or formatting alongside tags.
+- **Deduplication Check**: Configure deduplication rules via `primaryKey` (string or tag map) to prevent duplicate insertions intelligently.
+- **Remote Image Downloading**: Support `downloadImages: true` configuration to automatically fetch and save remote images to local assets.
+
+```json
+{
+  "type": "orca-tags",
+  "content": [
+    { "t": "t", "v": "Check our " },
+    { "t": "l", "v": "Orca Documentation", "l": "https://orca.so/docs" }
+  ],
+  "primaryKey": {
+    "Task Tag": "Reference Link"
+  },
+  "downloadImages": true,
+  "tags": [
+    {
+      "Task Tag": [
+        {
+          "name": "Status",
+          "type": 6,
+          "value": ["In Progress", "High Priority"]
+        }
+      ]
+    }
+  ]
+}
+```
 
 ## Development
 

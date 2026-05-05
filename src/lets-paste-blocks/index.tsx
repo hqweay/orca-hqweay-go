@@ -256,7 +256,7 @@ function PasteBlocksSettings({ plugin }: { plugin: PasteBlocksPlugin }) {
   const Input = orca.components.Input;
 
   return (
-    <SettingsSection title={t("Paste Blocks from JSON")}>
+    <SettingsSection title={t("Smart Clipboard Injection")}>
       <div style={{ marginBottom: "24px" }}>
         <div style={{ fontSize: "0.9em", marginBottom: "8px", opacity: 0.8 }}>
           {t("Paste Tags Shortcut")}

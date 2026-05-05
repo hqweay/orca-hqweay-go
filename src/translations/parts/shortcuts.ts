@@ -7,7 +7,7 @@ export default {
     "请先将光标放置在编辑器中。",
   "shortcuts.Insert: {text}": "插入: {text}",
   "Paste Tags from Clipboard": "从剪贴板粘贴标签",
-  "Paste Tags Shortcut": "从剪贴板粘贴标签快捷键",
+  "Paste Tags Shortcut": "解析剪贴板里的 JSON 内容，快捷插入块或标签快捷键",
   pasteTagsHelper:
     '支持从剪贴板粘贴 JSON 数据以插入标签。\n支持格式：{ "type": "orca-tags", "data": [...] }\n详情请参考 README。\n点击图标复制示例。',
   "Example JSON copied to clipboard": "示例 JSON 已复制到剪贴板",

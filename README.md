@@ -105,59 +105,6 @@ Orca 的社区插件市场，发现更多可能：
 
 - **一键标记**：为常用标签配置快捷键，在光标处秒速插入。
 - **默认属性**：插入时自动附加属性（如：状态、优先级），支持多选属性合并。
-- **剪贴板粘贴**：
-  - 支持 `{ type: "orca-tags", tags: [...], content: ... }` 标准格式。
-  - **富文本内容**：支持在打标签的同时插入带格式或链接的 ContentFragment。
-  - **数据去重**：支持通过 `primaryKey`（字符串或 Tag 映射）配置去重规则，避免重复插入。
-  - **远程图片转存**：支持 `downloadImages: true` 配置，自动下载并转存远程图片到本地资源。
-
-```json
-{
-  "type": "orca-tags",
-  "content": [
-    { "t": "t", "v": "Check our " },
-    { "t": "l", "v": "Orca Documentation", "l": "https://orca.so/docs" }
-  ],
-  "primaryKey": {
-    "任务标签": "参考链接"
-  },
-  "downloadImages": true,
-  "tags": [
-    {
-      "任务标签": [
-        {
-          "name": "状态",
-          "type": 6,
-          "value": ["进行中", "高优先级"]
-        },
-        {
-          "name": "进度",
-          "type": 3,
-          "value": 75
-        },
-        {
-          "name": "已归档",
-          "type": 4,
-          "value": false
-        },
-        {
-          "name": "参考链接",
-          "type": 1,
-          "value": "https://leay.net",
-          "typeArgs": { "subType": "link" }
-        },
-        {
-          "name": "封面",
-          "type": 1,
-          "value": "https://raw.githubusercontent.com/hqweay/picbed/master/img/avatar/avatar.png",
-          "typeArgs": { "subType": "image" }
-        }
-      ]
-    }
-  ]
-}
-```
-
 ### 9. 🌳 标题层级整理 (Heading Tree) 🥰 [SaXz2](https://github.com/SaXz2)
 
 根据标题层级智能重组文档结构：
@@ -238,6 +185,63 @@ Orca 的社区插件市场，发现更多可能：
 - **右键即刻漫步**: 右键点击任意父块或查询块即可直接开启临时漫步，无需打标。
 - **快捷键支持**: 支持为“随机漫步”配置快捷键，一键继续未完的探索。
 - **频道记忆**：主按钮智能记忆上一次漫步的频道（包括临时漫步）。
+
+### 15. 📋 智能剪贴板注入 (Smart Clipboard Injection)
+
+赋予剪贴板解析 JSON 结构的能力，一键将外部格式化数据转化为虎鲸原生笔记节点：
+
+- **标准格式支持**：支持 `{ type: "orca-tags", tags: [...], content: ... }` 格式直接解析并插入笔记。
+- **快捷键触发**：支持配置独立的快捷键，实现秒速转换剪贴板内容。
+- **富文本内容**：支持在打标签的同时插入带格式或链接的 `ContentFragment`。
+- **数据去重机制**：支持通过 `primaryKey`（字符串或 Tag 映射）配置去重规则，智能避免重复插入。
+- **远程图片转存**：支持 `downloadImages: true` 配置，自动下载并转存远程图片到本地笔记资源中。
+
+```json
+{
+  "type": "orca-tags",
+  "content": [
+    { "t": "t", "v": "Check our " },
+    { "t": "l", "v": "Orca Documentation", "l": "https://orca.so/docs" }
+  ],
+  "primaryKey": {
+    "任务标签": "参考链接"
+  },
+  "downloadImages": true,
+  "tags": [
+    {
+      "任务标签": [
+        {
+          "name": "状态",
+          "type": 6,
+          "value": ["进行中", "高优先级"]
+        },
+        {
+          "name": "进度",
+          "type": 3,
+          "value": 75
+        },
+        {
+          "name": "已归档",
+          "type": 4,
+          "value": false
+        },
+        {
+          "name": "参考链接",
+          "type": 1,
+          "value": "https://leay.net",
+          "typeArgs": { "subType": "link" }
+        },
+        {
+          "name": "封面",
+          "type": 1,
+          "value": "https://raw.githubusercontent.com/hqweay/picbed/master/img/avatar/avatar.png",
+          "typeArgs": { "subType": "image" }
+        }
+      ]
+    }
+  ]
+}
+```
 
 ## 开发说明
 
