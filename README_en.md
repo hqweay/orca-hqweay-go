@@ -199,10 +199,13 @@ Provides a collection of enhanced commands beyond the native editor capabilities
 
 ### 17. 🛠️ Block Tools
 
-Enhanced capabilities for the block context menu:
+Enhance block context menu operations, specifically for advanced workflow of "Reference Blocks":
 
-- **Push Children to Referenced Block**: If the current block only contains a single block reference and has child blocks beneath it, this menu item allows you to move all children to the end of the original referenced block with one click.
-- **Config Management**: Support for enabling or disabling this feature independently in the settings panel.
+- **Push Children to Source**: Move children under the current reference block to its source block, keeping the reference intact.
+- **Push Children and Delete**: Push children to source and delete the current reference block (useful for cleaning up temporary proxy pages).
+- **Push Children and Keep Trace**: Move children to the source, convert the current reference block to plain text (keeping alias), and insert new references pointing to the moved children under the source block, achieving "Data Archived, Trace Maintained".
+- **Batch Support**: Supports selecting multiple blocks to execute the logic in bulk.
+- **Config Management**: Support for enabling or disabling these features independently in the settings panel.
 
 ## Development
 
