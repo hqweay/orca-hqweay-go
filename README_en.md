@@ -189,6 +189,14 @@ Empower the clipboard with JSON structure parsing, instantly transforming extern
 }
 ```
 
+### 16. ⌨️ Editor Commands
+
+Provides a collection of enhanced commands beyond the native editor capabilities:
+
+- **Copy Text as Block Ref (JSON)**: Select a piece of text and instantly convert it into a reference pointing to the current block (using the selected text as its alias). It writes the result as a JSON payload to the clipboard. 
+- **Synergy**: Perfectly combined with the `Smart Clipboard Injection` plugin, you can paste the generated JSON anywhere to achieve lightning-fast cross-page block reference insertion.
+- **Custom Shortcuts**: Configure dedicated shortcuts for these operations directly in the settings panel.
+
 ## Development
 
 This project uses a modular architecture:
