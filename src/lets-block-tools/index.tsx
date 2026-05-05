@@ -16,27 +16,40 @@ export default class BlockToolsPlugin extends BasePlugin {
     orca.blockMenuCommands.registerBlockMenuCommand(
       `${this.name}.push-children-to-ref`,
       {
-        worksOnMultipleBlocks: false,
-        render: (blockId, _rootBlockId, close) => {
+        worksOnMultipleBlocks: true,
+        render: (blockIds, _rootBlockId, close) => {
           const settings = this.getSettings();
           if (settings.enablePushToRef === false) return null;
 
-          const block = orca.state.blocks[blockId];
-          if (!block) return null;
+          if (!blockIds || blockIds.length === 0) return null;
 
-          // Condition: 1. Only one content fragment, which is a reference
-          const isRefOnly =
-            block.content?.length === 1 && block.content[0].t === "r";
-          if (!isRefOnly) return null;
+          // Find eligible blocks and their targets
+          const eligibleMoves: { targetId: DbId; children: DbId[] }[] = [];
 
-          // Condition: 2. Has children to move
-          if (!block.children || block.children.length === 0) return null;
+          for (const blockId of typeof blockIds === "number"
+            ? [blockIds]
+            : blockIds) {
+            const block = orca.state.blocks[blockId];
+            if (!block) continue;
 
-          const refId = block.content![0].v;
-          const targetRef = block.refs?.find((r) => r.id === refId);
-          if (!targetRef) return null;
+            const isRefOnly =
+              block.content?.length === 1 && block.content[0].t === "r";
+            if (!isRefOnly) continue;
 
-          const targetBlockId = targetRef.to;
+            if (!block.children || block.children.length === 0) continue;
+
+            const refId = block.content![0].v;
+            const targetRef = block.refs?.find((r) => r.id === refId);
+            if (!targetRef) continue;
+
+            eligibleMoves.push({
+              targetId: targetRef.to,
+              children: [...block.children],
+            });
+          }
+
+          if (eligibleMoves.length === 0) return null;
+
           const MenuText = orca.components.MenuText;
 
           return (
@@ -45,19 +58,22 @@ export default class BlockToolsPlugin extends BasePlugin {
               title={t("Push Children to Referenced Block")}
               onClick={async () => {
                 close();
+                let successCount = 0;
                 try {
-                  const childrenToMove = [...block.children];
-                  await orca.commands.invokeEditorCommand(
-                    "core.editor.moveBlocks",
-                    null,
-                    childrenToMove,
-                    targetBlockId,
-                    "lastChild",
-                  );
+                  for (const move of eligibleMoves) {
+                    await orca.commands.invokeEditorCommand(
+                      "core.editor.moveBlocks",
+                      null,
+                      move.children,
+                      move.targetId,
+                      "lastChild",
+                    );
+                    successCount += move.children.length;
+                  }
                   orca.notify(
                     "success",
                     t("Moved {count} blocks to target", {
-                      count: childrenToMove.length.toString(),
+                      count: successCount.toString(),
                     }),
                   );
                 } catch (e) {
