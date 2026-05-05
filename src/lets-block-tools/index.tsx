@@ -100,20 +100,55 @@ export default class BlockToolsPlugin extends BasePlugin {
         successCount += move.children.length;
       }
 
+      let deletedCount = 0;
       if (shouldDeleteSource && processedBlockIds.length > 0) {
         await orca.commands.invokeEditorCommand(
           "core.editor.deleteBlocks",
           null,
           processedBlockIds,
         );
+        deletedCount = processedBlockIds.length;
       }
 
-      orca.notify(
-        "success",
-        t("Moved ${count} blocks to target", {
-          count: successCount.toString(),
-        }),
-      );
+      const targetCount = new Set(moveInfo.map((m) => m.targetId)).size;
+      let msg = "";
+
+      if (targetCount > 1) {
+        if (shouldDeleteSource) {
+          msg = t(
+            "Successfully pushed ${count} blocks to ${targetCount} targets. ${deletedCount} source blocks deleted.",
+            {
+              count: successCount.toString(),
+              targetCount: targetCount.toString(),
+              deletedCount: deletedCount.toString(),
+            },
+          );
+        } else {
+          msg = t(
+            "Successfully pushed ${count} blocks to ${targetCount} targets",
+            {
+              count: successCount.toString(),
+              targetCount: targetCount.toString(),
+            },
+          );
+        }
+      } else {
+        if (shouldDeleteSource) {
+          msg = t(
+            "Successfully pushed ${count} blocks. ${deletedCount} source blocks deleted.",
+            {
+              count: successCount.toString(),
+              deletedCount: deletedCount.toString(),
+            },
+          );
+        } else {
+          msg = t("Successfully pushed ${count} blocks", {
+            count: successCount.toString(),
+          });
+        }
+      }
+
+      orca.notify("success", msg);
     } catch (e) {
       orca.notify("error", t("Failed to move blocks"));
       this.logger.error("Failed to push children to ref", e);
