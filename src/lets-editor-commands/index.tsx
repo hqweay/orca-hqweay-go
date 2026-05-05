@@ -12,61 +12,57 @@ export default class EditorCommandsPlugin extends BasePlugin {
   }
 
   private async registerStaticCommands() {
-    const commandId = `${this.name}.copy-text-as-ref`;
-    orca.commands.registerEditorCommand(
-      commandId,
-      async ([_panelId, _rootBlockId, cursor]) => {
-        if (!cursor || !cursor.anchor) {
-          orca.notify("warn", t("Please place cursor in editor first."));
-          return null;
-        }
-
-        const selectedText = window.getSelection()?.toString().trim();
-        if (!selectedText) {
-          orca.notify("warn", t("No text selected"));
-          return null;
-        }
-
-        const blockId = cursor.anchor.blockId;
-
-        const jsonToCopy = {
-          type: "orca-tags",
-          content: [
-            { t: "r", v: blockId, a: selectedText }
-          ]
-        };
-
-        try {
-          await navigator.clipboard.writeText(JSON.stringify(jsonToCopy));
-          orca.notify("success", t("Copied selected text as block ref (JSON)"));
-        } catch (e) {
-          orca.notify("error", t("Failed to copy to clipboard"));
-        }
-
-        return null;
-      },
-      () => {},
-      { label: t("Copy Text as Block Ref (JSON)") }
-    );
-
-    this.registeredCommands.add(commandId);
-    
-    // Register toolbar button
-    const toolbarButtonId = `${this.name}.copy-text-as-ref-button`;
-    orca.toolbar.registerToolbarButton(toolbarButtonId, {
-      icon: "ti ti-link",
-      tooltip: t("Copy Text as Block Ref (JSON)"),
-      command: commandId,
-    });
-
     const settings = this.getSettings();
-    const shortcut = settings.copyAsRefShortcut;
-    if (shortcut) {
-      try {
-        await orca.shortcuts.assign(shortcut, commandId);
-      } catch (e) {
-        this.logger.error(`Failed to assign shortcut ${shortcut}`, e);
-      }
+    const enableCopyAsRef = settings.enableCopyAsRef !== false;
+
+    if (enableCopyAsRef) {
+      const commandId = `${this.name}.copy-text-as-ref`;
+      orca.commands.registerEditorCommand(
+        commandId,
+        async ([_panelId, _rootBlockId, cursor]) => {
+          if (!cursor || !cursor.anchor) {
+            orca.notify("warn", t("Please place cursor in editor first."));
+            return null;
+          }
+
+          const selectedText = window.getSelection()?.toString().trim();
+          if (!selectedText) {
+            orca.notify("warn", t("No text selected"));
+            return null;
+          }
+
+          const blockId = cursor.anchor.blockId;
+
+          const jsonToCopy = {
+            type: "orca-tags",
+            content: [{ t: "r", v: blockId, a: selectedText }],
+          };
+
+          try {
+            await navigator.clipboard.writeText(JSON.stringify(jsonToCopy));
+            orca.notify(
+              "success",
+              t("Copied selected text as block ref (JSON)"),
+            );
+          } catch (e) {
+            orca.notify("error", t("Failed to copy to clipboard"));
+          }
+
+          return null;
+        },
+        () => {},
+        { label: t("Copy Text as Block Ref (JSON)") },
+      );
+
+      this.registeredCommands.add(commandId);
+
+      // Register toolbar button
+      const toolbarButtonId = `${this.name}.copy-text-as-ref-button`;
+      orca.toolbar.registerToolbarButton(toolbarButtonId, {
+        icon: "ti ti-link",
+        tooltip: t("Copy Text as Block Ref (JSON)"),
+        command: commandId,
+      });
     }
   }
 
@@ -102,32 +98,37 @@ export default class EditorCommandsPlugin extends BasePlugin {
 
 function EditorCommandsSettings({ plugin }: { plugin: EditorCommandsPlugin }) {
   const settings = plugin["getSettings"]();
-  const [copyAsRefShortcut, setCopyAsRefShortcut] = useState<string>(
-    settings.copyAsRefShortcut || "",
+  const [enableCopyAsRef, setEnableCopyAsRef] = useState<boolean>(
+    settings.enableCopyAsRef !== false,
   );
 
-  const handleSave = async (val: string) => {
-    setCopyAsRefShortcut(val);
+  const handleToggle = async (field: string, val: boolean) => {
+    if (field === "enableCopyAsRef") setEnableCopyAsRef(val);
     await plugin["updateSettings"]({
-      copyAsRefShortcut: val,
+      [field]: val,
     });
   };
 
-  const Input = orca.components.Input;
+  const Checkbox = orca.components.Checkbox;
 
   return (
     <SettingsSection title={t("Editor Commands")}>
-      <div style={{ marginBottom: "24px" }}>
-        <div style={{ fontSize: "0.9em", marginBottom: "8px", opacity: 0.8 }}>
-          {t("Shortcut for Copy Text as Block Ref (JSON)")}
-        </div>
-        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          <Input
-            value={copyAsRefShortcut}
-            onChange={(e: any) => handleSave(e.target.value)}
-            placeholder={t("e.g. ctrl+shift+c")}
-            style={{ flex: 1 }}
-          />
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          marginBottom: "12px",
+        }}
+      >
+        <Checkbox
+          checked={enableCopyAsRef}
+          onChange={(e: { checked: boolean }) =>
+            handleToggle("enableCopyAsRef", e.checked)
+          }
+        />
+        <div style={{ fontSize: "0.9em", opacity: 0.8 }}>
+          {t("Enable Copy Text as Block Ref (JSON)")}
         </div>
       </div>
     </SettingsSection>

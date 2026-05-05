@@ -6,5 +6,5 @@ export default {
   "Copied selected text as block ref (JSON)": "已将选中文本作为块引用复制到剪贴板",
   "Failed to copy to clipboard": "复制到剪贴板失败",
   "Copy Text as Block Ref (JSON)": "复制选中文本为块引用 (JSON)",
-  "Shortcut for Copy Text as Block Ref (JSON)": "「复制为块引用」快捷键",
+  "Enable Copy Text as Block Ref (JSON)": "启用复制选中文本为块引用 (JSON)",
 };
