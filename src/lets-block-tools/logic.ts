@@ -43,9 +43,6 @@ export async function executePush(
             .map((childId) => `[[${childId}]]`)
             .join("\n");
 
-          console.log(move);
-          console.log(blockContent);
-
           const res = await orca.commands.invokeEditorCommand(
             "core.editor.batchInsertText",
             null,
@@ -54,8 +51,6 @@ export async function executePush(
             "lastChild",
             blockContent,
           );
-
-          console.log("Res:", res);
 
           // Get block content and insert as children
           // const block = await orca.invokeBackend("get-block", move.blockId);

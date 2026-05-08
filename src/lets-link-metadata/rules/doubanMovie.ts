@@ -2,10 +2,10 @@ import { Rule } from "../types";
 
 export const doubanMovie: Rule = {
   id: "douban-movie",
-  name: "Douban Movie",
+  name: "电影",
   urlPattern:
     /^https:\/\/(movie\.douban\.com|m\.douban\.com\/movie)\/(subject)\/(\d+)(\/|\/?\?.*)?$/i.toString(),
-  tagName: "Douban Movie",
+  tagName: "电影",
   downloadCover: false,
   script: `
     const meta = { ...baseMeta };
