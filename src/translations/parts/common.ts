@@ -162,6 +162,8 @@ export default {
   Both: "两者都显示",
   "Display Mode": "显示模式",
   Actions: "操作",
+  "Enable Logging": "启用日志打印",
+  "Print debug logs to the console": "在控制台打印调试日志",
   "Enable ${name}": "启用 ${name}",
   "Sub-plugin Settings": "子插件设置",
   "Open Sub-plugin Settings": "打开子插件设置",

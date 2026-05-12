@@ -3,8 +3,8 @@ import { t, setupL10N } from "./libs/l10n";
 import zhCN from "./translations/zhCN";
 import { BasePlugin } from "./libs/BasePlugin";
 import { SettingsBoard } from "./components/SettingsBoard";
-import { DbId, QueryDescription2 } from "./orca";
 import cloneDeep from "lodash.clonedeep";
+import { Logger, LogLevel } from "./libs/logger";
 
 // Auto-scan sub-plugins. Test plugins (lets-test-*) are only included in development.
 const pluginModules: Record<string, any> =
@@ -50,7 +50,23 @@ export async function load(_name: string) {
 
   // Register headbar button
 
-  let settingsSchema: any = {};
+  let settingsSchema: any = {
+    enableLogging: {
+      label: t("Enable Logging"),
+      description: t("Print debug logs to the console"),
+      type: "boolean",
+      defaultValue: false,
+    },
+  };
+
+  const initialSettings = orca.state.plugins[_name]?.settings;
+  if (initialSettings && initialSettings.enableLogging !== undefined) {
+    Logger.setGlobalLevel(
+      initialSettings.enableLogging ? LogLevel.DEBUG : LogLevel.ERROR,
+    );
+  } else {
+    Logger.setGlobalLevel(LogLevel.ERROR);
+  }
 
   for (const path in pluginModules) {
     const module: any = pluginModules[path];
@@ -93,6 +109,12 @@ export async function load(_name: string) {
     unsubscribeSettings = subscribe(pluginState, async () => {
       const settings = orca.state.plugins[_name]?.settings;
       if (!settings) return;
+
+      if (settings.enableLogging !== undefined) {
+        Logger.setGlobalLevel(
+          settings.enableLogging ? LogLevel.DEBUG : LogLevel.ERROR,
+        );
+      }
 
       for (const plugin of pluginInstances) {
         const pluginName = plugin["name"];

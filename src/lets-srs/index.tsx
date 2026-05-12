@@ -81,7 +81,7 @@ export default class SrsPlugin extends BasePlugin {
   }
 
   async load() {
-    console.log(`[${this.name}] plugin loaded`);
+    this.logger.info(`[${this.name}] plugin loaded`);
     const settings = this.getSettings();
     if (settings.cardTag) {
       setCardTagAlias(settings.cardTag);
