@@ -1,6 +1,13 @@
-# [2.4.0](/compare/v2.3.6...v2.4.0) (2026-05-05)
+## [2.4.1](/compare/v2.4.0...v2.4.1) (2026-05-12)
 
-Update to 2.4.0
+Update to 2.4.1
+
+
+### Features
+
+* add enableLogging setting and migrate console logs to logger instance 842e9d0
+
+# [2.4.0](/compare/v2.3.6...v2.4.0) (2026-05-05)
 
 
 ### Bug Fixes

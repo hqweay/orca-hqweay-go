@@ -87,6 +87,7 @@ jobs:
           bodyFile: release_body.md
 
       - name: Auto Create PR to Plugin Registry
+        if: endsWith(github.ref, '.0')
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           UPSTREAM_REPO: sethyuan/awesome-orcanote
