@@ -207,6 +207,15 @@ Enhance block context menu operations, specifically for advanced workflow of "Re
 - **Batch Support**: Supports selecting multiple blocks to execute the logic in bulk.
 - **Config Management**: Support for enabling or disabling these features independently in the settings panel.
 
+### 18. 🔒 Privacy Block
+
+A minimalistic yet effective privacy protection tool that hides sensitive content from AI using the underlying converter mechanism:
+
+- **Intercept AI Context**: When AI requests notebook context, searches, or summarizes, it will only read `[🔒 Privacy Content Hidden]`.
+- **Native Editing Experience**: Privacy blocks retain all native rich text editor features, including bolding, highlighting, and child block nesting, without disrupting your writing flow.
+- **Password-Free & Unintrusive**: No annoying password prompts or encryption/decryption waiting times. Toggle it with a single click.
+- **Visual Hints**: A prominent red indicator bar and a lock icon appear on the left of privacy blocks, clearly showing their status.
+
 ## Development
 
 This project uses a modular architecture:
