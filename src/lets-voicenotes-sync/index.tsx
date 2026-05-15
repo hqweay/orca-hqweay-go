@@ -475,6 +475,21 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
       }
     }
 
+    // Replace transcript with tidy creation if it exists
+    let hasTidyCreation = false;
+    if (note.creations?.length) {
+      const tidyIndex = note.creations.findIndex(
+        (c) =>
+          (c.type === "tidy" || c.title === "内容格式化") && c.markdown_content,
+      );
+      if (tidyIndex !== -1) {
+        hasTidyCreation = true;
+        note.transcript = note.creations[tidyIndex].markdown_content;
+        // 如果这里用tidy替换，后面就不需要再处理 tidy 类型的 creation 了。
+        note.creations.splice(tidyIndex, 1);
+      }
+    }
+
     note.transcript = this.cleanText(note.transcript);
     // 如果包含多行
     if (note.transcript.includes("\n")) {
@@ -511,7 +526,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
     //   );
     // }
     // Subnotes
-    if (note.subnotes?.length) {
+    if (!hasTidyCreation && note.subnotes?.length) {
       // Header
       const subnotesBlockId = await orca.commands.invokeEditorCommand(
         "core.editor.insertBlock",
