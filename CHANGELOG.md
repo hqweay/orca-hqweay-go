@@ -1,11 +1,13 @@
-## [2.4.1](/compare/v2.4.0...v2.4.1) (2026-05-12)
+## [2.4.2](/compare/v2.4.0...v2.4.2) (2026-05-16)
 
-Update to 2.4.1
+Update to 2.4.2
 
 
 ### Features
 
 * add enableLogging setting and migrate console logs to logger instance 842e9d0
+* extract and include recording tags when updating VoiceNotes 832c08d
+* replace transcript with tidy creation content and skip subnote block insertion if tidy content exists ece5bc0
 
 # [2.4.0](/compare/v2.3.6...v2.4.0) (2026-05-05)
 
