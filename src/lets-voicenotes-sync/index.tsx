@@ -10,6 +10,7 @@ import type { VoiceNote } from "../types";
 import { BasePlugin } from "@/libs/BasePlugin";
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import React, { useState } from "react";
+import { DataImporter } from "@/libs/DataImporter";
 
 const DEFAULT_VN_SETTINGS = {
   inboxName: "VoiceNotes Inbox",
@@ -40,7 +41,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
 
     let lastSyncTime = await this.getData("syncKey");
     // for test
-    // lastSyncTime = "2026-01-16T12:24:45.000000Z";
+    // lastSyncTime = "2026-05-15T12:24:45.000000Z";
     if (fullSync) {
       lastSyncTime = undefined;
     }
@@ -319,23 +320,10 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
           const noteTag = settings.noteTag;
 
           // Store ID in a Tag, consistent with syncNote
-          const tagBlockId = await orca.commands.invokeEditorCommand(
-            "core.editor.insertTag",
-            null,
-            nodeId,
-            noteTag,
-            [{ name: "ID", type: 1, value: newId }],
-          );
-          // Ensure ID property exists on tag
-          const tagBlock = orca.state.blocks[tagBlockId];
-          if (tagBlock && !tagBlock.properties?.some((p) => p.name === "ID")) {
-            await orca.commands.invokeEditorCommand(
-              "core.editor.setProperties",
-              null,
-              [newId],
-              [{ name: "ID", type: 1 }],
-            );
-          }
+          await DataImporter.applyTag(Number(nodeId), {
+            name: noteTag,
+            properties: [{ name: "ID", type: 1, value: newId }],
+          });
         } else {
           orca.notify("error", t("Failed to create VoiceNote."));
         }
@@ -443,37 +431,25 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
       noteBlock = orca.state.blocks[noteBlockId]!;
     }
 
-    // ID Tag
-    const tagBlockId = await orca.commands.invokeEditorCommand(
-      "core.editor.insertTag",
-      null,
-      noteBlock.id,
-      noteTag,
-      [{ name: "ID", type: 1, value: note.id }],
-    );
-
-    // Ensure ID property exists on tag
-    const tagBlock = orca.state.blocks[tagBlockId];
-    if (tagBlock && !tagBlock.properties?.some((p) => p.name === "ID")) {
-      await orca.commands.invokeEditorCommand(
-        "core.editor.setProperties",
-        null,
-        [tagBlock.id],
-        [{ name: "ID", type: 1 }],
-      );
-    }
-
-    // Tags
+    // ID and Tags properties on main noteTag
+    const tagProps: any[] = [{ name: "ID", type: 1, value: note.id }];
     if (note.tags?.length) {
-      for (const tag of note.tags) {
-        await orca.commands.invokeEditorCommand(
-          "core.editor.insertTag",
-          null,
-          noteBlock.id,
-          tag.name,
-        );
-      }
+      const tagNames = note.tags.map((t) => t.name);
+      tagProps.push({
+        name: "Tags",
+        type: 6, // TextChoices
+        value: tagNames,
+        typeArgs: {
+          choices: tagNames,
+          subType: "multi",
+        },
+      });
     }
+
+    await DataImporter.applyTag(noteBlock.id, {
+      name: noteTag,
+      properties: tagProps,
+    });
 
     // Replace transcript with tidy creation if it exists
     let hasTidyCreation = false;
