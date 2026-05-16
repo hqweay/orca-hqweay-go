@@ -195,6 +195,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
                   if (!block || !block.text) return;
 
                   const recordingId = this.getRecordingId(block);
+                  const recordingTags = this.getRecordingTags(block);
 
                   let transcriptBlock: Block | undefined;
                   for (const childId of block.children) {
@@ -237,7 +238,12 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
                       )) || "";
                   }
 
-                  await this.addOrUpdate(recordingId, blockId, content);
+                  await this.addOrUpdate(
+                    recordingId,
+                    blockId,
+                    content,
+                    recordingTags,
+                  );
                 }}
               />
             );
@@ -296,14 +302,11 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
     try {
       if (recordingid) {
         orca.notify("info", t("Updating VoiceNote..."));
-        if (tags.length <= 0) {
-          // TODO: Load recording to get existing tags if needed?
-          // For now just update text
-        }
+
+        const tagsToUpdate = Array.from(new Set([...tags, "orca"]));
         await api.updateVoiceNote(recordingid, {
           transcript: text,
-          // tags: tags.length > 0 ? tags : ["orca"],
-          tags: ["orca"],
+          tags: tagsToUpdate,
         });
 
         orca.notify("success", t("VoiceNote updated."));
@@ -350,6 +353,23 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
       }
     }
     return undefined;
+  }
+
+  private getRecordingTags(block: Block): string[] {
+    const settings = this.getSettings();
+    const noteTag = settings.noteTag;
+
+    if (block.refs && block.refs.length > 0) {
+      for (const ref of block.refs) {
+        if (ref.alias === noteTag && ref.data && ref.data.length > 0) {
+          const tagsProp = ref.data.find((p) => p.name === "Tags");
+          if (tagsProp && Array.isArray(tagsProp.value)) {
+            return tagsProp.value;
+          }
+        }
+      }
+    }
+    return [];
   }
 
   private async syncNote(note: VoiceNote, inbox: Block, noteTag: string) {
