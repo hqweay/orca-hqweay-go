@@ -18,5 +18,5 @@ A powerful tag-based random walk tool for Orca Note.
 1. Enable the **Random Walk** plugin in Orca Note Settings -> Sub-plugin Settings.
 2. Add `#RandomWalk` (customizable in settings) to any block you want to walk (e.g., a query block for "bookmarks" or a parent block with quotes).
 3. If you want a nicer name in the dropdown, click the tag and set the `displayName` property in the property panel (e.g., "Favorite Quotes").
-4. Click the 🎲 dice icon in the Headbar to roam your last viewed channel, or hover over the icon to switch channels.
+4. Click the 🎲 dice icon in the Headbar to roam your last viewed channel, or right-click the icon to open the menu and switch channels.
 5. **Temporary Walk**: Right-click any block of interest and select "Random Walk" to start exploring its contents immediately. The dice icon will automatically remember and lock onto this block.
