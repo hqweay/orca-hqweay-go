@@ -353,21 +353,27 @@ function MenuContent({
 
 function RandomWalkHeadbarButton({ plugin }: { plugin: RandomWalkPlugin }) {
   return (
-    <orca.components.HoverContextMenu
+    <orca.components.ContextMenu
       alignment="center"
       defaultPlacement="bottom"
       menu={(closeMenu: () => void) => (
         <MenuContent plugin={plugin} closeMenu={closeMenu} />
       )}
     >
-      <orca.components.Button
-        variant="plain"
-        onClick={() => plugin.walkLastOrFirst()}
-        title={t("Random Walk")}
-      >
-        <i className="ti ti-dice-5" style={{ fontSize: "16px" }} />
-      </orca.components.Button>
-    </orca.components.HoverContextMenu>
+      {(openMenu) => (
+        <orca.components.Button
+          variant="plain"
+          onClick={() => plugin.walkLastOrFirst()}
+          onContextMenu={(e: any) => {
+            e.preventDefault();
+            openMenu(e);
+          }}
+          title={t("Random Walk (Right-click to select group)")}
+        >
+          <i className="ti ti-dice-5" style={{ fontSize: "16px" }} />
+        </orca.components.Button>
+      )}
+    </orca.components.ContextMenu>
   );
 }
 
