@@ -17,7 +17,7 @@ function PrivacyBlockRenderer({
   initiallyCollapsed,
   renderingMode,
   src,
-}: Props) {
+}: any) {
   const { blocks } = useSnapshot(orca.state);
   const block = blocks[mirrorId ?? blockId];
 
