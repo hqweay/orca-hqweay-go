@@ -10,6 +10,7 @@ export default class BlockToolsPlugin extends BasePlugin {
     this.registerPushCommand("default");
     this.registerPushCommand("delete");
     this.registerPushCommand("trace");
+    this.registerMoveWithinParentCommand();
     this.logger.info(`${this.name} loaded.`);
   }
 
@@ -88,6 +89,71 @@ export default class BlockToolsPlugin extends BasePlugin {
     });
   }
 
+  private registerMoveWithinParentCommand() {
+    if (!orca.blockMenuCommands?.registerBlockMenuCommand) return;
+
+    orca.blockMenuCommands.registerBlockMenuCommand(
+      `${this.name}.move-within-parent`,
+      {
+        worksOnMultipleBlocks: true,
+        render: (blockIds, _rootBlockId, close) => {
+          const settings = this.getSettings();
+          if (settings.enableMoveWithinParent === false) return null;
+
+          if (!blockIds || blockIds.length === 0) return null;
+
+          const idArray = typeof blockIds === "number" ? [blockIds] : blockIds;
+          
+          // Group blocks by parent. If any block has no parent, ignore it.
+          const parentMap = new Map<number, number[]>();
+          let hasValidBlocks = false;
+          
+          for (const blockId of idArray) {
+            const block = orca.state.blocks[blockId];
+            if (!block || !block.parent) continue;
+            hasValidBlocks = true;
+            
+            if (!parentMap.has(block.parent)) {
+              parentMap.set(block.parent, []);
+            }
+            parentMap.get(block.parent)!.push(blockId);
+          }
+
+          if (!hasValidBlocks) return null;
+
+          const handleMove = async (position: "firstChild" | "lastChild") => {
+            close();
+            for (const [parentId, ids] of parentMap.entries()) {
+              await orca.commands.invokeEditorCommand(
+                "core.editor.moveBlocks",
+                null,
+                ids,
+                parentId,
+                position
+              );
+            }
+          };
+
+          const MenuText = orca.components.MenuText;
+          return (
+            <React.Fragment>
+              <MenuText
+                preIcon="ti ti-arrow-bar-to-up"
+                title={t("Move to Top of Parent")}
+                onClick={() => handleMove("firstChild")}
+              />
+              <MenuText
+                preIcon="ti ti-arrow-bar-to-down"
+                title={t("Move to Bottom of Parent")}
+                onClick={() => handleMove("lastChild")}
+              />
+            </React.Fragment>
+          );
+        },
+      }
+    );
+  }
+
   public async unload(): Promise<void> {
     orca.blockMenuCommands.unregisterBlockMenuCommand(
       `${this.name}.push-children-to-ref`,
@@ -97,6 +163,9 @@ export default class BlockToolsPlugin extends BasePlugin {
     );
     orca.blockMenuCommands.unregisterBlockMenuCommand(
       `${this.name}.push-children-and-trace`,
+    );
+    orca.blockMenuCommands.unregisterBlockMenuCommand(
+      `${this.name}.move-within-parent`,
     );
     this.logger.info(`${this.name} unloaded.`);
   }

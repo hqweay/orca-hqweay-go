@@ -14,12 +14,16 @@ export function BlockToolsSettings({ plugin }: { plugin: BlockToolsPlugin }) {
   const [enablePushAndTrace, setEnablePushAndTrace] = useState<boolean>(
     settings.enablePushAndTrace !== false,
   );
+  const [enableMoveWithinParent, setEnableMoveWithinParent] = useState<boolean>(
+    settings.enableMoveWithinParent !== false,
+  );
 
   const handleToggle = async (field: string, val: boolean) => {
     if (field === "enablePushToRef") setEnablePushToRef(val);
     if (field === "enablePushAndDelete") setEnablePushAndDelete(val);
     if (field === "enablePushAndTrace") setEnablePushAndTrace(val);
-    await plugin["updateSettings"]({ [field]: val });
+    if (field === "enableMoveWithinParent") setEnableMoveWithinParent(val);
+    await plugin["updateSettings"]({ ...settings, [field]: val });
   };
 
   const Checkbox = orca.components.Checkbox;
@@ -78,6 +82,24 @@ export function BlockToolsSettings({ plugin }: { plugin: BlockToolsPlugin }) {
         />
         <div style={{ fontSize: "0.9em", opacity: 0.8 }}>
           {t("Enable Push Children and Keep Trace")}
+        </div>
+      </div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          marginBottom: "12px",
+        }}
+      >
+        <Checkbox
+          checked={enableMoveWithinParent}
+          onChange={(e: { checked: boolean }) =>
+            handleToggle("enableMoveWithinParent", e.checked)
+          }
+        />
+        <div style={{ fontSize: "0.9em", opacity: 0.8 }}>
+          {t("Enable Move to Top/Bottom of Parent")}
         </div>
       </div>
     </SettingsSection>

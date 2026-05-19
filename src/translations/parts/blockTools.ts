@@ -16,4 +16,7 @@ export default {
   "Failed to move blocks": "归集失败",
   "Deleted ${count} source blocks": "已删除 ${count} 个原引用块",
   "Failed to delete blocks": "删除失败",
+  "Move to Top of Parent": "在父块下置顶",
+  "Move to Bottom of Parent": "在父块下置底",
+  "Enable Move to Top/Bottom of Parent": "启用「父块下置顶/置底」",
 };
