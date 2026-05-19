@@ -1,6 +1,19 @@
-## [2.4.4](/compare/v2.4.3...v2.4.4) (2026-05-17)
+# [2.5.0](/compare/v2.4.4...v2.5.0) (2026-05-19)
 
-Update to 2.4.4
+Update to 2.5.0
+
+
+### Features
+
+* add Block Flow plugin to enable block movement and referencing across journals and custom inboxes 4df2faf
+* add block menu command to move selected blocks to top or bottom of parent with toggleable setting 29ba504
+* add documentation for Block Flow and Pinned Blocks features to READMEs 8d1399b
+* add pinned blocks and privacy plugins to enhance sidebar navigation and content management da2c85d
+* highlight last walked group with icon and shortcut in random walk menu d539237
+* implement automatic schema initialization and synchronization for pin tags 37244a0
+* implement nested context menu for Send to flow and disable for journal blocks b937b70
+
+## [2.4.4](/compare/v2.4.3...v2.4.4) (2026-05-17)
 
 ## [2.4.3](/compare/v2.4.2...v2.4.3) (2026-05-17)
 
