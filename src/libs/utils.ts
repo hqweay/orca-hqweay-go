@@ -70,3 +70,19 @@ export async function getBlocks(blockIds: number[]): Promise<Block[]> {
   }
   return blocks;
 }
+
+/**
+ * Ensures the specified block is loaded and cached in orca.state.blocks.
+ * This is crucial before calling editor commands (like moveBlocks) on blocks
+ * that might not be currently open in the active editor.
+ */
+export async function ensureBlockInState(blockId: number): Promise<Block | null> {
+  let block = orca.state.blocks[blockId];
+  if (!block) {
+    block = await orca.invokeBackend("get-block", blockId);
+    if (block) {
+      orca.state.blocks[blockId] = block;
+    }
+  }
+  return block || null;
+}

@@ -2,6 +2,7 @@ import { t } from "@/libs/l10n";
 import { DbId } from "../orca";
 import { MoveInfo, PushMode } from "./types";
 import { Logger } from "@/libs/logger";
+import { ensureBlockInState } from "@/libs/utils";
 
 export async function executePush(
   moves: MoveInfo[],
@@ -11,6 +12,13 @@ export async function executePush(
   let successCount = 0;
   try {
     for (const move of moves) {
+      // Ensure target block is loaded into state
+      let targetBlock = await ensureBlockInState(move.targetId);
+
+      if (!targetBlock) {
+        throw new Error(`Target block ${move.targetId} not found`);
+      }
+
       // 1. Move children to target
       await orca.commands.invokeEditorCommand(
         "core.editor.moveBlocks",

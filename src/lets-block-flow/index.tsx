@@ -5,7 +5,7 @@ import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import { PropType } from "@/libs/consts";
 import { DataImporter } from "@/libs/DataImporter";
 import type { Block } from "../orca.d.ts";
-import { getRepr } from "@/libs/utils";
+import { getRepr, ensureBlockInState } from "@/libs/utils";
 
 export default class BlockFlowPlugin extends BasePlugin {
   protected settingsComponent = BlockFlowSettings;
@@ -171,13 +171,7 @@ export default class BlockFlowPlugin extends BasePlugin {
     }
 
     try {
-      let targetBlock = orca.state.blocks[targetId];
-      if (!targetBlock) {
-        targetBlock = await orca.invokeBackend("get-block", targetId);
-        if (targetBlock) {
-          orca.state.blocks[targetId] = targetBlock;
-        }
-      }
+      let targetBlock = await ensureBlockInState(targetId);
 
       if (!targetBlock) {
         throw new Error("Target block not found");
