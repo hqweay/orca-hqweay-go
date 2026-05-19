@@ -334,19 +334,25 @@ function MenuContent({
     );
   }
 
+  const lastId = plugin["lastWalkedGroupId"];
+
   return (
     <React.Fragment>
-      {groups.map((g: any) => (
-        <orca.components.MenuText
-          key={g.id}
-          title={getGroupTitle(g)}
-          preIcon="ti ti-hash"
-          onClick={() => {
-            closeMenu();
-            plugin.walkGroup(g.id);
-          }}
-        />
-      ))}
+      {groups.map((g: any) => {
+        const isLast = g.id === lastId;
+        return (
+          <orca.components.MenuText
+            key={g.id}
+            title={getGroupTitle(g)}
+            preIcon={isLast ? "ti ti-dice-5" : "ti ti-hash"}
+            shortcut={isLast ? t("Last") : undefined}
+            onClick={() => {
+              closeMenu();
+              plugin.walkGroup(g.id);
+            }}
+          />
+        );
+      })}
     </React.Fragment>
   );
 }
