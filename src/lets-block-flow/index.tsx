@@ -33,7 +33,11 @@ export default class BlockFlowPlugin extends BasePlugin {
         `${this.name}.flow-blocks`,
         {
           worksOnMultipleBlocks: true,
-          render: (blockIds: number[], _rootBlockId: number, close: () => void) => {
+          render: (
+            blockIds: number[],
+            _rootBlockId: number,
+            close: () => void,
+          ) => {
             return (
               <BlockFlowMenuItems
                 plugin={this}
@@ -78,7 +82,9 @@ export default class BlockFlowPlugin extends BasePlugin {
       )) as Block | null;
 
       if (!tagBlock) {
-        this.logger.debug(`Inbox tag ${tag} not found, creating tag definition block...`);
+        this.logger.debug(
+          `Inbox tag ${tag} not found, creating tag definition block...`,
+        );
         const newBlockId = (await orca.commands.invokeEditorCommand(
           "core.editor.insertBlock",
           null,
@@ -124,7 +130,8 @@ export default class BlockFlowPlugin extends BasePlugin {
 
     // 1. 优先取标签上的 displayName
     const tagRef = (block.refs as any[])?.find(
-      (r: any) => r.type === 2 && (r.alias === targetTag || r.name === targetTag),
+      (r: any) =>
+        r.type === 2 && (r.alias === targetTag || r.name === targetTag),
     );
     const displayName =
       tagRef?.data?.find((p: any) => p.name === "displayName")?.value ||
@@ -156,11 +163,26 @@ export default class BlockFlowPlugin extends BasePlugin {
   ) {
     // 防止循环引用/移动到自身
     if (blockIds.includes(targetId)) {
-      orca.notify("warn", t("Cannot move or reference target block into itself"));
+      orca.notify(
+        "warn",
+        t("Cannot move or reference target block into itself"),
+      );
       return;
     }
 
     try {
+      let targetBlock = orca.state.blocks[targetId];
+      if (!targetBlock) {
+        targetBlock = await orca.invokeBackend("get-block", targetId);
+        if (targetBlock) {
+          orca.state.blocks[targetId] = targetBlock;
+        }
+      }
+
+      if (!targetBlock) {
+        throw new Error("Target block not found");
+      }
+
       if (action === "move") {
         // 物理移动
         await orca.commands.invokeEditorCommand(
@@ -184,14 +206,6 @@ export default class BlockFlowPlugin extends BasePlugin {
         orca.notify("success", successMsg);
       } else {
         // 发送引用 (使用 batchInsertText 批量写入 [[blockId]])
-        const targetBlock =
-          orca.state.blocks[targetId] ||
-          (await orca.invokeBackend("get-block", targetId));
-
-        if (!targetBlock) {
-          throw new Error("Target block not found");
-        }
-
         const blockContent = blockIds.map((id) => `[[${id}]]`).join("\n");
 
         await orca.commands.invokeEditorCommand(
@@ -289,6 +303,7 @@ function BlockFlowMenuItems({
             isJournal: true,
           });
         }
+        console.log(tomorrowJournal);
         if (tomorrowJournal) {
           setTomorrowTarget({
             id: tomorrowJournal.id,
@@ -342,7 +357,13 @@ function BlockFlowMenuItems({
           title={t("Move to Today")}
           onClick={() => {
             close();
-            plugin.handleFlow("move", todayTarget.id, t("Move to Today"), true, blockIds);
+            plugin.handleFlow(
+              "move",
+              todayTarget.id,
+              t("Move to Today"),
+              true,
+              blockIds,
+            );
           }}
         />,
       );
@@ -355,7 +376,13 @@ function BlockFlowMenuItems({
           title={t("Send Ref to Today")}
           onClick={() => {
             close();
-            plugin.handleFlow("ref", todayTarget.id, t("Send Ref to Today"), true, blockIds);
+            plugin.handleFlow(
+              "ref",
+              todayTarget.id,
+              t("Send Ref to Today"),
+              true,
+              blockIds,
+            );
           }}
         />,
       );
@@ -372,7 +399,13 @@ function BlockFlowMenuItems({
           title={t("Move to Tomorrow")}
           onClick={() => {
             close();
-            plugin.handleFlow("move", tomorrowTarget.id, t("Move to Tomorrow"), true, blockIds);
+            plugin.handleFlow(
+              "move",
+              tomorrowTarget.id,
+              t("Move to Tomorrow"),
+              true,
+              blockIds,
+            );
           }}
         />,
       );
@@ -385,7 +418,13 @@ function BlockFlowMenuItems({
           title={t("Send Ref to Tomorrow")}
           onClick={() => {
             close();
-            plugin.handleFlow("ref", tomorrowTarget.id, t("Send Ref to Tomorrow"), true, blockIds);
+            plugin.handleFlow(
+              "ref",
+              tomorrowTarget.id,
+              t("Send Ref to Tomorrow"),
+              true,
+              blockIds,
+            );
           }}
         />,
       );
@@ -393,7 +432,8 @@ function BlockFlowMenuItems({
   }
 
   // 收件箱逻辑
-  const showInbox = settings.enableInboxMove !== false || settings.enableInboxRef !== false;
+  const showInbox =
+    settings.enableInboxMove !== false || settings.enableInboxRef !== false;
   if (showInbox) {
     if (inboxTargets.length === 0) {
       // 完美的教学/提示设计
@@ -401,9 +441,12 @@ function BlockFlowMenuItems({
         <MenuText
           key="inbox_empty"
           preIcon="ti ti-info-circle"
-          title={t("No blocks tagged with #${tag} found. Please tag a block first.", {
-            tag: targetTag,
-          })}
+          title={t(
+            "No blocks tagged with #${tag} found. Please tag a block first.",
+            {
+              tag: targetTag,
+            },
+          )}
           disabled
         />,
       );
@@ -417,7 +460,13 @@ function BlockFlowMenuItems({
               title={t("Move to Inbox: ${name}", { name: target.name })}
               onClick={() => {
                 close();
-                plugin.handleFlow("move", target.id, target.name, false, blockIds);
+                plugin.handleFlow(
+                  "move",
+                  target.id,
+                  target.name,
+                  false,
+                  blockIds,
+                );
               }}
             />,
           );
@@ -430,7 +479,13 @@ function BlockFlowMenuItems({
               title={t("Send Ref to Inbox: ${name}", { name: target.name })}
               onClick={() => {
                 close();
-                plugin.handleFlow("ref", target.id, target.name, false, blockIds);
+                plugin.handleFlow(
+                  "ref",
+                  target.id,
+                  target.name,
+                  false,
+                  blockIds,
+                );
               }}
             />,
           );
@@ -507,8 +562,14 @@ function BlockFlowSettings({ plugin }: { plugin: BlockFlowPlugin }) {
           {[
             { key: "enableTodayMove", label: t("Enable 'Move to Today'") },
             { key: "enableTodayRef", label: t("Enable 'Send Ref to Today'") },
-            { key: "enableTomorrowMove", label: t("Enable 'Move to Tomorrow'") },
-            { key: "enableTomorrowRef", label: t("Enable 'Send Ref to Tomorrow'") },
+            {
+              key: "enableTomorrowMove",
+              label: t("Enable 'Move to Tomorrow'"),
+            },
+            {
+              key: "enableTomorrowRef",
+              label: t("Enable 'Send Ref to Tomorrow'"),
+            },
             { key: "enableInboxMove", label: t("Enable 'Move to Inbox'") },
             { key: "enableInboxRef", label: t("Enable 'Send Ref to Inbox'") },
           ].map((item) => (
