@@ -60,10 +60,7 @@ export function getRepr(block: Block): any {
 export async function getBlocks(blockIds: number[]): Promise<Block[]> {
   const blocks: any[] = [];
   for (const id of blockIds) {
-    let block = orca.state.blocks[id];
-    if (!block) {
-      block = await orca.invokeBackend("get-block", id);
-    }
+    let block = await ensureBlockInState(id);
     if (block) {
       blocks.push(block);
     }

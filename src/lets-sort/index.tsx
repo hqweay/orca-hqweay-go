@@ -1,7 +1,7 @@
 import { BasePlugin } from "@/libs/BasePlugin";
 import { setupL10N, t } from "@/libs/l10n";
 import { Block, DbId } from "../orca";
-import { getRepr } from "@/libs/utils";
+import { getRepr, getBlocks } from "@/libs/utils";
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import React, { useState } from "react";
 
@@ -59,16 +59,7 @@ export default class SortPlugin extends BasePlugin {
           return;
         }
 
-        const blocks: Block[] = [];
-        for (const id of blockIds) {
-          let block = orca.state.blocks[id];
-          if (!block) {
-            block = await orca.invokeBackend("get-block", id);
-          }
-          if (block) {
-            blocks.push(block);
-          }
-        }
+        const blocks = await getBlocks(blockIds);
 
         if (blocks.length !== blockIds.length) {
           orca.notify("error", t("Could not load all selected blocks."));

@@ -1,7 +1,7 @@
 import { BasePlugin } from "@/libs/BasePlugin";
 import { t } from "@/libs/l10n";
 import { Block, DbId } from "../orca";
-import { getBlocks, getRepr } from "@/libs/utils";
+import { getBlocks, getRepr, ensureBlockInState } from "@/libs/utils";
 import React from "react";
 
 interface BlockWithLevel {
@@ -106,9 +106,7 @@ export default class HeadingTreePlugin extends BasePlugin {
 
     if (rootBlockId === null) return;
 
-    const rootBlock =
-      orca.state.blocks[rootBlockId] ||
-      (await orca.invokeBackend("get-block", rootBlockId));
+    const rootBlock = await ensureBlockInState(rootBlockId);
     if (!rootBlock || !rootBlock.children) return;
 
     // Use children order from root block
