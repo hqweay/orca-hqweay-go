@@ -3,6 +3,7 @@ import { PropType } from "./consts";
 import type { Block } from "../orca.d.ts";
 import cloneDeep from "lodash.clonedeep";
 import { getMirrorId } from "./block-utils";
+import { ensureBlockInState } from "./utils";
 
 export interface PropertyData {
   name: string;
@@ -93,7 +94,11 @@ export class DataImporter {
     }
 
     // Case C: Creating a new block at a specific target
-    const parentBlock = blockId ? orca.state.blocks[blockId] : null;
+    let parentBlock = null;
+    if (blockId) {
+      parentBlock = await ensureBlockInState(blockId);
+    }
+
     return await orca.commands.invokeEditorCommand(
       "core.editor.insertBlock",
       cursor || null,
@@ -220,7 +225,7 @@ export class DataImporter {
 
     if (typeof target === "number") {
       tagBlockId = target;
-      tagBlock = await orca.invokeBackend("get-block", tagBlockId);
+      tagBlock = await ensureBlockInState(tagBlockId);
     } else {
       tagBlock = target;
       tagBlockId = target.id;
