@@ -550,51 +550,57 @@ function BlockFlowMenuItems({
   const BlockSelect = orca.components?.BlockSelect;
   if (BlockSelect) {
     const isMove = action === "move";
-    items.push(
-      <div
-        key="custom_search"
-        style={{
-          padding: "8px 12px",
-          borderTop:
-            items.length > 0
-              ? "1px solid var(--b3-theme-surface-lighter)"
-              : "none",
-        }}
-      >
-        <div style={{ fontSize: "12px", opacity: 0.6, marginBottom: "8px" }}>
-          {isMove
-            ? t("Move to Searched Block...")
-            : t("Send Ref to Searched Block...")}
-        </div>
-        <BlockSelect
-          mode="block"
-          selected={[]}
-          onChange={async (selected) => {
-            if (selected && selected.length > 0) {
-              const targetId = parseInt(selected[0], 10);
-              if (targetId) {
-                close();
-                try {
-                  const targetBlock = await ensureBlockInState(targetId);
-                  const targetName = targetBlock
-                    ? plugin.getBlockDisplayName(targetBlock)
-                    : `#${targetId}`;
-                  plugin.handleFlow(
-                    action,
-                    targetId,
-                    targetName,
-                    false,
-                    blockIds,
-                  );
-                } catch (e) {
-                  console.error("Search flow failed", e);
+    const enableSearch = isMove
+      ? settings.enableSearchMove !== false
+      : settings.enableSearchRef !== false;
+
+    if (enableSearch) {
+      items.push(
+        <div
+          key="custom_search"
+          style={{
+            padding: "8px 12px",
+            borderTop:
+              items.length > 0
+                ? "1px solid var(--b3-theme-surface-lighter)"
+                : "none",
+          }}
+        >
+          <div style={{ fontSize: "12px", opacity: 0.6, marginBottom: "8px" }}>
+            {isMove
+              ? t("Move to Searched Block...")
+              : t("Send Ref to Searched Block...")}
+          </div>
+          <BlockSelect
+            mode="block"
+            selected={[]}
+            onChange={async (selected) => {
+              if (selected && selected.length > 0) {
+                const targetId = parseInt(selected[0], 10);
+                if (targetId) {
+                  close();
+                  try {
+                    const targetBlock = await ensureBlockInState(targetId);
+                    const targetName = targetBlock
+                      ? plugin.getBlockDisplayName(targetBlock)
+                      : `#${targetId}`;
+                    plugin.handleFlow(
+                      action,
+                      targetId,
+                      targetName,
+                      false,
+                      blockIds,
+                    );
+                  } catch (e) {
+                    console.error("Search flow failed", e);
+                  }
                 }
               }
-            }
-          }}
-        />
-      </div>,
-    );
+            }}
+          />
+        </div>,
+      );
+    }
   }
 
   if (items.length === 0) return null;
@@ -677,6 +683,8 @@ function BlockFlowSettings({ plugin }: { plugin: BlockFlowPlugin }) {
             },
             { key: "enableInboxMove", label: t("Enable 'Move to Inbox'") },
             { key: "enableInboxRef", label: t("Enable 'Send Ref to Inbox'") },
+            { key: "enableSearchMove", label: t("Enable 'Move to Searched Block'") },
+            { key: "enableSearchRef", label: t("Enable 'Send Ref to Searched Block'") },
           ].map((item) => (
             <div
               key={item.key}

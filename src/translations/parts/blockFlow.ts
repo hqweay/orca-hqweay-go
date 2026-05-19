@@ -38,4 +38,6 @@ export default {
   "Move Block to...": "移动块至...",
   "Send Ref to...": "发送引用至...",
   "Send Ref to Searched Block...": "发送引用至搜索的块...",
+  "Enable 'Move to Searched Block'": "启用 '移动至搜索的块'",
+  "Enable 'Send Ref to Searched Block'": "启用 '发送引用至搜索的块'",
 };
