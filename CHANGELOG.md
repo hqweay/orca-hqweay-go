@@ -1,6 +1,15 @@
-## [2.6.2](/compare/v2.6.1...v2.6.2) (2026-05-19)
+## [2.6.3](/compare/v2.6.2...v2.6.3) (2026-05-19)
 
-Update to 2.6.2
+Update to 2.6.3
+
+
+### Features
+
+* add block search and move functionality with custom CSS injection to block flow menu 2c43a61
+* add optional search-based block navigation with toggleable settings ca2df6e
+* split block flow menu into separate move and reference commands with distinct UI actions a1c1bb2
+
+## [2.6.2](/compare/v2.6.1...v2.6.2) (2026-05-19)
 
 ## [2.6.1](/compare/v2.6.0...v2.6.1) (2026-05-19)
 
