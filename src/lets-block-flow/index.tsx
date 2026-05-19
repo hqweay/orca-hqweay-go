@@ -5,6 +5,7 @@ import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import { PropType } from "@/libs/consts";
 import { DataImporter } from "@/libs/DataImporter";
 import type { Block } from "../orca.d.ts";
+import { getRepr } from "@/libs/utils";
 
 export default class BlockFlowPlugin extends BasePlugin {
   protected settingsComponent = BlockFlowSettings;
@@ -245,6 +246,16 @@ function BlockFlowMenuItems({
   const settings = plugin.getSettings();
   const targetTag = plugin.getTargetTag();
 
+  // 检查选中的块中是否包含 journal 块，如果有则不渲染菜单项
+  const hasJournal = blockIds.some((id) => {
+    const block = orca.state.blocks[id];
+    if (!block) return false;
+    const repr = getRepr(block);
+    return repr && repr.type === "journal";
+  });
+
+  if (hasJournal) return null;
+
   useEffect(() => {
     let active = true;
 
@@ -433,7 +444,25 @@ function BlockFlowMenuItems({
   return (
     <React.Fragment>
       <MenuSeparator />
-      {items}
+      <orca.components.ContextMenu
+        placement="horizontal"
+        defaultPlacement="right"
+        alignment="top"
+        menu={() => <orca.components.Menu>{items}</orca.components.Menu>}
+      >
+        {(openMenu) => (
+          <MenuText
+            preIcon="ti ti-route"
+            title={t("Send to...")}
+            postIcon="ti ti-chevron-right"
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              openMenu(e);
+            }}
+          />
+        )}
+      </orca.components.ContextMenu>
     </React.Fragment>
   );
 }
