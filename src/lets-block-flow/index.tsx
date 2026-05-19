@@ -42,7 +42,7 @@ export default class BlockFlowPlugin extends BasePlugin {
     this.injectStyles();
     if (orca.blockMenuCommands?.registerBlockMenuCommand) {
       orca.blockMenuCommands.registerBlockMenuCommand(
-        `${this.name}.flow-blocks`,
+        `${this.name}.move-blocks`,
         {
           worksOnMultipleBlocks: true,
           render: (
@@ -53,6 +53,27 @@ export default class BlockFlowPlugin extends BasePlugin {
             return (
               <BlockFlowMenuItems
                 plugin={this}
+                action="move"
+                blockIds={Array.isArray(blockIds) ? blockIds : [blockIds]}
+                close={close}
+              />
+            );
+          },
+        },
+      );
+      orca.blockMenuCommands.registerBlockMenuCommand(
+        `${this.name}.ref-blocks`,
+        {
+          worksOnMultipleBlocks: true,
+          render: (
+            blockIds: number[],
+            _rootBlockId: number,
+            close: () => void,
+          ) => {
+            return (
+              <BlockFlowMenuItems
+                plugin={this}
+                action="ref"
                 blockIds={Array.isArray(blockIds) ? blockIds : [blockIds]}
                 close={close}
               />
@@ -69,7 +90,10 @@ export default class BlockFlowPlugin extends BasePlugin {
   public async unload(): Promise<void> {
     if (orca.blockMenuCommands?.unregisterBlockMenuCommand) {
       orca.blockMenuCommands.unregisterBlockMenuCommand(
-        `${this.name}.flow-blocks`,
+        `${this.name}.move-blocks`,
+      );
+      orca.blockMenuCommands.unregisterBlockMenuCommand(
+        `${this.name}.ref-blocks`,
       );
     }
     const style = document.querySelector(`style[data-plugin="${this.name}"]`);
@@ -255,10 +279,12 @@ interface FlowTarget {
 
 function BlockFlowMenuItems({
   plugin,
+  action,
   blockIds,
   close,
 }: {
   plugin: BlockFlowPlugin;
+  action: "move" | "ref";
   blockIds: number[];
   close: () => void;
 }) {
@@ -309,15 +335,14 @@ function BlockFlowMenuItems({
         if (todayJournal) {
           setTodayTarget({
             id: todayJournal.id,
-            name: t("Move to Today"),
+            name: todayJournal.text || t("Today's Journal"),
             isJournal: true,
           });
         }
-        console.log(tomorrowJournal);
         if (tomorrowJournal) {
           setTomorrowTarget({
             id: tomorrowJournal.id,
-            name: t("Move to Tomorrow"),
+            name: tomorrowJournal.text || t("Tomorrow's Journal"),
             isJournal: true,
           });
         }
@@ -349,7 +374,7 @@ function BlockFlowMenuItems({
   if (loading) {
     return (
       <React.Fragment>
-        <MenuSeparator />
+        {/* <MenuSeparator /> */}
         <MenuText preIcon="ti ti-loader" title={t("Loading...")} disabled />
       </React.Fragment>
     );
@@ -357,9 +382,10 @@ function BlockFlowMenuItems({
 
   const items: React.ReactNode[] = [];
 
-  // 今日日志
-  if (todayTarget) {
-    if (settings.enableTodayMove !== false) {
+  // Action Move Menu Items
+  if (action === "move") {
+    // 今日日志
+    if (todayTarget && settings.enableTodayMove !== false) {
       items.push(
         <MenuText
           key="today_move"
@@ -378,30 +404,8 @@ function BlockFlowMenuItems({
         />,
       );
     }
-    if (settings.enableTodayRef !== false) {
-      items.push(
-        <MenuText
-          key="today_ref"
-          preIcon="ti ti-calendar-share"
-          title={t("Send Ref to Today")}
-          onClick={() => {
-            close();
-            plugin.handleFlow(
-              "ref",
-              todayTarget.id,
-              t("Send Ref to Today"),
-              true,
-              blockIds,
-            );
-          }}
-        />,
-      );
-    }
-  }
-
-  // 明日日志
-  if (tomorrowTarget) {
-    if (settings.enableTomorrowMove !== false) {
+    // 明日日志
+    if (tomorrowTarget && settings.enableTomorrowMove !== false) {
       items.push(
         <MenuText
           key="tomorrow_move"
@@ -420,7 +424,70 @@ function BlockFlowMenuItems({
         />,
       );
     }
-    if (settings.enableTomorrowRef !== false) {
+    // 收件箱
+    if (settings.enableInboxMove !== false) {
+      if (inboxTargets.length === 0) {
+        items.push(
+          <MenuText
+            key="inbox_empty"
+            preIcon="ti ti-info-circle"
+            title={t(
+              "No blocks tagged with #${tag} found. Please tag a block first.",
+              {
+                tag: targetTag,
+              },
+            )}
+            disabled
+          />,
+        );
+      } else {
+        inboxTargets.forEach((target) => {
+          items.push(
+            <MenuText
+              key={`inbox_move_${target.id}`}
+              preIcon="ti ti-inbox"
+              title={t("Move to Inbox: ${name}", { name: target.name })}
+              onClick={() => {
+                close();
+                plugin.handleFlow(
+                  "move",
+                  target.id,
+                  target.name,
+                  false,
+                  blockIds,
+                );
+              }}
+            />,
+          );
+        });
+      }
+    }
+  }
+
+  // Action Ref Menu Items
+  if (action === "ref") {
+    // 今日日志
+    if (todayTarget && settings.enableTodayRef !== false) {
+      items.push(
+        <MenuText
+          key="today_ref"
+          preIcon="ti ti-calendar-share"
+          title={t("Send Ref to Today")}
+          onClick={() => {
+            close();
+            plugin.handleFlow(
+              "ref",
+              todayTarget.id,
+              t("Send Ref to Today"),
+              true,
+              blockIds,
+            );
+          }}
+        />,
+      );
+    }
+    // 明日日志
+    if (tomorrowTarget && settings.enableTomorrowRef !== false) {
       items.push(
         <MenuText
           key="tomorrow_ref"
@@ -439,49 +506,24 @@ function BlockFlowMenuItems({
         />,
       );
     }
-  }
-
-  // 收件箱逻辑
-  const showInbox =
-    settings.enableInboxMove !== false || settings.enableInboxRef !== false;
-  if (showInbox) {
-    if (inboxTargets.length === 0) {
-      // 完美的教学/提示设计
-      items.push(
-        <MenuText
-          key="inbox_empty"
-          preIcon="ti ti-info-circle"
-          title={t(
-            "No blocks tagged with #${tag} found. Please tag a block first.",
-            {
-              tag: targetTag,
-            },
-          )}
-          disabled
-        />,
-      );
-    } else {
-      inboxTargets.forEach((target) => {
-        if (settings.enableInboxMove !== false) {
-          items.push(
-            <MenuText
-              key={`inbox_move_${target.id}`}
-              preIcon="ti ti-inbox"
-              title={t("Move to Inbox: ${name}", { name: target.name })}
-              onClick={() => {
-                close();
-                plugin.handleFlow(
-                  "move",
-                  target.id,
-                  target.name,
-                  false,
-                  blockIds,
-                );
-              }}
-            />,
-          );
-        }
-        if (settings.enableInboxRef !== false) {
+    // 收件箱
+    if (settings.enableInboxRef !== false) {
+      if (inboxTargets.length === 0) {
+        items.push(
+          <MenuText
+            key="inbox_empty"
+            preIcon="ti ti-info-circle"
+            title={t(
+              "No blocks tagged with #${tag} found. Please tag a block first.",
+              {
+                tag: targetTag,
+              },
+            )}
+            disabled
+          />,
+        );
+      } else {
+        inboxTargets.forEach((target) => {
           items.push(
             <MenuText
               key={`inbox_ref_${target.id}`}
@@ -499,13 +541,15 @@ function BlockFlowMenuItems({
               }}
             />,
           );
-        }
-      });
+        });
+      }
     }
   }
 
+  // Custom Search BlockSelect
   const BlockSelect = orca.components?.BlockSelect;
   if (BlockSelect) {
+    const isMove = action === "move";
     items.push(
       <div
         key="custom_search"
@@ -518,7 +562,9 @@ function BlockFlowMenuItems({
         }}
       >
         <div style={{ fontSize: "12px", opacity: 0.6, marginBottom: "8px" }}>
-          {t("Move to Searched Block...")}
+          {isMove
+            ? t("Move to Searched Block...")
+            : t("Send Ref to Searched Block...")}
         </div>
         <BlockSelect
           mode="block"
@@ -534,7 +580,7 @@ function BlockFlowMenuItems({
                     ? plugin.getBlockDisplayName(targetBlock)
                     : `#${targetId}`;
                   plugin.handleFlow(
-                    "move",
+                    action,
                     targetId,
                     targetName,
                     false,
@@ -553,9 +599,11 @@ function BlockFlowMenuItems({
 
   if (items.length === 0) return null;
 
+  const isMoveAction = action === "move";
+
   return (
     <React.Fragment>
-      <MenuSeparator />
+      {/* <MenuSeparator /> */}
       <orca.components.ContextMenu
         placement="horizontal"
         defaultPlacement="right"
@@ -564,8 +612,8 @@ function BlockFlowMenuItems({
       >
         {(openMenu) => (
           <MenuText
-            preIcon="ti ti-route"
-            title={t("Send to...")}
+            preIcon={isMoveAction ? "ti ti-folder-symlink" : "ti ti-link"}
+            title={isMoveAction ? t("Move Block to...") : t("Send Ref to...")}
             postIcon="ti ti-chevron-right"
             onClick={(e) => {
               e.stopPropagation();
