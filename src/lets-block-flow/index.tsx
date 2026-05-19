@@ -27,7 +27,19 @@ export default class BlockFlowPlugin extends BasePlugin {
     return settings.targetTag || "收件箱";
   }
 
+  private injectStyles() {
+    const style = document.createElement("style");
+    style.textContent = `
+      .orca-block-select-menu {
+        max-width: 100% !important;
+      }
+    `;
+    style.setAttribute("data-plugin", this.name);
+    document.head.appendChild(style);
+  }
+
   public async load(): Promise<void> {
+    this.injectStyles();
     if (orca.blockMenuCommands?.registerBlockMenuCommand) {
       orca.blockMenuCommands.registerBlockMenuCommand(
         `${this.name}.flow-blocks`,
@@ -59,6 +71,10 @@ export default class BlockFlowPlugin extends BasePlugin {
       orca.blockMenuCommands.unregisterBlockMenuCommand(
         `${this.name}.flow-blocks`,
       );
+    }
+    const style = document.querySelector(`style[data-plugin="${this.name}"]`);
+    if (style) {
+      style.remove();
     }
     this.logger.debug(`${this.name} unloaded.`);
   }
@@ -486,6 +502,53 @@ function BlockFlowMenuItems({
         }
       });
     }
+  }
+
+  const BlockSelect = orca.components?.BlockSelect;
+  if (BlockSelect) {
+    items.push(
+      <div
+        key="custom_search"
+        style={{
+          padding: "8px 12px",
+          borderTop:
+            items.length > 0
+              ? "1px solid var(--b3-theme-surface-lighter)"
+              : "none",
+        }}
+      >
+        <div style={{ fontSize: "12px", opacity: 0.6, marginBottom: "8px" }}>
+          {t("Move to Searched Block...")}
+        </div>
+        <BlockSelect
+          mode="block"
+          selected={[]}
+          onChange={async (selected) => {
+            if (selected && selected.length > 0) {
+              const targetId = parseInt(selected[0], 10);
+              if (targetId) {
+                close();
+                try {
+                  const targetBlock = await ensureBlockInState(targetId);
+                  const targetName = targetBlock
+                    ? plugin.getBlockDisplayName(targetBlock)
+                    : `#${targetId}`;
+                  plugin.handleFlow(
+                    "move",
+                    targetId,
+                    targetName,
+                    false,
+                    blockIds,
+                  );
+                } catch (e) {
+                  console.error("Search flow failed", e);
+                }
+              }
+            }
+          }}
+        />
+      </div>,
+    );
   }
 
   if (items.length === 0) return null;

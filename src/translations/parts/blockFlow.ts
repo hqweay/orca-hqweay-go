@@ -34,4 +34,5 @@ export default {
   "Send Ref to Inbox: ${name}": "发送引用至收件箱: ${name}",
   "Moved ${count} blocks to Inbox: ${name}": "已移动 ${count} 个块至收件箱: ${name}",
   "Sent ${count} refs to Inbox: ${name}": "已发送 ${count} 个引用至收件箱: ${name}",
+  "Move to Searched Block...": "移动至搜索的块...",
 };
