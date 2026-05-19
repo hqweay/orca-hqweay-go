@@ -5,7 +5,7 @@ export default {
   "Block Flow Settings": "块快速流转设置",
   "Inbox Tag": "收件箱标签",
   "Target tag for the custom Inbox. The tag block will act as the inbox page.":
-    "自定义收件箱的对应标签名。该标签块将被用作收件箱页面。",
+    "自定义收件箱的对应标签名。任何标有此标签的普通块都将被识别为收件箱目标。",
   "Enable 'Move to Today'": "启用 '移动至今日日志'",
   "Enable 'Send Ref to Today'": "启用 '发送引用至今日日志'",
   "Enable 'Move to Tomorrow'": "启用 '移动至明日日志'",
@@ -27,4 +27,11 @@ export default {
   "Sent ${count} refs to Inbox": "已发送 ${count} 个引用至收件箱",
   "Failed to process block flow": "流转操作失败",
   "Inbox tag block not found or failed to create": "找不到或无法创建收件箱标签块",
+  "Loading...": "加载中...",
+  "No blocks tagged with #${tag} found. Please tag a block first.": "未找到打上 #${tag} 标签的块。请先为某个普通块添加该标签。",
+  "Cannot move or reference target block into itself": "无法将目标块移动或引用到其自身中",
+  "Move to Inbox: ${name}": "移动至收件箱: ${name}",
+  "Send Ref to Inbox: ${name}": "发送引用至收件箱: ${name}",
+  "Moved ${count} blocks to Inbox: ${name}": "已移动 ${count} 个块至收件箱: ${name}",
+  "Sent ${count} refs to Inbox: ${name}": "已发送 ${count} 个引用至收件箱: ${name}",
 };

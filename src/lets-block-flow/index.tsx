@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { BasePlugin } from "@/libs/BasePlugin";
 import { t } from "@/libs/l10n";
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
@@ -21,84 +21,24 @@ export default class BlockFlowPlugin extends BasePlugin {
     };
   }
 
+  public getTargetTag(): string {
+    const settings = this.getSettings();
+    return settings.targetTag || "收件箱";
+  }
+
   public async load(): Promise<void> {
     if (orca.blockMenuCommands?.registerBlockMenuCommand) {
-      // 注册块流转命令（支持多选）
       orca.blockMenuCommands.registerBlockMenuCommand(
         `${this.name}.flow-blocks`,
         {
           worksOnMultipleBlocks: true,
           render: (blockIds: number[], _rootBlockId: number, close: () => void) => {
-            if (!blockIds || blockIds.length === 0) return null;
-            const ids = Array.isArray(blockIds) ? blockIds : [blockIds];
-
-            const settings = this.getSettings();
-            const MenuText = orca.components.MenuText;
-            const MenuSeparator = orca.components.MenuSeparator;
-
-            // 检查开启状态
-            const options = [
-              {
-                id: "today_move",
-                enabled: settings.enableTodayMove !== false,
-                title: t("Move to Today"),
-                icon: "ti ti-calendar",
-                onClick: () => this.handleFlow("move", "today", ids),
-              },
-              {
-                id: "today_ref",
-                enabled: settings.enableTodayRef !== false,
-                title: t("Send Ref to Today"),
-                icon: "ti ti-calendar-share",
-                onClick: () => this.handleFlow("ref", "today", ids),
-              },
-              {
-                id: "tomorrow_move",
-                enabled: settings.enableTomorrowMove !== false,
-                title: t("Move to Tomorrow"),
-                icon: "ti ti-calendar-plus",
-                onClick: () => this.handleFlow("move", "tomorrow", ids),
-              },
-              {
-                id: "tomorrow_ref",
-                enabled: settings.enableTomorrowRef !== false,
-                title: t("Send Ref to Tomorrow"),
-                icon: "ti ti-calendar-stats",
-                onClick: () => this.handleFlow("ref", "tomorrow", ids),
-              },
-              {
-                id: "inbox_move",
-                enabled: settings.enableInboxMove !== false,
-                title: t("Move to Inbox"),
-                icon: "ti ti-inbox",
-                onClick: () => this.handleFlow("move", "inbox", ids),
-              },
-              {
-                id: "inbox_ref",
-                enabled: settings.enableInboxRef !== false,
-                title: t("Send Ref to Inbox"),
-                icon: "ti ti-archive",
-                onClick: () => this.handleFlow("ref", "inbox", ids),
-              },
-            ].filter((o) => o.enabled);
-
-            if (options.length === 0) return null;
-
             return (
-              <React.Fragment>
-                <MenuSeparator />
-                {options.map((opt) => (
-                  <MenuText
-                    key={opt.id}
-                    preIcon={opt.icon}
-                    title={opt.title}
-                    onClick={() => {
-                      close();
-                      opt.onClick();
-                    }}
-                  />
-                ))}
-              </React.Fragment>
+              <BlockFlowMenuItems
+                plugin={this}
+                blockIds={Array.isArray(blockIds) ? blockIds : [blockIds]}
+                close={close}
+              />
             );
           },
         },
@@ -124,12 +64,11 @@ export default class BlockFlowPlugin extends BasePlugin {
   }
 
   /**
-   * 确保收件箱标签块及 Schema 存在
+   * 确保收件箱 Tag 元数据 Schema 的存在，以支持自动提示
    */
-  private async ensureInboxTagSchema(): Promise<Block | null> {
-    const settings = this.getSettings();
-    const tag = settings.targetTag || "收件箱";
-    if (!tag) return null;
+  private async ensureInboxTagSchema(): Promise<void> {
+    const tag = this.getTargetTag();
+    if (!tag) return;
 
     try {
       let tagBlock = (await orca.invokeBackend(
@@ -138,7 +77,7 @@ export default class BlockFlowPlugin extends BasePlugin {
       )) as Block | null;
 
       if (!tagBlock) {
-        this.logger.debug(`Inbox tag ${tag} not found, creating...`);
+        this.logger.debug(`Inbox tag ${tag} not found, creating tag definition block...`);
         const newBlockId = (await orca.commands.invokeEditorCommand(
           "core.editor.insertBlock",
           null,
@@ -171,64 +110,49 @@ export default class BlockFlowPlugin extends BasePlugin {
           },
         ]);
       }
-      return tagBlock;
     } catch (e) {
       this.logger.error("Failed to ensure inbox tag schema", e);
-      return null;
     }
   }
 
   /**
-   * 获取流转目标块 ID
+   * 读取块的显示名称
    */
-  private async getTargetBlockId(
-    type: "today" | "tomorrow" | "inbox",
-  ): Promise<number | null> {
-    try {
-      if (type === "today") {
-        const journal = await orca.invokeBackend("get-journal-block", new Date());
-        return journal ? (journal as Block).id : null;
-      }
+  public getBlockDisplayName(block: Block): string {
+    const targetTag = this.getTargetTag();
 
-      if (type === "tomorrow") {
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const journal = await orca.invokeBackend(
-          "get-journal-block",
-          tomorrow,
-        );
-        return journal ? (journal as Block).id : null;
-      }
+    // 1. 优先取标签上的 displayName
+    const tagRef = (block.refs as any[])?.find(
+      (r: any) => r.type === 2 && (r.alias === targetTag || r.name === targetTag),
+    );
+    const displayName =
+      tagRef?.data?.find((p: any) => p.name === "displayName")?.value ||
+      (block.properties as any[])?.find((p: any) => p.name === "displayName")
+        ?.value;
+    if (displayName) return displayName;
 
-      if (type === "inbox") {
-        const tagBlock = await this.ensureInboxTagSchema();
-        return tagBlock ? tagBlock.id : null;
-      }
-    } catch (e) {
-      this.logger.error(`Failed to get target block ID for ${type}`, e);
+    // 2. 取块文本
+    if (block.text && block.text.trim()) {
+      const text = block.text.trim();
+      return text.length > 20 ? text.substring(0, 20) + "…" : text;
     }
-    return null;
+
+    // 3. 取别名
+    if (block.aliases && block.aliases.length > 0) return block.aliases[0];
+
+    return `#${block.id}`;
   }
 
   /**
    * 执行流转核心逻辑
    */
-  private async handleFlow(
+  public async handleFlow(
     action: "move" | "ref",
-    type: "today" | "tomorrow" | "inbox",
+    targetId: number,
+    targetName: string,
+    isJournal: boolean,
     blockIds: number[],
   ) {
-    const targetId = await this.getTargetBlockId(type);
-    if (!targetId) {
-      orca.notify(
-        "error",
-        type === "inbox"
-          ? t("Inbox tag block not found or failed to create")
-          : t("Failed to process block flow"),
-      );
-      return;
-    }
-
     // 防止循环引用/移动到自身
     if (blockIds.includes(targetId)) {
       orca.notify("warn", t("Cannot move or reference target block into itself"));
@@ -246,32 +170,27 @@ export default class BlockFlowPlugin extends BasePlugin {
           "lastChild",
         );
 
-        let successMsg = "";
-        if (type === "today") {
-          successMsg = t("Moved ${count} blocks to Today's journal", {
-            count: blockIds.length.toString(),
-          });
-        } else if (type === "tomorrow") {
-          successMsg = t("Moved ${count} blocks to Tomorrow's journal", {
-            count: blockIds.length.toString(),
-          });
-        } else {
-          successMsg = t("Moved ${count} blocks to Inbox", {
-            count: blockIds.length.toString(),
-          });
-        }
+        const successMsg = isJournal
+          ? t("Moved ${count} blocks to ${name}", {
+              count: blockIds.length.toString(),
+              name: targetName,
+            })
+          : t("Moved ${count} blocks to Inbox: ${name}", {
+              count: blockIds.length.toString(),
+              name: targetName,
+            });
+
         orca.notify("success", successMsg);
       } else {
-        // 发送引用
+        // 发送引用 (使用 batchInsertText 批量写入 [[blockId]])
         const targetBlock =
           orca.state.blocks[targetId] ||
           (await orca.invokeBackend("get-block", targetId));
 
         if (!targetBlock) {
-          throw new Error("Target block not found in memory or backend");
+          throw new Error("Target block not found");
         }
 
-        // 拼接 [[blockId]] 链接文本
         const blockContent = blockIds.map((id) => `[[${id}]]`).join("\n");
 
         await orca.commands.invokeEditorCommand(
@@ -282,20 +201,16 @@ export default class BlockFlowPlugin extends BasePlugin {
           blockContent,
         );
 
-        let successMsg = "";
-        if (type === "today") {
-          successMsg = t("Sent ${count} refs to Today's journal", {
-            count: blockIds.length.toString(),
-          });
-        } else if (type === "tomorrow") {
-          successMsg = t("Sent ${count} refs to Tomorrow's journal", {
-            count: blockIds.length.toString(),
-          });
-        } else {
-          successMsg = t("Sent ${count} refs to Inbox", {
-            count: blockIds.length.toString(),
-          });
-        }
+        const successMsg = isJournal
+          ? t("Sent ${count} refs to ${name}", {
+              count: blockIds.length.toString(),
+              name: targetName,
+            })
+          : t("Sent ${count} refs to Inbox: ${name}", {
+              count: blockIds.length.toString(),
+              name: targetName,
+            });
+
         orca.notify("success", successMsg);
       }
     } catch (e) {
@@ -303,6 +218,224 @@ export default class BlockFlowPlugin extends BasePlugin {
       orca.notify("error", t("Failed to process block flow"));
     }
   }
+}
+
+// ─── 异步渲染的菜单项组件 ───────────────────────────────────────────────────────
+
+interface FlowTarget {
+  id: number;
+  name: string;
+  isJournal: boolean;
+}
+
+function BlockFlowMenuItems({
+  plugin,
+  blockIds,
+  close,
+}: {
+  plugin: BlockFlowPlugin;
+  blockIds: number[];
+  close: () => void;
+}) {
+  const [loading, setLoading] = useState(true);
+  const [todayTarget, setTodayTarget] = useState<FlowTarget | null>(null);
+  const [tomorrowTarget, setTomorrowTarget] = useState<FlowTarget | null>(null);
+  const [inboxTargets, setInboxTargets] = useState<FlowTarget[]>([]);
+
+  const settings = plugin.getSettings();
+  const targetTag = plugin.getTargetTag();
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadTargets() {
+      try {
+        // 1. 获取今日日志
+        const todayJournal = (await orca.invokeBackend(
+          "get-journal-block",
+          new Date(),
+        )) as Block | null;
+
+        // 2. 获取明日日志
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowJournal = (await orca.invokeBackend(
+          "get-journal-block",
+          tomorrow,
+        )) as Block | null;
+
+        // 3. 获取所有标记了收件箱标签的普通块
+        const taggedBlocks = (await orca.invokeBackend("get-blocks-with-tags", [
+          targetTag,
+        ])) as Block[];
+
+        if (!active) return;
+
+        if (todayJournal) {
+          setTodayTarget({
+            id: todayJournal.id,
+            name: t("Move to Today"),
+            isJournal: true,
+          });
+        }
+        if (tomorrowJournal) {
+          setTomorrowTarget({
+            id: tomorrowJournal.id,
+            name: t("Move to Tomorrow"),
+            isJournal: true,
+          });
+        }
+
+        if (taggedBlocks && taggedBlocks.length > 0) {
+          const targets = taggedBlocks.map((b) => ({
+            id: b.id,
+            name: plugin.getBlockDisplayName(b),
+            isJournal: false,
+          }));
+          setInboxTargets(targets);
+        }
+      } catch (e) {
+        plugin["logger"].error("Failed to load flow targets", e);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    loadTargets();
+    return () => {
+      active = false;
+    };
+  }, [plugin, targetTag]);
+
+  const MenuText = orca.components.MenuText;
+  const MenuSeparator = orca.components.MenuSeparator;
+
+  if (loading) {
+    return (
+      <React.Fragment>
+        <MenuSeparator />
+        <MenuText preIcon="ti ti-loader" title={t("Loading...")} disabled />
+      </React.Fragment>
+    );
+  }
+
+  const items: React.ReactNode[] = [];
+
+  // 今日日志
+  if (todayTarget) {
+    if (settings.enableTodayMove !== false) {
+      items.push(
+        <MenuText
+          key="today_move"
+          preIcon="ti ti-calendar"
+          title={t("Move to Today")}
+          onClick={() => {
+            close();
+            plugin.handleFlow("move", todayTarget.id, t("Move to Today"), true, blockIds);
+          }}
+        />,
+      );
+    }
+    if (settings.enableTodayRef !== false) {
+      items.push(
+        <MenuText
+          key="today_ref"
+          preIcon="ti ti-calendar-share"
+          title={t("Send Ref to Today")}
+          onClick={() => {
+            close();
+            plugin.handleFlow("ref", todayTarget.id, t("Send Ref to Today"), true, blockIds);
+          }}
+        />,
+      );
+    }
+  }
+
+  // 明日日志
+  if (tomorrowTarget) {
+    if (settings.enableTomorrowMove !== false) {
+      items.push(
+        <MenuText
+          key="tomorrow_move"
+          preIcon="ti ti-calendar-plus"
+          title={t("Move to Tomorrow")}
+          onClick={() => {
+            close();
+            plugin.handleFlow("move", tomorrowTarget.id, t("Move to Tomorrow"), true, blockIds);
+          }}
+        />,
+      );
+    }
+    if (settings.enableTomorrowRef !== false) {
+      items.push(
+        <MenuText
+          key="tomorrow_ref"
+          preIcon="ti ti-calendar-stats"
+          title={t("Send Ref to Tomorrow")}
+          onClick={() => {
+            close();
+            plugin.handleFlow("ref", tomorrowTarget.id, t("Send Ref to Tomorrow"), true, blockIds);
+          }}
+        />,
+      );
+    }
+  }
+
+  // 收件箱逻辑
+  const showInbox = settings.enableInboxMove !== false || settings.enableInboxRef !== false;
+  if (showInbox) {
+    if (inboxTargets.length === 0) {
+      // 完美的教学/提示设计
+      items.push(
+        <MenuText
+          key="inbox_empty"
+          preIcon="ti ti-info-circle"
+          title={t("No blocks tagged with #${tag} found. Please tag a block first.", {
+            tag: targetTag,
+          })}
+          disabled
+        />,
+      );
+    } else {
+      inboxTargets.forEach((target) => {
+        if (settings.enableInboxMove !== false) {
+          items.push(
+            <MenuText
+              key={`inbox_move_${target.id}`}
+              preIcon="ti ti-inbox"
+              title={t("Move to Inbox: ${name}", { name: target.name })}
+              onClick={() => {
+                close();
+                plugin.handleFlow("move", target.id, target.name, false, blockIds);
+              }}
+            />,
+          );
+        }
+        if (settings.enableInboxRef !== false) {
+          items.push(
+            <MenuText
+              key={`inbox_ref_${target.id}`}
+              preIcon="ti ti-archive"
+              title={t("Send Ref to Inbox: ${name}", { name: target.name })}
+              onClick={() => {
+                close();
+                plugin.handleFlow("ref", target.id, target.name, false, blockIds);
+              }}
+            />,
+          );
+        }
+      });
+    }
+  }
+
+  if (items.length === 0) return null;
+
+  return (
+    <React.Fragment>
+      <MenuSeparator />
+      {items}
+    </React.Fragment>
+  );
 }
 
 // ─── 设置界面组件 ─────────────────────────────────────────────────────────────
@@ -327,7 +460,6 @@ function BlockFlowSettings({ plugin }: { plugin: BlockFlowPlugin }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
       <SettingsSection title={t("Block Flow Settings")}>
-        {/* Inbox 标签设置 */}
         <SettingsItem
           label={t("Inbox Tag")}
           description={t(
@@ -342,7 +474,6 @@ function BlockFlowSettings({ plugin }: { plugin: BlockFlowPlugin }) {
 
         <div style={{ height: "16px" }} />
 
-        {/* 菜单项开关 */}
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           {[
             { key: "enableTodayMove", label: t("Enable 'Move to Today'") },
