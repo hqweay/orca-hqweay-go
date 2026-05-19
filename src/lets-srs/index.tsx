@@ -8,6 +8,7 @@ import {
 } from "./core/tagSchema";
 import { ReviewPanel } from "./ui/review-panel";
 import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
+import { ensureBlockInState } from "@/libs/utils";
 import React, { useEffect, useState, useRef } from "react";
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import cloneDeep from "lodash.clonedeep";
@@ -195,9 +196,7 @@ export default class SrsPlugin extends BasePlugin {
                   // 如果只选择了一个块，执行智能漫游逻辑
                   if (blockIds.length === 1) {
                     const blockId = blockIds[0];
-                    const block =
-                      orca.state.blocks[blockId] ||
-                      (await orca.invokeBackend("get-block", blockId));
+                    const block = await ensureBlockInState(blockId);
                     if (!block) return;
 
                     const repr = block.properties.find(
@@ -349,9 +348,7 @@ export default class SrsPlugin extends BasePlugin {
     );
 
     if (typeof storedId === "number") {
-      const block =
-        orca.state.blocks[storedId] ||
-        (await orca.invokeBackend("get-block", storedId));
+      const block = await ensureBlockInState(storedId);
       if (block) {
         this.sessionBlockId = storedId;
 
