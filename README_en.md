@@ -204,6 +204,7 @@ Enhance block context menu operations, specifically for advanced workflow of "Re
 - **Push Children to Source**: Move children under the current reference block to its source block, keeping the reference intact.
 - **Push Children and Delete**: Push children to source and delete the current reference block (useful for cleaning up temporary proxy pages).
 - **Push Children and Keep Trace**: Move children to the source, convert the current reference block to plain text (keeping alias), and insert new references pointing to the moved children under the source block, achieving "Data Archived, Trace Maintained".
+- **Move to Top/Bottom of Parent**: Quickly move selected blocks to the very beginning or end of their parent block for easier layout arrangement.
 - **Batch Support**: Supports selecting multiple blocks to execute the logic in bulk.
 - **Config Management**: Support for enabling or disabling these features independently in the settings panel.
 
@@ -215,6 +216,24 @@ A minimalistic yet effective privacy protection tool that hides sensitive conten
 - **Native Editing Experience**: Privacy blocks retain all native rich text editor features, including bolding, highlighting, and child block nesting, without disrupting your writing flow.
 - **Password-Free & Unintrusive**: No annoying password prompts or encryption/decryption waiting times. Toggle it with a single click.
 - **Visual Hints**: A prominent red indicator bar and a lock icon appear on the left of privacy blocks, clearly showing their status.
+
+### 19. 🌊 Block Flow
+
+Quickly send blocks to designated target locations, saying goodbye to tedious drag-and-drop or cut-and-paste:
+
+- **Send to...**: Provides a clean, collapsible sub-menu in the context menu that opens a dedicated popup for flow options upon click.
+- **Smart Target Recognition**: Supports one-click moving or referencing blocks to "Today's Journal", "Tomorrow's Journal", or a preset "Inbox".
+- **Foolproof Design**: Automatically detects if the selected blocks contain a Journal block (using the official `getRepr` API). If detected, it automatically hides the flow menu to prevent accidental destruction of core journal pages.
+
+### 20. 📌 Pinned Blocks
+
+A tag-based sidebar pinned panel for quick access to your frequently used core notes:
+
+- **One-Click Pinning**: Add the configured tag (default `#置顶` or `#Pin`) to any block to add it to the pinned list.
+- **Quick Interaction**:
+  - **Left-Click**: One-click reopen the **last opened pinned block** in the right sidebar, perfect for quickly switching back to your core workspace.
+  - **Right-Click**: Opens the full list of all pinned blocks for you to choose from.
+- **Custom Naming**: Supports adding a `displayName` property on the tag to customize how the block appears in the panel, keeping the list clean and organized.
 
 ## Development
 
