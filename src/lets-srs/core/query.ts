@@ -2,6 +2,7 @@ import { Logger } from "@/libs/logger.ts";
 import type { DbId, Block, QueryDescription2 } from "../../orca.d.ts";
 import { CARD_TAG_ALIAS } from "./tagSchema";
 import { getMirrorId } from "@/libs/block-utils";
+import { ensureBlockInState } from "@/libs/utils.ts";
 
 const logger = new Logger("lets-srs");
 
@@ -69,7 +70,7 @@ export async function fetchDueCards(
   try {
     const queryResultIds = (await orca.invokeBackend("query", query)) as DbId[];
     const resultIds = Array.from(
-      new Set((queryResultIds || []).map((id) => getMirrorId(id))),
+      new Set(await Promise.all(queryResultIds.map((id) => getMirrorId(id)))),
     );
 
     logger.debug(`[lets-srs] query result (deduped):`, resultIds);
@@ -149,13 +150,10 @@ export async function normalizeBlockToCard(
   if (!blockId) return null;
 
   // 🛡️ 镜像转换：如果 blockId 是镜像块，则转为原始块 ID
-  const originalId = getMirrorId(blockId);
+  const originalId = await getMirrorId(blockId);
 
   // 获取或加载块数据
-  let block = orca.state.blocks[originalId];
-  if (!block) {
-    block = await orca.invokeBackend("get-block", originalId);
-  }
+  let block = await ensureBlockInState(originalId);
   if (!block) {
     logger.warn(`[lets-srs] failed to find block: ${originalId}`);
     return null;
@@ -282,14 +280,7 @@ export async function getRelatedBlockIds(
 
   const fetchBlockSafely = async (id: number) => {
     if (fetchedBlocks.has(id)) return fetchedBlocks.get(id);
-    let b = orca.state.blocks[id];
-    if (!b) {
-      try {
-        b = await orca.invokeBackend("get-block", id);
-      } catch (e) {
-        // ignore
-      }
-    }
+    const b = await ensureBlockInState(id);
     if (b) fetchedBlocks.set(id, b);
     return b;
   };
@@ -314,7 +305,8 @@ export async function getRelatedBlockIds(
     // --- 关键抽象：语义群组作为统一采集器 ---
     let treeIds: number[] = [];
     try {
-      treeIds = (await orca.invokeBackend("get-block-tree", currentHubId)) || [];
+      treeIds =
+        (await orca.invokeBackend("get-block-tree", currentHubId)) || [];
     } catch (e) {}
     if (!treeIds.includes(currentHubId)) treeIds.push(currentHubId);
 

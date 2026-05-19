@@ -1,7 +1,7 @@
 import { BasePlugin } from "@/libs/BasePlugin";
 import { setupL10N, t } from "@/libs/l10n";
 import { Block, DbId } from "../orca";
-import { getRepr, getBlocks } from "@/libs/utils";
+import { getRepr, getBlocks, ensureBlockInState } from "@/libs/utils";
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import React, { useState } from "react";
 
@@ -151,7 +151,7 @@ export default class SortPlugin extends BasePlugin {
 
         // We will execute sequentially.
 
-        const parentBlock = orca.state.blocks[parentId!];
+        const parentBlock = await ensureBlockInState(parentId!);
 
         let currentAnchor = anchorBlockId;
         let position = currentAnchor ? "after" : "firstChild";
@@ -183,7 +183,7 @@ export default class SortPlugin extends BasePlugin {
               pos = "firstChild";
             }
 
-            const refBlock = orca.state.blocks[refBlockId!];
+            const refBlock = await ensureBlockInState(refBlockId!);
 
             await orca.commands.invokeEditorCommand(
               "core.editor.moveBlocks",

@@ -334,7 +334,7 @@ export default class SrsPlugin extends BasePlugin {
 
   private async getOrCreateSessionBlock(): Promise<number> {
     if (this.sessionBlockId) {
-      const block = orca.state.blocks[this.sessionBlockId];
+      const block = await ensureBlockInState(this.sessionBlockId);
       if (block) {
         (block as any)._repr = { type: RENDERER_TYPE };
         return this.sessionBlockId;
@@ -353,8 +353,7 @@ export default class SrsPlugin extends BasePlugin {
         this.sessionBlockId = storedId;
 
         // 注入渲染器标记
-        const stateBlock = orca.state.blocks[storedId];
-        if (stateBlock) (stateBlock as any)._repr = { type: RENDERER_TYPE };
+        (block as any)._repr = { type: RENDERER_TYPE };
         return storedId;
       }
     }
@@ -377,7 +376,7 @@ export default class SrsPlugin extends BasePlugin {
     this.sessionBlockId = newBlockId;
 
     // 确保 state 中的 block 带有 _repr
-    const block = orca.state.blocks[newBlockId];
+    const block = await ensureBlockInState(newBlockId);
     if (block) (block as any)._repr = { type: RENDERER_TYPE };
 
     return newBlockId;

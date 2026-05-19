@@ -1,6 +1,6 @@
 import { VoiceNotesApi } from "@/lets-voicenotes-sync/api/voicenotes";
 import { setupL10N, t } from "@/libs/l10n";
-import { ensureInbox, getRepr } from "@/libs/utils";
+import { ensureBlockInState, ensureInbox, getRepr } from "@/libs/utils";
 import { formatUtil } from "@/libs/format";
 // import { Block, DbId, QueryDescription } from "../orca.d.ts" // orca is global
 import type { Block, DbId, QueryDescription2 } from "../orca";
@@ -188,7 +188,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
                 title={t("Sync to VoiceNotes")}
                 onClick={async () => {
                   close();
-                  const block = orca.state.blocks[blockId];
+                  const block = await ensureBlockInState(blockId);
                   if (!block || !block.text) return;
 
                   const recordingId = this.getRecordingId(block);
@@ -196,7 +196,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
 
                   let transcriptBlock: Block | undefined;
                   for (const childId of block.children) {
-                    const child = orca.state.blocks[childId];
+                    const child = await ensureBlockInState(childId);
                     if (child && child.text && child.text.length > 0) {
                       if (child.text.startsWith("Transcript")) {
                         transcriptBlock = child;
@@ -208,7 +208,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
                   let content = "";
                   if (transcriptBlock) {
                     for (const childId of transcriptBlock.children) {
-                      const child = orca.state.blocks[childId];
+                      const child = await ensureBlockInState(childId);
                       if (child) {
                         const childRepr = getRepr(child);
                         const childMarkdown =
@@ -370,7 +370,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
   }
 
   private async syncNote(note: VoiceNote, inbox: Block, noteTag: string) {
-    let noteBlock: Block;
+    let noteBlock: Block | null;
 
     // Check existence
     const resultIds = (await orca.invokeBackend("query", {
@@ -392,13 +392,9 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
 
     if (resultIds.length > 0) {
       const noteBlockId = resultIds[0];
-      noteBlock = orca.state.blocks[noteBlockId]!;
-      if (noteBlock == null) {
-        const loadedBlock = await orca.invokeBackend("get-block", noteBlockId);
-        if (loadedBlock == null) return undefined;
-        noteBlock = loadedBlock;
-        orca.state.blocks[noteBlock.id] = noteBlock;
-      }
+      noteBlock = await ensureBlockInState(noteBlockId);
+
+      if (noteBlock == null) return;
 
       // Update existing?
       // VoiceNotes are immutable usually? Or editable?
@@ -445,8 +441,10 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
         new Date(note.created_at),
         new Date(note.updated_at),
       );
-      noteBlock = orca.state.blocks[noteBlockId]!;
+      noteBlock = await ensureBlockInState(noteBlockId);
     }
+
+    if (noteBlock == null) return;
 
     // ID and Tags properties on main noteTag
     const tagProps: any[] = [{ name: "ID", type: 1, value: note.id }];
@@ -530,7 +528,8 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
         { type: "heading", level: -1 },
       );
 
-      const subnotesBlock = orca.state.blocks[subnotesBlockId];
+      const subnotesBlock = await ensureBlockInState(subnotesBlockId);
+      if (!subnotesBlock) return;
       for (const subnote of note.subnotes) {
         const subBlockId = await this.syncNote(
           subnote,
@@ -574,7 +573,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
             new Date(note.updated_at),
           );
 
-          const titleBlock = orca.state.blocks[titleBlockId];
+          const titleBlock = await ensureBlockInState(titleBlockId);
           if (titleBlock) {
             await orca.commands.invokeEditorCommand(
               "core.editor.batchInsertText",
@@ -602,7 +601,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
         new Date(note.created_at),
         new Date(note.updated_at),
       );
-      const attachmentsBlock = orca.state.blocks[attachmentsBlockId];
+      const attachmentsBlock = await ensureBlockInState(attachmentsBlockId);
       if (attachmentsBlock) {
         for (const attachment of note.attachments) {
           // Basic check if it is an image or we just try to download everything?
@@ -654,7 +653,7 @@ export default class VoiceNotesSyncPlugin extends BasePlugin {
         new Date(note.updated_at),
       );
 
-      const transcriptBlock = orca.state.blocks[transcriptBlockId];
+      const transcriptBlock = await ensureBlockInState(transcriptBlockId);
       if (transcriptBlock) {
         await orca.commands.invokeEditorCommand(
           "core.editor.batchInsertText",

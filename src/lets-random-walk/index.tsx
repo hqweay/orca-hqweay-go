@@ -5,6 +5,7 @@ import { DataImporter } from "@/libs/DataImporter";
 import { PropType } from "@/libs/consts";
 import React, { useState, useEffect } from "react";
 import type { DbId, QueryDescription2, Block } from "../orca.d.ts";
+import { ensureBlockInState } from "@/libs/utils.ts";
 
 export default class RandomWalkPlugin extends BasePlugin {
   protected settingsComponent = RandomWalkSettings;
@@ -156,10 +157,7 @@ export default class RandomWalkPlugin extends BasePlugin {
   public async walkGroup(groupId: number) {
     this.lastWalkedGroupId = groupId;
 
-    let block = orca.state.blocks[groupId];
-    if (!block) {
-      block = await orca.invokeBackend("get-block", groupId);
-    }
+    let block = await ensureBlockInState(groupId);
     if (!block) {
       orca.notify("warn", t("Group block not found."));
       return;
@@ -254,10 +252,7 @@ export default class RandomWalkPlugin extends BasePlugin {
 
   public async walkLastOrFirst() {
     if (this.lastWalkedGroupId != null) {
-      let block = orca.state.blocks[this.lastWalkedGroupId];
-      if (!block) {
-        block = await orca.invokeBackend("get-block", this.lastWalkedGroupId);
-      }
+      let block = await ensureBlockInState(this.lastWalkedGroupId);
       if (block) {
         await this.walkGroup(this.lastWalkedGroupId);
         return;

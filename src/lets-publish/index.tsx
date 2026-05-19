@@ -3,7 +3,7 @@ import { PropType } from "@/libs/consts";
 import { setupL10N, t } from "@/libs/l10n";
 import { Block } from "../orca";
 import { format } from "date-fns";
-import { getRepr } from "@/libs/utils";
+import { ensureBlockInState, getRepr } from "@/libs/utils";
 import { pinyin } from "pinyin-pro";
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import React, { useState } from "react";
@@ -122,9 +122,7 @@ export default class PublishPlugin extends BasePlugin {
       const tagPromises = block.refs.map(async (ref) => {
         if (ref.alias) return ref.alias;
         // If no alias, try to get block text from state or backend
-        const refBlock =
-          orca.state.blocks[ref.to] ||
-          (await orca.invokeBackend("get-block", ref.to));
+        const refBlock = await ensureBlockInState(ref.to);
         return refBlock?.text || "";
       });
 
@@ -341,10 +339,8 @@ toc: true
         }
         // Resolve if unknown
         if (!ref.alias) {
-          const refBlock =
-            orca.state.blocks[ref.to] ||
-            (await orca.invokeBackend("get-block", ref.to));
-          if (refBlock && refBlock.text.trim() === tagLabel) {
+          const refBlock = await ensureBlockInState(ref.to);
+          if (refBlock && refBlock.text?.trim() === tagLabel) {
             existingRef = ref;
             break;
           }
@@ -482,12 +478,13 @@ toc: true
     try {
       // Use the block from state to ensure it has the correct structure (children IDs) expected by the converter
       // if converting recursively.
-      const rootBlock = orca.state.blocks[block.id] || block;
-      const repr = getRepr(rootBlock);
+      // const rootBlock = await ensureBlockInState(block.id);
+      // if (!rootBlock) throw new Error("Root block not found");
+      const repr = getRepr(block);
 
       let content = await orca.converters.blockConvert(
         "markdown",
-        rootBlock,
+        block,
         repr,
         // rootBlock
         undefined,

@@ -5,6 +5,7 @@ import { PropType } from "@/libs/consts";
 import { DataImporter } from "@/libs/DataImporter";
 import React, { useState, useEffect } from "react";
 import type { Block } from "../orca.d.ts";
+import { ensureBlockInState } from "@/libs/utils.ts";
 
 export default class PinnedBlocksPlugin extends BasePlugin {
   protected settingsComponent = PinnedBlocksSettings;
@@ -162,10 +163,7 @@ function PinnedBlocksSidetool({
   ) => {
     const lastId = plugin.lastOpenedBlockId;
     if (lastId !== null) {
-      let block: Block | null = orca.state.blocks[lastId] ?? null;
-      if (!block) {
-        block = (await orca.invokeBackend("get-block", lastId)) as Block | null;
-      }
+      let block = await ensureBlockInState(lastId);
       if (block) {
         plugin.openBlockInSide(lastId, panelId);
         return;

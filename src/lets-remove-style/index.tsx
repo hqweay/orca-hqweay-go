@@ -1,7 +1,7 @@
 import { setupL10N, t } from "@/libs/l10n";
 import { BasePlugin } from "@/libs/BasePlugin";
 import React from "react";
-import { getRepr } from "@/libs/utils";
+import { ensureBlockInState, getRepr } from "@/libs/utils";
 
 export default class FormatPlugin extends BasePlugin {
   protected headbarButtonId = `${this.name}.remove-style`;
@@ -147,7 +147,7 @@ export default class FormatPlugin extends BasePlugin {
 
         // 4. Traverse tree (Root + Children + Grandchildren)
         // Level 0: Root
-        const rootBlock = orca.state.blocks[rootBlockId];
+        const rootBlock = await ensureBlockInState(rootBlockId);
         this.logger.debug("Root block:", rootBlock);
         processBlock(rootBlock);
 

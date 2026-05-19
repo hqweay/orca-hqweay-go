@@ -58,14 +58,7 @@ export function getRepr(block: Block): any {
  * Checks orca.state.blocks first, then falls back to backend "get-block".
  */
 export async function getBlocks(blockIds: number[]): Promise<Block[]> {
-  const blocks: any[] = [];
-  for (const id of blockIds) {
-    let block = await ensureBlockInState(id);
-    if (block) {
-      blocks.push(block);
-    }
-  }
-  return blocks;
+  return await orca.invokeBackend("get-blocks", blockIds);
 }
 
 /**
@@ -73,7 +66,9 @@ export async function getBlocks(blockIds: number[]): Promise<Block[]> {
  * This is crucial before calling editor commands (like moveBlocks) on blocks
  * that might not be currently open in the active editor.
  */
-export async function ensureBlockInState(blockId: number): Promise<Block | null> {
+export async function ensureBlockInState(
+  blockId: number,
+): Promise<Block | null> {
   let block = orca.state.blocks[blockId];
   if (!block) {
     block = await orca.invokeBackend("get-block", blockId);

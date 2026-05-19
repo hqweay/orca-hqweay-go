@@ -1,33 +1,34 @@
-import type { Block, DbId } from "../orca.d.ts"
+import type { Block, DbId } from "../orca.d.ts";
+import { ensureBlockInState } from "./utils.ts";
 
 // 统一处理镜像块，避免对镜像块写入或跳转时命中错误目标。
-export function getMirrorId(id: DbId): DbId {
-  const block = orca.state.blocks[id]
+export async function getMirrorId(id: DbId): Promise<DbId> {
+  const block = await ensureBlockInState(id);
   if (block == null) {
-    return id
+    return id;
   }
 
-  const repr = block.properties?.find((item) => item.name === "_repr")?.value as
-    | { type?: string; mirroredId?: DbId }
-    | undefined
+  const repr = block.properties?.find((item) => item.name === "_repr")
+    ?.value as { type?: string; mirroredId?: DbId } | undefined;
 
   if (repr?.type === "mirror" && repr.mirroredId != null) {
-    return repr.mirroredId
+    return repr.mirroredId;
   }
 
-  return id
+  return id;
 }
 
-export function getMirrorIdFromBlock(block: Pick<Block, "id" | "properties">): DbId {
-  const repr = block.properties?.find((item) => item.name === "_repr")?.value as
-    | { type?: string; mirroredId?: DbId }
-    | undefined
+export async function getMirrorIdFromBlock(
+  block: Pick<Block, "id" | "properties">,
+): Promise<DbId> {
+  const repr = block.properties?.find((item) => item.name === "_repr")
+    ?.value as { type?: string; mirroredId?: DbId } | undefined;
 
   if (repr?.type === "mirror" && repr.mirroredId != null) {
-    return repr.mirroredId
+    return repr.mirroredId;
   }
 
-  return getMirrorId(block.id)
+  return await getMirrorId(block.id);
 }
 
 export function isValidDbId(id: unknown): id is DbId {
@@ -36,23 +37,21 @@ export function isValidDbId(id: unknown): id is DbId {
     Number.isInteger(id) &&
     Number.isFinite(id) &&
     id > 0
-  )
+  );
 }
 
-export function dedupeDbIds(
-  ids: Array<DbId | null | undefined>,
-): DbId[] {
-  const seen = new Set<DbId>()
-  const normalized: DbId[] = []
+export function dedupeDbIds(ids: Array<DbId | null | undefined>): DbId[] {
+  const seen = new Set<DbId>();
+  const normalized: DbId[] = [];
 
   for (const id of ids) {
     if (!isValidDbId(id) || seen.has(id)) {
-      continue
+      continue;
     }
 
-    seen.add(id)
-    normalized.push(id)
+    seen.add(id);
+    normalized.push(id);
   }
 
-  return normalized
+  return normalized;
 }

@@ -46,7 +46,7 @@ export class DataImporter {
     if (!blockId) return null;
 
     // 🛡️ 镜像转换：如果 blockId 是镜像块，则转为原始块 ID
-    const originalId = getMirrorId(blockId);
+    const originalId = await getMirrorId(blockId);
 
     // 2. Apply Tags
     for (const tag of data.tags || []) {
