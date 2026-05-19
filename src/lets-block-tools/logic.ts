@@ -54,8 +54,7 @@ export async function executePush(
           const res = await orca.commands.invokeEditorCommand(
             "core.editor.batchInsertText",
             null,
-            orca.state.blocks[move.blockId] ||
-              (await orca.invokeBackend("get-block", move.blockId)),
+            await ensureBlockInState(move.blockId),
             "lastChild",
             blockContent,
           );

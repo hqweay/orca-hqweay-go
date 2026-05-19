@@ -7,6 +7,7 @@ import { PropType } from "@/libs/consts";
 import { DEFAULT_RULES } from "./defaultRules";
 import { DataImporter, BlockData } from "@/libs/DataImporter";
 import { BrowserModal } from "./components/BrowserModal";
+import { ensureBlockInState } from "@/libs/utils";
 import React from "react";
 
 const DEFAULT_QUICK_LINKS = [
@@ -62,10 +63,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
                   title={t("Metadata: Browser Mode")}
                   onClick={async () => {
                     close();
-                    const block = await orca.invokeBackend(
-                      "get-block",
-                      blockId,
-                    );
+                    const block = await ensureBlockInState(blockId);
                     const url = this.findUrlInBlock(block) || "";
                     await this.handleOpenBrowser(url, block);
                   }}
@@ -81,7 +79,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
     orca.commands.registerCommand(
       `${this.name}.extract-metadata`,
       async (blockId: number) => {
-        const block = await orca.invokeBackend("get-block", blockId);
+        const block = await ensureBlockInState(blockId);
         if (!block) {
           orca.notify("error", t("Block not found"));
           return;
@@ -100,7 +98,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
         let url = "";
         let block = null;
         if (blockId) {
-          block = await orca.invokeBackend("get-block", blockId);
+          block = await ensureBlockInState(blockId);
           url = this.findUrlInBlock(block) || "";
         }
 
