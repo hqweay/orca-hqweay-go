@@ -1,6 +1,8 @@
 import { BasePlugin } from "@/libs/BasePlugin";
 import { t } from "@/libs/l10n";
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
+import { PropType } from "@/libs/consts";
+import { DataImporter } from "@/libs/DataImporter";
 import React, { useState, useEffect } from "react";
 import type { Block } from "../orca.d.ts";
 
@@ -80,7 +82,59 @@ export default class PinnedBlocksPlugin extends BasePlugin {
         <PinnedBlocksSidetool plugin={this} panelId={panelId} />
       ),
     });
+    await this.ensurePinTagSchema();
     this.logger.debug(`${this.name} loaded.`);
+  }
+
+  protected async onConfigChanged(newConfig: any): Promise<void> {
+    await super.onConfigChanged(newConfig);
+    await this.ensurePinTagSchema();
+  }
+
+  private async ensurePinTagSchema() {
+    const pinTag = this.getPinTag();
+    if (!pinTag) return;
+    try {
+      let tagBlock = (await orca.invokeBackend(
+        "get-block-by-alias",
+        pinTag,
+      )) as Block | null;
+      if (!tagBlock) {
+        this.logger.debug(`Tag ${pinTag} not found, creating...`);
+        const newBlockId = (await orca.commands.invokeEditorCommand(
+          "core.editor.insertBlock",
+          null,
+          null,
+          "lastChild",
+          [{ t: "t", v: pinTag }],
+          { type: "text" },
+        )) as number;
+        if (newBlockId) {
+          await orca.commands.invokeEditorCommand(
+            "core.editor.createAlias",
+            null,
+            pinTag,
+            newBlockId,
+            true,
+          );
+          tagBlock = (await orca.invokeBackend(
+            "get-block",
+            newBlockId,
+          )) as Block | null;
+        }
+      }
+
+      if (tagBlock) {
+        await DataImporter.syncTagSchema(tagBlock, [
+          {
+            name: "displayName",
+            type: PropType.Text,
+          },
+        ]);
+      }
+    } catch (e) {
+      this.logger.error("Failed to ensure pin tag schema", e);
+    }
   }
 
   public async unload(): Promise<void> {
