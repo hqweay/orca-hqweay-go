@@ -2,6 +2,7 @@ import { setupL10N, t } from "@/libs/l10n";
 import { BasePlugin } from "@/libs/BasePlugin";
 import React from "react";
 import { ensureBlockInState, getRepr } from "@/libs/utils";
+import { SettingsSection, SettingsItem } from "@/components/SettingsItem";
 
 export default class FormatPlugin extends BasePlugin {
   protected headbarButtonId = `${this.name}.remove-style`;
@@ -9,7 +10,7 @@ export default class FormatPlugin extends BasePlugin {
   public async load(): Promise<void> {
     orca.commands.registerCommand(
       `${this.name}.remove-style`,
-      async (removeTypes: string[] = ["inline", "link"]) => {
+      async (removeTypes?: string[]) => {
         // 1. Get active panel info
         const panel = orca.state.activePanel;
         if (!panel) return;
@@ -24,6 +25,23 @@ export default class FormatPlugin extends BasePlugin {
 
         this.logger.debug("View args:", viewArgs);
         let rootBlockId: number | null = null;
+
+        // Determine types to process based on argument or settings
+        const settings = this.getSettings();
+        const defaultTypes: string[] = [];
+        if (settings.enableInline !== false) defaultTypes.push("inline");
+        if (settings.enableLink !== false) defaultTypes.push("link");
+        if (settings.enableEmptyLine !== false) defaultTypes.push("emptyLine");
+        if (settings.enableAutoHeading !== false) defaultTypes.push("autoHeading");
+
+        const typesToProcess = removeTypes || defaultTypes;
+        if (typesToProcess.length === 0) {
+          orca.broadcasts.broadcast("core.notify", {
+            type: "info",
+            message: t("No styles selected to remove."),
+          });
+          return;
+        }
 
         // 2. Determine root block ID
         if (viewArgs.date) {
@@ -69,7 +87,7 @@ export default class FormatPlugin extends BasePlugin {
           // };
 
           // Handling "autoHeading"
-          if (removeTypes.includes("autoHeading")) {
+          if (typesToProcess.includes("autoHeading")) {
             const repr = getRepr(block);
             if (repr && repr.type === "heading" && repr.level !== -1) {
               reprUpdates.push({
@@ -80,7 +98,7 @@ export default class FormatPlugin extends BasePlugin {
           }
 
           // Handling "remove empty lines"
-          if (removeTypes.includes("emptyLine")) {
+          if (typesToProcess.includes("emptyLine")) {
             const isContentEmpty =
               !block.content ||
               block.content.length === 0 ||
@@ -109,7 +127,7 @@ export default class FormatPlugin extends BasePlugin {
               const newFragment = { ...fragment };
 
               // Check and remove inline styles
-              if (removeTypes.includes("inline")) {
+              if (typesToProcess.includes("inline")) {
                 if (newFragment.fa) {
                   delete newFragment.fa;
                   shouldClone = true;
@@ -121,7 +139,7 @@ export default class FormatPlugin extends BasePlugin {
               }
 
               // Check and remove links
-              if (removeTypes.includes("link")) {
+              if (typesToProcess.includes("link")) {
                 if (newFragment.l) {
                   newFragment.t = "t";
                   delete newFragment.l;
@@ -144,6 +162,7 @@ export default class FormatPlugin extends BasePlugin {
             }
           }
         };
+
 
         // 4. Traverse tree (Root + Children + Grandchildren)
         // Level 0: Root
@@ -220,74 +239,161 @@ export default class FormatPlugin extends BasePlugin {
     this.logger.info(`${this.name} unloaded.`);
   }
 
+  public getDefaultSettings(): any {
+    return {
+      ...super.getDefaultSettings(),
+      enableInline: true,
+      enableLink: true,
+      enableEmptyLine: true,
+      enableAutoHeading: true,
+    };
+  }
+
+  public renderCustomSettings(
+    settings: any,
+    updateSettings: (val: any) => void,
+  ): React.ReactNode {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+        <SettingsSection title={t("Feature Settings")}>
+          <SettingsItem
+            label={t("remove inline style")}
+            description={t("Enable clearing of inline styles like colors, bold, etc.")}
+          >
+            <orca.components.Checkbox
+              checked={settings.enableInline !== false}
+              onChange={({ checked }) => updateSettings({ enableInline: checked })}
+            />
+          </SettingsItem>
+          <SettingsItem
+            label={t("remove link style")}
+            description={t("Enable clearing of hyperlinks while keeping the text.")}
+          >
+            <orca.components.Checkbox
+              checked={settings.enableLink !== false}
+              onChange={({ checked }) => updateSettings({ enableLink: checked })}
+            />
+          </SettingsItem>
+          <SettingsItem
+            label={t("remove empty lines")}
+            description={t("Enable deletion of empty lines/blocks.")}
+          >
+            <orca.components.Checkbox
+              checked={settings.enableEmptyLine !== false}
+              onChange={({ checked }) => updateSettings({ enableEmptyLine: checked })}
+            />
+          </SettingsItem>
+          <SettingsItem
+            label={t("convert to auto headings")}
+            description={t("Enable converting text styled like headings to real heading blocks.")}
+          >
+            <orca.components.Checkbox
+              checked={settings.enableAutoHeading !== false}
+              onChange={({ checked }) => updateSettings({ enableAutoHeading: checked })}
+            />
+          </SettingsItem>
+        </SettingsSection>
+      </div>
+    );
+  }
+
   public renderHeadbarButton(): React.ReactNode {
     const Button = orca.components.Button;
     const HoverContextMenu = orca.components.HoverContextMenu;
     const MenuText = orca.components.MenuText;
+    const settings = this.getSettings();
+
+    // Check which features are enabled
+    const inlineEnabled = settings.enableInline !== false;
+    const linkEnabled = settings.enableLink !== false;
+    const emptyLineEnabled = settings.enableEmptyLine !== false;
+    const autoHeadingEnabled = settings.enableAutoHeading !== false;
+
+    // Build list of types to clear for the main button
+    const activeTypes: string[] = [];
+    if (inlineEnabled) activeTypes.push("inline");
+    if (linkEnabled) activeTypes.push("link");
+    if (emptyLineEnabled) activeTypes.push("emptyLine");
 
     return (
       <HoverContextMenu
         menu={(closeMenu: () => void) => (
           <>
-            <MenuText
-              title={t("remove all styles")}
-              onClick={async () => {
-                closeMenu();
-                await orca.commands.invokeCommand(`${this.name}.remove-style`, [
-                  "inline",
-                  "link",
-                ]);
-              }}
-            />
-            <MenuText
-              title={t("remove inline style")}
-              onClick={async () => {
-                closeMenu();
-                await orca.commands.invokeCommand(`${this.name}.remove-style`, [
-                  "inline",
-                ]);
-              }}
-            />
-            <MenuText
-              title={t("remove link style")}
-              onClick={async () => {
-                closeMenu();
-                await orca.commands.invokeCommand(`${this.name}.remove-style`, [
-                  "link",
-                ]);
-              }}
-            />
-            <MenuText
-              title={t("remove empty lines")}
-              onClick={async () => {
-                closeMenu();
-                await orca.commands.invokeCommand(`${this.name}.remove-style`, [
-                  "emptyLine",
-                ]);
-              }}
-            />
-            <MenuText
-              title={t("convert to auto headings")}
-              onClick={async () => {
-                closeMenu();
-                await orca.commands.invokeCommand(`${this.name}.remove-style`, [
-                  "autoHeading",
-                ]);
-              }}
-            />
+            {inlineEnabled && linkEnabled && (
+              <MenuText
+                title={t("remove all styles")}
+                onClick={async () => {
+                  closeMenu();
+                  await orca.commands.invokeCommand(`${this.name}.remove-style`, [
+                    "inline",
+                    "link",
+                  ]);
+                }}
+              />
+            )}
+            {inlineEnabled && (
+              <MenuText
+                title={t("remove inline style")}
+                onClick={async () => {
+                  closeMenu();
+                  await orca.commands.invokeCommand(`${this.name}.remove-style`, [
+                    "inline",
+                  ]);
+                }}
+              />
+            )}
+            {linkEnabled && (
+              <MenuText
+                title={t("remove link style")}
+                onClick={async () => {
+                  closeMenu();
+                  await orca.commands.invokeCommand(`${this.name}.remove-style`, [
+                    "link",
+                  ]);
+                }}
+              />
+            )}
+            {emptyLineEnabled && (
+              <MenuText
+                title={t("remove empty lines")}
+                onClick={async () => {
+                  closeMenu();
+                  await orca.commands.invokeCommand(`${this.name}.remove-style`, [
+                    "emptyLine",
+                  ]);
+                }}
+              />
+            )}
+            {autoHeadingEnabled && (
+              <MenuText
+                title={t("convert to auto headings")}
+                onClick={async () => {
+                  closeMenu();
+                  await orca.commands.invokeCommand(`${this.name}.remove-style`, [
+                    "autoHeading",
+                  ]);
+                }}
+              />
+            )}
           </>
         )}
       >
         <Button
           title={t("remove all")}
           variant="plain"
-          onClick={async () =>
-            orca.commands.invokeCommand(`${this.name}.remove-style`, [
-              "inline",
-              "link",
-              "emptyLine",
-            ])
-          }
+          onClick={async () => {
+            if (activeTypes.length > 0) {
+              await orca.commands.invokeCommand(
+                `${this.name}.remove-style`,
+                activeTypes,
+              );
+            } else {
+              orca.broadcasts.broadcast("core.notify", {
+                type: "info",
+                message: t("No styles selected to remove."),
+              });
+            }
+          }}
         >
           <i className="ti ti-brackets-angle-off" />
         </Button>
@@ -297,71 +403,118 @@ export default class FormatPlugin extends BasePlugin {
 
   protected renderHeadbarMenuItems(closeMenu: () => void): React.ReactNode[] {
     const MenuText = orca.components.MenuText;
-    return [
-      React.createElement(MenuText, {
-        key: "remove-all-styles",
-        preIcon: "ti ti-clear-formatting",
-        title: t("remove all styles"),
-        onClick: async () => {
-          closeMenu();
-          await orca.commands.invokeCommand(`${this.name}.remove-style`, [
-            "inline",
-            "link",
-            "emptyLine",
-          ]);
-        },
-      }),
-      React.createElement(MenuText, {
-        key: "remove-inline-style",
-        preIcon: "ti ti-brackets-angle-off",
-        title: t("remove inline style"),
-        onClick: async () => {
-          closeMenu();
-          await orca.commands.invokeCommand(`${this.name}.remove-style`, [
-            "inline",
-          ]);
-        },
-      }),
-      React.createElement(MenuText, {
-        key: "remove-link-style",
-        preIcon: "ti ti-brackets-angle-off",
-        title: t("remove link style"),
-        onClick: async () => {
-          closeMenu();
-          await orca.commands.invokeCommand(`${this.name}.remove-style`, [
-            "link",
-          ]);
-        },
-      }),
-      React.createElement(MenuText, {
-        key: "remove-empty-lines",
-        preIcon: "ti ti-brackets-angle-off",
-        title: t("remove empty lines"),
-        onClick: async () => {
-          closeMenu();
-          await orca.commands.invokeCommand(`${this.name}.remove-style`, [
-            "emptyLine",
-          ]);
-        },
-      }),
-      React.createElement(orca.components.MenuSeparator, {
-        key: "sep-settings",
-      }),
-      React.createElement(MenuText, {
-        key: "convert-auto-headings",
-        preIcon: "ti ti-heading",
-        title: t("convert to auto headings"),
-        onClick: async () => {
-          closeMenu();
-          await orca.commands.invokeCommand(`${this.name}.remove-style`, [
-            "autoHeading",
-          ]);
-        },
-      }),
-      React.createElement(orca.components.MenuSeparator, {
-        key: "sep-settings",
-      }),
-    ];
+    const settings = this.getSettings();
+    const items: React.ReactNode[] = [];
+
+    const inlineEnabled = settings.enableInline !== false;
+    const linkEnabled = settings.enableLink !== false;
+    const emptyLineEnabled = settings.enableEmptyLine !== false;
+    const autoHeadingEnabled = settings.enableAutoHeading !== false;
+
+    // Remove all styles: clears whatever of (inline, link, emptyLine) are enabled
+    const removeAllTypes: string[] = [];
+    if (inlineEnabled) removeAllTypes.push("inline");
+    if (linkEnabled) removeAllTypes.push("link");
+    if (emptyLineEnabled) removeAllTypes.push("emptyLine");
+
+    if (removeAllTypes.length > 0) {
+      items.push(
+        React.createElement(MenuText, {
+          key: "remove-all-styles",
+          preIcon: "ti ti-clear-formatting",
+          title: t("remove all styles"),
+          onClick: async () => {
+            closeMenu();
+            await orca.commands.invokeCommand(
+              `${this.name}.remove-style`,
+              removeAllTypes,
+            );
+          },
+        }),
+      );
+    }
+
+    if (inlineEnabled) {
+      items.push(
+        React.createElement(MenuText, {
+          key: "remove-inline-style",
+          preIcon: "ti ti-brackets-angle-off",
+          title: t("remove inline style"),
+          onClick: async () => {
+            closeMenu();
+            await orca.commands.invokeCommand(`${this.name}.remove-style`, [
+              "inline",
+            ]);
+          },
+        }),
+      );
+    }
+
+    if (linkEnabled) {
+      items.push(
+        React.createElement(MenuText, {
+          key: "remove-link-style",
+          preIcon: "ti ti-brackets-angle-off",
+          title: t("remove link style"),
+          onClick: async () => {
+            closeMenu();
+            await orca.commands.invokeCommand(`${this.name}.remove-style`, [
+              "link",
+            ]);
+          },
+        }),
+      );
+    }
+
+    if (emptyLineEnabled) {
+      items.push(
+        React.createElement(MenuText, {
+          key: "remove-empty-lines",
+          preIcon: "ti ti-brackets-angle-off",
+          title: t("remove empty lines"),
+          onClick: async () => {
+            closeMenu();
+            await orca.commands.invokeCommand(`${this.name}.remove-style`, [
+              "emptyLine",
+            ]);
+          },
+        }),
+      );
+    }
+
+    if (autoHeadingEnabled) {
+      // Add a separator before heading if other items exist
+      if (items.length > 0) {
+        items.push(
+          React.createElement(orca.components.MenuSeparator, {
+            key: "sep-headings",
+          }),
+        );
+      }
+      items.push(
+        React.createElement(MenuText, {
+          key: "convert-auto-headings",
+          preIcon: "ti ti-heading",
+          title: t("convert to auto headings"),
+          onClick: async () => {
+            closeMenu();
+            await orca.commands.invokeCommand(`${this.name}.remove-style`, [
+              "autoHeading",
+            ]);
+          },
+        }),
+      );
+    }
+
+    if (items.length > 0) {
+      items.push(
+        React.createElement(orca.components.MenuSeparator, {
+          key: "sep-settings",
+        }),
+      );
+    }
+
+    return items;
   }
 
   /**
