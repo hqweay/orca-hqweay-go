@@ -1,6 +1,13 @@
-## [2.6.3](/compare/v2.6.2...v2.6.3) (2026-05-19)
+## [2.6.4](/compare/v2.6.3...v2.6.4) (2026-05-21)
 
-Update to 2.6.3
+Update to 2.6.4
+
+
+### Features
+
+* add plugin settings to toggle style removal features and update menu visibility accordingly a4c142e
+
+## [2.6.3](/compare/v2.6.2...v2.6.3) (2026-05-19)
 
 
 ### Features
