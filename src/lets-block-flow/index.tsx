@@ -610,33 +610,13 @@ function BlockFlowMenuItems({
   return (
     <React.Fragment>
       {/* <MenuSeparator /> */}
-      <orca.components.ContextMenu
-        placement="horizontal"
-        defaultPlacement="right"
-        alignment="top"
-        menu={() => (
-          <MenuText
-            preIcon={isMoveAction ? "ti ti-folder-symlink" : "ti ti-link"}
-            title={isMoveAction ? t("Move Block to...") : t("Send Ref to...")}
-            postIcon="ti ti-chevron-right"
-          >
-            <orca.components.Menu>{items}</orca.components.Menu>
-          </MenuText>
-        )}
+      <MenuText
+        preIcon={isMoveAction ? "ti ti-folder-symlink" : "ti ti-link"}
+        title={isMoveAction ? t("Move Block to...") : t("Send Ref to...")}
+        postIcon="ti ti-chevron-right"
       >
-        {(openMenu) => (
-          <MenuText
-            preIcon={isMoveAction ? "ti ti-folder-symlink" : "ti ti-link"}
-            title={isMoveAction ? t("Move Block to...") : t("Send Ref to...")}
-            postIcon="ti ti-chevron-right"
-            onMouseEnter={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              openMenu(e);
-            }}
-          />
-        )}
-      </orca.components.ContextMenu>
+        <orca.components.Menu>{items}</orca.components.Menu>
+      </MenuText>
     </React.Fragment>
   );
 }
