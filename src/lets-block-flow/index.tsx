@@ -229,13 +229,13 @@ export default class BlockFlowPlugin extends BasePlugin {
 
         const successMsg = isJournal
           ? t("Moved ${count} blocks to ${name}", {
-              count: blockIds.length.toString(),
-              name: targetName,
-            })
+            count: blockIds.length.toString(),
+            name: targetName,
+          })
           : t("Moved ${count} blocks to Inbox: ${name}", {
-              count: blockIds.length.toString(),
-              name: targetName,
-            });
+            count: blockIds.length.toString(),
+            name: targetName,
+          });
 
         orca.notify("success", successMsg);
       } else {
@@ -252,13 +252,13 @@ export default class BlockFlowPlugin extends BasePlugin {
 
         const successMsg = isJournal
           ? t("Sent ${count} refs to ${name}", {
-              count: blockIds.length.toString(),
-              name: targetName,
-            })
+            count: blockIds.length.toString(),
+            name: targetName,
+          })
           : t("Sent ${count} refs to Inbox: ${name}", {
-              count: blockIds.length.toString(),
-              name: targetName,
-            });
+            count: blockIds.length.toString(),
+            name: targetName,
+          });
 
         orca.notify("success", successMsg);
       }
@@ -614,14 +614,22 @@ function BlockFlowMenuItems({
         placement="horizontal"
         defaultPlacement="right"
         alignment="top"
-        menu={() => <orca.components.Menu>{items}</orca.components.Menu>}
+        menu={() => (
+          <MenuText
+            preIcon={isMoveAction ? "ti ti-folder-symlink" : "ti ti-link"}
+            title={isMoveAction ? t("Move Block to...") : t("Send Ref to...")}
+            postIcon="ti ti-chevron-right"
+          >
+            <orca.components.Menu>{items}</orca.components.Menu>
+          </MenuText>
+        )}
       >
         {(openMenu) => (
           <MenuText
             preIcon={isMoveAction ? "ti ti-folder-symlink" : "ti ti-link"}
             title={isMoveAction ? t("Move Block to...") : t("Send Ref to...")}
             postIcon="ti ti-chevron-right"
-            onClick={(e) => {
+            onMouseEnter={(e) => {
               e.stopPropagation();
               e.preventDefault();
               openMenu(e);
