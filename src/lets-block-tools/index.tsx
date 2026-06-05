@@ -16,30 +16,24 @@ import { BlockToolsSettings } from "./settings";
 
 export default class BlockToolsPlugin extends BasePlugin {
   public async load(): Promise<void> {
-    this.registerPushCommand("default");
-    this.registerPushCommand("delete");
-    this.registerPushCommand("trace");
+    this.registerPushGroupCommand();
     this.registerMoveWithinParentCommand();
     this.registerConvertRefLinkCommand();
     this.logger.info(`${this.name} loaded.`);
   }
 
-  private registerPushCommand(mode: PushMode) {
+  private registerPushGroupCommand() {
     if (!orca.blockMenuCommands?.registerBlockMenuCommand) return;
 
-    let commandId = `${this.name}.push-children-to-ref`;
-    if (mode === "delete") commandId = `${this.name}.push-children-and-delete`;
-    if (mode === "trace") commandId = `${this.name}.push-children-and-trace`;
-
-    orca.blockMenuCommands.registerBlockMenuCommand(commandId, {
+    orca.blockMenuCommands.registerBlockMenuCommand(`${this.name}.push-children`, {
       worksOnMultipleBlocks: true,
       render: (blockIds, _rootBlockId, close) => {
         const settings = this.getSettings();
-        let enabled = settings.enablePushToRef !== false;
-        if (mode === "delete") enabled = settings.enablePushAndDelete !== false;
-        if (mode === "trace") enabled = settings.enablePushAndTrace !== false;
+        const enablePushToRef = settings.enablePushToRef !== false;
+        const enablePushAndDelete = settings.enablePushAndDelete !== false;
+        const enablePushAndTrace = settings.enablePushAndTrace !== false;
 
-        if (!enabled) return null;
+        if (!enablePushToRef && !enablePushAndDelete && !enablePushAndTrace) return null;
         if (!blockIds || blockIds.length === 0) return null;
 
         const eligibleMoves: MoveInfo[] = [];
@@ -70,26 +64,63 @@ export default class BlockToolsPlugin extends BasePlugin {
         if (eligibleMoves.length === 0) return null;
 
         const MenuText = orca.components.MenuText;
-        let icon = "ti ti-arrow-merge";
-        let title = t("Push Children to Referenced Block");
+        const Menu = orca.components.Menu;
+        if (!MenuText || !Menu) return null;
 
-        if (mode === "delete") {
-          icon = "ti ti-trash-x";
-          title = t("Push Children and Delete");
-        } else if (mode === "trace") {
-          icon = "ti ti-history";
-          title = t("Push Children and Keep Trace");
+        const subMenuItems: React.ReactNode[] = [];
+
+        if (enablePushToRef) {
+          subMenuItems.push(
+            <MenuText
+              key="default"
+              preIcon="ti ti-arrow-merge"
+              title={t("Push Only")}
+              onClick={async () => {
+                close();
+                await executePush(eligibleMoves, "default", this.logger);
+              }}
+            />
+          );
         }
+
+        if (enablePushAndDelete) {
+          subMenuItems.push(
+            <MenuText
+              key="delete"
+              preIcon="ti ti-trash-x"
+              title={t("Push and Delete")}
+              onClick={async () => {
+                close();
+                await executePush(eligibleMoves, "delete", this.logger);
+              }}
+            />
+          );
+        }
+
+        if (enablePushAndTrace) {
+          subMenuItems.push(
+            <MenuText
+              key="trace"
+              preIcon="ti ti-history"
+              title={t("Push and Keep Trace")}
+              onClick={async () => {
+                close();
+                await executePush(eligibleMoves, "trace", this.logger);
+              }}
+            />
+          );
+        }
+
+        if (subMenuItems.length === 0) return null;
 
         return (
           <MenuText
-            preIcon={icon}
-            title={title}
-            onClick={async () => {
-              close();
-              await executePush(eligibleMoves, mode, this.logger);
-            }}
-          />
+            preIcon="ti ti-arrow-merge"
+            title={t("Push Children to Referenced Block")}
+            postIcon="ti ti-chevron-right"
+          >
+            <Menu>{subMenuItems}</Menu>
+          </MenuText>
         );
       },
     });
@@ -241,13 +272,7 @@ export default class BlockToolsPlugin extends BasePlugin {
 
   public async unload(): Promise<void> {
     orca.blockMenuCommands.unregisterBlockMenuCommand(
-      `${this.name}.push-children-to-ref`,
-    );
-    orca.blockMenuCommands.unregisterBlockMenuCommand(
-      `${this.name}.push-children-and-delete`,
-    );
-    orca.blockMenuCommands.unregisterBlockMenuCommand(
-      `${this.name}.push-children-and-trace`,
+      `${this.name}.push-children`,
     );
     orca.blockMenuCommands.unregisterBlockMenuCommand(
       `${this.name}.move-within-parent`,
