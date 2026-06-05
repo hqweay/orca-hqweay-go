@@ -20,6 +20,9 @@ export function BlockToolsSettings({ plugin }: { plugin: BlockToolsPlugin }) {
   const [enableConvertRefLink, setEnableConvertRefLink] = useState<boolean>(
     settings.enableConvertRefLink !== false,
   );
+  const [enableConvertPinAlias, setEnableConvertPinAlias] = useState<boolean>(
+    settings.enableConvertPinAlias !== false,
+  );
  
   const handleToggle = async (field: string, val: boolean) => {
     if (field === "enablePushToRef") setEnablePushToRef(val);
@@ -27,6 +30,7 @@ export function BlockToolsSettings({ plugin }: { plugin: BlockToolsPlugin }) {
     if (field === "enablePushAndTrace") setEnablePushAndTrace(val);
     if (field === "enableMoveWithinParent") setEnableMoveWithinParent(val);
     if (field === "enableConvertRefLink") setEnableConvertRefLink(val);
+    if (field === "enableConvertPinAlias") setEnableConvertPinAlias(val);
     await plugin["updateSettings"]({ ...settings, [field]: val });
   };
  
@@ -122,6 +126,24 @@ export function BlockToolsSettings({ plugin }: { plugin: BlockToolsPlugin }) {
         />
         <div style={{ fontSize: "0.9em", opacity: 0.8 }}>
           {t("Enable Reference & Link Conversions")}
+        </div>
+      </div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          marginBottom: "12px",
+        }}
+      >
+        <Checkbox
+          checked={enableConvertPinAlias}
+          onChange={(e: { checked: boolean }) =>
+            handleToggle("enableConvertPinAlias", e.checked)
+          }
+        />
+        <div style={{ fontSize: "0.9em", opacity: 0.8 }}>
+          {t("Enable Pin Alias Conversions")}
         </div>
       </div>
     </SettingsSection>

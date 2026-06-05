@@ -169,7 +169,10 @@ export default class BlockToolsPlugin extends BasePlugin {
         worksOnMultipleBlocks: true,
         render: (blockIds, _rootBlockId, close) => {
           const settings = this.getSettings();
-          if (settings.enableConvertRefLink === false) return null;
+          const enableRefLink = settings.enableConvertRefLink !== false;
+          const enablePinAlias = settings.enableConvertPinAlias !== false;
+
+          if (!enableRefLink && !enablePinAlias) return null;
 
           if (!blockIds || blockIds.length === 0) return null;
 
@@ -180,19 +183,27 @@ export default class BlockToolsPlugin extends BasePlugin {
 
           if (!hasRef && !hasLink) return null;
 
+          const showRefToLink = hasRef && enableRefLink;
+          const showPinRefs = hasRef && enablePinAlias;
+          const showLinkToRef = hasLink && enableRefLink;
+
+          if (!showRefToLink && !showPinRefs && !showLinkToRef) return null;
+
           const MenuText = orca.components.MenuText;
           return (
             <React.Fragment>
-              {hasRef && (
+              {showRefToLink && (
+                <MenuText
+                  preIcon="ti ti-link"
+                  title={t("Convert Block Reference to Block Link")}
+                  onClick={async () => {
+                    close();
+                    await executeRefToLink(idArray);
+                  }}
+                />
+              )}
+              {showPinRefs && (
                 <React.Fragment>
-                  <MenuText
-                    preIcon="ti ti-link"
-                    title={t("Convert Block Reference to Block Link")}
-                    onClick={async () => {
-                      close();
-                      await executeRefToLink(idArray);
-                    }}
-                  />
                   <MenuText
                     preIcon="ti ti-pin"
                     title={t("Convert Block Reference to Text Pin Reference")}
@@ -211,7 +222,7 @@ export default class BlockToolsPlugin extends BasePlugin {
                   />
                 </React.Fragment>
               )}
-              {hasLink && (
+              {showLinkToRef && (
                 <MenuText
                   preIcon="ti ti-blockquote"
                   title={t("Convert Block Link to Block Reference")}

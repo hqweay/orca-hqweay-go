@@ -23,6 +23,7 @@ export default {
   "Convert Block Link to Block Reference": "块链接转块引用",
   "Convert Block Reference to Text Pin Reference": "块引用转文本📌",
   "Convert Block Reference to Pin Reference": "块引用转📌",
-  "Enable Reference & Link Conversions": "启用引用/链接转换功能",
+  "Enable Reference & Link Conversions": "启用块引用/链接双向转换",
+  "Enable Pin Alias Conversions": "启用「图钉别名 (Pin Alias)」转换",
 };
 
