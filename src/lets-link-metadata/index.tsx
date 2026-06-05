@@ -45,6 +45,13 @@ export default class LinkMetadataPlugin extends BasePlugin {
           render: (blockId: number, rootBlockId: number, close: any) => {
             const MenuText = orca.components.MenuText;
             if (!MenuText) return null;
+
+            const block = orca.state.blocks[blockId];
+            if (!block) return null;
+
+            const url = this.findUrlInBlock(block);
+            if (!url) return null;
+
             return (
               <>
                 <MenuText
@@ -63,8 +70,6 @@ export default class LinkMetadataPlugin extends BasePlugin {
                   title={t("Metadata: Browser Mode")}
                   onClick={async () => {
                     close();
-                    const block = await ensureBlockInState(blockId);
-                    const url = this.findUrlInBlock(block) || "";
                     await this.handleOpenBrowser(url, block);
                   }}
                 />
