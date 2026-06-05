@@ -1,6 +1,15 @@
-# [2.7.0](/compare/v2.6.4...v2.7.0) (2026-05-23)
+# [2.8.0](/compare/v2.7.0...v2.8.0) (2026-06-05)
 
-Update to 2.7.0
+Update to 2.8.0
+
+
+### Features
+
+* add macOS Reminders and Calendar sync plugin with a Node.js companion server 956735b
+* add settings toggle for pin alias conversions and integrate into block context menu 8f82329
+* add two-way conversion tools between block references and links with toggleable settings 7f0c8d3
+
+# [2.7.0](/compare/v2.6.4...v2.7.0) (2026-05-23)
 
 ## [2.6.4](/compare/v2.6.3...v2.6.4) (2026-05-21)
 
