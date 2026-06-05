@@ -1,6 +1,19 @@
-# [2.8.0](/compare/v2.7.0...v2.8.0) (2026-06-05)
+## [2.8.1](/compare/v2.8.0...v2.8.1) (2026-06-05)
 
-Update to 2.8.0
+Update to 2.8.1
+
+
+### Bug Fixes
+
+* update regex to capture labels from markdown-style link syntax in block text 00bf08d
+
+
+### Features
+
+* add clickable block link badge to push trace operation and update documentation 2d1bbbe
+* add configurable minimum children count for context menu random walk option c2df586
+
+# [2.8.0](/compare/v2.7.0...v2.8.0) (2026-06-05)
 
 
 ### Features
