@@ -20,3 +20,8 @@ A powerful tag-based random walk tool for Orca Note.
 3. If you want a nicer name in the dropdown, click the tag and set the `displayName` property in the property panel (e.g., "Favorite Quotes").
 4. Click the 🎲 dice icon in the Headbar to roam your last viewed channel, or right-click the icon to open the menu and switch channels.
 5. **Temporary Walk**: Right-click any block of interest and select "Random Walk" to start exploring its contents immediately. The dice icon will automatically remember and lock onto this block.
+
+## ⚙️ Configuration Settings
+
+- **Walk Tag**: The tag name used to recognize random walk channels, defaults to `#随机漫步`.
+- **Min Children Count (Context Menu)**: The minimum number of child blocks required to display the "Random Walk" option in the right-click context menu, defaults to `2`. This effectively prevents showing redundant menu items on parent blocks with only one or no child blocks.

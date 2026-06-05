@@ -16,6 +16,9 @@ export default {
   "Walk Tag": "漫步标签",
   "Blocks with this tag will be recognized as random walk groups.":
     "带有此标签的块（包含查询块和普通父块）将被识别为独立的漫步频道。",
+  "Min Children Count (Context Menu)": "右键菜单最小子块数量",
+  "The minimum number of child blocks required to show the Random Walk option in the context menu.":
+    "在右键菜单中显示“随机漫步”选项所需要的最小子块数量。",
   "A powerful tag-based random walk tool. Usage: Add the walk tag to any block (query block or normal block). If it's a query block, it randomly walks its results. If it's a normal block, it walks its children. You can customize the 'displayName' property of the tag to rename the channel in the menu. Also supports right-clicking a block to start walking immediately.":
     "一款强大的随机漫步工具。使用方法：1. 为任意块打上“漫步标签”（自动识别为频道）；2. 或者直接在任意块上右键选择“随机漫步”开启临时频道。插件会自动处理查询块结果或父块子节点。你还可以在标签属性中配置 `displayName` 来给频道重命名。",
 };

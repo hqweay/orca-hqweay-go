@@ -150,7 +150,7 @@ A powerful tag-based random walk tool providing an exploratory experience for yo
   - **Query Blocks**: Utilizes the native random engine to deal cards, ensuring no duplicate traversals.
   - **Normal Blocks**: Automatically retrieves child nodes and performs a pure in-memory shuffle.
 - **Custom Naming**: Customize the `displayName` property of the walk tag to display clean and organized channel names in the list.
-- **Instant Walk via Context Menu**: Right-click any parent or query block to start a temporary walk immediately, no tagging required.
+- **Instant Walk via Context Menu**: Right-click any parent or query block to start a temporary walk immediately, no tagging required. The minimum number of child blocks required to show this option can be configured in settings.
 - **Keyboard Shortcut Support**: Supports configuring a shortcut for "Random Walk" in settings.
 - **Channel Memory**: The main button intelligently remembers the last walked channel (including temporary ones).
 

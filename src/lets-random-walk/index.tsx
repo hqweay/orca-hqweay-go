@@ -20,6 +20,7 @@ export default class RandomWalkPlugin extends BasePlugin {
   public getDefaultSettings(): any {
     return {
       walkTag: "随机漫步",
+      minChildrenCount: 2,
     };
   }
 
@@ -40,7 +41,9 @@ export default class RandomWalkPlugin extends BasePlugin {
             (p: any) => p.name === "_repr",
           )?.value;
           const isQuery = repr?.type === "query";
-          const hasChildren = block.children && block.children.length > 0;
+          const minChildrenCount = this.getSettings().minChildrenCount ?? 2;
+          const hasChildren =
+            block.children && block.children.length >= minChildrenCount;
 
           if (!isQuery && !hasChildren) {
             return null;
@@ -414,6 +417,22 @@ function RandomWalkSettings({ plugin }: { plugin: RandomWalkPlugin }) {
           <Input
             value={config.walkTag || "随机漫步"}
             onChange={(e: any) => updateConfig("walkTag", e.target.value)}
+          />
+        </SettingsItem>
+        <SettingsItem
+          label={t("Min Children Count (Context Menu)")}
+          description={t(
+            "The minimum number of child blocks required to show the Random Walk option in the context menu.",
+          )}
+        >
+          <Input
+            type="number"
+            min={1}
+            value={config.minChildrenCount ?? 2}
+            onChange={(e: any) => {
+              const val = parseInt(e.target.value, 10);
+              updateConfig("minChildrenCount", isNaN(val) ? 2 : val);
+            }}
           />
         </SettingsItem>
       </SettingsSection>
