@@ -205,6 +205,11 @@ Enhance block context menu operations, specifically for advanced workflow of "Re
 - **Push Children and Delete**: Push children to source and delete the current reference block (useful for cleaning up temporary proxy pages).
 - **Push Children and Keep Trace**: Move children to the source, convert the current reference block to plain text (keeping alias), and insert new references pointing to the moved children under the source block, achieving "Data Archived, Trace Maintained".
 - **Move to Top/Bottom of Parent**: Quickly move selected blocks to the very beginning or end of their parent block for easier layout arrangement.
+- **Two-way Reference & Link Conversions**:
+    - **Convert Block Reference to Block Link**: Convert block references (`((block-id))`) to hyperlinks (`[text](orca://block/block-id)`), fetching source text if no alias is set.
+    - **Convert Block Reference to Text Pin (文本📌)**: Append `📌` to the alias or text representation, making it a text pin reference.
+    - **Convert Block Reference to Pin (📌)**: Set the alias directly to `📌`, turning it into a pure icon pin reference.
+    - **Convert Block Link to Block Reference**: Revert `orca://block/` hyperlinks back to native block references, preserving the label text as alias.
 - **Batch Support**: Supports selecting multiple blocks to execute the logic in bulk.
 - **Config Management**: Support for enabling or disabling these features independently in the settings panel.
 

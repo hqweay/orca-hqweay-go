@@ -2,7 +2,16 @@ import React from "react";
 import { BasePlugin } from "@/libs/BasePlugin";
 import { t } from "@/libs/l10n";
 import { MoveInfo, PushMode } from "./types";
-import { executePush } from "./logic";
+import {
+  executePush,
+  hasBlockReference,
+  hasBlockLink,
+  executeRefToLink,
+  executeLinkToRef,
+  executeRefToTextPin,
+  executeRefToPin,
+  getRefLabelSync,
+} from "./logic";
 import { BlockToolsSettings } from "./settings";
 
 export default class BlockToolsPlugin extends BasePlugin {
@@ -11,6 +20,7 @@ export default class BlockToolsPlugin extends BasePlugin {
     this.registerPushCommand("delete");
     this.registerPushCommand("trace");
     this.registerMoveWithinParentCommand();
+    this.registerConvertRefLinkCommand();
     this.logger.info(`${this.name} loaded.`);
   }
 
@@ -53,11 +63,7 @@ export default class BlockToolsPlugin extends BasePlugin {
             blockId,
             targetId: targetRef.to,
             children: [...block.children],
-            alias:
-              block.content![0].a ||
-              targetRef.alias ||
-              block.text?.match(/^\[(.+?)\]/)?.[1] ||
-              "Pushed Content",
+            alias: getRefLabelSync(block.content![0], block) || "Pushed Content",
           });
         }
 
@@ -154,6 +160,74 @@ export default class BlockToolsPlugin extends BasePlugin {
     );
   }
 
+  private registerConvertRefLinkCommand() {
+    if (!orca.blockMenuCommands?.registerBlockMenuCommand) return;
+
+    orca.blockMenuCommands.registerBlockMenuCommand(
+      `${this.name}.convert-ref-link`,
+      {
+        worksOnMultipleBlocks: true,
+        render: (blockIds, _rootBlockId, close) => {
+          const settings = this.getSettings();
+          if (settings.enableConvertRefLink === false) return null;
+
+          if (!blockIds || blockIds.length === 0) return null;
+
+          const idArray = typeof blockIds === "number" ? [blockIds] : blockIds;
+
+          const hasRef = hasBlockReference(idArray);
+          const hasLink = hasBlockLink(idArray);
+
+          if (!hasRef && !hasLink) return null;
+
+          const MenuText = orca.components.MenuText;
+          return (
+            <React.Fragment>
+              {hasRef && (
+                <React.Fragment>
+                  <MenuText
+                    preIcon="ti ti-link"
+                    title={t("Convert Block Reference to Block Link")}
+                    onClick={async () => {
+                      close();
+                      await executeRefToLink(idArray);
+                    }}
+                  />
+                  <MenuText
+                    preIcon="ti ti-pin"
+                    title={t("Convert Block Reference to Text Pin Reference")}
+                    onClick={async () => {
+                      close();
+                      await executeRefToTextPin(idArray);
+                    }}
+                  />
+                  <MenuText
+                    preIcon="ti ti-pin-filled"
+                    title={t("Convert Block Reference to Pin Reference")}
+                    onClick={async () => {
+                      close();
+                      await executeRefToPin(idArray);
+                    }}
+                  />
+                </React.Fragment>
+              )}
+              {hasLink && (
+                <MenuText
+                  preIcon="ti ti-blockquote"
+                  title={t("Convert Block Link to Block Reference")}
+                  onClick={async () => {
+                    close();
+                    await executeLinkToRef(idArray);
+                  }}
+                />
+              )}
+            </React.Fragment>
+          );
+        },
+      }
+    );
+  }
+
   public async unload(): Promise<void> {
     orca.blockMenuCommands.unregisterBlockMenuCommand(
       `${this.name}.push-children-to-ref`,
@@ -166,6 +240,9 @@ export default class BlockToolsPlugin extends BasePlugin {
     );
     orca.blockMenuCommands.unregisterBlockMenuCommand(
       `${this.name}.move-within-parent`,
+    );
+    orca.blockMenuCommands.unregisterBlockMenuCommand(
+      `${this.name}.convert-ref-link`,
     );
     this.logger.info(`${this.name} unloaded.`);
   }

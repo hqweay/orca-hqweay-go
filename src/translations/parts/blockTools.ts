@@ -19,4 +19,10 @@ export default {
   "Move to Top of Parent": "在父块下置顶",
   "Move to Bottom of Parent": "在父块下置底",
   "Enable Move to Top/Bottom of Parent": "启用「父块下置顶/置底」",
+  "Convert Block Reference to Block Link": "块引用转块链接",
+  "Convert Block Link to Block Reference": "块链接转块引用",
+  "Convert Block Reference to Text Pin Reference": "块引用转文本📌",
+  "Convert Block Reference to Pin Reference": "块引用转📌",
+  "Enable Reference & Link Conversions": "启用引用/链接转换功能",
 };
+

@@ -17,17 +17,21 @@ export function BlockToolsSettings({ plugin }: { plugin: BlockToolsPlugin }) {
   const [enableMoveWithinParent, setEnableMoveWithinParent] = useState<boolean>(
     settings.enableMoveWithinParent !== false,
   );
-
+  const [enableConvertRefLink, setEnableConvertRefLink] = useState<boolean>(
+    settings.enableConvertRefLink !== false,
+  );
+ 
   const handleToggle = async (field: string, val: boolean) => {
     if (field === "enablePushToRef") setEnablePushToRef(val);
     if (field === "enablePushAndDelete") setEnablePushAndDelete(val);
     if (field === "enablePushAndTrace") setEnablePushAndTrace(val);
     if (field === "enableMoveWithinParent") setEnableMoveWithinParent(val);
+    if (field === "enableConvertRefLink") setEnableConvertRefLink(val);
     await plugin["updateSettings"]({ ...settings, [field]: val });
   };
-
+ 
   const Checkbox = orca.components.Checkbox;
-
+ 
   return (
     <SettingsSection title={t("Block Tools")}>
       <div
@@ -102,6 +106,25 @@ export function BlockToolsSettings({ plugin }: { plugin: BlockToolsPlugin }) {
           {t("Enable Move to Top/Bottom of Parent")}
         </div>
       </div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          marginBottom: "12px",
+        }}
+      >
+        <Checkbox
+          checked={enableConvertRefLink}
+          onChange={(e: { checked: boolean }) =>
+            handleToggle("enableConvertRefLink", e.checked)
+          }
+        />
+        <div style={{ fontSize: "0.9em", opacity: 0.8 }}>
+          {t("Enable Reference & Link Conversions")}
+        </div>
+      </div>
     </SettingsSection>
   );
 }
+
