@@ -61,6 +61,10 @@ export async function getBlocks(blockIds: number[]): Promise<Block[]> {
   return await orca.invokeBackend("get-blocks", blockIds);
 }
 
+export function isValidId(id: any): id is number {
+  return typeof id === "number" && !isNaN(id);
+}
+
 /**
  * Ensures the specified block is loaded and cached in orca.state.blocks.
  * This is crucial before calling editor commands (like moveBlocks) on blocks
@@ -69,6 +73,9 @@ export async function getBlocks(blockIds: number[]): Promise<Block[]> {
 export async function ensureBlockInState(
   blockId: number,
 ): Promise<Block | null> {
+  if (!isValidId(blockId)) {
+    return null;
+  }
   let block = orca.state.blocks[blockId];
   if (!block) {
     block = await orca.invokeBackend("get-block", blockId);

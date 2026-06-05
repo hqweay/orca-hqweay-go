@@ -2,7 +2,7 @@ import { Logger } from "@/libs/logger.ts";
 import type { DbId, Block, QueryDescription2 } from "../../orca.d.ts";
 import { CARD_TAG_ALIAS } from "./tagSchema";
 import { getMirrorId } from "@/libs/block-utils";
-import { ensureBlockInState } from "@/libs/utils.ts";
+import { ensureBlockInState, isValidId } from "@/libs/utils.ts";
 
 const logger = new Logger("lets-srs");
 
@@ -279,6 +279,7 @@ export async function getRelatedBlockIds(
   const fetchedBlocks = new Map<number, any>();
 
   const fetchBlockSafely = async (id: number) => {
+    if (!isValidId(id)) return null;
     if (fetchedBlocks.has(id)) return fetchedBlocks.get(id);
     const b = await ensureBlockInState(id);
     if (b) fetchedBlocks.set(id, b);
@@ -289,6 +290,7 @@ export async function getRelatedBlockIds(
   while (queue.length > 0) {
     const { id: currentHubId, depth } = queue.shift()!;
 
+    if (!isValidId(currentHubId)) continue;
     if (depth >= maxDepth) continue;
 
     // 每深一层，关联程度减半（100 -> 50 -> 25）
@@ -303,12 +305,32 @@ export async function getRelatedBlockIds(
     if (depth >= maxDepth) continue;
 
     // --- 关键抽象：语义群组作为统一采集器 ---
-    let treeIds: number[] = [];
+    let treeBlocks: any[] = [];
     try {
-      treeIds =
+      treeBlocks =
         (await orca.invokeBackend("get-block-tree", currentHubId)) || [];
-    } catch (e) {}
-    if (!treeIds.includes(currentHubId)) treeIds.push(currentHubId);
+    } catch (e) {
+      logger.error("Failed to get block tree in smart roam", e);
+    }
+
+    if (treeBlocks && Array.isArray(treeBlocks)) {
+      for (const b of treeBlocks) {
+        if (b && isValidId(b.id)) {
+          fetchedBlocks.set(b.id, b);
+          if (!orca.state.blocks[b.id]) {
+            orca.state.blocks[b.id] = b;
+          }
+        }
+      }
+    }
+
+    const treeIds: number[] = (treeBlocks || [])
+      .map((b: any) => b?.id)
+      .filter(isValidId);
+
+    if (isValidId(currentHubId)) {
+      if (!treeIds.includes(currentHubId)) treeIds.push(currentHubId);
+    }
 
     const outgoingRefs = new Set<number>();
     const incomingRefs = new Set<number>();
@@ -345,15 +367,21 @@ export async function getRelatedBlockIds(
     }
 
     for (const targetId of outgoingRefs) {
-      queue.push({ id: targetId, depth: depth + 1 });
+      if (isValidId(targetId)) {
+        queue.push({ id: targetId, depth: depth + 1 });
+      }
     }
     for (const targetId of incomingArray) {
-      queue.push({ id: targetId, depth: depth + 1 });
+      if (isValidId(targetId)) {
+        queue.push({ id: targetId, depth: depth + 1 });
+      }
     }
   }
 
   // 准备返回结果
-  let candidateIds = Object.keys(weights).map(Number);
+  let candidateIds = Object.keys(weights)
+    .map(Number)
+    .filter(isValidId);
   if (rootId) {
     candidateIds = candidateIds.filter((id) => id !== rootId);
   }
