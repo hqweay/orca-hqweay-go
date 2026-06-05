@@ -42,7 +42,7 @@ export function getRefLabelSync(fragment: any, block: any): string {
 
   let label = fragment.a || targetRef?.alias;
   if (!label && block.text) {
-    const match = block.text.match(/^\[(.+?)\]/);
+    const match = block.text.match(/^\[(.*)\]\(/);
     if (match) label = match[1];
   }
   if (!label) {
