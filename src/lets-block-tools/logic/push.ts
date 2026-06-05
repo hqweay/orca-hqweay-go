@@ -2,6 +2,7 @@ import { t } from "@/libs/l10n";
 import { MoveInfo, PushMode } from "../types";
 import { Logger } from "@/libs/logger";
 import { ensureBlockInState } from "@/libs/utils";
+import { makeBlockLink } from "./helpers";
 
 export async function executePush(
   moves: MoveInfo[],
@@ -37,11 +38,20 @@ export async function executePush(
         );
       } else if (mode === "trace") {
         await orca.commands.invokeGroup(async () => {
-          // Convert source block to text
+          // Convert source block to text with a 📌 block link badge at the end
+          const blockLink = makeBlockLink(move.targetId);
           await orca.commands.invokeEditorCommand(
             "core.editor.setBlocksContent",
             null,
-            [{ id: move.blockId, content: [{ t: "t", v: move.alias }] }],
+            [
+              {
+                id: move.blockId,
+                content: [
+                  { t: "t", v: move.alias + " " },
+                  { t: "l", v: "📌", l: blockLink },
+                ],
+              },
+            ],
             false,
           );
 

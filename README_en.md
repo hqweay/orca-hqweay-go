@@ -201,9 +201,10 @@ Provides a collection of enhanced commands beyond the native editor capabilities
 
 Enhance block context menu operations, specifically for advanced workflow of "Reference Blocks":
 
-- **Push Children to Source**: Move children under the current reference block to its source block, keeping the reference intact.
-- **Push Children and Delete**: Push children to source and delete the current reference block (useful for cleaning up temporary proxy pages).
-- **Push Children and Keep Trace**: Move children to the source, convert the current reference block to plain text (keeping alias), and insert new references pointing to the moved children under the source block, achieving "Data Archived, Trace Maintained".
+- **Push Children Menu**: Grouped under a clean "Push Children to Referenced Block" sub-menu:
+  - **Push Only**: Move children under the current reference block to its source block, keeping the reference intact.
+  - **Push and Delete**: Push children to source and delete the current reference block (useful for cleaning up temporary proxy pages).
+  - **Push and Keep Trace**: Move children to the source, convert the current reference block to plain text (keeping alias) followed by a clickable `📌` block link icon back to the source block, and insert new references pointing to the moved children under the source block, achieving "Data Archived, Trace Maintained with navigability".
 - **Move to Top/Bottom of Parent**: Quickly move selected blocks to the very beginning or end of their parent block for easier layout arrangement.
 - **Two-way Reference & Link Conversions**:
     - **Convert Block Reference to Block Link**: Convert block references (`((block-id))`) to hyperlinks (`[text](orca://block/block-id)`), fetching source text if no alias is set.
