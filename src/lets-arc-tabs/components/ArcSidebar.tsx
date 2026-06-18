@@ -81,13 +81,14 @@ export const ArcSidebar: React.FC = () => {
     syncPinnedBlocksWithBackend();
   }, []);
 
+  const openBlockIds = useMemo(
+    () => getActiveBlocks(state.panels).map(Number),
+    [state.panels],
+  );
+
   const activeBlockIds = useMemo(() => {
-    return getActiveBlocks(state.panels)
-      .map(Number)
-      .filter((id) => {
-        return !activePinningBlocks.has(id);
-      });
-  }, [state.panels]);
+    return openBlockIds.filter((id) => !activePinningBlocks.has(id));
+  }, [openBlockIds]);
   // Filter and SORT pinned blocks for the active space
   const currentSpacePinnedBlocks = useMemo(() => {
     const orderObj = localArcTabsState.pinnedOrder || {};
@@ -273,7 +274,7 @@ export const ArcSidebar: React.FC = () => {
           {localArcTabsState.pinnedDisplayMode === 'grid' ? (
             <div className="arc-pinned-grid">
               {currentSpacePinnedBlocks.map((block) => {
-                const isActive = block.id === focusedBlock;
+                const isActive = openBlockIds.includes(block.id);
                 const title = getBlockTitle(block, block.id);
                 const icon = getBlockIcon(block);
                 return (
@@ -293,7 +294,7 @@ export const ArcSidebar: React.FC = () => {
             </div>
           ) : (
             currentSpacePinnedBlocks.map((block) => {
-              const isActive = block.id === focusedBlock;
+              const isActive = openBlockIds.includes(block.id);
               const title = getBlockTitle(block, block.id);
               const icon = getBlockIcon(block);
               return (
@@ -318,7 +319,7 @@ export const ArcSidebar: React.FC = () => {
           <div className="arc-sidebar-section-title">{t("arcTabs.today")}</div>
           {filteredTodayTabs.map((tab) => {
             const block = state.blocks[tab.id];
-            const isActive = tab.id === focusedBlock;
+            const isActive = openBlockIds.includes(tab.id);
             const title = block
               ? getBlockTitle(block, tab.id)
               : tab.title || `Block ${tab.id}`;
