@@ -19,10 +19,7 @@ const getBlockTitle = (block: any, id: string | number) => {
   if (!block) return `Block ${String(id).substring(0, 8)}`;
 
   const pinTagName = arcTabsPluginInstance?.getSettings()?.pinTagName || "ArcTab";
-  const tagRef = block.refs?.find((r: any) => {
-    const tagBlock = orca.state.blocks[r.id];
-    return tagBlock?.aliases?.includes(pinTagName);
-  });
+  const tagRef = block.refs?.find((r: any) => r.name === pinTagName);
   
   const displayName =
     tagRef?.data?.find((p: any) => p.name === "displayName")?.value ||
@@ -94,26 +91,29 @@ export const ArcSidebar: React.FC = () => {
     }
   }, [spaces, activeSpace]);
 
+  useEffect(() => {
+    if (activeSpace) {
+      loadPinnedBlocks(activeSpace);
+    }
+  }, [activeSpace]);
+
+
+
   const openBlockIds = useMemo(
     () => getActiveBlocks(state.panels).map(Number),
     [state.panels],
   );
 
   const currentSpacePinnedBlocks = useMemo(() => {
-    const blocks = activeSpace
-      ? getBlocksInSpace(activeSpace)
-      : localArcTabsState.pinnedBlocks;
-
-    return blocks
-      .map((b) => {
-        const fullBlock = state.blocks[b.id] || b;
-        return {
-          ...b,
-          _title: getBlockTitle(fullBlock, b.id),
-          _icon: getBlockIcon(fullBlock),
-        };
-      });
-  }, [localArcTabsState.pinnedBlocks, activeSpace, state.blocks]);
+    return localArcTabsState.pinnedBlocks.map((b) => {
+      const fullBlock = state.blocks[b.id] || b;
+      return {
+        ...b,
+        _title: getBlockTitle(fullBlock, b.id),
+        _icon: getBlockIcon(fullBlock),
+      };
+    });
+  }, [localArcTabsState.pinnedBlocks, state.blocks]);
 
   useEffect(() => {
     let changed = false;
@@ -141,11 +141,11 @@ export const ArcSidebar: React.FC = () => {
   }, [openBlockIds]);
 
   const todayTabs = useMemo(() => {
-    const pinnedIds = currentSpacePinnedBlocks.map((b) => b.id);
+    const allPinnedIds = localArcTabsState.pinnedBlocks.map((b) => b.id);
     return localArcTabsState.recentlyVisited
-      .filter((item) => !pinnedIds.includes(item.id))
+      .filter((item) => !allPinnedIds.includes(item.id))
       .slice(0, 15);
-  }, [localArcTabsState.recentlyVisited, currentSpacePinnedBlocks]);
+  }, [localArcTabsState.recentlyVisited, localArcTabsState.pinnedBlocks]);
 
   const focusedBlock = useMemo(() => {
     return getFocusedBlock(state.panels, state.activePanel);
@@ -162,10 +162,7 @@ export const ArcSidebar: React.FC = () => {
     }
   }, [focusedBlock, isBlockCached]);
 
-  const filteredTodayTabs = useMemo(() => {
-    const pinnedIds = currentSpacePinnedBlocks.map((b) => b.id);
-    return todayTabs.filter((tab) => !pinnedIds.includes(tab.id));
-  }, [todayTabs, currentSpacePinnedBlocks]);
+  const filteredTodayTabs = todayTabs;
 
   const handleTabClick = (blockId: number) => {
     const mainPanelId = findMainPanelId(state.panels);

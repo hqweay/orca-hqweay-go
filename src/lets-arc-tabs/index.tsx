@@ -121,7 +121,7 @@ export default class ArcTabsPlugin extends BasePlugin {
           propsToAdd.push({
             name: "Space",
             type: 6,
-            typeArgs: { subType: "multi", choices: [] },
+            typeArgs: { subType: "multi", choices: ["default"] },
           });
         }
         if (!hasDisplayNameProp) {

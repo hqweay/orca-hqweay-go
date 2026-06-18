@@ -3,6 +3,16 @@ import { arcTabsState } from "./data";
 import { findMainPanelId } from "./nav";
 
 const getSpaceProperty = (block: any): string[] => {
+  const pinTagName = arcTabsPluginInstance?.getSettings()?.pinTagName || "ArcTab";
+  
+  // Check refs for tag reference with Space property
+  const tagRef = block.refs?.find((r: any) => r.name === pinTagName);
+  if (tagRef?.data) {
+    const prop = tagRef.data.find((p: any) => p.name === "Space");
+    if (prop?.value?.length > 0) return prop.value;
+  }
+  
+  // Fallback to block properties
   const prop = block.properties?.find((p: any) => p.name === "Space");
   return prop?.value || [];
 };
