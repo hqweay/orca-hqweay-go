@@ -50,7 +50,19 @@ export const syncPinnedBlocksWithBackend = async () => {
     }
   }
 
-  arcTabsState.pinnedBlocks = Array.from(byId.values());
+  const merged = Array.from(byId.values());
+  const currentIds = arcTabsState.pinnedBlocks
+    .map((b) => b.id)
+    .sort((a, b) => a - b);
+  const mergedIds = merged.map((b) => b.id).sort((a, b) => a - b);
+  if (
+    currentIds.length === mergedIds.length &&
+    currentIds.every((id, index) => id === mergedIds[index])
+  ) {
+    return;
+  }
+
+  arcTabsState.pinnedBlocks = merged;
 };
 
 const revertOptimisticPin = (idNum: number, spaceId: string) => {
@@ -293,7 +305,7 @@ export const pinBlock = async (idNum: number, spaceId: string) => {
   const settings = arcTabsPluginInstance?.getSettings() || {};
   const pinTagName = settings.pinTagName || "ArcTab";
 
-  // --- Optimistic UI logic: immediately push to pinnedBlocks & settings pinnedOrder ---
+  // --- Optimistic UI: update order + blocks together to avoid sort/section flicker ---
   try {
     const block = orca.state.blocks[idNum];
     const optimisticBlock = block
@@ -312,20 +324,23 @@ export const pinBlock = async (idNum: number, spaceId: string) => {
           refs: [],
         };
 
-    if (!arcTabsState.pinnedBlocks.some((b) => b.id === idNum)) {
-      arcTabsState.pinnedBlocks.push(optimisticBlock);
-    }
-
     const orderObj = {
       ...(arcTabsState.pinnedOrder || settings.pinnedOrder || {}),
     };
     const orderArray = [...(orderObj[spaceId] || [])];
     if (!orderArray.includes(idNum)) {
-      orderArray.unshift(idNum); // push to top
+      orderArray.unshift(idNum);
       orderObj[spaceId] = orderArray;
-      arcTabsState.pinnedOrder = orderObj;
-      arcTabsPluginInstance?.updateSettings({ pinnedOrder: orderObj });
     }
+
+    const nextPinnedBlocks = [...arcTabsState.pinnedBlocks];
+    if (!nextPinnedBlocks.some((b) => b.id === idNum)) {
+      nextPinnedBlocks.push(optimisticBlock);
+    }
+
+    arcTabsState.pinnedOrder = orderObj;
+    arcTabsState.pinnedBlocks = nextPinnedBlocks;
+    arcTabsPluginInstance?.updateSettings({ pinnedOrder: orderObj });
   } catch (e) {
     console.error("Optimistic pin update failed", e);
   }
@@ -423,10 +438,17 @@ export const pinBlock = async (idNum: number, spaceId: string) => {
         // Wait a tick before removing from pinning blocks to let UI stabilize
         setTimeout(() => activePinningBlocks.delete(idNum), 100);
       }
+
+      pinned = await fetchPinnedBlocks();
+      isPinned = pinned.some((b: any) => b.id === idNum);
+    }
+
+    if (!isPinned) {
+      revertOptimisticPin(idNum, spaceId);
+      return;
     }
 
     console.log("Pinned successfully using Tag approach");
-    await syncPinnedBlocksWithBackend();
   } catch (err: any) {
     console.error("Pin failed", err);
     revertOptimisticPin(idNum, spaceId);
