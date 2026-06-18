@@ -79,9 +79,10 @@ export const TabItem: React.FC<TabItemProps> = ({
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          {isHovered ? (
+          {displayIcon ? displayIcon : <span className="arc-tab-initial">{initialText}</span>}
+          {isPinned && isHovered && (
             <span
-              className="arc-tab-unpin-btn"
+              className="arc-tab-grid-unpin"
               title="Unpin"
               onClick={(e) => {
                 e.stopPropagation();
@@ -90,10 +91,6 @@ export const TabItem: React.FC<TabItemProps> = ({
             >
               <i className="ti ti-x" />
             </span>
-          ) : displayIcon ? (
-            displayIcon
-          ) : (
-            <span className="arc-tab-initial">{initialText}</span>
           )}
         </div>
       </Tooltip>
