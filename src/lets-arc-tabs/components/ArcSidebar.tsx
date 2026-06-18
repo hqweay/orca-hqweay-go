@@ -332,38 +332,78 @@ export const ArcSidebar: React.FC = () => {
           </div>
         ))}
 
-        {showNewSpaceInput ? (
-          <input
-            className="arc-space-input"
-            value={newSpaceName}
-            onChange={(e) => setNewSpaceName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleNewSpace();
-              if (e.key === "Escape") {
-                setShowNewSpaceInput(false);
-                setNewSpaceName("");
-              }
-            }}
-            onBlur={() => {
-              if (!newSpaceName.trim()) {
-                setShowNewSpaceInput(false);
-              }
-            }}
-            autoFocus
-            placeholder="Space name"
-          />
-        ) : (
-          <div
-            className="arc-space-item arc-space-add"
-            title={t("arcTabs.newSpace")}
-            onClick={() => setShowNewSpaceInput(true)}
-          >
-            +
-          </div>
-        )}
+        <div
+          className="arc-space-item arc-space-add"
+          title={t("arcTabs.newSpace")}
+          onClick={() => setShowNewSpaceInput(true)}
+        >
+          +
+        </div>
       </div>
 
-
+      {showNewSpaceInput && (
+        <orca.components.ModalOverlay
+          visible={showNewSpaceInput}
+          onClose={() => {
+            setShowNewSpaceInput(false);
+            setNewSpaceName("");
+          }}
+          blurred={true}
+          style={{
+            backgroundColor: "rgba(0, 0, 0, 0.3)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              background: "var(--orca-color-bg-1)",
+              color: "var(--orca-text-color)",
+              padding: "20px",
+              borderRadius: "12px",
+              width: "320px",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
+              border: "1px solid var(--orca-color-border-2)",
+            }}
+          >
+            <h3 style={{ margin: "0 0 16px 0", fontSize: "15px", fontWeight: 600 }}>
+              {t("arcTabs.newSpace")}
+            </h3>
+            <orca.components.Input
+              value={newSpaceName}
+              onChange={(e: any) => setNewSpaceName(e.target.value)}
+              onKeyDown={(e: any) => {
+                if (e.key === "Enter") handleNewSpace();
+                if (e.key === "Escape") {
+                  setShowNewSpaceInput(false);
+                  setNewSpaceName("");
+                }
+              }}
+              placeholder="Space name"
+              autoFocus
+              width="100%"
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "16px" }}>
+              <orca.components.Button
+                variant="plain"
+                onClick={() => {
+                  setShowNewSpaceInput(false);
+                  setNewSpaceName("");
+                }}
+              >
+                {t("cancel")}
+              </orca.components.Button>
+              <orca.components.Button
+                onClick={handleNewSpace}
+                disabled={!newSpaceName.trim()}
+              >
+                {t("create")}
+              </orca.components.Button>
+            </div>
+          </div>
+        </orca.components.ModalOverlay>
+      )}
     </div>
   );
 };

@@ -135,19 +135,7 @@
   background: transparent;
 }
 
-.arc-space-input {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  border: 1px solid var(--orca-color-primary-5);
-  background-color: var(--orca-color-bg-2);
-  color: var(--orca-text-color);
-  font-size: 12px;
-  text-align: center;
-  outline: none;
-  padding: 0;
-  flex-shrink: 0;
-}
+
 
 
 
