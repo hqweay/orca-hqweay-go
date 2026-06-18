@@ -178,7 +178,7 @@ export default class ArcTabsPlugin extends BasePlugin {
       <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
         <SettingsSection title={t("arc-tabs.settings")}>
           <SettingsItem
-            label={t("arc-tabs.pinnedLayout")}
+            label={t("arc-tabs.tagName")}
             description={t("arc-tabs.tagDescription")}
           >
             <orca.components.Input
@@ -189,7 +189,7 @@ export default class ArcTabsPlugin extends BasePlugin {
           </SettingsItem>
           <SettingsItem
             label={t("arc-tabs.pinnedLayout")}
-            description="Choose the visual layout for pinned tabs in the sidebar."
+            description={t("arc-tabs.layoutDescription")}
           >
             <orca.components.Select
               selected={[settings.pinnedDisplayMode || 'grid']}
