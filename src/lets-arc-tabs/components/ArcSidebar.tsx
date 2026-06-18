@@ -20,6 +20,19 @@ import { arcTabsPluginInstance } from "../index";
 
 const getBlockTitle = (block: any, id: string | number) => {
   if (!block) return `Block ${String(id).substring(0, 8)}`;
+  
+  // Try to get journal date if it's a journal block
+  const reprProp = block.properties?.find((p: any) => p.name === "_repr");
+  if (reprProp && reprProp.value?.type === "journal" && reprProp.value?.date) {
+    const d = new Date(reprProp.value.date);
+    if (!isNaN(d.getTime())) {
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+  }
+  
   if (block.aliases && block.aliases.length > 0) return block.aliases[0];
   if (block.text && block.text.trim().length > 0) {
     let text = block.text.trim();
@@ -162,6 +175,18 @@ export const ArcSidebar: React.FC = () => {
 
     if (displayName) {
       return displayName;
+    }
+
+    // Try to get journal date if it's a journal block
+    const reprProp = block.properties?.find((p: any) => p.name === "_repr");
+    if (reprProp && reprProp.value?.type === "journal" && reprProp.value?.date) {
+      const d = new Date(reprProp.value.date);
+      if (!isNaN(d.getTime())) {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd}`;
+      }
     }
 
     // Fallback to text truncation
