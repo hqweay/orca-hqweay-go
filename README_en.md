@@ -241,6 +241,22 @@ A tag-based sidebar pinned panel for quick access to your frequently used core n
   - **Right-Click**: Opens the full list of all pinned blocks for you to choose from.
 - **Custom Naming**: Supports adding a `displayName` property on the tag to customize how the block appears in the panel, keeping the list clean and organized.
 
+### 21. 🗂️ Arc Tabs
+
+An Arc-browser-like modern tabs and sidebar management system for Orca Note to boost your multi-tasking workflow:
+
+- **Space Management**: Support creating multiple Spaces (e.g., "Personal", "Work") with completely independent sets of pinned tabs.
+- **Pinned Tabs**:
+  - **Tag-based Storage**: Uses `#ArcTab` tag (customizable in settings) to persist pinned states natively within your graph.
+  - **Drag-to-Pin**: Drag any block from the editor and drop it into the sidebar's pinned section to pin it instantly.
+  - **Grid & List Layouts**: Toggle between a compact grid view (icon-only, extracts capitalized first-character initials for blocks without custom icons) and a detailed list view (shows both icons and titles).
+  - **Drag-to-Sort**: Reorder pinned tabs with simple drag-and-drop. The custom order is stored persistently in plugin settings.
+  - **Background Tagging Fallback**: When pinning or unpinning files that are not open in the editor, the plugin mounts a hidden editor panel temporarily in the background to apply tag transactions seamlessly.
+- **Today's Tabs**:
+  - **Dynamic Combination**: Merges all currently open panel views with your recently visited blocks history (deduplicated, up to 15 blocks cached via LocalStorage).
+  - **Visual Cache**: Automatically caches titles and custom icons so that the sidebar renders instantly even on a fresh restart or offline.
+- **Zero Latency**: State is managed globally via Valtio reactive proxy, offering 0ms instantaneous UI feedback.
+
 ## Development
 
 This project uses a modular architecture:
