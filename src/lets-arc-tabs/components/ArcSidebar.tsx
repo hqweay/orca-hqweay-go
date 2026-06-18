@@ -111,7 +111,7 @@ export const ArcSidebar: React.FC = () => {
           _icon: getBlockIcon(fullBlock),
         };
       });
-  }, [localArcTabsState.pinnedBlocks, localArcTabsState.pinnedOrder, activeSpace]);
+  }, [localArcTabsState.pinnedBlocks, localArcTabsState.pinnedOrder, activeSpace, state.blocks]);
 
   useEffect(() => {
     let changed = false;
