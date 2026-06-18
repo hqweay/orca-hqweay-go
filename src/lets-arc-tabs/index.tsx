@@ -110,14 +110,7 @@ export default class ArcTabsPlugin extends BasePlugin {
         }
       }
 
-      if (tagBlock) {
-        await DataImporter.syncTagSchema(tagBlock, [
-          {
-            name: "displayName",
-            type: PropType.Text,
-          },
-        ]);
-      }
+
     } catch (e) {
       this.logger.error("Failed to ensure pin tag schema", e);
     }

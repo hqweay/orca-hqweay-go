@@ -177,46 +177,7 @@ export const ArcSidebar: React.FC = () => {
     }
   }, [focusedBlock, isBlockCached]);
 
-  const getBlockDisplayName = (block: any) => {
-    const settings = arcTabsPluginInstance?.getSettings() || {};
-    const pinTagName = settings.pinTagName || "ArcTab";
 
-    // Try to get from tag properties
-    const tagRef = block.refs?.find(
-      (r: any) =>
-        r.type === 2 && (r.alias === pinTagName || r.name === pinTagName),
-    );
-    const displayName =
-      tagRef?.data?.find((p: any) => p.name === "displayName")?.value ||
-      block.properties?.find((p: any) => p.name === "displayName")?.value;
-
-    if (displayName) {
-      return String(displayName);
-    }
-
-    // Try to get journal date if it's a journal block
-    const reprProp = block.properties?.find((p: any) => p.name === "_repr");
-    if (reprProp && reprProp.value?.type === "journal" && reprProp.value?.date) {
-      const d = new Date(reprProp.value.date);
-      if (!isNaN(d.getTime())) {
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, "0");
-        const dd = String(d.getDate()).padStart(2, "0");
-        return `${yyyy}-${mm}-${dd}`;
-      }
-    }
-
-    // Fallback to text truncation
-    let text = block.text || block.content || "";
-    if (text) {
-      if (text.length > 20) {
-        return text.substring(0, 20) + "...";
-      }
-      return text;
-    }
-
-    return `Block ${block.id}`;
-  };
 
   // Filter out pinned blocks from Today tabs
   const filteredTodayTabs = useMemo(() => {
@@ -319,7 +280,7 @@ export const ArcSidebar: React.FC = () => {
             <div className="arc-pinned-grid">
               {currentSpacePinnedBlocks.map((block) => {
                 const isActive = block.id === focusedBlock;
-                const title = getBlockDisplayName(block);
+                const title = getBlockTitle(block, block.id);
                 const icon = getBlockIcon(block);
                 return (
                   <TabItem
@@ -339,7 +300,7 @@ export const ArcSidebar: React.FC = () => {
           ) : (
             currentSpacePinnedBlocks.map((block) => {
               const isActive = block.id === focusedBlock;
-              const title = getBlockDisplayName(block);
+              const title = getBlockTitle(block, block.id);
               const icon = getBlockIcon(block);
               return (
                 <TabItem
