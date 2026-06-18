@@ -304,17 +304,6 @@ export const ArcSidebar: React.FC = () => {
     <div className="arc-sidebar-container">
       <StyleInjector />
 
-      <div className="arc-sidebar-header">
-        <input
-          className="arc-sidebar-search"
-          placeholder={t("arcTabs.search")}
-          onClick={() => {
-            orca.commands.invokeCommand("core.toggleCommandPalette");
-          }}
-          readOnly
-        />
-      </div>
-
       <div className="arc-sidebar-content">
         {/* Pinned Tabs Section */}
         <div
