@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { pinBlock, unpinBlock, removeRecentBlock } from "../utils/data";
+import React, { useState, memo } from "react";
+import { pinBlock, unpinBlock, removeRecentBlock, isAnimating } from "../utils/data";
 
 interface TabItemProps {
   blockId: number;
@@ -12,7 +12,7 @@ interface TabItemProps {
   displayMode?: "grid" | "list";
 }
 
-export const TabItem: React.FC<TabItemProps> = ({
+export const TabItem: React.FC<TabItemProps> = memo(({
   blockId,
   title,
   isActive,
@@ -73,80 +73,79 @@ export const TabItem: React.FC<TabItemProps> = ({
       ? String(title).trim().substring(0, 1).toUpperCase()
       : "?";
 
-    return (
-      <Tooltip text={title}>
-        <div
-          className={`arc-tab-grid-item ${isActive ? "active" : ""}`}
-          onClick={() => onClick(blockId)}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-        >
-          {isHovered ? (
-            <span
-              className="arc-tab-unpin-btn"
-              title="Unpin"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleUnpinClick();
-              }}
-            >
-              <i className="ti ti-x" />
-            </span>
-          ) : displayIcon ? (
-            displayIcon
-          ) : (
-            <span className="arc-tab-initial">{initialText}</span>
-          )}
-        </div>
-      </Tooltip>
-    );
-  }
-
-  return (
-    <Tooltip text={title}>
+    const gridContent = (
       <div
-        className={`arc-tab-item ${isActive ? "active" : ""}`}
+        className={`arc-tab-grid-item ${isActive ? "active" : ""}`}
         onClick={() => onClick(blockId)}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <span className="arc-tab-icon">{icon || "📄"}</span>
-        <span className="arc-tab-title">{title}</span>
-
         {isHovered ? (
-          <div className="arc-tab-actions" onClick={(e) => e.stopPropagation()}>
-            {isPinned ? (
-              <button
-                className="arc-tab-action-btn"
-                title="Unpin"
-                onClick={handleUnpinClick}
-              >
-                <i className="ti ti-pin-off" />
-              </button>
-            ) : (
-              <>
-                <button
-                  className="arc-tab-action-btn"
-                  title="Pin"
-                  onClick={handlePinClick}
-                >
-                  <i className="ti ti-pin" />
-                </button>
-                <button
-                  className="arc-tab-action-btn"
-                  title="Close"
-                  onClick={handleCloseClick}
-                >
-                  <i className="ti ti-x" />
-                </button>
-              </>
-            )}
-          </div>
+          <span
+            className="arc-tab-unpin-btn"
+            title="Unpin"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleUnpinClick();
+            }}
+          >
+            <i className="ti ti-x" />
+          </span>
+        ) : displayIcon ? (
+          displayIcon
         ) : (
-          /* Show active dot if active and not hovered */
-          isActive && <div className="arc-tab-active-dot" />
+          <span className="arc-tab-initial">{initialText}</span>
         )}
       </div>
-    </Tooltip>
+    );
+
+    return isAnimating ? gridContent : <Tooltip text={title}>{gridContent}</Tooltip>;
+  }
+
+  const listContent = (
+    <div
+      className={`arc-tab-item ${isActive ? "active" : ""}`}
+      onClick={() => onClick(blockId)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <span className="arc-tab-icon">{icon || "📄"}</span>
+      <span className="arc-tab-title">{title}</span>
+
+      {isHovered ? (
+        <div className="arc-tab-actions" onClick={(e) => e.stopPropagation()}>
+          {isPinned ? (
+            <button
+              className="arc-tab-action-btn"
+              title="Unpin"
+              onClick={handleUnpinClick}
+            >
+              <i className="ti ti-pin-off" />
+            </button>
+          ) : (
+            <>
+              <button
+                className="arc-tab-action-btn"
+                title="Pin"
+                onClick={handlePinClick}
+              >
+                <i className="ti ti-pin" />
+              </button>
+              <button
+                className="arc-tab-action-btn"
+                title="Close"
+                onClick={handleCloseClick}
+              >
+                <i className="ti ti-x" />
+              </button>
+            </>
+          )}
+        </div>
+      ) : (
+        isActive && <div className="arc-tab-active-dot" />
+      )}
+    </div>
   );
-};
+
+  return isAnimating ? listContent : <Tooltip text={title}>{listContent}</Tooltip>;
+});

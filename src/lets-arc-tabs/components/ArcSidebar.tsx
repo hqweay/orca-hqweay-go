@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useSnapshot } from "valtio";
 import { t } from "@/libs/l10n";
 
@@ -81,40 +81,54 @@ export const ArcSidebar: React.FC = () => {
     syncPinnedBlocksWithBackend();
   }, []);
 
-  const openBlockIds = useMemo(
-    () => getActiveBlocks(state.panels).map(Number),
-    [state.panels],
-  );
+  const openBlockIdsRef = useRef<number[]>([]);
+  const openBlockIds = useMemo(() => {
+    const newIds = getActiveBlocks(state.panels, activePinningBlocks)
+      .map(Number)
+      .sort((a, b) => a - b);
+    const prevIds = openBlockIdsRef.current;
+    if (
+      prevIds.length === newIds.length &&
+      prevIds.every((id, i) => id === newIds[i])
+    ) {
+      return prevIds;
+    }
+    openBlockIdsRef.current = newIds;
+    return newIds;
+  }, [state.panels]);
 
-  const activeBlockIds = useMemo(() => {
-    return openBlockIds.filter((id) => !activePinningBlocks.has(id));
-  }, [openBlockIds]);
-  // Filter and SORT pinned blocks for the active space
+  const activeBlockIds = openBlockIds;
+
+  // Filter and SORT pinned blocks for the active space, with stable title/icon
   const currentSpacePinnedBlocks = useMemo(() => {
     const orderObj = localArcTabsState.pinnedOrder || {};
     const orderArray = (orderObj[activeSpace] || []) as number[];
 
     const allPinned = localArcTabsState.pinnedBlocks;
 
-    // Find blocks that have #ArcTab but haven't been assigned to any space yet (e.g. manually typed)
     const allAssignedIds = Object.values(orderObj).flat() as number[];
     const unassignedBlocks = allPinned.filter(
       (b) => !allAssignedIds.includes(b.id),
     );
 
-    // We render blocks assigned to this space PLUS any new unassigned ones
     let currentBlocks = allPinned.filter(
       (b) => orderArray.includes(b.id) || unassignedBlocks.includes(b),
     );
 
-    return currentBlocks.sort((a, b) => {
-      const indexA = orderArray.indexOf(a.id);
-      const indexB = orderArray.indexOf(b.id);
-      if (indexA === -1 && indexB === -1) return 0;
-      if (indexA === -1) return 1; // unassigned go to bottom
-      if (indexB === -1) return -1;
-      return indexA - indexB;
-    });
+    return currentBlocks
+      .sort((a, b) => {
+        const indexA = orderArray.indexOf(a.id);
+        const indexB = orderArray.indexOf(b.id);
+        if (indexA === -1 && indexB === -1) return 0;
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        return indexA - indexB;
+      })
+      .map((b) => ({
+        ...b,
+        _title: getBlockTitle(b, b.id),
+        _icon: getBlockIcon(b),
+      }));
   }, [localArcTabsState.pinnedBlocks, localArcTabsState.pinnedOrder, activeSpace]);
 
   // Synchronize all open panel blocks into the recentlyVisited list stably
@@ -158,7 +172,7 @@ export const ArcSidebar: React.FC = () => {
 
   // Find currently focused block in the active panel
   const focusedBlock = useMemo(() => {
-    return getFocusedBlock(state.panels, state.activePanel);
+    return getFocusedBlock(state.panels, state.activePanel, activePinningBlocks);
   }, [state.panels, state.activePanel]);
 
   const isBlockCached = !!(focusedBlock && state.blocks[focusedBlock]);
@@ -275,18 +289,16 @@ export const ArcSidebar: React.FC = () => {
             <div className="arc-pinned-grid">
               {currentSpacePinnedBlocks.map((block) => {
                 const isActive = openBlockIds.includes(block.id);
-                const title = getBlockTitle(block, block.id);
-                const icon = getBlockIcon(block);
                 return (
                   <TabItem
                     key={block.id}
                     blockId={block.id}
-                    title={title}
+                    title={block._title}
                     isActive={isActive}
                     isPinned={true}
                     activeSpace={activeSpace}
                     onClick={handleTabClick}
-                    icon={icon}
+                    icon={block._icon}
                     displayMode="grid"
                   />
                 );
@@ -295,18 +307,16 @@ export const ArcSidebar: React.FC = () => {
           ) : (
             currentSpacePinnedBlocks.map((block) => {
               const isActive = openBlockIds.includes(block.id);
-              const title = getBlockTitle(block, block.id);
-              const icon = getBlockIcon(block);
               return (
                 <TabItem
                   key={block.id}
                   blockId={block.id}
-                  title={title}
+                  title={block._title}
                   isActive={isActive}
                   isPinned={true}
                   activeSpace={activeSpace}
                   onClick={handleTabClick}
-                  icon={icon}
+                  icon={block._icon}
                   displayMode="list"
                 />
               );

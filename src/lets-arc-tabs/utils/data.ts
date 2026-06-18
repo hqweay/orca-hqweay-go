@@ -13,6 +13,25 @@ export const activePinningBlocks = new Set<number>();
 /** Blocks optimistically unpinned; filtered out until backend catches up. */
 export const optimisticUnpinnedIds = new Set<number>();
 
+/** Global flag to suppress tooltip during pin/unpin animation */
+export let isAnimating = false;
+let animatingTimer: ReturnType<typeof setTimeout> | null = null;
+
+export const setAnimating = (value: boolean) => {
+  if (animatingTimer) {
+    clearTimeout(animatingTimer);
+    animatingTimer = null;
+  }
+  if (value) {
+    isAnimating = true;
+  } else {
+    // Delay to prevent tooltip flash during list reorder
+    animatingTimer = setTimeout(() => {
+      isAnimating = false;
+    }, 150);
+  }
+};
+
 const getPinnedOrderFromSettings = (): Record<string, number[]> => {
   const settings = arcTabsPluginInstance?.getSettings() || {};
   return (settings.pinnedOrder || {}) as Record<string, number[]>;
@@ -182,6 +201,7 @@ export const removeRecentBlock = (idNum: number) => {
 };
 
 export const unpinBlock = async (idNum: number) => {
+  setAnimating(true);
   optimisticUnpinnedIds.add(idNum);
 
   // Optimistic UI update: instantly hide from UI
@@ -209,24 +229,16 @@ export const unpinBlock = async (idNum: number) => {
     await arcTabsPluginInstance.updateSettings({ pinnedOrder: orderObj });
   }
 
+  let backendSynced = false;
+
   try {
-    // await orca.commands.invokeEditorCommand(
-    //   "core.editor.removeTag",
-    //   null,
-    //   idNum,
-    //   pinTagName
-    // );
-
-    // // Wait a moment for backend indexing before verifying
-    // await new Promise(r => setTimeout(r, 200));
-
-    // Check if it worked
     let pinned = await fetchPinnedBlocks();
     let isPinned = pinned.some((b: any) => b.id === idNum);
 
     if (isPinned) {
-      console.log("Background unpin failed, using Nav fallback...");
+      // Add to exclude set BEFORE creating temp panel to prevent flicker
       activePinningBlocks.add(idNum);
+      
       const activePanelId = orca.state.activePanel;
 
       const originalWidth = findArcTabsPanelWidth(orca.state.panels) || 250;
@@ -234,14 +246,13 @@ export const unpinBlock = async (idNum: number) => {
       const arcTabsPanelId = findArcTabsPanelId(orca.state.panels);
       const targetPanelId = arcTabsPanelId || activePanelId;
 
-      const tempPanelId = orca.nav.addTo(targetPanelId, "top", {
+      const tempPanelId = orca.nav.addTo(targetPanelId, "bottom", {
         view: "block",
         viewArgs: { blockId: idNum },
         viewState: {},
       });
 
       if (tempPanelId) {
-        // Inject CSS to completely hide the temporary panel and prevent layout shift
         const style = document.createElement("style");
         style.id = `hide-temp-panel-${tempPanelId}`;
         style.innerHTML = `
@@ -257,11 +268,9 @@ export const unpinBlock = async (idNum: number) => {
         `;
         document.head.appendChild(style);
 
-        // Switch focus to the temp panel so the editor becomes active
         orca.nav.switchFocusTo(tempPanelId);
       }
 
-      // Wait a moment for block to mount
       await new Promise((r) => setTimeout(r, 500));
 
       await orca.commands.invokeEditorCommand(
@@ -277,7 +286,6 @@ export const unpinBlock = async (idNum: number) => {
         if (style) style.remove();
         orca.nav.switchFocusTo(activePanelId);
 
-        // Restore sidebar width
         const arcTabsPanelId = findArcTabsPanelId(orca.state.panels);
         if (arcTabsPanelId) {
           orca.nav.changeSizes(arcTabsPanelId, [
@@ -286,64 +294,64 @@ export const unpinBlock = async (idNum: number) => {
           ]);
         }
 
-        // Wait a tick before removing from pinning blocks to let UI stabilize
         setTimeout(() => activePinningBlocks.delete(idNum), 100);
       }
-    }
 
-    // Wait a short delay to allow backend to index the tag removal before UI reloads
-    await new Promise((r) => setTimeout(r, 300));
+      await new Promise((r) => setTimeout(r, 300));
+      backendSynced = true;
+    }
   } catch (e) {
     console.error("Failed to remove pin tag", e);
   } finally {
-    await syncPinnedBlocksWithBackend();
     optimisticUnpinnedIds.delete(idNum);
+    if (!backendSynced) {
+      await syncPinnedBlocksWithBackend();
+    }
+    setAnimating(false);
   }
 };
 
 export const pinBlock = async (idNum: number, spaceId: string) => {
+  setAnimating(true);
   const settings = arcTabsPluginInstance?.getSettings() || {};
   const pinTagName = settings.pinTagName || "ArcTab";
 
-  // --- Optimistic UI: update order + blocks together to avoid sort/section flicker ---
-  try {
-    const block = orca.state.blocks[idNum];
-    const optimisticBlock = block
-      ? {
-          id: idNum,
-          text: block.text || "",
-          properties: block.properties
-            ? JSON.parse(JSON.stringify(block.properties))
-            : [],
-          refs: block.refs ? JSON.parse(JSON.stringify(block.refs)) : [],
-        }
-      : {
-          id: idNum,
-          text: `Block ${idNum}`,
-          properties: [],
-          refs: [],
-        };
+  // Optimistic UI: update order + blocks together atomically
+  const block = orca.state.blocks[idNum];
+  const optimisticBlock = block
+    ? {
+        id: idNum,
+        text: block.text || "",
+        properties: block.properties
+          ? JSON.parse(JSON.stringify(block.properties))
+          : [],
+        refs: block.refs ? JSON.parse(JSON.stringify(block.refs)) : [],
+      }
+    : {
+        id: idNum,
+        text: `Block ${idNum}`,
+        properties: [],
+        refs: [],
+      };
 
-    const orderObj = {
-      ...(arcTabsState.pinnedOrder || settings.pinnedOrder || {}),
-    };
-    const orderArray = [...(orderObj[spaceId] || [])];
-    if (!orderArray.includes(idNum)) {
-      orderArray.unshift(idNum);
-      orderObj[spaceId] = orderArray;
-    }
-
-    const nextPinnedBlocks = [...arcTabsState.pinnedBlocks];
-    if (!nextPinnedBlocks.some((b) => b.id === idNum)) {
-      nextPinnedBlocks.push(optimisticBlock);
-    }
-
-    arcTabsState.pinnedOrder = orderObj;
-    arcTabsState.pinnedBlocks = nextPinnedBlocks;
-    arcTabsPluginInstance?.updateSettings({ pinnedOrder: orderObj });
-  } catch (e) {
-    console.error("Optimistic pin update failed", e);
+  const orderObj = {
+    ...(arcTabsState.pinnedOrder || settings.pinnedOrder || {}),
+  };
+  const orderArray = [...(orderObj[spaceId] || [])];
+  if (!orderArray.includes(idNum)) {
+    orderArray.unshift(idNum);
+    orderObj[spaceId] = orderArray;
   }
+
+  const nextPinnedBlocks = [...arcTabsState.pinnedBlocks];
+  if (!nextPinnedBlocks.some((b) => b.id === idNum)) {
+    nextPinnedBlocks.push(optimisticBlock);
+  }
+
+  // Update both atomically to prevent intermediate state flicker
+  arcTabsState.pinnedOrder = orderObj;
+  arcTabsState.pinnedBlocks = nextPinnedBlocks;
+  arcTabsPluginInstance?.updateSettings({ pinnedOrder: orderObj });
 
   try {
     // First try DataImporter directly (works if block is already active)
@@ -359,15 +367,12 @@ export const pinBlock = async (idNum: number, spaceId: string) => {
       ],
     });
 
-    // Wait a moment for backend indexing before verifying
     await new Promise((r) => setTimeout(r, 200));
 
-    // Check if it worked
     let pinned = await fetchPinnedBlocks();
     let isPinned = pinned.some((b: any) => b.id === idNum);
 
     if (!isPinned) {
-      console.log("Background pin failed, using Nav fallback...");
       activePinningBlocks.add(idNum);
       const activePanelId = orca.state.activePanel;
 
@@ -376,14 +381,13 @@ export const pinBlock = async (idNum: number, spaceId: string) => {
       const arcTabsPanelId = findArcTabsPanelId(orca.state.panels);
       const targetPanelId = arcTabsPanelId || activePanelId;
 
-      const tempPanelId = orca.nav.addTo(targetPanelId, "top", {
+      const tempPanelId = orca.nav.addTo(targetPanelId, "bottom", {
         view: "block",
         viewArgs: { blockId: idNum },
         viewState: {},
       });
 
       if (tempPanelId) {
-        // Inject CSS to completely hide the temporary panel and prevent layout shift
         const style = document.createElement("style");
         style.id = `hide-temp-panel-${tempPanelId}`;
         style.innerHTML = `
@@ -399,10 +403,8 @@ export const pinBlock = async (idNum: number, spaceId: string) => {
         `;
         document.head.appendChild(style);
 
-        // Switch focus to the temp panel so the editor becomes active
         orca.nav.switchFocusTo(tempPanelId);
 
-        // Wait for rendering (increase to 500ms to be safe)
         await new Promise((resolve) => setTimeout(resolve, 500));
 
         await DataImporter.applyTag(idNum, {
@@ -419,14 +421,12 @@ export const pinBlock = async (idNum: number, spaceId: string) => {
 
         orca.nav.close(tempPanelId);
 
-        // Clean up CSS
         const cleanupStyle = document.getElementById(
           `hide-temp-panel-${tempPanelId}`,
         );
         if (cleanupStyle) cleanupStyle.remove();
         orca.nav.switchFocusTo(activePanelId);
 
-        // Restore sidebar width
         const arcTabsPanelId = findArcTabsPanelId(orca.state.panels);
         if (arcTabsPanelId) {
           orca.nav.changeSizes(arcTabsPanelId, [
@@ -435,7 +435,6 @@ export const pinBlock = async (idNum: number, spaceId: string) => {
           ]);
         }
 
-        // Wait a tick before removing from pinning blocks to let UI stabilize
         setTimeout(() => activePinningBlocks.delete(idNum), 100);
       }
 
@@ -445,13 +444,14 @@ export const pinBlock = async (idNum: number, spaceId: string) => {
 
     if (!isPinned) {
       revertOptimisticPin(idNum, spaceId);
+      setAnimating(false);
       return;
     }
-
-    console.log("Pinned successfully using Tag approach");
   } catch (err: any) {
     console.error("Pin failed", err);
     revertOptimisticPin(idNum, spaceId);
+  } finally {
+    setAnimating(false);
   }
 };
 
