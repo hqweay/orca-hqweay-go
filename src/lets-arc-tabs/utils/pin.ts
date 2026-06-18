@@ -99,7 +99,7 @@ export const pinBlock = async (idNum: number, spaceId: string) => {
     });
   } catch (err) {
     console.error("Pin failed", err);
-    revertPin(idNum, spaceId);
+    revertPin(idNum);
   }
 };
 
@@ -148,7 +148,7 @@ export const unpinBlock = async (idNum: number, space?: string) => {
   }
 };
 
-const revertPin = (idNum: number, _spaceId: string) => {
+const revertPin = (idNum: number) => {
   arcTabsState.pinnedBlocks = arcTabsState.pinnedBlocks.filter(
     (b) => b.id !== idNum
   );

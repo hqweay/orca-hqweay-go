@@ -248,10 +248,10 @@ export const ArcSidebar: React.FC = () => {
           onDrop={handleDrop}
           style={{ minHeight: "50px" }}
         >
-          <div className="arc-sidebar-section-title">{t("arcTabs.pinned")}</div>
+          <div className="arc-sidebar-section-title">{t("arc-tabs.pinned")}</div>
           {currentSpacePinnedBlocks.length === 0 && (
             <div style={{ fontSize: "12px", opacity: 0.5, padding: "0 8px" }}>
-              No pinned tabs yet
+              {t("arc-tabs.noPinned")}
             </div>
           )}
           {localArcTabsState.pinnedDisplayMode === 'grid' ? (
@@ -295,7 +295,7 @@ export const ArcSidebar: React.FC = () => {
 
         {/* Today Tabs Section */}
         <div className="arc-sidebar-section">
-          <div className="arc-sidebar-section-title">{t("arcTabs.today")}</div>
+          <div className="arc-sidebar-section-title">{t("arc-tabs.today")}</div>
           {filteredTodayTabs.map((tab) => {
             const block = state.blocks[tab.id];
             const isActive = openBlockIds.includes(tab.id);
@@ -334,7 +334,7 @@ export const ArcSidebar: React.FC = () => {
 
         <div
           className="arc-space-item arc-space-add"
-          title={t("arcTabs.newSpace")}
+          title={t("arc-tabs.newSpace")}
           onClick={() => setShowNewSpaceInput(true)}
         >
           +
@@ -368,7 +368,7 @@ export const ArcSidebar: React.FC = () => {
             }}
           >
             <h3 style={{ margin: "0 0 16px 0", fontSize: "15px", fontWeight: 600 }}>
-              {t("arcTabs.newSpace")}
+              {t("arc-tabs.newSpace")}
             </h3>
             <orca.components.Input
               value={newSpaceName}
@@ -380,7 +380,7 @@ export const ArcSidebar: React.FC = () => {
                   setNewSpaceName("");
                 }
               }}
-              placeholder="Space name"
+              placeholder={t("arc-tabs.spaceName")}
               autoFocus
               width="100%"
             />

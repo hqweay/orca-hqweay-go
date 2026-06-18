@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { t } from "@/libs/l10n";
 import { pinBlock, unpinBlock } from "../utils/pin";
 import { removeRecentBlock } from "../utils/recent";
 
@@ -84,7 +85,7 @@ export const TabItem: React.FC<TabItemProps> = ({
           {isPinned && isHovered && (
             <span
               className="arc-tab-grid-unpin"
-              title="Unpin"
+              title={t("arc-tabs.unpin")}
               onClick={(e) => {
                 e.stopPropagation();
                 handleUnpinClick();
@@ -112,7 +113,7 @@ export const TabItem: React.FC<TabItemProps> = ({
         {isPinned ? (
           <button
             className="arc-tab-action-btn"
-            title="Unpin"
+            title={t("arc-tabs.unpin")}
             style={{ marginLeft: '8px', flexShrink: 0 }}
             onClick={(e) => { e.stopPropagation(); handleUnpinClick(); }}
           >
@@ -122,14 +123,14 @@ export const TabItem: React.FC<TabItemProps> = ({
           <div className="arc-tab-actions" onClick={(e) => e.stopPropagation()}>
             <button
               className="arc-tab-action-btn"
-              title="Pin"
+              title={t("arc-tabs.pin")}
               onClick={handlePinClick}
             >
               <i className="ti ti-pin" />
             </button>
             <button
               className="arc-tab-action-btn"
-              title="Close"
+              title={t("arc-tabs.close")}
               onClick={handleCloseClick}
             >
               <i className="ti ti-x" />
