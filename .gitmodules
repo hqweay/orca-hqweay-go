@@ -16,3 +16,6 @@
 [submodule "vendor/orca-tune-theme"]
 	path = vendor/orca-tune-theme
 	url = git@github.com:cordinGH/orca-tune-theme.git
+[submodule "vendor/orca-tabs-plugin"]
+	path = vendor/orca-tabs-plugin
+	url = git@github.com:SaXz2/orca-tabs-plugin.git
