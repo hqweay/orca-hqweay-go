@@ -135,6 +135,51 @@
   background: transparent;
 }
 
+.arc-space-input {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--orca-color-primary-5);
+  background-color: var(--orca-color-bg-2);
+  color: var(--orca-text-color);
+  font-size: 12px;
+  text-align: center;
+  outline: none;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.arc-space-context-menu {
+  position: fixed;
+  background: var(--orca-color-bg-2);
+  border: 1px solid var(--orca-color-border-2);
+  border-radius: 8px;
+  padding: 4px;
+  min-width: 120px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+}
+
+.arc-space-context-item {
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background-color 0.1s ease;
+}
+
+.arc-space-context-item:hover {
+  background-color: var(--orca-color-bg-3);
+}
+
+.arc-space-context-danger {
+  color: var(--orca-color-danger-5, #ef4444);
+}
+
+.arc-space-context-danger:hover {
+  background-color: var(--orca-color-danger-1, #fef2f2);
+}
+
 /* Pinned Grid Layout */
 .arc-pinned-grid {
   display: grid;

@@ -7,6 +7,7 @@ import { PropType } from "@/libs/consts";
 import type { Block } from "../orca.d.ts";
 import { ArcSidebar } from './components/ArcSidebar';
 import { arcTabsState } from './utils/data';
+import { loadPinnedBlocks } from './utils/pin';
 
 export let arcTabsPluginInstance: ArcTabsPlugin;
 
@@ -64,7 +65,6 @@ export default class ArcTabsPlugin extends BasePlugin {
 
     const settings = this.getSettings();
     arcTabsState.pinnedDisplayMode = settings.pinnedDisplayMode || 'grid';
-    arcTabsState.pinnedOrder = settings.pinnedOrder || {};
 
     this.ensurePinTagSchema();
   }
@@ -74,9 +74,6 @@ export default class ArcTabsPlugin extends BasePlugin {
     this.ensurePinTagSchema();
     if (newConfig.pinnedDisplayMode) {
       arcTabsState.pinnedDisplayMode = newConfig.pinnedDisplayMode;
-    }
-    if (newConfig.pinnedOrder) {
-      arcTabsState.pinnedOrder = newConfig.pinnedOrder;
     }
   }
 
@@ -114,7 +111,35 @@ export default class ArcTabsPlugin extends BasePlugin {
         }
       }
 
-
+      if (tagBlock) {
+        const existingProps = tagBlock.properties || [];
+        const hasSpaceProp = existingProps.some((p: any) => p.name === "Space");
+        const hasDisplayNameProp = existingProps.some((p: any) => p.name === "displayName");
+        
+        const propsToAdd: any[] = [];
+        if (!hasSpaceProp) {
+          propsToAdd.push({
+            name: "Space",
+            type: 6,
+            typeArgs: { subType: "multi", choices: [] },
+          });
+        }
+        if (!hasDisplayNameProp) {
+          propsToAdd.push({
+            name: "displayName",
+            type: 1,
+          });
+        }
+        
+        if (propsToAdd.length > 0) {
+          await orca.commands.invokeEditorCommand(
+            "core.editor.setProperties",
+            null,
+            [tagBlock.id],
+            propsToAdd,
+          );
+        }
+      }
     } catch (e) {
       this.logger.error("Failed to ensure pin tag schema", e);
     }

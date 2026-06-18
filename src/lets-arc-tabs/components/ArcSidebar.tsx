@@ -8,17 +8,27 @@ import {
   findMainPanelId,
   getFocusedBlock,
 } from "../utils/nav";
-import {
-  pinBlock,
-  arcTabsState,
-  addRecentBlock,
-  loadPinnedBlocks,
-} from "../utils/data";
+import { arcTabsState } from "../utils/data";
+import { pinBlock, loadPinnedBlocks } from "../utils/pin";
+import { getSpaces, getBlocksInSpace } from "../utils/spaces";
+import { addRecentBlock } from "../utils/recent";
 import { TabItem } from "./TabItem";
 import { arcTabsPluginInstance } from "../index";
 
 const getBlockTitle = (block: any, id: string | number) => {
   if (!block) return `Block ${String(id).substring(0, 8)}`;
+
+  const pinTagName = arcTabsPluginInstance?.getSettings()?.pinTagName || "ArcTab";
+  const tagRef = block.refs?.find((r: any) => {
+    const tagBlock = orca.state.blocks[r.id];
+    return tagBlock?.aliases?.includes(pinTagName);
+  });
+  
+  const displayName =
+    tagRef?.data?.find((p: any) => p.name === "displayName")?.value ||
+    block.properties?.find((p: any) => p.name === "displayName")?.value;
+  
+  if (displayName) return displayName;
   
   const reprProp = block.properties?.find((p: any) => p.name === "_repr");
   if (reprProp && reprProp.value?.type === "journal" && reprProp.value?.date) {
@@ -66,15 +76,22 @@ export const ArcSidebar: React.FC = () => {
   const state = useSnapshot(orca.state);
   const localArcTabsState = useSnapshot(arcTabsState);
 
-  const [activeSpace, setActiveSpace] = useState("default");
+  const [activeSpace, setActiveSpace] = useState<string | null>(null);
+  const [showNewSpaceInput, setShowNewSpaceInput] = useState(false);
+  const [newSpaceName, setNewSpaceName] = useState("");
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; space: string } | null>(null);
+
+  const spaces = useMemo(() => getSpaces(), [localArcTabsState.pinnedBlocks]);
 
   useEffect(() => {
-    const settings = arcTabsPluginInstance?.getSettings() || {};
-    if (Object.keys(arcTabsState.pinnedOrder).length === 0) {
-      arcTabsState.pinnedOrder = settings.pinnedOrder || {};
-    }
     loadPinnedBlocks();
   }, []);
+
+  useEffect(() => {
+    if (activeSpace === null && spaces.length > 0) {
+      setActiveSpace(spaces[0]);
+    }
+  }, [spaces, activeSpace]);
 
   const openBlockIds = useMemo(
     () => getActiveBlocks(state.panels).map(Number),
@@ -82,29 +99,11 @@ export const ArcSidebar: React.FC = () => {
   );
 
   const currentSpacePinnedBlocks = useMemo(() => {
-    const orderObj = localArcTabsState.pinnedOrder || {};
-    const orderArray = (orderObj[activeSpace] || []) as number[];
+    const blocks = activeSpace
+      ? getBlocksInSpace(activeSpace)
+      : localArcTabsState.pinnedBlocks;
 
-    const allPinned = localArcTabsState.pinnedBlocks;
-
-    const allAssignedIds = Object.values(orderObj).flat() as number[];
-    const unassignedBlocks = allPinned.filter(
-      (b) => !allAssignedIds.includes(b.id),
-    );
-
-    let currentBlocks = allPinned.filter(
-      (b) => orderArray.includes(b.id) || unassignedBlocks.includes(b),
-    );
-
-    return currentBlocks
-      .sort((a, b) => {
-        const indexA = orderArray.indexOf(a.id);
-        const indexB = orderArray.indexOf(b.id);
-        if (indexA === -1 && indexB === -1) return 0;
-        if (indexA === -1) return 1;
-        if (indexB === -1) return -1;
-        return indexA - indexB;
-      })
+    return blocks
       .map((b) => {
         const fullBlock = state.blocks[b.id] || b;
         return {
@@ -113,7 +112,7 @@ export const ArcSidebar: React.FC = () => {
           _icon: getBlockIcon(fullBlock),
         };
       });
-  }, [localArcTabsState.pinnedBlocks, localArcTabsState.pinnedOrder, activeSpace, state.blocks]);
+  }, [localArcTabsState.pinnedBlocks, activeSpace, state.blocks]);
 
   useEffect(() => {
     let changed = false;
@@ -143,15 +142,9 @@ export const ArcSidebar: React.FC = () => {
   const todayTabs = useMemo(() => {
     const pinnedIds = currentSpacePinnedBlocks.map((b) => b.id);
     return localArcTabsState.recentlyVisited
-      .filter(
-        (item) =>
-          !pinnedIds.includes(item.id),
-      )
+      .filter((item) => !pinnedIds.includes(item.id))
       .slice(0, 15);
-  }, [
-    localArcTabsState.recentlyVisited,
-    currentSpacePinnedBlocks,
-  ]);
+  }, [localArcTabsState.recentlyVisited, currentSpacePinnedBlocks]);
 
   const focusedBlock = useMemo(() => {
     return getFocusedBlock(state.panels, state.activePanel);
@@ -208,7 +201,6 @@ export const ArcSidebar: React.FC = () => {
         }
 
         let ids: string[] = [];
-
         if (typeof parsed === "object" && parsed !== null) {
           if (parsed.id) ids.push(parsed.id);
           else if (Array.isArray(parsed.blockIds)) ids = parsed.blockIds;
@@ -221,7 +213,7 @@ export const ArcSidebar: React.FC = () => {
         for (const id of ids) {
           const numId = Number(id);
           if (!isNaN(numId)) {
-            await pinBlock(numId, activeSpace);
+            await pinBlock(numId, activeSpace || spaces[0] || "default");
           }
         }
       }
@@ -229,6 +221,28 @@ export const ArcSidebar: React.FC = () => {
       console.error("Failed to parse dropped block data", err);
     }
   };
+
+  const handleNewSpace = () => {
+    if (newSpaceName.trim()) {
+      const name = newSpaceName.trim();
+      setActiveSpace(name);
+      setNewSpaceName("");
+      setShowNewSpaceInput(false);
+    }
+  };
+
+  const handleSpaceContextMenu = (e: React.MouseEvent, space: string) => {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY, space });
+  };
+
+  useEffect(() => {
+    const handleClick = () => setContextMenu(null);
+    if (contextMenu) {
+      document.addEventListener("click", handleClick);
+      return () => document.removeEventListener("click", handleClick);
+    }
+  }, [contextMenu]);
 
   return (
     <div className="arc-sidebar-container">
@@ -259,7 +273,7 @@ export const ArcSidebar: React.FC = () => {
                     title={block._title}
                     isActive={isActive}
                     isPinned={true}
-                    activeSpace={activeSpace}
+                    activeSpace={activeSpace || spaces[0] || "default"}
                     onClick={handleTabClick}
                     icon={block._icon}
                     displayMode="grid"
@@ -277,7 +291,7 @@ export const ArcSidebar: React.FC = () => {
                   title={block._title}
                   isActive={isActive}
                   isPinned={true}
-                  activeSpace={activeSpace}
+                  activeSpace={activeSpace || spaces[0] || "default"}
                   onClick={handleTabClick}
                   icon={block._icon}
                   displayMode="list"
@@ -305,7 +319,7 @@ export const ArcSidebar: React.FC = () => {
                 title={title}
                 isActive={isActive}
                 isPinned={false}
-                activeSpace={activeSpace}
+                activeSpace={activeSpace || spaces[0] || "default"}
                 onClick={handleTabClick}
                 icon={icon}
               />
@@ -315,17 +329,77 @@ export const ArcSidebar: React.FC = () => {
       </div>
 
       <div className="arc-sidebar-footer">
-        <div
-          className={`arc-space-item ${activeSpace === "default" ? "active" : ""}`}
-          title={t("arcTabs.defaultSpace")}
-          onClick={() => setActiveSpace("default")}
-        >
-          P
-        </div>
-        <div className="arc-space-item" title={t("arcTabs.newSpace")}>
-          +
-        </div>
+        {spaces.map((space) => (
+          <div
+            key={space}
+            className={`arc-space-item ${activeSpace === space ? "active" : ""}`}
+            title={space}
+            onClick={() => setActiveSpace(space)}
+            onContextMenu={(e) => handleSpaceContextMenu(e, space)}
+          >
+            {space.charAt(0).toUpperCase()}
+          </div>
+        ))}
+
+        {showNewSpaceInput ? (
+          <input
+            className="arc-space-input"
+            value={newSpaceName}
+            onChange={(e) => setNewSpaceName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleNewSpace();
+              if (e.key === "Escape") {
+                setShowNewSpaceInput(false);
+                setNewSpaceName("");
+              }
+            }}
+            onBlur={() => {
+              if (!newSpaceName.trim()) {
+                setShowNewSpaceInput(false);
+              }
+            }}
+            autoFocus
+            placeholder="Space name"
+          />
+        ) : (
+          <div
+            className="arc-space-item arc-space-add"
+            title={t("arcTabs.newSpace")}
+            onClick={() => setShowNewSpaceInput(true)}
+          >
+            +
+          </div>
+        )}
       </div>
+
+      {contextMenu && (
+        <div
+          className="arc-space-context-menu"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+        >
+          <div
+            className="arc-space-context-item"
+            onClick={() => {
+              const newName = prompt("Rename space", contextMenu.space);
+              if (newName && newName.trim() && newName !== contextMenu.space) {
+                // TODO: renameSpace
+              }
+              setContextMenu(null);
+            }}
+          >
+            Rename
+          </div>
+          <div
+            className="arc-space-context-item arc-space-context-danger"
+            onClick={() => {
+              // TODO: deleteSpace
+              setContextMenu(null);
+            }}
+          >
+            Delete
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { pinBlock, unpinBlock, removeRecentBlock } from "../utils/data";
+import { pinBlock, unpinBlock } from "../utils/pin";
+import { removeRecentBlock } from "../utils/recent";
 
 interface TabItemProps {
   blockId: number;
