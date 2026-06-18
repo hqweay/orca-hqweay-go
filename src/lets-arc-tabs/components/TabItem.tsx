@@ -64,9 +64,6 @@ export const TabItem: React.FC<TabItemProps> = ({
     }
   };
 
-  const ContextMenu = orca.components.ContextMenu;
-  const Menu = orca.components.Menu;
-  const MenuText = orca.components.MenuText;
   const Tooltip = orca.components.Tooltip;
 
   if (displayMode === "grid") {
@@ -77,104 +74,79 @@ export const TabItem: React.FC<TabItemProps> = ({
       : "?";
 
     return (
-      <ContextMenu
-        allowBeyondContainer={false}
-        menu={(close) => (
-          <Menu>
-            <MenuText
+      <Tooltip text={title}>
+        <div
+          className={`arc-tab-grid-item ${isActive ? "active" : ""}`}
+          onClick={() => onClick(blockId)}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
+          {isHovered ? (
+            <span
+              className="arc-tab-unpin-btn"
               title="Unpin"
-              preIcon="ti ti-pin-off"
-              onClick={() => {
-                close();
+              onClick={(e) => {
+                e.stopPropagation();
                 handleUnpinClick();
               }}
-            />
-          </Menu>
-        )}
-      >
-        {(openMenu: any) => (
-          <Tooltip text={title}>
-            <div
-              className={`arc-tab-grid-item ${isActive ? "active" : ""}`}
-              onClick={() => onClick(blockId)}
-              onContextMenu={(e: any) => {
-                e.preventDefault();
-                e.stopPropagation();
-                openMenu(e);
-              }}
-              onMouseEnter={() => setIsHovered(true)}
-              onMouseLeave={() => setIsHovered(false)}
             >
-              {displayIcon ? (
-                displayIcon
-              ) : (
-                <span className="arc-tab-initial">{initialText}</span>
-              )}
-            </div>
-          </Tooltip>
-        )}
-      </ContextMenu>
+              <i className="ti ti-x" />
+            </span>
+          ) : displayIcon ? (
+            displayIcon
+          ) : (
+            <span className="arc-tab-initial">{initialText}</span>
+          )}
+        </div>
+      </Tooltip>
     );
   }
 
   return (
-    <ContextMenu
-      allowBeyondContainer={true}
-      menu={(close) => (
-        <Menu>
-          {isPinned ? (
-            <MenuText
-              title="Unpin"
-              preIcon="ti ti-pin-off"
-              onClick={() => {
-                close();
-                handleUnpinClick();
-              }}
-            />
-          ) : (
-            <>
-              <MenuText
-                title="Pin to Arc Tabs"
-                preIcon="ti ti-pin"
-                onClick={() => {
-                  close();
-                  handlePinClick();
-                }}
-              />
-              <MenuText
-                title="Close Tab"
-                preIcon="ti ti-x"
-                onClick={() => {
-                  close();
-                  handleCloseClick();
-                }}
-              />
-            </>
-          )}
-        </Menu>
-      )}
-    >
-      {(openMenu: any) => (
-        <Tooltip text={title}>
-          <div
-            className={`arc-tab-item ${isActive ? "active" : ""}`}
-            onClick={() => onClick(blockId)}
-            onContextMenu={(e: any) => {
-              e.preventDefault();
-              e.stopPropagation();
-              openMenu(e);
-            }}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-          >
-            <span className="arc-tab-icon">{icon || "📄"}</span>
-            <span className="arc-tab-title">{title}</span>
+    <Tooltip text={title}>
+      <div
+        className={`arc-tab-item ${isActive ? "active" : ""}`}
+        onClick={() => onClick(blockId)}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <span className="arc-tab-icon">{icon || "📄"}</span>
+        <span className="arc-tab-title">{title}</span>
 
-            {/* Show active dot if active */}
-            {isActive && <div className="arc-tab-active-dot" />}
+        {isHovered ? (
+          <div className="arc-tab-actions" onClick={(e) => e.stopPropagation()}>
+            {isPinned ? (
+              <button
+                className="arc-tab-action-btn"
+                title="Unpin"
+                onClick={handleUnpinClick}
+              >
+                <i className="ti ti-pin-off" />
+              </button>
+            ) : (
+              <>
+                <button
+                  className="arc-tab-action-btn"
+                  title="Pin"
+                  onClick={handlePinClick}
+                >
+                  <i className="ti ti-pin" />
+                </button>
+                <button
+                  className="arc-tab-action-btn"
+                  title="Close"
+                  onClick={handleCloseClick}
+                >
+                  <i className="ti ti-x" />
+                </button>
+              </>
+            )}
           </div>
-        </Tooltip>
-      )}
-    </ContextMenu>
+        ) : (
+          /* Show active dot if active and not hovered */
+          isActive && <div className="arc-tab-active-dot" />
+        )}
+      </div>
+    </Tooltip>
   );
 };

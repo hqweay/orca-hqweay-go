@@ -186,3 +186,72 @@
 .arc-tab-grid-item.active .arc-tab-initial {
   color: var(--orca-color-primary-6);
 }
+
+/* Hover Action Buttons and Containers */
+.arc-tab-unpin-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 14px;
+  color: var(--orca-color-text-3);
+  transition: color 0.15s ease;
+}
+
+.arc-tab-unpin-btn:hover {
+  color: var(--orca-color-danger-5, #ef4444);
+}
+
+.arc-tab-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  animation: arcTabFadeIn 0.1s ease-in-out;
+  flex-shrink: 0;
+}
+
+.arc-tab-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--orca-color-text-3);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.arc-tab-action-btn:hover {
+  background-color: var(--orca-color-bg-3);
+  color: var(--orca-color-text-1);
+}
+
+.arc-tab-action-btn:hover .ti-x {
+  color: var(--orca-color-danger-5, #ef4444);
+}
+
+.arc-tab-action-btn:hover .ti-pin {
+  color: var(--orca-color-primary-5);
+}
+
+.arc-tab-action-btn:hover .ti-pin-off {
+  color: var(--orca-color-primary-5);
+}
+
+@keyframes arcTabFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
