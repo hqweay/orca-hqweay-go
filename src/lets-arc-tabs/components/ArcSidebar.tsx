@@ -191,7 +191,7 @@ export const ArcSidebar: React.FC = () => {
       block.properties?.find((p: any) => p.name === "displayName")?.value;
 
     if (displayName) {
-      return displayName;
+      return String(displayName);
     }
 
     // Try to get journal date if it's a journal block

@@ -1,6 +1,7 @@
 import { DataImporter } from "@/libs/DataImporter";
 import { arcTabsPluginInstance } from "../index";
 import { proxy } from "valtio";
+import { PropType } from "@/libs/consts";
 
 export const activePinningBlocks = new Set<number>();
 
@@ -194,6 +195,23 @@ export const unpinBlock = async (idNum: number) => {
 };
 
 export const renamePinnedBlock = async (idNum: number, newName: string) => {
+  console.log("Renaming pinned block", idNum, newName);
+  // --- Optimistic UI update: instantly update name in memory state ---
+  const idx = arcTabsState.pinnedBlocks.findIndex((b) => b.id === idNum);
+  if (idx !== -1) {
+    const block = { ...arcTabsState.pinnedBlocks[idx] };
+    let props = block.properties ? [...block.properties] : [];
+    const namePropIdx = props.findIndex((p: any) => p.name === "displayName");
+    if (namePropIdx !== -1) {
+      props[namePropIdx] = { ...props[namePropIdx], value: newName };
+    } else {
+      props.push({ name: "displayName", type: PropType.Text, value: newName });
+    }
+    block.properties = props;
+    arcTabsState.pinnedBlocks[idx] = block;
+  }
+  // -----------------------------------------------------------------
+
   const settings = arcTabsPluginInstance?.getSettings() || {};
   const pinTagName = settings.pinTagName || "ArcTab";
 
@@ -206,17 +224,91 @@ export const renamePinnedBlock = async (idNum: number, newName: string) => {
     await pinBlock(idNum, "default");
   }
 
-  // Update tag schema property
-  await DataImporter.applyTag(idNum, {
-    name: pinTagName,
-    properties: [
-      {
-        name: "displayName",
-        type: 0, // PropType.Text
-        value: newName
+  try {
+    // First try DataImporter directly (works if block is already active)
+    await DataImporter.applyTag(idNum, {
+      name: pinTagName,
+      properties: [
+        {
+          name: "displayName",
+          type: PropType.Text,
+          value: newName,
+        },
+      ],
+    });
+
+    // Wait a moment for backend indexing before verifying
+    await new Promise(r => setTimeout(r, 200));
+
+    // Check if it worked
+    let verifiedPinned = await fetchPinnedBlocks();
+    let blockObj = verifiedPinned.find((b: any) => b.id === idNum);
+    let nameProp = blockObj?.properties?.find((p: any) => p.name === "displayName");
+    let renameSucceeded = nameProp?.value === newName;
+
+    if (!renameSucceeded) {
+      console.log("Background rename failed, using Nav fallback...");
+      activePinningBlocks.add(idNum);
+      const activePanelId = orca.state.activePanel;
+
+      const tempPanelId = orca.nav.addTo(activePanelId, "right", {
+        view: "block",
+        viewArgs: { blockId: idNum },
+        viewState: {}
+      });
+
+      if (tempPanelId) {
+        // Inject CSS to completely hide the temporary panel and prevent layout shift
+        const style = document.createElement("style");
+        style.id = `hide-temp-panel-${tempPanelId}`;
+        style.innerHTML = `
+          .orca-panel[data-panel-id="${tempPanelId}"],
+          div[data-panel-id="${tempPanelId}"] {
+            position: absolute !important;
+            opacity: 0 !important;
+            width: 1px !important;
+            height: 1px !important;
+            pointer-events: none !important;
+            z-index: -999 !important;
+          }
+        `;
+        document.head.appendChild(style);
+
+        // Switch focus to the temp panel so the editor becomes active
+        orca.nav.switchFocusTo(tempPanelId);
+
+        // Wait for rendering (500ms to be safe)
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        await DataImporter.applyTag(idNum, {
+          name: pinTagName,
+          properties: [
+            {
+              name: "displayName",
+              type: PropType.Text,
+              value: newName,
+            },
+          ],
+        });
+
+        orca.nav.close(tempPanelId);
+
+        // Clean up CSS
+        const cleanupStyle = document.getElementById(`hide-temp-panel-${tempPanelId}`);
+        if (cleanupStyle) cleanupStyle.remove();
+        orca.nav.switchFocusTo(activePanelId);
+
+        // Wait a tick before removing from pinning blocks to let UI stabilize
+        setTimeout(() => activePinningBlocks.delete(idNum), 100);
       }
-    ]
-  });
+    }
+  } catch (e) {
+    console.error("Rename failed", e);
+  } finally {
+    // Re-fetch to guarantee sync with reality
+    const blocks = await fetchPinnedBlocks();
+    arcTabsState.pinnedBlocks = blocks;
+  }
 };
 
 export const pinBlock = async (idNum: number, spaceId: string) => {

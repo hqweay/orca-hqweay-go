@@ -61,36 +61,52 @@ export const TabItem: React.FC<TabItemProps> = ({
     }
   };
 
-  const handleRenameClick = () => {
-    const newName = window.prompt("Enter new display name for this tab:", title);
-    if (newName !== null && newName.trim() !== "") {
-      renamePinnedBlock(blockId, newName.trim());
-    }
-  };
-
   const ContextMenu = orca.components.ContextMenu;
   const Menu = orca.components.Menu;
   const MenuText = orca.components.MenuText;
   const Tooltip = orca.components.Tooltip;
+  const Input = orca.components.Input;
 
   if (displayMode === 'grid') {
     const hasCustomIcon = icon && icon !== '📄';
     const displayIcon = hasCustomIcon ? icon : null;
-    const initialText = title ? title.trim().substring(0, 1).toUpperCase() : '?';
+    const initialText = title ? String(title).trim().substring(0, 1).toUpperCase() : '?';
 
     return (
       <ContextMenu
         menu={(close) => (
           <Menu>
+            <div style={{ padding: "6px 8px", borderBottom: "1px solid var(--orca-color-border-2)", minWidth: "140px" }}>
+              <Input
+                defaultValue={title}
+                autoFocus
+                onFocus={(e) => e.target.select()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const val = e.currentTarget.value.trim();
+                    if (val) {
+                      renamePinnedBlock(blockId, val);
+                    }
+                    close();
+                  } else if (e.key === 'Escape') {
+                    close();
+                  }
+                }}
+                onBlur={(e) => {
+                  const val = e.target.value.trim();
+                  if (val) {
+                    renamePinnedBlock(blockId, val);
+                  }
+                }}
+                onClick={(e) => e.stopPropagation()}
+                placeholder="Rename tab..."
+                style={{ width: "100%" }}
+              />
+            </div>
             <MenuText 
               title="Unpin" 
               preIcon="ti ti-pin-off" 
               onClick={() => { close(); handleUnpinClick(); }} 
-            />
-            <MenuText 
-              title="Rename" 
-              preIcon="ti ti-edit" 
-              onClick={() => { close(); handleRenameClick(); }} 
             />
           </Menu>
         )}
@@ -122,15 +138,37 @@ export const TabItem: React.FC<TabItemProps> = ({
         <Menu>
           {isPinned ? (
             <>
+              <div style={{ padding: "6px 8px", borderBottom: "1px solid var(--orca-color-border-2)", minWidth: "140px" }}>
+                <Input
+                  defaultValue={title}
+                  autoFocus
+                  onFocus={(e) => e.target.select()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const val = e.currentTarget.value.trim();
+                      if (val) {
+                        renamePinnedBlock(blockId, val);
+                      }
+                      close();
+                    } else if (e.key === 'Escape') {
+                      close();
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const val = e.target.value.trim();
+                    if (val) {
+                      renamePinnedBlock(blockId, val);
+                    }
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  placeholder="Rename tab..."
+                  style={{ width: "100%" }}
+                />
+              </div>
               <MenuText 
                 title="Unpin" 
                 preIcon="ti ti-pin-off" 
                 onClick={() => { close(); handleUnpinClick(); }} 
-              />
-              <MenuText 
-                title="Rename" 
-                preIcon="ti ti-edit" 
-                onClick={() => { close(); handleRenameClick(); }} 
               />
             </>
           ) : (
