@@ -4,9 +4,46 @@ import { proxy } from "valtio";
 
 export const activePinningBlocks = new Set<number>();
 
+const LOCAL_STORAGE_KEY = "orca-arc-tabs-recent";
+
 export const arcTabsState = proxy({
-  unpinningBlocks: [] as number[]
+  unpinningBlocks: [] as number[],
+  recentlyVisited: (() => {
+    try {
+      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+      return saved ? JSON.parse(saved).map(Number) : [];
+    } catch {
+      return [];
+    }
+  })() as number[]
 });
+
+export const addRecentBlock = (idNum: number) => {
+  // If already in list, DO NOT change its position (keep it stable)
+  if (arcTabsState.recentlyVisited.includes(idNum)) {
+    return;
+  }
+  
+  const list = [...arcTabsState.recentlyVisited];
+  list.unshift(idNum);
+  const trimmed = list.slice(0, 15);
+  arcTabsState.recentlyVisited = trimmed;
+  try {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(trimmed));
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+export const removeRecentBlock = (idNum: number) => {
+  const list = arcTabsState.recentlyVisited.filter(id => id !== idNum);
+  arcTabsState.recentlyVisited = list;
+  try {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
+  } catch (e) {
+    console.error(e);
+  }
+};
 
 export const unpinBlock = async (idNum: number) => {
   // Optimistic UI update: instantly hide from UI

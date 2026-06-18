@@ -3,8 +3,8 @@ import { useSnapshot } from "valtio";
 import { t } from "@/libs/l10n";
 
 import styles from "../styles.css?inline";
-import { getActiveBlocks, findMainPanelId } from "../utils/nav";
-import { fetchPinnedBlocks, pinBlock, activePinningBlocks, arcTabsState } from "../utils/data";
+import { getActiveBlocks, findMainPanelId, getFocusedBlock } from "../utils/nav";
+import { fetchPinnedBlocks, pinBlock, activePinningBlocks, arcTabsState, addRecentBlock } from "../utils/data";
 import { TabItem } from "./TabItem";
 import { arcTabsPluginInstance } from "../index";
 
@@ -47,26 +47,6 @@ export const ArcSidebar: React.FC = () => {
       return !activePinningBlocks.has(id);
     });
   }, [state.panels]);
-
-  const todayTabs = useMemo(() => {
-    const historyBlocks: number[] = [];
-
-    activeBlockIds.forEach((id) => {
-      if (!historyBlocks.includes(id)) historyBlocks.push(id);
-    });
-
-    [...state.panelBackHistory].reverse().forEach((history) => {
-      if (history.view === "block" && history.viewArgs?.blockId) {
-        const id = Number(history.viewArgs.blockId);
-        if (!activePinningBlocks.has(id)) {
-          if (!historyBlocks.includes(id)) historyBlocks.push(id);
-        }
-      }
-    });
-
-    return historyBlocks.slice(0, 10);
-  }, [state.panelBackHistory, activeBlockIds]);
-
   // Filter and SORT pinned blocks for the active space
   const currentSpacePinnedBlocks = useMemo(() => {
     const settings = arcTabsPluginInstance?.getSettings() || {};
@@ -92,6 +72,45 @@ export const ArcSidebar: React.FC = () => {
       return indexA - indexB;
     });
   }, [pinnedBlocks, activeSpace, localArcTabsState.unpinningBlocks]);
+
+  // Synchronize all open panel blocks into the recentlyVisited list stably
+  useEffect(() => {
+    let changed = false;
+    const list = [...arcTabsState.recentlyVisited];
+    activeBlockIds.forEach((id) => {
+      if (!list.includes(id)) {
+        list.unshift(id);
+        changed = true;
+      }
+    });
+    if (changed) {
+      arcTabsState.recentlyVisited = list.slice(0, 15);
+      try {
+        localStorage.setItem("orca-arc-tabs-recent", JSON.stringify(arcTabsState.recentlyVisited));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, [activeBlockIds]);
+
+  const todayTabs = useMemo(() => {
+    const pinnedIds = currentSpacePinnedBlocks.map((b) => b.id);
+    return localArcTabsState.recentlyVisited.filter(
+      (id) => !pinnedIds.includes(id) && !localArcTabsState.unpinningBlocks.includes(id)
+    ).slice(0, 15);
+  }, [localArcTabsState.recentlyVisited, currentSpacePinnedBlocks, localArcTabsState.unpinningBlocks]);
+
+  // Find currently focused block in the active panel
+  const focusedBlock = useMemo(() => {
+    return getFocusedBlock(state.panels, state.activePanel);
+  }, [state.panels, state.activePanel]);
+
+  // Track page visits
+  useEffect(() => {
+    if (focusedBlock && !activePinningBlocks.has(focusedBlock)) {
+      addRecentBlock(focusedBlock);
+    }
+  }, [focusedBlock]);
 
   const getBlockDisplayName = (block: any) => {
     const settings = arcTabsPluginInstance?.getSettings() || {};

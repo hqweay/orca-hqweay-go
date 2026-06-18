@@ -25,3 +25,29 @@ export const getActiveBlocks = (panel: any): string[] => {
   }
   return [];
 };
+
+export const getFocusedBlock = (panel: any, activePanelId: string | null): number | null => {
+  if (!activePanelId || !panel) return null;
+  
+  if (panel.id === activePanelId) {
+    if (panel.view === 'block' && panel.viewArgs?.blockId) {
+      return Number(panel.viewArgs.blockId);
+    }
+    if (panel.view === 'journal' && panel.viewState) {
+      const blockIds = Object.keys(panel.viewState).filter(k => !isNaN(Number(k)));
+      if (blockIds.length > 0) {
+        return Number(blockIds[0]);
+      }
+    }
+    return null;
+  }
+  
+  if (panel.children) {
+    for (const child of panel.children) {
+      const id = getFocusedBlock(child, activePanelId);
+      if (id) return id;
+    }
+  }
+  
+  return null;
+};

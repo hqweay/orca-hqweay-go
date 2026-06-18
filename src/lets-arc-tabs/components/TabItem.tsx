@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { pinBlock, unpinBlock, renamePinnedBlock } from '../utils/data';
+import { pinBlock, unpinBlock, renamePinnedBlock, removeRecentBlock } from '../utils/data';
 
 interface TabItemProps {
   blockId: number;
@@ -36,6 +36,33 @@ export const TabItem: React.FC<TabItemProps> = ({
     }
   };
 
+  const handleCloseClick = () => {
+    // 1. Remove from history
+    removeRecentBlock(blockId);
+    
+    // 2. Find if it is open in any editor panel and close it
+    const panels = orca.state.panels;
+    const findPanelIdByBlockId = (panel: any): string | null => {
+      if (panel.view === 'block' && Number(panel.viewArgs?.blockId) === blockId) {
+        return panel.id;
+      }
+      if (panel.children) {
+        for (const child of panel.children) {
+          const found = findPanelIdByBlockId(child);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    
+    const panelId = findPanelIdByBlockId(panels);
+    if (panelId) {
+      orca.nav.close(panelId);
+    }
+    
+    if (onPinStateChange) onPinStateChange();
+  };
+
   const handleRenameClick = () => {
     const newName = window.prompt("Enter new display name for this tab:", title);
     if (newName !== null && newName.trim() !== "") {
@@ -67,11 +94,18 @@ export const TabItem: React.FC<TabItemProps> = ({
               />
             </>
           ) : (
-            <MenuText 
-              title="Pin to Arc Tabs" 
-              preIcon="ti ti-pin" 
-              onClick={() => { close(); handlePinClick(); }} 
-            />
+            <>
+              <MenuText 
+                title="Pin to Arc Tabs" 
+                preIcon="ti ti-pin" 
+                onClick={() => { close(); handlePinClick(); }} 
+              />
+              <MenuText 
+                title="Close Tab" 
+                preIcon="ti ti-x" 
+                onClick={() => { close(); handleCloseClick(); }} 
+              />
+            </>
           )}
         </Menu>
       )}
