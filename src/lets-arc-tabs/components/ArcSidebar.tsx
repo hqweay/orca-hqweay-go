@@ -4,7 +4,7 @@ import { t } from "@/libs/l10n";
 
 import styles from "../styles.css?inline";
 import { getActiveBlocks, findMainPanelId } from "../utils/nav";
-import { fetchPinnedBlocks, pinBlock, activePinningBlocks } from "../utils/data";
+import { fetchPinnedBlocks, pinBlock, activePinningBlocks, arcTabsState } from "../utils/data";
 import { TabItem } from "./TabItem";
 import { arcTabsPluginInstance } from "../index";
 
@@ -27,6 +27,7 @@ const StyleInjector = () => (
 
 export const ArcSidebar: React.FC = () => {
   const state = useSnapshot(orca.state);
+  const localArcTabsState = useSnapshot(arcTabsState);
 
   const [activeSpace, setActiveSpace] = useState("default");
   const [pinnedBlocks, setPinnedBlocks] = useState<any[]>([]);
@@ -76,20 +77,23 @@ export const ArcSidebar: React.FC = () => {
 
     // Find blocks that have #ArcTab but haven't been assigned to any space yet (e.g. manually typed)
     const allAssignedIds = Object.values(orderObj).flat() as number[];
-    const unassignedBlocks = pinnedBlocks.filter(b => !allAssignedIds.includes(b.id));
+    const unassignedBlocks = pinnedBlocks.filter(b => !allAssignedIds.includes(Number(b.id)));
 
     // We render blocks assigned to this space PLUS any new unassigned ones
-    const currentBlocks = pinnedBlocks.filter(b => orderArray.includes(b.id) || unassignedBlocks.includes(b));
+    let currentBlocks = pinnedBlocks.filter(b => orderArray.includes(Number(b.id)) || unassignedBlocks.includes(b));
+
+    // Optimistic UI update: Filter out blocks that are currently being unpinned
+    currentBlocks = currentBlocks.filter(b => !localArcTabsState.unpinningBlocks.includes(Number(b.id)));
 
     return currentBlocks.sort((a, b) => {
-      const indexA = orderArray.indexOf(a.id);
-      const indexB = orderArray.indexOf(b.id);
+      const indexA = orderArray.indexOf(Number(a.id));
+      const indexB = orderArray.indexOf(Number(b.id));
       if (indexA === -1 && indexB === -1) return 0;
       if (indexA === -1) return 1; // unassigned go to bottom
       if (indexB === -1) return -1;
       return indexA - indexB;
     });
-  }, [pinnedBlocks, activeSpace]);
+  }, [pinnedBlocks, activeSpace, localArcTabsState.unpinningBlocks]);
 
   const getBlockDisplayName = (block: any) => {
     const settings = arcTabsPluginInstance?.getSettings() || {};
@@ -121,8 +125,8 @@ export const ArcSidebar: React.FC = () => {
 
   // Filter out pinned blocks from Today tabs
   const filteredTodayTabs = useMemo(() => {
-    const pinnedIds = currentSpacePinnedBlocks.map((b) => b.id);
-    return todayTabs.filter((id) => !pinnedIds.includes(id));
+    const pinnedIds = currentSpacePinnedBlocks.map((b) => String(b.id));
+    return todayTabs.filter((id) => !pinnedIds.includes(String(id)));
   }, [todayTabs, currentSpacePinnedBlocks]);
 
   const handleTabClick = (blockId: string) => {
@@ -224,17 +228,18 @@ export const ArcSidebar: React.FC = () => {
             </div>
           )}
           {currentSpacePinnedBlocks.map((block) => {
-            const isActive = activeBlockIds.includes(block.id);
+            const isActive = activeBlockIds.includes(String(block.id));
             const title = getBlockDisplayName(block);
             return (
               <TabItem
                 key={block.id}
-                blockId={block.id}
+                blockId={String(block.id)}
                 title={title}
                 isActive={isActive}
                 isPinned={true}
                 activeSpace={activeSpace}
                 onClick={handleTabClick}
+                onPinStateChange={reloadPinnedBlocks}
               />
             );
           })}

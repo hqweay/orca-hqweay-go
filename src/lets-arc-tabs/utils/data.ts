@@ -1,10 +1,21 @@
 import { DataImporter } from "@/libs/DataImporter";
 import { arcTabsPluginInstance } from "../index";
+import { proxy } from "valtio";
 
 export const activePinningBlocks = new Set<number>();
 
+export const arcTabsState = proxy({
+  unpinningBlocks: [] as number[]
+});
+
 export const unpinBlock = async (blockId: string | number) => {
   const idNum = Number(blockId);
+  
+  // Optimistic UI update: instantly hide from UI
+  if (!arcTabsState.unpinningBlocks.includes(idNum)) {
+    arcTabsState.unpinningBlocks.push(idNum);
+  }
+  
   const settings = arcTabsPluginInstance?.getSettings() || {};
   const orderObj = settings.pinnedOrder || {};
   const pinTagName = settings.pinTagName || "ArcTab";
@@ -31,12 +42,16 @@ export const unpinBlock = async (blockId: string | number) => {
       pinTagName
     );
 
+    // Wait a moment for backend indexing before verifying
+    await new Promise(r => setTimeout(r, 200));
+
     // Check if it worked
     let pinned = await orca.invokeBackend("get-blocks-with-tags", [pinTagName]);
-    let isPinned = pinned.some((b: any) => b.id === idNum);
+    let isPinned = pinned.some((b: any) => Number(b.id) === idNum);
 
     if (isPinned) {
       console.log("Background unpin failed, using Nav fallback...");
+      activePinningBlocks.add(idNum);
       const activePanelId = orca.state.activePanel;
       
       const tempPanelId = orca.nav.addTo(activePanelId, "right", {
@@ -81,10 +96,21 @@ export const unpinBlock = async (blockId: string | number) => {
         const style = document.getElementById(`hide-temp-panel-${tempPanelId}`);
         if (style) style.remove();
         orca.nav.switchFocusTo(activePanelId);
+        
+        // Wait a tick before removing from pinning blocks to let UI stabilize
+        setTimeout(() => activePinningBlocks.delete(idNum), 100);
       }
     }
+
+    // Wait a short delay to allow backend to index the tag removal before UI reloads
+    await new Promise(r => setTimeout(r, 300));
   } catch (e) {
     console.error("Failed to remove pin tag", e);
+  } finally {
+    // Keep it in unpinningBlocks for a bit longer to cover any extreme backend delays
+    setTimeout(() => {
+      arcTabsState.unpinningBlocks = arcTabsState.unpinningBlocks.filter(id => id !== idNum);
+    }, 5000);
   }
 };
 
@@ -95,7 +121,7 @@ export const renamePinnedBlock = async (blockId: string | number, newName: strin
 
   // Check if it already has the tag
   let pinned = await orca.invokeBackend("get-blocks-with-tags", [pinTagName]);
-  let isPinned = pinned.some((b: any) => b.id === idNum);
+  let isPinned = pinned.some((b: any) => Number(b.id) === idNum);
 
   if (!isPinned) {
     // Need to tag it first, but typically rename happens on pinned tabs
@@ -135,9 +161,12 @@ export const pinBlock = async (blockId: string | number, spaceId: string) => {
       ]
     });
 
+    // Wait a moment for backend indexing before verifying
+    await new Promise(r => setTimeout(r, 200));
+
     // Check if it worked
     let pinned = await orca.invokeBackend("get-blocks-with-tags", [pinTagName]);
-    let isPinned = pinned.some((b: any) => b.id === idNum);
+    let isPinned = pinned.some((b: any) => Number(b.id) === idNum);
 
     if (!isPinned) {
       console.log("Background pin failed, using Nav fallback...");
