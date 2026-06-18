@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { pinBlock, unpinBlock, removeRecentBlock } from '../utils/data';
+import React, { useState } from "react";
+import { pinBlock, unpinBlock, removeRecentBlock } from "../utils/data";
 
 interface TabItemProps {
   blockId: number;
@@ -9,18 +9,18 @@ interface TabItemProps {
   activeSpace: string;
   onClick: (blockId: number) => void;
   icon?: string;
-  displayMode?: 'grid' | 'list';
+  displayMode?: "grid" | "list";
 }
 
-export const TabItem: React.FC<TabItemProps> = ({ 
-  blockId, 
-  title, 
-  isActive, 
-  isPinned, 
-  activeSpace, 
+export const TabItem: React.FC<TabItemProps> = ({
+  blockId,
+  title,
+  isActive,
+  isPinned,
+  activeSpace,
   onClick,
   icon,
-  displayMode = 'list'
+  displayMode = "list",
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -39,11 +39,14 @@ export const TabItem: React.FC<TabItemProps> = ({
   const handleCloseClick = () => {
     // 1. Remove from history
     removeRecentBlock(blockId);
-    
+
     // 2. Find if it is open in any editor panel and close it
     const panels = orca.state.panels;
     const findPanelIdByBlockId = (panel: any): string | null => {
-      if (panel.view === 'block' && Number(panel.viewArgs?.blockId) === blockId) {
+      if (
+        panel.view === "block" &&
+        Number(panel.viewArgs?.blockId) === blockId
+      ) {
         return panel.id;
       }
       if (panel.children) {
@@ -54,7 +57,7 @@ export const TabItem: React.FC<TabItemProps> = ({
       }
       return null;
     };
-    
+
     const panelId = findPanelIdByBlockId(panels);
     if (panelId) {
       orca.nav.close(panelId);
@@ -66,27 +69,33 @@ export const TabItem: React.FC<TabItemProps> = ({
   const MenuText = orca.components.MenuText;
   const Tooltip = orca.components.Tooltip;
 
-  if (displayMode === 'grid') {
-    const hasCustomIcon = icon && icon !== '📄';
+  if (displayMode === "grid") {
+    const hasCustomIcon = icon && icon !== "📄";
     const displayIcon = hasCustomIcon ? icon : null;
-    const initialText = title ? String(title).trim().substring(0, 1).toUpperCase() : '?';
+    const initialText = title
+      ? String(title).trim().substring(0, 1).toUpperCase()
+      : "?";
 
     return (
       <ContextMenu
+        allowBeyondContainer={false}
         menu={(close) => (
           <Menu>
-            <MenuText 
-              title="Unpin" 
-              preIcon="ti ti-pin-off" 
-              onClick={() => { close(); handleUnpinClick(); }} 
+            <MenuText
+              title="Unpin"
+              preIcon="ti ti-pin-off"
+              onClick={() => {
+                close();
+                handleUnpinClick();
+              }}
             />
           </Menu>
         )}
       >
         {(openMenu: any) => (
           <Tooltip text={title}>
-            <div 
-              className={`arc-tab-grid-item ${isActive ? 'active' : ''}`}
+            <div
+              className={`arc-tab-grid-item ${isActive ? "active" : ""}`}
               onClick={() => onClick(blockId)}
               onContextMenu={(e: any) => {
                 e.preventDefault();
@@ -96,7 +105,11 @@ export const TabItem: React.FC<TabItemProps> = ({
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
             >
-              {displayIcon ? displayIcon : <span className="arc-tab-initial">{initialText}</span>}
+              {displayIcon ? (
+                displayIcon
+              ) : (
+                <span className="arc-tab-initial">{initialText}</span>
+              )}
             </div>
           </Tooltip>
         )}
@@ -106,25 +119,35 @@ export const TabItem: React.FC<TabItemProps> = ({
 
   return (
     <ContextMenu
+      allowBeyondContainer={true}
       menu={(close) => (
         <Menu>
           {isPinned ? (
-            <MenuText 
-              title="Unpin" 
-              preIcon="ti ti-pin-off" 
-              onClick={() => { close(); handleUnpinClick(); }} 
+            <MenuText
+              title="Unpin"
+              preIcon="ti ti-pin-off"
+              onClick={() => {
+                close();
+                handleUnpinClick();
+              }}
             />
           ) : (
             <>
-              <MenuText 
-                title="Pin to Arc Tabs" 
-                preIcon="ti ti-pin" 
-                onClick={() => { close(); handlePinClick(); }} 
+              <MenuText
+                title="Pin to Arc Tabs"
+                preIcon="ti ti-pin"
+                onClick={() => {
+                  close();
+                  handlePinClick();
+                }}
               />
-              <MenuText 
-                title="Close Tab" 
-                preIcon="ti ti-x" 
-                onClick={() => { close(); handleCloseClick(); }} 
+              <MenuText
+                title="Close Tab"
+                preIcon="ti ti-x"
+                onClick={() => {
+                  close();
+                  handleCloseClick();
+                }}
               />
             </>
           )}
@@ -133,8 +156,8 @@ export const TabItem: React.FC<TabItemProps> = ({
     >
       {(openMenu: any) => (
         <Tooltip text={title}>
-          <div 
-            className={`arc-tab-item ${isActive ? 'active' : ''}`}
+          <div
+            className={`arc-tab-item ${isActive ? "active" : ""}`}
             onClick={() => onClick(blockId)}
             onContextMenu={(e: any) => {
               e.preventDefault();
@@ -144,9 +167,9 @@ export const TabItem: React.FC<TabItemProps> = ({
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
           >
-            <span className="arc-tab-icon">{icon || '📄'}</span>
+            <span className="arc-tab-icon">{icon || "📄"}</span>
             <span className="arc-tab-title">{title}</span>
-            
+
             {/* Show active dot if active */}
             {isActive && <div className="arc-tab-active-dot" />}
           </div>
