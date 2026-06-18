@@ -1,6 +1,8 @@
 import { DataImporter } from "@/libs/DataImporter";
 import { arcTabsPluginInstance } from "../index";
 
+export const activePinningBlocks = new Set<number>();
+
 export const pinBlock = async (blockId: string | number, spaceId: string) => {
   try {
     const idNum = Number(blockId);
@@ -13,7 +15,7 @@ export const pinBlock = async (blockId: string | number, spaceId: string) => {
           name: "Space",
           type: 3,
           value: [spaceId],
-          typeArgs: { subType: "multi" }
+          typeArgs: { subType: "multi", choices: [spaceId] }
         }
       ]
     });
@@ -24,6 +26,7 @@ export const pinBlock = async (blockId: string | number, spaceId: string) => {
 
     if (!isPinned) {
       console.log("Background pin failed, using Nav fallback...");
+      activePinningBlocks.add(idNum);
       const activePanelId = orca.state.activePanel;
       
       const tempPanelId = orca.nav.addTo(activePanelId, "right", {
@@ -62,7 +65,7 @@ export const pinBlock = async (blockId: string | number, spaceId: string) => {
               name: "Space",
               type: 3,
               value: [spaceId],
-              typeArgs: { subType: "multi" }
+              typeArgs: { subType: "multi", choices: [spaceId] }
             }
           ]
         });
@@ -73,6 +76,9 @@ export const pinBlock = async (blockId: string | number, spaceId: string) => {
         const cleanupStyle = document.getElementById(`hide-temp-panel-${tempPanelId}`);
         if (cleanupStyle) cleanupStyle.remove();
         orca.nav.switchFocusTo(activePanelId);
+        
+        // Wait a tick before removing from pinning blocks to let UI stabilize
+        setTimeout(() => activePinningBlocks.delete(idNum), 100);
       }
     }
     

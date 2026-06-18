@@ -1,9 +1,10 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useSnapshot } from "valtio";
 import { t } from "@/libs/l10n";
+
 import styles from "../styles.css?inline";
 import { getActiveBlocks, findMainPanelId } from "../utils/nav";
-import { fetchPinnedBlocks, pinBlock } from "../utils/data";
+import { fetchPinnedBlocks, pinBlock, activePinningBlocks } from "../utils/data";
 import { TabItem } from "./TabItem";
 import { arcTabsPluginInstance } from "../index";
 
@@ -35,7 +36,10 @@ export const ArcSidebar: React.FC = () => {
   }, [activeSpace]); // reload if space changes (though we fetch all tags, we filter below)
 
   const activeBlockIds = useMemo(() => {
-    return getActiveBlocks(state.panels);
+    return getActiveBlocks(state.panels).filter(id => {
+      const numId = typeof id === 'string' ? Number(id) : id;
+      return !activePinningBlocks.has(numId);
+    });
   }, [state.panels]);
 
   const todayTabs = useMemo(() => {
@@ -48,7 +52,10 @@ export const ArcSidebar: React.FC = () => {
     [...state.panelBackHistory].reverse().forEach((history) => {
       if (history.view === "block" && history.viewArgs?.blockId) {
         const id = history.viewArgs.blockId;
-        if (!historyBlocks.includes(id)) historyBlocks.push(id);
+        const numId = typeof id === 'string' ? Number(id) : id;
+        if (!activePinningBlocks.has(numId)) {
+          if (!historyBlocks.includes(id)) historyBlocks.push(id);
+        }
       }
     });
 
@@ -57,23 +64,22 @@ export const ArcSidebar: React.FC = () => {
 
   // Filter and SORT pinned blocks for the active space
   const currentSpacePinnedBlocks = useMemo(() => {
-    const unsortedBlocks = pinnedBlocks.filter((block) => {
-      const arcTabProp = block.properties?.find((p: any) => p.name === "Space");
-      if (arcTabProp && arcTabProp.value && Array.isArray(arcTabProp.value)) {
-        return arcTabProp.value.includes(activeSpace);
-      }
-      return false;
-    });
-
     const settings = arcTabsPluginInstance?.getSettings() || {};
     const orderObj = settings.pinnedOrder || {};
     const orderArray = orderObj[activeSpace] || [];
 
-    return unsortedBlocks.sort((a, b) => {
+    // Find blocks that have #ArcTab but haven't been assigned to any space yet (e.g. manually typed)
+    const allAssignedIds = Object.values(orderObj).flat() as number[];
+    const unassignedBlocks = pinnedBlocks.filter(b => !allAssignedIds.includes(b.id));
+
+    // We render blocks assigned to this space PLUS any new unassigned ones
+    const currentBlocks = pinnedBlocks.filter(b => orderArray.includes(b.id) || unassignedBlocks.includes(b));
+
+    return currentBlocks.sort((a, b) => {
       const indexA = orderArray.indexOf(a.id);
       const indexB = orderArray.indexOf(b.id);
       if (indexA === -1 && indexB === -1) return 0;
-      if (indexA === -1) return 1;
+      if (indexA === -1) return 1; // unassigned go to bottom
       if (indexB === -1) return -1;
       return indexA - indexB;
     });
