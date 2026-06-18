@@ -2,6 +2,9 @@ import React from 'react';
 import { BasePlugin } from '@/libs/BasePlugin';
 import { t } from '@/libs/l10n';
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
+import { DataImporter } from "@/libs/DataImporter";
+import { PropType } from "@/libs/consts";
+import type { Block } from "../orca.d.ts";
 import { ArcSidebar } from './components/ArcSidebar';
 
 export let arcTabsPluginInstance: ArcTabsPlugin;
@@ -57,6 +60,60 @@ export default class ArcTabsPlugin extends BasePlugin {
 
     // Bind a default shortcut if desired (optional)
     // orca.commands.bindShortcut('arcTabs.openSidebar', 'cmd+shift+a');
+
+    this.ensurePinTagSchema();
+  }
+
+  protected async onConfigChanged(newConfig: any): Promise<void> {
+    await super.onConfigChanged(newConfig);
+    this.ensurePinTagSchema();
+  }
+
+  private async ensurePinTagSchema() {
+    const settings = this.getSettings();
+    const pinTagName = settings.pinTagName || 'ArcTab';
+    if (!pinTagName) return;
+    try {
+      let tagBlock = (await orca.invokeBackend(
+        "get-block-by-alias",
+        pinTagName,
+      )) as Block | null;
+      if (!tagBlock) {
+        this.logger.debug(`Tag ${pinTagName} not found, creating...`);
+        const newBlockId = (await orca.commands.invokeEditorCommand(
+          "core.editor.insertBlock",
+          null,
+          null,
+          "lastChild",
+          [{ t: "t", v: pinTagName }],
+          { type: "text" },
+        )) as number;
+        if (newBlockId) {
+          await orca.commands.invokeEditorCommand(
+            "core.editor.createAlias",
+            null,
+            pinTagName,
+            newBlockId,
+            true,
+          );
+          tagBlock = (await orca.invokeBackend(
+            "get-block",
+            newBlockId,
+          )) as Block | null;
+        }
+      }
+
+      if (tagBlock) {
+        await DataImporter.syncTagSchema(tagBlock, [
+          {
+            name: "displayName",
+            type: PropType.Text,
+          },
+        ]);
+      }
+    } catch (e) {
+      this.logger.error("Failed to ensure pin tag schema", e);
+    }
   }
 
   async unload() {

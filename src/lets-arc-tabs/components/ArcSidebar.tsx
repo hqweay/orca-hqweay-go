@@ -85,6 +85,34 @@ export const ArcSidebar: React.FC = () => {
     });
   }, [pinnedBlocks, activeSpace]);
 
+  const getBlockDisplayName = (block: any) => {
+    const settings = arcTabsPluginInstance?.getSettings() || {};
+    const pinTagName = settings.pinTagName || "ArcTab";
+
+    // Try to get from tag properties
+    const tagRef = block.refs?.find(
+      (r: any) => r.type === 2 && (r.alias === pinTagName || r.name === pinTagName),
+    );
+    const displayName =
+      tagRef?.data?.find((p: any) => p.name === "displayName")?.value ||
+      block.properties?.find((p: any) => p.name === "displayName")?.value;
+
+    if (displayName) {
+      return displayName;
+    }
+
+    // Fallback to text truncation
+    let text = block.text || block.content || "";
+    if (text) {
+      if (text.length > 20) {
+        return text.substring(0, 20) + "...";
+      }
+      return text;
+    }
+    
+    return `Block ${block.id}`;
+  };
+
   // Filter out pinned blocks from Today tabs
   const filteredTodayTabs = useMemo(() => {
     const pinnedIds = currentSpacePinnedBlocks.map((b) => b.id);
@@ -191,7 +219,7 @@ export const ArcSidebar: React.FC = () => {
           )}
           {currentSpacePinnedBlocks.map((block) => {
             const isActive = activeBlockIds.includes(block.id);
-            const title = getBlockTitle(block, block.id);
+            const title = getBlockDisplayName(block);
             return (
               <TabItem
                 key={block.id}
