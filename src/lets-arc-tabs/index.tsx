@@ -1,6 +1,7 @@
 import React from 'react';
 import { BasePlugin } from '@/libs/BasePlugin';
 import { t } from '@/libs/l10n';
+import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import { ArcSidebar } from './components/ArcSidebar';
 
 export let arcTabsPluginInstance: ArcTabsPlugin;
@@ -54,15 +55,40 @@ export default class ArcTabsPlugin extends BasePlugin {
 
   // Render the headbar button
   renderHeadbarButton() {
+    const Button = orca.components.Button;
     return (
-      <div
-        className="headbar-button"
+      <Button
+        variant="plain"
         title={t('arcTabs.description')}
-        onClick={() => {
-          orca.commands.invokeCommand('arcTabs.openSidebar');
-        }}
+        onClick={() => orca.commands.invokeCommand('arcTabs.openSidebar')}
       >
-        <span className="icon">🗂️</span>
+        <i className="ti ti-folders" style={{ fontSize: "16px" }} />
+      </Button>
+    );
+  }
+
+  getDefaultSettings() {
+    return {
+      ...super.getDefaultSettings(),
+      pinTagName: 'ArcTab'
+    };
+  }
+
+  renderCustomSettings(settings: any, updateSettings: (val: any) => void) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+        <SettingsSection title="Arc Tabs Settings">
+          <SettingsItem
+            label="Pinned Tab Tag Name"
+            description="The tag used to mark a block as pinned in Arc Tabs."
+          >
+            <orca.components.Input
+              value={settings.pinTagName || 'ArcTab'}
+              onChange={(e) => updateSettings({ pinTagName: e.target.value })}
+              placeholder="ArcTab"
+            />
+          </SettingsItem>
+        </SettingsSection>
       </div>
     );
   }

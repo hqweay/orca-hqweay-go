@@ -7,9 +7,12 @@ export const pinBlock = async (blockId: string | number, spaceId: string) => {
   try {
     const idNum = Number(blockId);
     
+    const settings = arcTabsPluginInstance?.getSettings() || {};
+    const pinTagName = settings.pinTagName || "ArcTab";
+
     // First try DataImporter directly (works if block is already active)
     await DataImporter.applyTag(idNum, {
-      name: "ArcTab",
+      name: pinTagName,
       properties: [
         {
           name: "Space",
@@ -21,7 +24,7 @@ export const pinBlock = async (blockId: string | number, spaceId: string) => {
     });
 
     // Check if it worked
-    let pinned = await orca.invokeBackend("get-blocks-with-tags", ["ArcTab"]);
+    let pinned = await orca.invokeBackend("get-blocks-with-tags", [pinTagName]);
     let isPinned = pinned.some((b: any) => b.id === idNum);
 
     if (!isPinned) {
@@ -59,7 +62,7 @@ export const pinBlock = async (blockId: string | number, spaceId: string) => {
         await new Promise(resolve => setTimeout(resolve, 500));
         
         await DataImporter.applyTag(idNum, {
-          name: "ArcTab",
+          name: pinTagName,
           properties: [
             {
               name: "Space",
@@ -83,7 +86,7 @@ export const pinBlock = async (blockId: string | number, spaceId: string) => {
     }
     
     // Also add to pinnedOrder in Settings to ensure it sorts correctly
-    const settings = arcTabsPluginInstance?.getSettings() || {};
+    // settings is already declared at the top of the function
     const orderObj = settings.pinnedOrder || {};
     const orderArray = orderObj[spaceId] || [];
     
@@ -100,5 +103,7 @@ export const pinBlock = async (blockId: string | number, spaceId: string) => {
 };
 
 export const fetchPinnedBlocks = async (): Promise<any[]> => {
-  return await orca.invokeBackend("get-blocks-with-tags", ["ArcTab"]);
+  const settings = arcTabsPluginInstance?.getSettings() || {};
+  const pinTagName = settings.pinTagName || "ArcTab";
+  return await orca.invokeBackend("get-blocks-with-tags", [pinTagName]);
 };
