@@ -3,8 +3,18 @@ import { useSnapshot } from "valtio";
 import { t } from "@/libs/l10n";
 
 import styles from "../styles.css?inline";
-import { getActiveBlocks, findMainPanelId, getFocusedBlock } from "../utils/nav";
-import { fetchPinnedBlocks, pinBlock, activePinningBlocks, arcTabsState, addRecentBlock } from "../utils/data";
+import {
+  getActiveBlocks,
+  findMainPanelId,
+  getFocusedBlock,
+} from "../utils/nav";
+import {
+  fetchPinnedBlocks,
+  pinBlock,
+  activePinningBlocks,
+  arcTabsState,
+  addRecentBlock,
+} from "../utils/data";
 import { TabItem } from "./TabItem";
 import { arcTabsPluginInstance } from "../index";
 
@@ -43,9 +53,11 @@ export const ArcSidebar: React.FC = () => {
   }, [activeSpace]); // reload if space changes (though we fetch all tags, we filter below)
 
   const activeBlockIds = useMemo(() => {
-    return getActiveBlocks(state.panels).map(Number).filter(id => {
-      return !activePinningBlocks.has(id);
-    });
+    return getActiveBlocks(state.panels)
+      .map(Number)
+      .filter((id) => {
+        return !activePinningBlocks.has(id);
+      });
   }, [state.panels]);
   // Filter and SORT pinned blocks for the active space
   const currentSpacePinnedBlocks = useMemo(() => {
@@ -55,13 +67,19 @@ export const ArcSidebar: React.FC = () => {
 
     // Find blocks that have #ArcTab but haven't been assigned to any space yet (e.g. manually typed)
     const allAssignedIds = Object.values(orderObj).flat() as number[];
-    const unassignedBlocks = pinnedBlocks.filter(b => !allAssignedIds.includes(b.id));
+    const unassignedBlocks = pinnedBlocks.filter(
+      (b) => !allAssignedIds.includes(b.id),
+    );
 
     // We render blocks assigned to this space PLUS any new unassigned ones
-    let currentBlocks = pinnedBlocks.filter(b => orderArray.includes(b.id) || unassignedBlocks.includes(b));
+    let currentBlocks = pinnedBlocks.filter(
+      (b) => orderArray.includes(b.id) || unassignedBlocks.includes(b),
+    );
 
     // Optimistic UI update: Filter out blocks that are currently being unpinned
-    currentBlocks = currentBlocks.filter(b => !localArcTabsState.unpinningBlocks.includes(b.id));
+    currentBlocks = currentBlocks.filter(
+      (b) => !localArcTabsState.unpinningBlocks.includes(b.id),
+    );
 
     return currentBlocks.sort((a, b) => {
       const indexA = orderArray.indexOf(a.id);
@@ -78,15 +96,20 @@ export const ArcSidebar: React.FC = () => {
     let changed = false;
     const list = [...arcTabsState.recentlyVisited];
     activeBlockIds.forEach((id) => {
-      if (!list.includes(id)) {
-        list.unshift(id);
+      if (!list.some((item) => item.id === id)) {
+        const block = state.blocks[id];
+        const title = getBlockTitle(block, id);
+        list.unshift({ id, title });
         changed = true;
       }
     });
     if (changed) {
       arcTabsState.recentlyVisited = list.slice(0, 15);
       try {
-        localStorage.setItem("orca-arc-tabs-recent", JSON.stringify(arcTabsState.recentlyVisited));
+        localStorage.setItem(
+          "orca-arc-tabs-recent",
+          JSON.stringify(arcTabsState.recentlyVisited),
+        );
       } catch (e) {
         console.error(e);
       }
@@ -95,22 +118,34 @@ export const ArcSidebar: React.FC = () => {
 
   const todayTabs = useMemo(() => {
     const pinnedIds = currentSpacePinnedBlocks.map((b) => b.id);
-    return localArcTabsState.recentlyVisited.filter(
-      (id) => !pinnedIds.includes(id) && !localArcTabsState.unpinningBlocks.includes(id)
-    ).slice(0, 15);
-  }, [localArcTabsState.recentlyVisited, currentSpacePinnedBlocks, localArcTabsState.unpinningBlocks]);
+    return localArcTabsState.recentlyVisited
+      .filter(
+        (item) =>
+          !pinnedIds.includes(item.id) &&
+          !localArcTabsState.unpinningBlocks.includes(item.id),
+      )
+      .slice(0, 15);
+  }, [
+    localArcTabsState.recentlyVisited,
+    currentSpacePinnedBlocks,
+    localArcTabsState.unpinningBlocks,
+  ]);
 
   // Find currently focused block in the active panel
   const focusedBlock = useMemo(() => {
     return getFocusedBlock(state.panels, state.activePanel);
   }, [state.panels, state.activePanel]);
 
+  const isBlockCached = !!(focusedBlock && state.blocks[focusedBlock]);
+
   // Track page visits
   useEffect(() => {
     if (focusedBlock && !activePinningBlocks.has(focusedBlock)) {
-      addRecentBlock(focusedBlock);
+      const block = state.blocks[focusedBlock];
+      const title = getBlockTitle(block, focusedBlock);
+      addRecentBlock(focusedBlock, title);
     }
-  }, [focusedBlock]);
+  }, [focusedBlock, isBlockCached]);
 
   const getBlockDisplayName = (block: any) => {
     const settings = arcTabsPluginInstance?.getSettings() || {};
@@ -118,7 +153,8 @@ export const ArcSidebar: React.FC = () => {
 
     // Try to get from tag properties
     const tagRef = block.refs?.find(
-      (r: any) => r.type === 2 && (r.alias === pinTagName || r.name === pinTagName),
+      (r: any) =>
+        r.type === 2 && (r.alias === pinTagName || r.name === pinTagName),
     );
     const displayName =
       tagRef?.data?.find((p: any) => p.name === "displayName")?.value ||
@@ -136,14 +172,14 @@ export const ArcSidebar: React.FC = () => {
       }
       return text;
     }
-    
+
     return `Block ${block.id}`;
   };
 
   // Filter out pinned blocks from Today tabs
   const filteredTodayTabs = useMemo(() => {
     const pinnedIds = currentSpacePinnedBlocks.map((b) => b.id);
-    return todayTabs.filter((id) => !pinnedIds.includes(id));
+    return todayTabs.filter((tab) => !pinnedIds.includes(tab.id));
   }, [todayTabs, currentSpacePinnedBlocks]);
 
   const handleTabClick = (blockId: number) => {
@@ -269,15 +305,17 @@ export const ArcSidebar: React.FC = () => {
         {/* Today Tabs Section */}
         <div className="arc-sidebar-section">
           <div className="arc-sidebar-section-title">{t("arcTabs.today")}</div>
-          {filteredTodayTabs.map((blockId) => {
-            const block = state.blocks[blockId];
-            const isActive = blockId === focusedBlock;
-            const title = getBlockTitle(block, blockId);
+          {filteredTodayTabs.map((tab) => {
+            const block = state.blocks[tab.id];
+            const isActive = tab.id === focusedBlock;
+            const title = block
+              ? getBlockTitle(block, tab.id)
+              : tab.title || `Block ${tab.id}`;
 
             return (
               <TabItem
-                key={blockId}
-                blockId={blockId}
+                key={tab.id}
+                blockId={tab.id}
                 title={title}
                 isActive={isActive}
                 isPinned={false}
@@ -304,4 +342,4 @@ export const ArcSidebar: React.FC = () => {
       </div>
     </div>
   );
-};;
+};

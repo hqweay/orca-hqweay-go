@@ -6,26 +6,58 @@ export const activePinningBlocks = new Set<number>();
 
 const LOCAL_STORAGE_KEY = "orca-arc-tabs-recent";
 
+export interface RecentTab {
+  id: number;
+  title: string;
+}
+
 export const arcTabsState = proxy({
   unpinningBlocks: [] as number[],
   recentlyVisited: (() => {
     try {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-      return saved ? JSON.parse(saved).map(Number) : [];
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        return parsed.map((item: any) => {
+          if (typeof item === 'object' && item !== null && 'id' in item) {
+            return { id: Number(item.id), title: String(item.title || '') };
+          }
+          return { id: Number(item), title: '' };
+        });
+      }
+      return [];
     } catch {
       return [];
     }
-  })() as number[]
+  })() as RecentTab[]
 });
 
-export const addRecentBlock = (idNum: number) => {
-  // If already in list, DO NOT change its position (keep it stable)
-  if (arcTabsState.recentlyVisited.includes(idNum)) {
+export const addRecentBlock = (idNum: number, title: string) => {
+  // If already in list, DO NOT change its position (keep it stable), but update title if it changed
+  const existingIdx = arcTabsState.recentlyVisited.findIndex(item => item.id === idNum);
+  if (existingIdx !== -1) {
+    if (arcTabsState.recentlyVisited[existingIdx].title !== title && title) {
+      const newTitleIsGeneric = title.startsWith("Block ");
+      const oldTitleIsGeneric = arcTabsState.recentlyVisited[existingIdx].title.startsWith("Block ") || !arcTabsState.recentlyVisited[existingIdx].title;
+      
+      // Avoid overwriting a real title with a generic "Block x" title
+      if (newTitleIsGeneric && !oldTitleIsGeneric) {
+        return;
+      }
+      
+      arcTabsState.recentlyVisited[existingIdx].title = title;
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(arcTabsState.recentlyVisited));
+      } catch (e) {
+        console.error(e);
+      }
+    }
     return;
   }
   
   const list = [...arcTabsState.recentlyVisited];
-  list.unshift(idNum);
+  list.unshift({ id: idNum, title: title || `Block ${idNum}` });
   const trimmed = list.slice(0, 15);
   arcTabsState.recentlyVisited = trimmed;
   try {
@@ -36,7 +68,7 @@ export const addRecentBlock = (idNum: number) => {
 };
 
 export const removeRecentBlock = (idNum: number) => {
-  const list = arcTabsState.recentlyVisited.filter(id => id !== idNum);
+  const list = arcTabsState.recentlyVisited.filter(item => item.id !== idNum);
   arcTabsState.recentlyVisited = list;
   try {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
