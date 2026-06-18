@@ -9,7 +9,7 @@ import {
   getFocusedBlock,
 } from "../utils/nav";
 import {
-  fetchPinnedBlocks,
+  syncPinnedBlocksWithBackend,
   pinBlock,
   activePinningBlocks,
   arcTabsState,
@@ -74,16 +74,12 @@ export const ArcSidebar: React.FC = () => {
 
   // Load pinned blocks on mount
   useEffect(() => {
-    fetchPinnedBlocks().then((blocks) => {
-      arcTabsState.pinnedBlocks = blocks;
-    });
+    const settings = arcTabsPluginInstance?.getSettings() || {};
+    if (Object.keys(arcTabsState.pinnedOrder).length === 0) {
+      arcTabsState.pinnedOrder = settings.pinnedOrder || {};
+    }
+    syncPinnedBlocksWithBackend();
   }, []);
-
-  // Function to reload pinned blocks
-  const reloadPinnedBlocks = async () => {
-    const blocks = await fetchPinnedBlocks();
-    arcTabsState.pinnedBlocks = blocks;
-  };
 
   const activeBlockIds = useMemo(() => {
     return getActiveBlocks(state.panels)
@@ -94,8 +90,7 @@ export const ArcSidebar: React.FC = () => {
   }, [state.panels]);
   // Filter and SORT pinned blocks for the active space
   const currentSpacePinnedBlocks = useMemo(() => {
-    const settings = arcTabsPluginInstance?.getSettings() || {};
-    const orderObj = settings.pinnedOrder || {};
+    const orderObj = localArcTabsState.pinnedOrder || {};
     const orderArray = (orderObj[activeSpace] || []) as number[];
 
     const allPinned = localArcTabsState.pinnedBlocks;
@@ -119,7 +114,7 @@ export const ArcSidebar: React.FC = () => {
       if (indexB === -1) return -1;
       return indexA - indexB;
     });
-  }, [localArcTabsState.pinnedBlocks, activeSpace]);
+  }, [localArcTabsState.pinnedBlocks, localArcTabsState.pinnedOrder, activeSpace]);
 
   // Synchronize all open panel blocks into the recentlyVisited list stably
   useEffect(() => {
@@ -251,7 +246,6 @@ export const ArcSidebar: React.FC = () => {
             await pinBlock(numId, activeSpace);
           }
         }
-        if (ids.length > 0) reloadPinnedBlocks();
       }
     } catch (err) {
       console.error("Failed to parse dropped block data", err);

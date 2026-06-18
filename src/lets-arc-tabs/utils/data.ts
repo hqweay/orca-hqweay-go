@@ -10,6 +10,65 @@ import {
 
 export const activePinningBlocks = new Set<number>();
 
+/** Blocks optimistically unpinned; filtered out until backend catches up. */
+export const optimisticUnpinnedIds = new Set<number>();
+
+const getPinnedOrderFromSettings = (): Record<string, number[]> => {
+  const settings = arcTabsPluginInstance?.getSettings() || {};
+  return (settings.pinnedOrder || {}) as Record<string, number[]>;
+};
+
+const getAllOrderedPinIds = (orderObj: Record<string, number[]>): Set<number> =>
+  new Set(Object.values(orderObj).flat());
+
+/** Merge backend fetch with optimistic pin/unpin state to avoid UI flicker. */
+export const syncPinnedBlocksWithBackend = async () => {
+  const backendBlocks = await fetchPinnedBlocks();
+  const orderObj =
+    Object.keys(arcTabsState.pinnedOrder).length > 0
+      ? arcTabsState.pinnedOrder
+      : getPinnedOrderFromSettings();
+  const orderIds = getAllOrderedPinIds(orderObj);
+  const backendIds = new Set(backendBlocks.map((b) => b.id));
+
+  const pendingOptimisticPins = arcTabsState.pinnedBlocks.filter(
+    (b) =>
+      !optimisticUnpinnedIds.has(b.id) &&
+      orderIds.has(b.id) &&
+      !backendIds.has(b.id),
+  );
+
+  const byId = new Map<number, any>();
+  for (const block of backendBlocks) {
+    if (!optimisticUnpinnedIds.has(block.id)) {
+      byId.set(block.id, block);
+    }
+  }
+  for (const block of pendingOptimisticPins) {
+    if (!byId.has(block.id)) {
+      byId.set(block.id, block);
+    }
+  }
+
+  arcTabsState.pinnedBlocks = Array.from(byId.values());
+};
+
+const revertOptimisticPin = (idNum: number, spaceId: string) => {
+  arcTabsState.pinnedBlocks = arcTabsState.pinnedBlocks.filter(
+    (b) => b.id !== idNum,
+  );
+
+  const orderObj = { ...arcTabsState.pinnedOrder };
+  const orderArray = [...(orderObj[spaceId] || [])];
+  const idx = orderArray.indexOf(idNum);
+  if (idx !== -1) {
+    orderArray.splice(idx, 1);
+    orderObj[spaceId] = orderArray;
+    arcTabsState.pinnedOrder = orderObj;
+    arcTabsPluginInstance?.updateSettings({ pinnedOrder: orderObj });
+  }
+};
+
 const LOCAL_STORAGE_KEY = "orca-arc-tabs-recent";
 
 export interface RecentTab {
@@ -20,6 +79,7 @@ export interface RecentTab {
 
 export const arcTabsState = proxy({
   pinnedBlocks: [] as any[],
+  pinnedOrder: {} as Record<string, number[]>,
   pinnedDisplayMode: "grid" as "grid" | "list",
   recentlyVisited: (() => {
     try {
@@ -110,26 +170,30 @@ export const removeRecentBlock = (idNum: number) => {
 };
 
 export const unpinBlock = async (idNum: number) => {
+  optimisticUnpinnedIds.add(idNum);
+
   // Optimistic UI update: instantly hide from UI
   arcTabsState.pinnedBlocks = arcTabsState.pinnedBlocks.filter(
     (b) => b.id !== idNum,
   );
 
   const settings = arcTabsPluginInstance?.getSettings() || {};
-  const orderObj = settings.pinnedOrder || {};
+  const orderObj = { ...(arcTabsState.pinnedOrder || settings.pinnedOrder || {}) };
   const pinTagName = settings.pinTagName || "ArcTab";
 
   let changed = false;
   for (const space of Object.keys(orderObj)) {
-    const arr = orderObj[space];
+    const arr = [...orderObj[space]];
     const idx = arr.indexOf(idNum);
     if (idx !== -1) {
       arr.splice(idx, 1);
+      orderObj[space] = arr;
       changed = true;
     }
   }
 
   if (changed) {
+    arcTabsState.pinnedOrder = orderObj;
     await arcTabsPluginInstance.updateSettings({ pinnedOrder: orderObj });
   }
 
@@ -158,7 +222,7 @@ export const unpinBlock = async (idNum: number) => {
       const arcTabsPanelId = findArcTabsPanelId(orca.state.panels);
       const targetPanelId = arcTabsPanelId || activePanelId;
 
-      const tempPanelId = orca.nav.addTo(targetPanelId, "tuo p", {
+      const tempPanelId = orca.nav.addTo(targetPanelId, "top", {
         view: "block",
         viewArgs: { blockId: idNum },
         viewState: {},
@@ -220,9 +284,8 @@ export const unpinBlock = async (idNum: number) => {
   } catch (e) {
     console.error("Failed to remove pin tag", e);
   } finally {
-    // Sync back with backend reality
-    const blocks = await fetchPinnedBlocks();
-    arcTabsState.pinnedBlocks = blocks;
+    await syncPinnedBlocksWithBackend();
+    optimisticUnpinnedIds.delete(idNum);
   }
 };
 
@@ -253,11 +316,14 @@ export const pinBlock = async (idNum: number, spaceId: string) => {
       arcTabsState.pinnedBlocks.push(optimisticBlock);
     }
 
-    const orderObj = settings.pinnedOrder || {};
-    const orderArray = orderObj[spaceId] || [];
+    const orderObj = {
+      ...(arcTabsState.pinnedOrder || settings.pinnedOrder || {}),
+    };
+    const orderArray = [...(orderObj[spaceId] || [])];
     if (!orderArray.includes(idNum)) {
       orderArray.unshift(idNum); // push to top
       orderObj[spaceId] = orderArray;
+      arcTabsState.pinnedOrder = orderObj;
       arcTabsPluginInstance?.updateSettings({ pinnedOrder: orderObj });
     }
   } catch (e) {
@@ -360,12 +426,10 @@ export const pinBlock = async (idNum: number, spaceId: string) => {
     }
 
     console.log("Pinned successfully using Tag approach");
+    await syncPinnedBlocksWithBackend();
   } catch (err: any) {
     console.error("Pin failed", err);
-  } finally {
-    // Sync back with backend reality
-    const blocks = await fetchPinnedBlocks();
-    arcTabsState.pinnedBlocks = blocks;
+    revertOptimisticPin(idNum, spaceId);
   }
 };
 

@@ -64,6 +64,7 @@ export default class ArcTabsPlugin extends BasePlugin {
 
     const settings = this.getSettings();
     arcTabsState.pinnedDisplayMode = settings.pinnedDisplayMode || 'grid';
+    arcTabsState.pinnedOrder = settings.pinnedOrder || {};
 
     this.ensurePinTagSchema();
   }
@@ -73,6 +74,9 @@ export default class ArcTabsPlugin extends BasePlugin {
     this.ensurePinTagSchema();
     if (newConfig.pinnedDisplayMode) {
       arcTabsState.pinnedDisplayMode = newConfig.pinnedDisplayMode;
+    }
+    if (newConfig.pinnedOrder) {
+      arcTabsState.pinnedOrder = newConfig.pinnedOrder;
     }
   }
 
