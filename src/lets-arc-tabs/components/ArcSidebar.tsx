@@ -11,7 +11,13 @@ import { arcTabsPluginInstance } from "../index";
 const getBlockTitle = (block: any, id: string | number) => {
   if (!block) return `Block ${String(id).substring(0, 8)}`;
   if (block.aliases && block.aliases.length > 0) return block.aliases[0];
-  if (block.text && block.text.trim().length > 0) return block.text;
+  if (block.text && block.text.trim().length > 0) {
+    let text = block.text.trim();
+    if (text.length > 20) {
+      return text.substring(0, 20) + "...";
+    }
+    return text;
+  }
   return `Block ${String(id).substring(0, 8)}`;
 };
 
