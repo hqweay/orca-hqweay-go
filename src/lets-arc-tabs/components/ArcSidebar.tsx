@@ -10,7 +10,7 @@ import {
 } from "../utils/nav";
 import { arcTabsState } from "../utils/data";
 import { pinBlock, loadPinnedBlocks } from "../utils/pin";
-import { getSpaces, getBlocksInSpace } from "../utils/spaces";
+import { getSpaces, getBlocksInSpace, addSpaceChoice } from "../utils/spaces";
 import { addRecentBlock } from "../utils/recent";
 import { TabItem } from "./TabItem";
 import { arcTabsPluginInstance } from "../index";
@@ -222,9 +222,10 @@ export const ArcSidebar: React.FC = () => {
     }
   };
 
-  const handleNewSpace = () => {
+  const handleNewSpace = async () => {
     if (newSpaceName.trim()) {
       const name = newSpaceName.trim();
+      await addSpaceChoice(name);
       setActiveSpace(name);
       setNewSpaceName("");
       setShowNewSpaceInput(false);

@@ -1,4 +1,6 @@
+import { arcTabsPluginInstance } from "../index";
 import { arcTabsState } from "./data";
+import { findMainPanelId } from "./nav";
 
 const getSpaceProperty = (block: any): string[] => {
   const prop = block.properties?.find((p: any) => p.name === "Space");
@@ -28,4 +30,48 @@ export const getUnassignedBlocks = (): any[] => {
 export const getSpacePropertyForBlock = (blockId: number): string[] => {
   const block = arcTabsState.pinnedBlocks.find((b) => b.id === blockId);
   return block ? getSpaceProperty(block) : [];
+};
+
+export const addSpaceChoice = async (spaceName: string) => {
+  const settings = arcTabsPluginInstance?.getSettings() || {};
+  const pinTagName = settings.pinTagName || "ArcTab";
+  
+  const tagBlock = (await orca.invokeBackend(
+    "get-block-by-alias",
+    pinTagName,
+  )) as any;
+  
+  if (!tagBlock) return;
+  
+  const spaceProp = tagBlock.properties?.find((p: any) => p.name === "Space");
+  const existingChoices = spaceProp?.typeArgs?.choices || [];
+  
+  if (existingChoices.includes(spaceName)) return;
+  
+  const newChoices = [...existingChoices, spaceName];
+  
+  try {
+    const mainPanelId = findMainPanelId(orca.state.panels);
+    if (!mainPanelId) return;
+    
+    orca.nav.goTo("block", { blockId: tagBlock.id }, mainPanelId);
+    orca.nav.switchFocusTo(mainPanelId);
+    await new Promise((r) => setTimeout(r, 500));
+    
+    await orca.commands.invokeEditorCommand(
+      "core.editor.setProperties",
+      null,
+      [tagBlock.id],
+      [{
+        name: "Space",
+        type: 6,
+        typeArgs: {
+          subType: "multi",
+          choices: newChoices,
+        },
+      }],
+    );
+  } catch (e) {
+    console.error("Failed to add space choice", e);
+  }
 };
