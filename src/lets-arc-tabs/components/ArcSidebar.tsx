@@ -12,6 +12,7 @@ import {
   pinBlock,
   arcTabsState,
   addRecentBlock,
+  loadPinnedBlocks,
 } from "../utils/data";
 import { TabItem } from "./TabItem";
 import { arcTabsPluginInstance } from "../index";
@@ -72,6 +73,7 @@ export const ArcSidebar: React.FC = () => {
     if (Object.keys(arcTabsState.pinnedOrder).length === 0) {
       arcTabsState.pinnedOrder = settings.pinnedOrder || {};
     }
+    loadPinnedBlocks();
   }, []);
 
   const openBlockIds = useMemo(

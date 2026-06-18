@@ -3,6 +3,17 @@ import { arcTabsPluginInstance } from "../index";
 import { proxy } from "valtio";
 import { findMainPanelId } from "./nav";
 
+export const loadPinnedBlocks = async () => {
+  const settings = arcTabsPluginInstance?.getSettings() || {};
+  const pinTagName = settings.pinTagName || "ArcTab";
+  const blocks =
+    (await orca.invokeBackend("get-blocks-with-tags", [pinTagName])) || [];
+  arcTabsState.pinnedBlocks = blocks.map((b: any) => ({
+    ...b,
+    id: Number(b.id),
+  }));
+};
+
 const revertOptimisticPin = (idNum: number, spaceId: string) => {
   arcTabsState.pinnedBlocks = arcTabsState.pinnedBlocks.filter(
     (b) => b.id !== idNum,
