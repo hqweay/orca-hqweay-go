@@ -240,8 +240,16 @@
   color: var(--orca-color-primary-5);
 }
 
+.arc-tab-item .arc-tab-action-btn {
+  opacity: 0;
+}
+
+.arc-tab-item:hover .arc-tab-action-btn {
+  opacity: 1;
+}
+
 .arc-tab-action-btn:hover .ti-pin-off {
-  color: var(--orca-color-primary-5);
+  color: var(--orca-color-danger-5, #ef4444);
 }
 
 @keyframes arcTabFadeIn {

@@ -111,34 +111,31 @@ export const TabItem: React.FC<TabItemProps> = ({
         <span className="arc-tab-icon">{icon || "📄"}</span>
         <span className="arc-tab-title">{title}</span>
 
-        {isHovered ? (
+        {isPinned ? (
+          <button
+            className="arc-tab-action-btn"
+            title="Unpin"
+            style={{ marginLeft: '8px', flexShrink: 0 }}
+            onClick={(e) => { e.stopPropagation(); handleUnpinClick(); }}
+          >
+            <i className="ti ti-x" />
+          </button>
+        ) : isHovered ? (
           <div className="arc-tab-actions" onClick={(e) => e.stopPropagation()}>
-            {isPinned ? (
-              <button
-                className="arc-tab-action-btn"
-                title="Unpin"
-                onClick={handleUnpinClick}
-              >
-                <i className="ti ti-pin-off" />
-              </button>
-            ) : (
-              <>
-                <button
-                  className="arc-tab-action-btn"
-                  title="Pin"
-                  onClick={handlePinClick}
-                >
-                  <i className="ti ti-pin" />
-                </button>
-                <button
-                  className="arc-tab-action-btn"
-                  title="Close"
-                  onClick={handleCloseClick}
-                >
-                  <i className="ti ti-x" />
-                </button>
-              </>
-            )}
+            <button
+              className="arc-tab-action-btn"
+              title="Pin"
+              onClick={handlePinClick}
+            >
+              <i className="ti ti-pin" />
+            </button>
+            <button
+              className="arc-tab-action-btn"
+              title="Close"
+              onClick={handleCloseClick}
+            >
+              <i className="ti ti-x" />
+            </button>
           </div>
         ) : (
           isActive && <div className="arc-tab-active-dot" />
