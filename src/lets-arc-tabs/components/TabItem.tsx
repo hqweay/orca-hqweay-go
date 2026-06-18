@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { pinBlock } from '../utils/data';
+import { pinBlock, unpinBlock, renamePinnedBlock } from '../utils/data';
 
 interface TabItemProps {
   blockId: string;
@@ -22,39 +22,80 @@ export const TabItem: React.FC<TabItemProps> = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
-  const handlePinClick = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handlePinClick = async () => {
     if (!isPinned) {
       await pinBlock(blockId, activeSpace);
       if (onPinStateChange) onPinStateChange();
     }
   };
 
+  const handleUnpinClick = async () => {
+    if (isPinned) {
+      await unpinBlock(blockId);
+      if (onPinStateChange) onPinStateChange();
+    }
+  };
+
+  const handleRenameClick = () => {
+    const newName = window.prompt("Enter new display name for this tab:", title);
+    if (newName !== null && newName.trim() !== "") {
+      renamePinnedBlock(blockId, newName.trim()).then(() => {
+        if (onPinStateChange) onPinStateChange();
+      });
+    }
+  };
+
+  const ContextMenu = orca.components.ContextMenu;
+  const Menu = orca.components.Menu;
+  const MenuText = orca.components.MenuText;
+
   return (
-    <div 
-      className={`arc-tab-item ${isActive ? 'active' : ''}`}
-      onClick={() => onClick(blockId)}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      title={title}
+    <ContextMenu
+      menu={(close) => (
+        <Menu>
+          {isPinned ? (
+            <>
+              <MenuText 
+                title="Unpin" 
+                preIcon="ti ti-pin-off" 
+                onClick={() => { close(); handleUnpinClick(); }} 
+              />
+              <MenuText 
+                title="Rename" 
+                preIcon="ti ti-edit" 
+                onClick={() => { close(); handleRenameClick(); }} 
+              />
+            </>
+          ) : (
+            <MenuText 
+              title="Pin to Arc Tabs" 
+              preIcon="ti ti-pin" 
+              onClick={() => { close(); handlePinClick(); }} 
+            />
+          )}
+        </Menu>
+      )}
     >
-      <span className="arc-tab-icon">{isPinned ? '📌' : '📄'}</span>
-      <span className="arc-tab-title">{title}</span>
-      
-      {/* Show active dot if active */}
-      {isActive && <div className="arc-tab-active-dot" />}
-      
-      {/* Show hover pin button if not pinned and hovered */}
-      {!isPinned && isHovered && (
+      {(openMenu: any) => (
         <div 
-          className="arc-tab-pin-action"
-          onClick={handlePinClick}
-          title="Pin to space"
-          style={{ cursor: 'pointer', opacity: 0.7, padding: '0 4px', fontSize: '12px' }}
+          className={`arc-tab-item ${isActive ? 'active' : ''}`}
+          onClick={() => onClick(blockId)}
+          onContextMenu={(e: any) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openMenu(e);
+          }}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          title={title}
         >
-          📌
+          <span className="arc-tab-icon">{isPinned ? '📌' : '📄'}</span>
+          <span className="arc-tab-title">{title}</span>
+          
+          {/* Show active dot if active */}
+          {isActive && <div className="arc-tab-active-dot" />}
         </div>
       )}
-    </div>
+    </ContextMenu>
   );
 };

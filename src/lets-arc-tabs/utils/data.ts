@@ -3,6 +3,118 @@ import { arcTabsPluginInstance } from "../index";
 
 export const activePinningBlocks = new Set<number>();
 
+export const unpinBlock = async (blockId: string | number) => {
+  const idNum = Number(blockId);
+  const settings = arcTabsPluginInstance?.getSettings() || {};
+  const orderObj = settings.pinnedOrder || {};
+  const pinTagName = settings.pinTagName || "ArcTab";
+  
+  let changed = false;
+  for (const space of Object.keys(orderObj)) {
+    const arr = orderObj[space];
+    const idx = arr.indexOf(idNum);
+    if (idx !== -1) {
+      arr.splice(idx, 1);
+      changed = true;
+    }
+  }
+  
+  if (changed) {
+    await arcTabsPluginInstance.updateSettings({ pinnedOrder: orderObj });
+  }
+  
+  try {
+    await orca.commands.invokeEditorCommand(
+      "core.editor.removeTag",
+      null,
+      idNum,
+      pinTagName
+    );
+
+    // Check if it worked
+    let pinned = await orca.invokeBackend("get-blocks-with-tags", [pinTagName]);
+    let isPinned = pinned.some((b: any) => b.id === idNum);
+
+    if (isPinned) {
+      console.log("Background unpin failed, using Nav fallback...");
+      const activePanelId = orca.state.activePanel;
+      
+      const tempPanelId = orca.nav.addTo(activePanelId, "right", {
+        view: "block",
+        viewArgs: { blockId: idNum },
+        viewState: {}
+      });
+
+      if (tempPanelId) {
+        // Inject CSS to completely hide the temporary panel and prevent layout shift
+        const style = document.createElement("style");
+        style.id = `hide-temp-panel-${tempPanelId}`;
+        style.innerHTML = `
+          .orca-panel[data-panel-id="${tempPanelId}"],
+          div[data-panel-id="${tempPanelId}"] {
+            position: absolute !important;
+            opacity: 0 !important;
+            width: 1px !important;
+            height: 1px !important;
+            pointer-events: none !important;
+            z-index: -999 !important;
+          }
+        `;
+        document.head.appendChild(style);
+
+        // Switch focus to the temp panel so the editor becomes active
+        orca.nav.switchFocusTo(tempPanelId);
+      }
+
+      // Wait a moment for block to mount
+      await new Promise(r => setTimeout(r, 500));
+      
+      await orca.commands.invokeEditorCommand(
+        "core.editor.removeTag",
+        null,
+        idNum,
+        pinTagName
+      );
+      
+      if (tempPanelId) {
+        orca.nav.close(tempPanelId);
+        const style = document.getElementById(`hide-temp-panel-${tempPanelId}`);
+        if (style) style.remove();
+        orca.nav.switchFocusTo(activePanelId);
+      }
+    }
+  } catch (e) {
+    console.error("Failed to remove pin tag", e);
+  }
+};
+
+export const renamePinnedBlock = async (blockId: string | number, newName: string) => {
+  const idNum = Number(blockId);
+  const settings = arcTabsPluginInstance?.getSettings() || {};
+  const pinTagName = settings.pinTagName || "ArcTab";
+
+  // Check if it already has the tag
+  let pinned = await orca.invokeBackend("get-blocks-with-tags", [pinTagName]);
+  let isPinned = pinned.some((b: any) => b.id === idNum);
+
+  if (!isPinned) {
+    // Need to tag it first, but typically rename happens on pinned tabs
+    await pinBlock(idNum, "default");
+  }
+
+  // Update tag schema property
+  await DataImporter.applyTag(idNum, {
+    name: pinTagName,
+    properties: [
+      {
+        name: "displayName",
+        type: 0, // PropType.Text
+        value: newName
+      }
+    ]
+  });
+};
+
 export const pinBlock = async (blockId: string | number, spaceId: string) => {
   try {
     const idNum = Number(blockId);
