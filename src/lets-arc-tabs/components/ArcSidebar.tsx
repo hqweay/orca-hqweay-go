@@ -1,139 +1,234 @@
-import React, { useMemo, useState } from 'react';
-import { useSnapshot } from 'valtio';
-import { t } from '@/libs/l10n';
-import styles from '../styles.css?inline';
+import React, { useMemo, useState, useEffect } from "react";
+import { useSnapshot } from "valtio";
+import { t } from "@/libs/l10n";
+import styles from "../styles.css?inline";
+import { getActiveBlocks, findMainPanelId } from "../utils/nav";
+import { fetchPinnedBlocks, pinBlock } from "../utils/data";
+import { TabItem } from "./TabItem";
+import { arcTabsPluginInstance } from "../index";
 
-// We inject styles here if using the ?inline approach to avoid require errors
+const getBlockTitle = (block: any, id: string | number) => {
+  if (!block) return `Block ${String(id).substring(0, 8)}`;
+  if (block.aliases && block.aliases.length > 0) return block.aliases[0];
+  if (block.text && block.text.trim().length > 0) return block.text;
+  return `Block ${String(id).substring(0, 8)}`;
+};
+
 const StyleInjector = () => (
   <style dangerouslySetInnerHTML={{ __html: styles }} />
 );
 
 export const ArcSidebar: React.FC = () => {
   const state = useSnapshot(orca.state);
-  
-  // A simple way to manage Space state locally for now
-  // Ideally this would be saved in the Plugin settings
-  const [activeSpace, setActiveSpace] = useState('default');
-  
-  // Extract currently active blocks from panels tree
+
+  const [activeSpace, setActiveSpace] = useState("default");
+  const [pinnedBlocks, setPinnedBlocks] = useState<any[]>([]);
+
+  // Function to reload pinned blocks
+  const reloadPinnedBlocks = async () => {
+    const blocks = await fetchPinnedBlocks();
+    setPinnedBlocks(blocks);
+  };
+
+  useEffect(() => {
+    reloadPinnedBlocks();
+  }, [activeSpace]); // reload if space changes (though we fetch all tags, we filter below)
+
   const activeBlockIds = useMemo(() => {
-    const getActiveBlocks = (panel: any): string[] => {
-      if ('children' in panel && Array.isArray(panel.children)) {
-        return panel.children.flatMap(getActiveBlocks);
-      } else if (panel.view === 'block' && panel.viewArgs?.blockId) {
-        return [panel.viewArgs.blockId];
-      }
-      return [];
-    };
     return getActiveBlocks(state.panels);
   }, [state.panels]);
 
-  // Extract Today Tabs from panel history
   const todayTabs = useMemo(() => {
     const historyBlocks: string[] = [];
-    
-    // Add current active blocks first
-    activeBlockIds.forEach(id => {
-      if (!historyBlocks.includes(id)) {
-        historyBlocks.push(id);
-      }
+
+    activeBlockIds.forEach((id) => {
+      if (!historyBlocks.includes(id)) historyBlocks.push(id);
     });
-    
-    // Add from back history
-    [...state.panelBackHistory].reverse().forEach(history => {
-      if (history.view === 'block' && history.viewArgs?.blockId) {
+
+    [...state.panelBackHistory].reverse().forEach((history) => {
+      if (history.view === "block" && history.viewArgs?.blockId) {
         const id = history.viewArgs.blockId;
-        if (!historyBlocks.includes(id)) {
-          historyBlocks.push(id);
-        }
+        if (!historyBlocks.includes(id)) historyBlocks.push(id);
       }
     });
-    
-    // For now we limit to 10 recent tabs
+
     return historyBlocks.slice(0, 10);
   }, [state.panelBackHistory, activeBlockIds]);
 
-  const handleTabClick = (blockId: string) => {
-    // Find a main editor panel (block or journal view) to open the tab in
-    const findMainPanelId = (panel: any): string | null => {
-      if (panel.view === 'block' || panel.view === 'journal') {
-        return panel.id;
+  // Filter and SORT pinned blocks for the active space
+  const currentSpacePinnedBlocks = useMemo(() => {
+    const unsortedBlocks = pinnedBlocks.filter((block) => {
+      const arcTabProp = block.properties?.find((p: any) => p.name === "Space");
+      if (arcTabProp && arcTabProp.value && Array.isArray(arcTabProp.value)) {
+        return arcTabProp.value.includes(activeSpace);
       }
-      if (panel.children) {
-        for (const child of panel.children) {
-          const id = findMainPanelId(child);
-          if (id) return id;
-        }
-      }
-      return null;
-    };
+      return false;
+    });
 
+    const settings = arcTabsPluginInstance?.getSettings() || {};
+    const orderObj = settings.pinnedOrder || {};
+    const orderArray = orderObj[activeSpace] || [];
+
+    return unsortedBlocks.sort((a, b) => {
+      const indexA = orderArray.indexOf(a.id);
+      const indexB = orderArray.indexOf(b.id);
+      if (indexA === -1 && indexB === -1) return 0;
+      if (indexA === -1) return 1;
+      if (indexB === -1) return -1;
+      return indexA - indexB;
+    });
+  }, [pinnedBlocks, activeSpace]);
+
+  // Filter out pinned blocks from Today tabs
+  const filteredTodayTabs = useMemo(() => {
+    const pinnedIds = currentSpacePinnedBlocks.map((b) => b.id);
+    return todayTabs.filter((id) => !pinnedIds.includes(id));
+  }, [todayTabs, currentSpacePinnedBlocks]);
+
+  const handleTabClick = (blockId: string) => {
     const mainPanelId = findMainPanelId(state.panels);
-    
     if (mainPanelId) {
-      orca.nav.goTo('block', { blockId }, mainPanelId);
+      orca.nav.goTo("block", { blockId }, mainPanelId);
     } else {
-      // Fallback: if no main panel exists, maybe add to the right of the sidebar
-      const sidebarPanelId = orca.state.activePanel; // Assuming clicking here makes it active
-      orca.nav.addTo(sidebarPanelId, 'right', { view: 'block', viewArgs: { blockId } });
+      const sidebarPanelId = orca.state.activePanel;
+      orca.nav.addTo(sidebarPanelId, "right", {
+        view: "block",
+        viewArgs: { blockId },
+      });
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault(); // Required to allow drop
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    try {
+      const types = Array.from(e.dataTransfer.types);
+      console.log("Drop types: " + types.join(", "));
+
+      const textData = e.dataTransfer.getData("text/plain");
+      const jsonData = e.dataTransfer.getData("application/json");
+      const orcaBlocks = e.dataTransfer.getData("application/x-orca-blocks");
+
+      console.log(
+        "text: " +
+          (textData ? "yes" : "no") +
+          ", json: " +
+          (jsonData ? "yes" : "no") +
+          ", orca: " +
+          (orcaBlocks ? "yes" : "no"),
+      );
+
+      const data = jsonData || orcaBlocks || textData;
+      if (data) {
+        let parsed;
+        try {
+          parsed = JSON.parse(data);
+        } catch (err) {
+          parsed = data; // fallback to string
+        }
+
+        let ids: string[] = [];
+
+        // Handle various potential formats for Orca block drag payload
+        if (typeof parsed === "object" && parsed !== null) {
+          if (parsed.id) ids.push(parsed.id);
+          else if (Array.isArray(parsed.blockIds)) ids = parsed.blockIds;
+          else if (Array.isArray(parsed) && parsed[0]?.id)
+            ids = parsed.map((b: any) => b.id);
+        } else if (typeof parsed === "string") {
+          ids.push(parsed);
+        }
+
+        console.log("Parsed ids: " + ids.join(", "));
+
+        for (const id of ids) {
+          await pinBlock(id, activeSpace);
+        }
+        if (ids.length > 0) reloadPinnedBlocks();
+      }
+    } catch (err) {
+      console.error("Failed to parse dropped block data", err);
     }
   };
 
   return (
     <div className="arc-sidebar-container">
       <StyleInjector />
-      
+
       <div className="arc-sidebar-header">
-        <input 
-          className="arc-sidebar-search" 
-          placeholder={t("arcTabs.search")} 
+        <input
+          className="arc-sidebar-search"
+          placeholder={t("arcTabs.search")}
           onClick={() => {
-            // Open global search or command palette
-            orca.commands.invokeCommand('core.toggleCommandPalette');
+            orca.commands.invokeCommand("core.toggleCommandPalette");
           }}
           readOnly
         />
       </div>
 
       <div className="arc-sidebar-content">
-        {/* Pinned Tabs Section - Placeholder for now, could be loaded from plugin settings */}
-        <div className="arc-sidebar-section">
+        {/* Pinned Tabs Section */}
+        <div
+          className="arc-sidebar-section"
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          style={{ minHeight: "50px" }} // Ensure there is droppable area even if empty
+        >
           <div className="arc-sidebar-section-title">{t("arcTabs.pinned")}</div>
-          <div className="arc-tab-item">
-            <span className="arc-tab-icon">📌</span>
-            <span className="arc-tab-title">Welcome Note</span>
-          </div>
+          {currentSpacePinnedBlocks.length === 0 && (
+            <div style={{ fontSize: "12px", opacity: 0.5, padding: "0 8px" }}>
+              No pinned tabs yet
+            </div>
+          )}
+          {currentSpacePinnedBlocks.map((block) => {
+            const isActive = activeBlockIds.includes(block.id);
+            const title = getBlockTitle(block, block.id);
+            return (
+              <TabItem
+                key={block.id}
+                blockId={block.id}
+                title={title}
+                isActive={isActive}
+                isPinned={true}
+                activeSpace={activeSpace}
+                onClick={handleTabClick}
+              />
+            );
+          })}
         </div>
 
         {/* Today Tabs Section */}
         <div className="arc-sidebar-section">
           <div className="arc-sidebar-section-title">{t("arcTabs.today")}</div>
-          {todayTabs.map(blockId => {
+          {filteredTodayTabs.map((blockId) => {
             const block = state.blocks[blockId];
             const isActive = activeBlockIds.includes(blockId);
-            // Rough title extraction, a real implementation might use an Orca helper to format block title
-            const title = block?.text || `Block ${blockId.substring(0, 8)}`;
-            
+            const title = getBlockTitle(block, blockId);
+
             return (
-              <div 
-                key={blockId} 
-                className={`arc-tab-item ${isActive ? 'active' : ''}`}
-                onClick={() => handleTabClick(blockId)}
-              >
-                <span className="arc-tab-icon">📄</span>
-                <span className="arc-tab-title">{title}</span>
-                {isActive && <div className="arc-tab-active-dot" />}
-              </div>
+              <TabItem
+                key={blockId}
+                blockId={blockId}
+                title={title}
+                isActive={isActive}
+                isPinned={false}
+                activeSpace={activeSpace}
+                onClick={handleTabClick}
+                onPinStateChange={reloadPinnedBlocks}
+              />
             );
           })}
         </div>
       </div>
 
       <div className="arc-sidebar-footer">
-        <div 
-          className={`arc-space-item ${activeSpace === 'default' ? 'active' : ''}`}
+        <div
+          className={`arc-space-item ${activeSpace === "default" ? "active" : ""}`}
           title={t("arcTabs.defaultSpace")}
-          onClick={() => setActiveSpace('default')}
+          onClick={() => setActiveSpace("default")}
         >
           P
         </div>
@@ -143,4 +238,4 @@ export const ArcSidebar: React.FC = () => {
       </div>
     </div>
   );
-};
+};;

@@ -3,10 +3,14 @@ import { BasePlugin } from '@/libs/BasePlugin';
 import { t } from '@/libs/l10n';
 import { ArcSidebar } from './components/ArcSidebar';
 
+export let arcTabsPluginInstance: ArcTabsPlugin;
+
 export default class ArcTabsPlugin extends BasePlugin {
   protected headbarButtonId = 'arcTabs.openSidebar';
 
   async load() {
+    arcTabsPluginInstance = this;
+    
     // Register the native panel
     orca.panels.registerPanel('arcTabs', ArcSidebar);
 
