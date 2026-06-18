@@ -18,77 +18,54 @@ const buildSpaceProperty = (spaces: string[]) => ({
 const getSpaceFromBlock = (block: any): string[] => {
   const pinTagName = getPinTagName();
   
-  // Check refs for tag reference with Space property
-  const tagRef = block.refs?.find((r: any) => r.name === pinTagName);
+  // 1. Check refs[].data (loaded from backend)
+  const tagRef = block.refs?.find((r: any) => r.alias === pinTagName);
   if (tagRef?.data) {
     const prop = tagRef.data.find((p: any) => p.name === "Space");
     if (prop?.value?.length > 0) return prop.value;
   }
   
-  // Fallback to block properties
-  const prop = block.properties?.find((p: any) => p.name === "Space");
-  return prop?.value || [];
+  // 2. Check block.properties (optimistic update)
+  const blockProp = block.properties?.find((p: any) => p.name === "Space");
+  if (blockProp?.value?.length > 0) return blockProp.value;
+  
+  return [];
 };
 
-export const loadPinnedBlocks = async (space?: string) => {
+export const loadPinnedBlocks = async () => {
   const pinTagName = getPinTagName();
-  
-  if (space) {
-    const resultIds = (await orca.invokeBackend("query", {
-      q: {
-        kind: 100,
-        conditions: [
-          {
-            kind: 4,
-            name: pinTagName,
-            properties: [{ name: "Space", op: 1, value: space }],
-            selfOnly: true,
-          },
-        ],
-      },
-    })) as number[];
-    
-    if (resultIds && resultIds.length > 0) {
-      const blocks = (await orca.invokeBackend("get-blocks", resultIds)) || [];
-      arcTabsState.pinnedBlocks = blocks.map((b: any) => ({
-        ...b,
-        id: Number(b.id),
-      }));
-    } else {
-      arcTabsState.pinnedBlocks = [];
-    }
-  } else {
-    const blocks =
-      (await orca.invokeBackend("get-blocks-with-tags", [pinTagName])) || [];
-    arcTabsState.pinnedBlocks = blocks.map((b: any) => ({
-      ...b,
-      id: Number(b.id),
-    }));
-  }
+  const blocks =
+    (await orca.invokeBackend("get-blocks-with-tags", [pinTagName])) || [];
+  arcTabsState.pinnedBlocks = blocks.map((b: any) => ({
+    ...b,
+    id: Number(b.id),
+  }));
 };
 
 export const pinBlock = async (idNum: number, spaceId: string) => {
   const pinTagName = getPinTagName();
 
   const block = orca.state.blocks[idNum];
-  const existing = arcTabsState.pinnedBlocks.find((b) => b.id === idNum);
+  const existingInState = arcTabsState.pinnedBlocks.find((b) => b.id === idNum);
 
-  if (existing) {
-    const currentSpaces = getSpaceFromBlock(existing);
-    const newSpaces = [...new Set([...currentSpaces, spaceId])];
-    
-    const tagRef = existing.refs?.find((r: any) => r.name === pinTagName);
-    
+  // Get existing spaces from either state or original block
+  const sourceBlock = existingInState || block;
+  const currentSpaces = sourceBlock ? getSpaceFromBlock(sourceBlock) : [];
+  const allSpaces = [...new Set([...currentSpaces, spaceId])];
+
+  // Update local state
+  if (existingInState) {
+    const tagRef = existingInState.refs?.find((r: any) => r.alias === pinTagName);
     if (tagRef?.data) {
       const spaceProp = tagRef.data.find((p: any) => p.name === "Space");
       if (spaceProp) {
-        spaceProp.value = newSpaces;
+        spaceProp.value = allSpaces;
       } else {
-        tagRef.data.push(buildSpaceProperty(newSpaces));
+        tagRef.data.push(buildSpaceProperty(allSpaces));
       }
     } else {
-      existing.properties = existing.properties || [];
-      existing.properties.push(buildSpaceProperty(newSpaces));
+      existingInState.properties = existingInState.properties || [];
+      existingInState.properties.push(buildSpaceProperty(allSpaces));
     }
     arcTabsState.pinnedBlocks = [...arcTabsState.pinnedBlocks];
   } else {
@@ -103,10 +80,11 @@ export const pinBlock = async (idNum: number, spaceId: string) => {
         }
       : { id: idNum, text: `Block ${idNum}`, properties: [], refs: [] };
 
-    optimisticBlock.properties.push(buildSpaceProperty([spaceId]));
+    optimisticBlock.properties.push(buildSpaceProperty(allSpaces));
     arcTabsState.pinnedBlocks = [...arcTabsState.pinnedBlocks, optimisticBlock];
   }
 
+  // Update backend
   try {
     const mainPanelId = findMainPanelId(orca.state.panels);
     if (!mainPanelId) return;
@@ -115,11 +93,9 @@ export const pinBlock = async (idNum: number, spaceId: string) => {
     orca.nav.switchFocusTo(mainPanelId);
     await new Promise((r) => setTimeout(r, 500));
 
-    const currentSpaces = existing ? getSpaceFromBlock(existing) : [];
-
     await DataImporter.applyTag(idNum, {
       name: pinTagName,
-      properties: [buildSpaceProperty([...new Set([...currentSpaces, spaceId])])],
+      properties: [buildSpaceProperty(allSpaces)],
     });
   } catch (err) {
     console.error("Pin failed", err);
@@ -136,7 +112,7 @@ export const unpinBlock = async (idNum: number, space?: string) => {
     const newSpaces = currentSpaces.filter((s: string) => s !== space);
     
     if (newSpaces.length > 0) {
-      const tagRef = block.refs?.find((r: any) => r.name === pinTagName);
+      const tagRef = block.refs?.find((r: any) => r.alias === pinTagName);
       
       if (tagRef?.data) {
         const spaceProp = tagRef.data.find((p: any) => p.name === "Space");
