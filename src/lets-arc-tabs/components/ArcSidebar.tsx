@@ -92,9 +92,7 @@ export const ArcSidebar: React.FC = () => {
   }, [spaces, activeSpace]);
 
   useEffect(() => {
-    if (activeSpace) {
-      loadPinnedBlocks(activeSpace);
-    }
+    loadPinnedBlocks();
   }, [activeSpace]);
 
 
@@ -182,45 +180,125 @@ export const ArcSidebar: React.FC = () => {
     }
   };
 
+  const [isDragOver, setIsDragOver] = useState(false);
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "copy";
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set to false if we're leaving the drop zone entirely
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setIsDragOver(false);
+    }
   };
 
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    
     try {
+      const types = Array.from(e.dataTransfer.types);
+      
+      // Orca uses custom MIME types like "orca/_doc_8" for block drags
+      const orcaCustomType = types.find(t => t.startsWith("orca/"));
+      const orcaCustomData = orcaCustomType ? e.dataTransfer.getData(orcaCustomType) : "";
       const textData = e.dataTransfer.getData("text/plain");
       const jsonData = e.dataTransfer.getData("application/json");
       const orcaBlocks = e.dataTransfer.getData("application/x-orca-blocks");
+      const textHtml = e.dataTransfer.getData("text/html");
 
-      const data = jsonData || orcaBlocks || textData;
-      if (data) {
-        let parsed;
+      // Try to extract block ID from various data formats
+      let ids: string[] = [];
+      
+      // 0. Try Orca custom type data first (highest priority)
+      // Orca uses format: {"blocks": [blockId, ...]}
+      if (orcaCustomData) {
         try {
-          parsed = JSON.parse(data);
-        } catch (err) {
-          parsed = data;
-        }
-
-        let ids: string[] = [];
-        if (typeof parsed === "object" && parsed !== null) {
-          if (parsed.id) ids.push(parsed.id);
-          else if (Array.isArray(parsed.blockIds)) ids = parsed.blockIds;
-          else if (Array.isArray(parsed) && parsed[0]?.id)
-            ids = parsed.map((b: any) => b.id);
-        } else if (typeof parsed === "string") {
-          ids.push(parsed);
-        }
-
-        for (const id of ids) {
-          const numId = Number(id);
-          if (!isNaN(numId)) {
-            await pinBlock(numId, activeSpace || spaces[0] || "default");
+          const parsed = JSON.parse(orcaCustomData);
+          if (parsed && Array.isArray(parsed.blocks)) {
+            ids = parsed.blocks.map(String);
+          } else if (parsed && parsed.id) {
+            ids.push(String(parsed.id));
+          } else if (parsed && parsed.blockId) {
+            ids.push(String(parsed.blockId));
+          }
+        } catch (e) {
+          // Not JSON, try as plain text block ID
+          const numId = Number(orcaCustomData);
+          if (!isNaN(numId) && numId > 0) {
+            ids.push(String(numId));
           }
         }
       }
+      
+      // 1. Try JSON data
+      if (ids.length === 0 && jsonData) {
+        try {
+          const parsed = JSON.parse(jsonData);
+          if (parsed.id) ids.push(String(parsed.id));
+          else if (Array.isArray(parsed.blockIds)) ids = parsed.blockIds.map(String);
+          else if (Array.isArray(parsed) && parsed[0]?.id) ids = parsed.map((b: any) => String(b.id));
+        } catch (e) {
+          // ignore
+        }
+      }
+      
+      // 2. Try orca-blocks data
+      if (ids.length === 0 && orcaBlocks) {
+        try {
+          const parsed = JSON.parse(orcaBlocks);
+          if (parsed.id) ids.push(String(parsed.id));
+          else if (Array.isArray(parsed.blockIds)) ids = parsed.blockIds.map(String);
+          else if (Array.isArray(parsed) && parsed[0]?.id) ids = parsed.map((b: any) => String(b.id));
+        } catch (e) {
+          // ignore
+        }
+      }
+      
+      // 3. Try text data (might be a block ID or URL)
+      if (ids.length === 0 && textData) {
+        const numId = Number(textData);
+        if (!isNaN(numId) && numId > 0) {
+          ids.push(String(numId));
+        } else {
+          const blockMatch = textData.match(/(?:block\/|#)(\d+)/);
+          if (blockMatch) {
+            ids.push(blockMatch[1]);
+          }
+        }
+      }
+
+      // 4. Try HTML data (might contain block ID in data attribute)
+      if (ids.length === 0 && textHtml) {
+        const blockMatch = textHtml.match(/data-block-id="(\d+)"/);
+        if (blockMatch) {
+          ids.push(blockMatch[1]);
+        }
+      }
+      
+      if (ids.length === 0) {
+        return;
+      }
+
+      const targetSpace = activeSpace || spaces[0] || "default";
+      for (const id of ids) {
+        const numId = Number(id);
+        if (!isNaN(numId) && numId > 0) {
+          await pinBlock(numId, targetSpace);
+        }
+      }
     } catch (err) {
-      console.error("Failed to parse dropped block data", err);
+      console.error("[ArcTabs] Failed to handle drop:", err);
     }
   };
 
@@ -243,15 +321,16 @@ export const ArcSidebar: React.FC = () => {
       <div className="arc-sidebar-content">
         {/* Pinned Tabs Section */}
         <div
-          className="arc-sidebar-section"
+          className={`arc-sidebar-section arc-drop-zone ${isDragOver ? "drag-over" : ""}`}
           onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           style={{ minHeight: "50px" }}
         >
           <div className="arc-sidebar-section-title">{t("arc-tabs.pinned")}</div>
           {currentSpacePinnedBlocks.length === 0 && (
-            <div style={{ fontSize: "12px", opacity: 0.5, padding: "0 8px" }}>
-              {t("arc-tabs.noPinned")}
+            <div className={`arc-drop-hint ${isDragOver ? "drag-over" : ""}`}>
+              {isDragOver ? "释放以固定" : t("arc-tabs.noPinned")}
             </div>
           )}
           {localArcTabsState.pinnedDisplayMode === 'grid' ? (
@@ -395,6 +474,7 @@ export const ArcSidebar: React.FC = () => {
                 {t("cancel")}
               </orca.components.Button>
               <orca.components.Button
+                variant="solid"
                 onClick={handleNewSpace}
                 disabled={!newSpaceName.trim()}
               >

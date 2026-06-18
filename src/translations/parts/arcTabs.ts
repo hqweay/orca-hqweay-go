@@ -12,7 +12,7 @@ export default {
   "arc-tabs.pinnedLayout": "固定栏布局",
   "arc-tabs.layoutGrid": "网格 (紧凑)",
   "arc-tabs.layoutList": "列表 (详细)",
-  "arc-tabs.noPinned": "暂无固定标签",
+  "arc-tabs.noPinned": "拖拽块到此处固定",
   "arc-tabs.spaceName": "空间名称",
   "arc-tabs.settings": "Arc Tabs 设置",
   "arc-tabs.tagName": "固定标签名称",

@@ -45,15 +45,17 @@ export const loadPinnedBlocks = async () => {
 export const pinBlock = async (idNum: number, spaceId: string) => {
   const pinTagName = getPinTagName();
 
+  if (!idNum || idNum <= 0) {
+    return;
+  }
+
   const block = orca.state.blocks[idNum];
   const existingInState = arcTabsState.pinnedBlocks.find((b) => b.id === idNum);
 
-  // Get existing spaces from either state or original block
   const sourceBlock = existingInState || block;
   const currentSpaces = sourceBlock ? getSpaceFromBlock(sourceBlock) : [];
   const allSpaces = [...new Set([...currentSpaces, spaceId])];
 
-  // Update local state
   if (existingInState) {
     const tagRef = existingInState.refs?.find((r: any) => r.alias === pinTagName);
     if (tagRef?.data) {
@@ -84,21 +86,24 @@ export const pinBlock = async (idNum: number, spaceId: string) => {
     arcTabsState.pinnedBlocks = [...arcTabsState.pinnedBlocks, optimisticBlock];
   }
 
-  // Update backend
   try {
     const mainPanelId = findMainPanelId(orca.state.panels);
-    if (!mainPanelId) return;
+    
+    if (!mainPanelId) {
+      console.error("[ArcTabs] No main panel found");
+      return;
+    }
 
     orca.nav.goTo("block", { blockId: idNum }, mainPanelId);
     orca.nav.switchFocusTo(mainPanelId);
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 800));
 
     await DataImporter.applyTag(idNum, {
       name: pinTagName,
       properties: [buildSpaceProperty(allSpaces)],
     });
   } catch (err) {
-    console.error("Pin failed", err);
+    console.error("[ArcTabs] Pin failed:", err);
     revertPin(idNum);
   }
 };
