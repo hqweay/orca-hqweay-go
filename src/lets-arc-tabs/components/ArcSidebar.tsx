@@ -249,7 +249,7 @@ export const ArcSidebar: React.FC = () => {
             </div>
           )}
           {currentSpacePinnedBlocks.map((block) => {
-            const isActive = activeBlockIds.includes(block.id);
+            const isActive = block.id === focusedBlock;
             const title = getBlockDisplayName(block);
             return (
               <TabItem
@@ -271,7 +271,7 @@ export const ArcSidebar: React.FC = () => {
           <div className="arc-sidebar-section-title">{t("arcTabs.today")}</div>
           {filteredTodayTabs.map((blockId) => {
             const block = state.blocks[blockId];
-            const isActive = activeBlockIds.includes(blockId);
+            const isActive = blockId === focusedBlock;
             const title = getBlockTitle(block, blockId);
 
             return (
