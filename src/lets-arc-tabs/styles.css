@@ -132,3 +132,55 @@
   border: 1px dashed var(--orca-color-border-3);
   background: transparent;
 }
+
+/* Pinned Grid Layout */
+.arc-pinned-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+  gap: 8px;
+  padding: 4px 8px;
+}
+
+.arc-tab-grid-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid var(--orca-color-border-2);
+  background-color: var(--orca-color-bg-2);
+  font-size: 18px;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.arc-tab-grid-item:hover {
+  background-color: var(--orca-color-bg-3);
+  border-color: var(--orca-color-border-3);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.arc-tab-grid-item.active {
+  background-color: var(--orca-color-primary-1);
+  border-color: var(--orca-color-primary-4);
+  color: var(--orca-color-primary-6);
+  box-shadow: 0 0 0 1px var(--orca-color-primary-4);
+}
+
+.arc-tab-initial {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--orca-color-text-2);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arc-tab-grid-item.active .arc-tab-initial {
+  color: var(--orca-color-primary-6);
+}

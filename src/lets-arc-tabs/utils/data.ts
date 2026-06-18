@@ -14,6 +14,7 @@ export interface RecentTab {
 
 export const arcTabsState = proxy({
   unpinningBlocks: [] as number[],
+  pinnedDisplayMode: 'grid' as 'grid' | 'list',
   recentlyVisited: (() => {
     try {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);

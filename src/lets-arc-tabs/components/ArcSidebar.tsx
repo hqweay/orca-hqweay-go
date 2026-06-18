@@ -318,24 +318,49 @@ export const ArcSidebar: React.FC = () => {
               No pinned tabs yet
             </div>
           )}
-          {currentSpacePinnedBlocks.map((block) => {
-            const isActive = block.id === focusedBlock;
-            const title = getBlockDisplayName(block);
-            const icon = getBlockIcon(block);
-            return (
-              <TabItem
-                key={block.id}
-                blockId={block.id}
-                title={title}
-                isActive={isActive}
-                isPinned={true}
-                activeSpace={activeSpace}
-                onClick={handleTabClick}
-                onPinStateChange={reloadPinnedBlocks}
-                icon={icon}
-              />
-            );
-          })}
+          {localArcTabsState.pinnedDisplayMode === 'grid' ? (
+            <div className="arc-pinned-grid">
+              {currentSpacePinnedBlocks.map((block) => {
+                const isActive = block.id === focusedBlock;
+                const title = getBlockDisplayName(block);
+                const icon = getBlockIcon(block);
+                return (
+                  <TabItem
+                    key={block.id}
+                    blockId={block.id}
+                    title={title}
+                    isActive={isActive}
+                    isPinned={true}
+                    activeSpace={activeSpace}
+                    onClick={handleTabClick}
+                    onPinStateChange={reloadPinnedBlocks}
+                    icon={icon}
+                    displayMode="grid"
+                  />
+                );
+              })}
+            </div>
+          ) : (
+            currentSpacePinnedBlocks.map((block) => {
+              const isActive = block.id === focusedBlock;
+              const title = getBlockDisplayName(block);
+              const icon = getBlockIcon(block);
+              return (
+                <TabItem
+                  key={block.id}
+                  blockId={block.id}
+                  title={title}
+                  isActive={isActive}
+                  isPinned={true}
+                  activeSpace={activeSpace}
+                  onClick={handleTabClick}
+                  onPinStateChange={reloadPinnedBlocks}
+                  icon={icon}
+                  displayMode="list"
+                />
+              );
+            })
+          )}
         </div>
 
         {/* Today Tabs Section */}

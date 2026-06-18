@@ -10,6 +10,7 @@ interface TabItemProps {
   onClick: (blockId: number) => void;
   onPinStateChange?: () => void;
   icon?: string;
+  displayMode?: 'grid' | 'list';
 }
 
 export const TabItem: React.FC<TabItemProps> = ({ 
@@ -20,7 +21,8 @@ export const TabItem: React.FC<TabItemProps> = ({
   activeSpace, 
   onClick,
   onPinStateChange,
-  icon
+  icon,
+  displayMode = 'list'
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -77,6 +79,50 @@ export const TabItem: React.FC<TabItemProps> = ({
   const ContextMenu = orca.components.ContextMenu;
   const Menu = orca.components.Menu;
   const MenuText = orca.components.MenuText;
+  const Tooltip = orca.components.Tooltip;
+
+  if (displayMode === 'grid') {
+    const hasCustomIcon = icon && icon !== '📄';
+    const displayIcon = hasCustomIcon ? icon : null;
+    const initialText = title ? title.trim().substring(0, 1).toUpperCase() : '?';
+
+    return (
+      <ContextMenu
+        menu={(close) => (
+          <Menu>
+            <MenuText 
+              title="Unpin" 
+              preIcon="ti ti-pin-off" 
+              onClick={() => { close(); handleUnpinClick(); }} 
+            />
+            <MenuText 
+              title="Rename" 
+              preIcon="ti ti-edit" 
+              onClick={() => { close(); handleRenameClick(); }} 
+            />
+          </Menu>
+        )}
+      >
+        {(openMenu: any) => (
+          <Tooltip text={title}>
+            <div 
+              className={`arc-tab-grid-item ${isActive ? 'active' : ''}`}
+              onClick={() => onClick(blockId)}
+              onContextMenu={(e: any) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openMenu(e);
+              }}
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
+            >
+              {displayIcon ? displayIcon : <span className="arc-tab-initial">{initialText}</span>}
+            </div>
+          </Tooltip>
+        )}
+      </ContextMenu>
+    );
+  }
 
   return (
     <ContextMenu
@@ -113,24 +159,25 @@ export const TabItem: React.FC<TabItemProps> = ({
       )}
     >
       {(openMenu: any) => (
-        <div 
-          className={`arc-tab-item ${isActive ? 'active' : ''}`}
-          onClick={() => onClick(blockId)}
-          onContextMenu={(e: any) => {
-            e.preventDefault();
-            e.stopPropagation();
-            openMenu(e);
-          }}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          title={title}
-        >
-          <span className="arc-tab-icon">{icon || '📄'}</span>
-          <span className="arc-tab-title">{title}</span>
-          
-          {/* Show active dot if active */}
-          {isActive && <div className="arc-tab-active-dot" />}
-        </div>
+        <Tooltip text={title}>
+          <div 
+            className={`arc-tab-item ${isActive ? 'active' : ''}`}
+            onClick={() => onClick(blockId)}
+            onContextMenu={(e: any) => {
+              e.preventDefault();
+              e.stopPropagation();
+              openMenu(e);
+            }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+          >
+            <span className="arc-tab-icon">{icon || '📄'}</span>
+            <span className="arc-tab-title">{title}</span>
+            
+            {/* Show active dot if active */}
+            {isActive && <div className="arc-tab-active-dot" />}
+          </div>
+        </Tooltip>
       )}
     </ContextMenu>
   );

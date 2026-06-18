@@ -6,6 +6,7 @@ import { DataImporter } from "@/libs/DataImporter";
 import { PropType } from "@/libs/consts";
 import type { Block } from "../orca.d.ts";
 import { ArcSidebar } from './components/ArcSidebar';
+import { arcTabsState } from './utils/data';
 
 export let arcTabsPluginInstance: ArcTabsPlugin;
 
@@ -61,12 +62,18 @@ export default class ArcTabsPlugin extends BasePlugin {
     // Bind a default shortcut if desired (optional)
     // orca.commands.bindShortcut('arcTabs.openSidebar', 'cmd+shift+a');
 
+    const settings = this.getSettings();
+    arcTabsState.pinnedDisplayMode = settings.pinnedDisplayMode || 'grid';
+
     this.ensurePinTagSchema();
   }
 
   protected async onConfigChanged(newConfig: any): Promise<void> {
     await super.onConfigChanged(newConfig);
     this.ensurePinTagSchema();
+    if (newConfig.pinnedDisplayMode) {
+      arcTabsState.pinnedDisplayMode = newConfig.pinnedDisplayMode;
+    }
   }
 
   private async ensurePinTagSchema() {
@@ -139,7 +146,8 @@ export default class ArcTabsPlugin extends BasePlugin {
   getDefaultSettings() {
     return {
       ...super.getDefaultSettings(),
-      pinTagName: 'ArcTab'
+      pinTagName: 'ArcTab',
+      pinnedDisplayMode: 'grid'
     };
   }
 
@@ -155,6 +163,20 @@ export default class ArcTabsPlugin extends BasePlugin {
               value={settings.pinTagName || 'ArcTab'}
               onChange={(e) => updateSettings({ pinTagName: e.target.value })}
               placeholder="ArcTab"
+            />
+          </SettingsItem>
+          <SettingsItem
+            label={t("arcTabs.pinnedLayout")}
+            description="Choose the visual layout for pinned tabs in the sidebar."
+          >
+            <orca.components.Select
+              selected={[settings.pinnedDisplayMode || 'grid']}
+              options={[
+                { value: 'grid', label: t('arcTabs.layoutGrid') },
+                { value: 'list', label: t('arcTabs.layoutList') }
+              ]}
+              onChange={(selected) => updateSettings({ pinnedDisplayMode: selected[0] })}
+              width="100%"
             />
           </SettingsItem>
         </SettingsSection>
