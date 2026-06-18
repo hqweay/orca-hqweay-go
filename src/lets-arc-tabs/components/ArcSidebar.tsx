@@ -71,17 +71,19 @@ export const ArcSidebar: React.FC = () => {
   const localArcTabsState = useSnapshot(arcTabsState);
 
   const [activeSpace, setActiveSpace] = useState("default");
-  const [pinnedBlocks, setPinnedBlocks] = useState<any[]>([]);
+
+  // Load pinned blocks on mount
+  useEffect(() => {
+    fetchPinnedBlocks().then((blocks) => {
+      arcTabsState.pinnedBlocks = blocks;
+    });
+  }, []);
 
   // Function to reload pinned blocks
   const reloadPinnedBlocks = async () => {
     const blocks = await fetchPinnedBlocks();
-    setPinnedBlocks(blocks);
+    arcTabsState.pinnedBlocks = blocks;
   };
-
-  useEffect(() => {
-    reloadPinnedBlocks();
-  }, [activeSpace]); // reload if space changes (though we fetch all tags, we filter below)
 
   const activeBlockIds = useMemo(() => {
     return getActiveBlocks(state.panels)
@@ -96,20 +98,17 @@ export const ArcSidebar: React.FC = () => {
     const orderObj = settings.pinnedOrder || {};
     const orderArray = (orderObj[activeSpace] || []) as number[];
 
+    const allPinned = localArcTabsState.pinnedBlocks;
+
     // Find blocks that have #ArcTab but haven't been assigned to any space yet (e.g. manually typed)
     const allAssignedIds = Object.values(orderObj).flat() as number[];
-    const unassignedBlocks = pinnedBlocks.filter(
+    const unassignedBlocks = allPinned.filter(
       (b) => !allAssignedIds.includes(b.id),
     );
 
     // We render blocks assigned to this space PLUS any new unassigned ones
-    let currentBlocks = pinnedBlocks.filter(
+    let currentBlocks = allPinned.filter(
       (b) => orderArray.includes(b.id) || unassignedBlocks.includes(b),
-    );
-
-    // Optimistic UI update: Filter out blocks that are currently being unpinned
-    currentBlocks = currentBlocks.filter(
-      (b) => !localArcTabsState.unpinningBlocks.includes(b.id),
     );
 
     return currentBlocks.sort((a, b) => {
@@ -120,7 +119,7 @@ export const ArcSidebar: React.FC = () => {
       if (indexB === -1) return -1;
       return indexA - indexB;
     });
-  }, [pinnedBlocks, activeSpace, localArcTabsState.unpinningBlocks]);
+  }, [localArcTabsState.pinnedBlocks, activeSpace]);
 
   // Synchronize all open panel blocks into the recentlyVisited list stably
   useEffect(() => {
@@ -153,14 +152,12 @@ export const ArcSidebar: React.FC = () => {
     return localArcTabsState.recentlyVisited
       .filter(
         (item) =>
-          !pinnedIds.includes(item.id) &&
-          !localArcTabsState.unpinningBlocks.includes(item.id),
+          !pinnedIds.includes(item.id),
       )
       .slice(0, 15);
   }, [
     localArcTabsState.recentlyVisited,
     currentSpacePinnedBlocks,
-    localArcTabsState.unpinningBlocks,
   ]);
 
   // Find currently focused block in the active panel
@@ -333,7 +330,6 @@ export const ArcSidebar: React.FC = () => {
                     isPinned={true}
                     activeSpace={activeSpace}
                     onClick={handleTabClick}
-                    onPinStateChange={reloadPinnedBlocks}
                     icon={icon}
                     displayMode="grid"
                   />
@@ -354,7 +350,6 @@ export const ArcSidebar: React.FC = () => {
                   isPinned={true}
                   activeSpace={activeSpace}
                   onClick={handleTabClick}
-                  onPinStateChange={reloadPinnedBlocks}
                   icon={icon}
                   displayMode="list"
                 />
@@ -383,7 +378,6 @@ export const ArcSidebar: React.FC = () => {
                 isPinned={false}
                 activeSpace={activeSpace}
                 onClick={handleTabClick}
-                onPinStateChange={reloadPinnedBlocks}
                 icon={icon}
               />
             );

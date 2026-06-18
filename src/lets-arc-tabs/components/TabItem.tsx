@@ -8,7 +8,6 @@ interface TabItemProps {
   isPinned: boolean;
   activeSpace: string;
   onClick: (blockId: number) => void;
-  onPinStateChange?: () => void;
   icon?: string;
   displayMode?: 'grid' | 'list';
 }
@@ -20,7 +19,6 @@ export const TabItem: React.FC<TabItemProps> = ({
   isPinned, 
   activeSpace, 
   onClick,
-  onPinStateChange,
   icon,
   displayMode = 'list'
 }) => {
@@ -29,14 +27,12 @@ export const TabItem: React.FC<TabItemProps> = ({
   const handlePinClick = async () => {
     if (!isPinned) {
       await pinBlock(blockId, activeSpace);
-      if (onPinStateChange) onPinStateChange();
     }
   };
 
   const handleUnpinClick = async () => {
     if (isPinned) {
       await unpinBlock(blockId);
-      if (onPinStateChange) onPinStateChange();
     }
   };
 
@@ -63,16 +59,12 @@ export const TabItem: React.FC<TabItemProps> = ({
     if (panelId) {
       orca.nav.close(panelId);
     }
-    
-    if (onPinStateChange) onPinStateChange();
   };
 
   const handleRenameClick = () => {
     const newName = window.prompt("Enter new display name for this tab:", title);
     if (newName !== null && newName.trim() !== "") {
-      renamePinnedBlock(blockId, newName.trim()).then(() => {
-        if (onPinStateChange) onPinStateChange();
-      });
+      renamePinnedBlock(blockId, newName.trim());
     }
   };
 
