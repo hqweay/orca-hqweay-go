@@ -7,11 +7,32 @@ const getSpaceProperty = (block: any): string[] => {
   return prop?.value || [];
 };
 
+export const loadSpacesFromTag = async (): Promise<string[]> => {
+  const settings = arcTabsPluginInstance?.getSettings() || {};
+  const pinTagName = settings.pinTagName || "ArcTab";
+  
+  const tagBlock = (await orca.invokeBackend(
+    "get-block-by-alias",
+    pinTagName,
+  )) as any;
+  
+  if (!tagBlock) return [];
+  
+  const spaceProp = tagBlock.properties?.find((p: any) => p.name === "Space");
+  return spaceProp?.typeArgs?.choices || [];
+};
+
 export const getSpaces = (): string[] => {
   const spaces = new Set<string>();
+  
   for (const block of arcTabsState.pinnedBlocks) {
     getSpaceProperty(block).forEach((s: string) => spaces.add(s));
   }
+  
+  if (arcTabsState.spaceChoices) {
+    arcTabsState.spaceChoices.forEach((s: string) => spaces.add(s));
+  }
+  
   return Array.from(spaces).sort();
 };
 
@@ -71,6 +92,8 @@ export const addSpaceChoice = async (spaceName: string) => {
         },
       }],
     );
+    
+    arcTabsState.spaceChoices = newChoices;
   } catch (e) {
     console.error("Failed to add space choice", e);
   }

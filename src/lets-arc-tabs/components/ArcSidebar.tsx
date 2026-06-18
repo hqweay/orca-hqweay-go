@@ -10,7 +10,7 @@ import {
 } from "../utils/nav";
 import { arcTabsState } from "../utils/data";
 import { pinBlock, loadPinnedBlocks } from "../utils/pin";
-import { getSpaces, getBlocksInSpace, addSpaceChoice } from "../utils/spaces";
+import { getSpaces, getBlocksInSpace, addSpaceChoice, loadSpacesFromTag } from "../utils/spaces";
 import { addRecentBlock } from "../utils/recent";
 import { TabItem } from "./TabItem";
 import { arcTabsPluginInstance } from "../index";
@@ -79,12 +79,13 @@ export const ArcSidebar: React.FC = () => {
   const [activeSpace, setActiveSpace] = useState<string | null>(null);
   const [showNewSpaceInput, setShowNewSpaceInput] = useState(false);
   const [newSpaceName, setNewSpaceName] = useState("");
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; space: string } | null>(null);
-
-  const spaces = useMemo(() => getSpaces(), [localArcTabsState.pinnedBlocks]);
+  const spaces = useMemo(() => getSpaces(), [localArcTabsState.pinnedBlocks, localArcTabsState.spaceChoices]);
 
   useEffect(() => {
     loadPinnedBlocks();
+    loadSpacesFromTag().then((choices) => {
+      arcTabsState.spaceChoices = choices;
+    });
   }, []);
 
   useEffect(() => {
@@ -232,18 +233,7 @@ export const ArcSidebar: React.FC = () => {
     }
   };
 
-  const handleSpaceContextMenu = (e: React.MouseEvent, space: string) => {
-    e.preventDefault();
-    setContextMenu({ x: e.clientX, y: e.clientY, space });
-  };
 
-  useEffect(() => {
-    const handleClick = () => setContextMenu(null);
-    if (contextMenu) {
-      document.addEventListener("click", handleClick);
-      return () => document.removeEventListener("click", handleClick);
-    }
-  }, [contextMenu]);
 
   return (
     <div className="arc-sidebar-container">
@@ -336,7 +326,6 @@ export const ArcSidebar: React.FC = () => {
             className={`arc-space-item ${activeSpace === space ? "active" : ""}`}
             title={space}
             onClick={() => setActiveSpace(space)}
-            onContextMenu={(e) => handleSpaceContextMenu(e, space)}
           >
             {space.charAt(0).toUpperCase()}
           </div>
@@ -373,34 +362,7 @@ export const ArcSidebar: React.FC = () => {
         )}
       </div>
 
-      {contextMenu && (
-        <div
-          className="arc-space-context-menu"
-          style={{ top: contextMenu.y, left: contextMenu.x }}
-        >
-          <div
-            className="arc-space-context-item"
-            onClick={() => {
-              const newName = prompt("Rename space", contextMenu.space);
-              if (newName && newName.trim() && newName !== contextMenu.space) {
-                // TODO: renameSpace
-              }
-              setContextMenu(null);
-            }}
-          >
-            Rename
-          </div>
-          <div
-            className="arc-space-context-item arc-space-context-danger"
-            onClick={() => {
-              // TODO: deleteSpace
-              setContextMenu(null);
-            }}
-          >
-            Delete
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };
