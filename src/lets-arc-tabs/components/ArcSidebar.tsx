@@ -44,6 +44,24 @@ const getBlockTitle = (block: any, id: string | number) => {
   return `Block ${String(id).substring(0, 8)}`;
 };
 
+const getBlockIcon = (block: any) => {
+  if (!block) return '📄';
+  
+  // 1. Check custom icon property
+  const iconProp = block.properties?.find((p: any) => p.name === "_icon");
+  if (iconProp && iconProp.value) {
+    return iconProp.value;
+  }
+  
+  // 2. Check if journal block
+  const reprProp = block.properties?.find((p: any) => p.name === "_repr");
+  if (reprProp && reprProp.value?.type === "journal") {
+    return '📅';
+  }
+  
+  return '📄';
+};
+
 const StyleInjector = () => (
   <style dangerouslySetInnerHTML={{ __html: styles }} />
 );
@@ -112,7 +130,8 @@ export const ArcSidebar: React.FC = () => {
       if (!list.some((item) => item.id === id)) {
         const block = state.blocks[id];
         const title = getBlockTitle(block, id);
-        list.unshift({ id, title });
+        const icon = getBlockIcon(block);
+        list.unshift({ id, title, icon });
         changed = true;
       }
     });
@@ -156,7 +175,8 @@ export const ArcSidebar: React.FC = () => {
     if (focusedBlock && !activePinningBlocks.has(focusedBlock)) {
       const block = state.blocks[focusedBlock];
       const title = getBlockTitle(block, focusedBlock);
-      addRecentBlock(focusedBlock, title);
+      const icon = getBlockIcon(block);
+      addRecentBlock(focusedBlock, title, icon);
     }
   }, [focusedBlock, isBlockCached]);
 
@@ -312,6 +332,7 @@ export const ArcSidebar: React.FC = () => {
           {currentSpacePinnedBlocks.map((block) => {
             const isActive = block.id === focusedBlock;
             const title = getBlockDisplayName(block);
+            const icon = getBlockIcon(block);
             return (
               <TabItem
                 key={block.id}
@@ -322,6 +343,7 @@ export const ArcSidebar: React.FC = () => {
                 activeSpace={activeSpace}
                 onClick={handleTabClick}
                 onPinStateChange={reloadPinnedBlocks}
+                icon={icon}
               />
             );
           })}
@@ -336,7 +358,8 @@ export const ArcSidebar: React.FC = () => {
             const title = block
               ? getBlockTitle(block, tab.id)
               : tab.title || `Block ${tab.id}`;
-
+            const icon = block ? getBlockIcon(block) : (tab.icon || '📄');
+ 
             return (
               <TabItem
                 key={tab.id}
@@ -347,6 +370,7 @@ export const ArcSidebar: React.FC = () => {
                 activeSpace={activeSpace}
                 onClick={handleTabClick}
                 onPinStateChange={reloadPinnedBlocks}
+                icon={icon}
               />
             );
           })}

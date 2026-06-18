@@ -9,6 +9,7 @@ interface TabItemProps {
   activeSpace: string;
   onClick: (blockId: number) => void;
   onPinStateChange?: () => void;
+  icon?: string;
 }
 
 export const TabItem: React.FC<TabItemProps> = ({ 
@@ -18,7 +19,8 @@ export const TabItem: React.FC<TabItemProps> = ({
   isPinned, 
   activeSpace, 
   onClick,
-  onPinStateChange 
+  onPinStateChange,
+  icon
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -123,7 +125,7 @@ export const TabItem: React.FC<TabItemProps> = ({
           onMouseLeave={() => setIsHovered(false)}
           title={title}
         >
-          <span className="arc-tab-icon">{isPinned ? '📌' : '📄'}</span>
+          <span className="arc-tab-icon">{icon || '📄'}</span>
           <span className="arc-tab-title">{title}</span>
           
           {/* Show active dot if active */}

@@ -9,6 +9,7 @@ const LOCAL_STORAGE_KEY = "orca-arc-tabs-recent";
 export interface RecentTab {
   id: number;
   title: string;
+  icon: string;
 }
 
 export const arcTabsState = proxy({
@@ -21,9 +22,13 @@ export const arcTabsState = proxy({
       if (Array.isArray(parsed)) {
         return parsed.map((item: any) => {
           if (typeof item === 'object' && item !== null && 'id' in item) {
-            return { id: Number(item.id), title: String(item.title || '') };
+            return { 
+              id: Number(item.id), 
+              title: String(item.title || ''),
+              icon: String(item.icon || '')
+            };
           }
-          return { id: Number(item), title: '' };
+          return { id: Number(item), title: '', icon: '' };
         });
       }
       return [];
@@ -33,20 +38,29 @@ export const arcTabsState = proxy({
   })() as RecentTab[]
 });
 
-export const addRecentBlock = (idNum: number, title: string) => {
-  // If already in list, DO NOT change its position (keep it stable), but update title if it changed
+export const addRecentBlock = (idNum: number, title: string, icon: string) => {
+  // If already in list, DO NOT change its position (keep it stable), but update title/icon if changed
   const existingIdx = arcTabsState.recentlyVisited.findIndex(item => item.id === idNum);
   if (existingIdx !== -1) {
+    let changed = false;
+    
     if (arcTabsState.recentlyVisited[existingIdx].title !== title && title) {
       const newTitleIsGeneric = title.startsWith("Block ");
       const oldTitleIsGeneric = arcTabsState.recentlyVisited[existingIdx].title.startsWith("Block ") || !arcTabsState.recentlyVisited[existingIdx].title;
       
       // Avoid overwriting a real title with a generic "Block x" title
-      if (newTitleIsGeneric && !oldTitleIsGeneric) {
-        return;
+      if (!(newTitleIsGeneric && !oldTitleIsGeneric)) {
+        arcTabsState.recentlyVisited[existingIdx].title = title;
+        changed = true;
       }
-      
-      arcTabsState.recentlyVisited[existingIdx].title = title;
+    }
+    
+    if (arcTabsState.recentlyVisited[existingIdx].icon !== icon && icon) {
+      arcTabsState.recentlyVisited[existingIdx].icon = icon;
+      changed = true;
+    }
+    
+    if (changed) {
       try {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(arcTabsState.recentlyVisited));
       } catch (e) {
@@ -57,7 +71,7 @@ export const addRecentBlock = (idNum: number, title: string) => {
   }
   
   const list = [...arcTabsState.recentlyVisited];
-  list.unshift({ id: idNum, title: title || `Block ${idNum}` });
+  list.unshift({ id: idNum, title: title || `Block ${idNum}`, icon: icon || '' });
   const trimmed = list.slice(0, 15);
   arcTabsState.recentlyVisited = trimmed;
   try {
