@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { pinBlock, unpinBlock, renamePinnedBlock } from '../utils/data';
 
 interface TabItemProps {
-  blockId: string;
+  blockId: number;
   title: string;
   isActive: boolean;
   isPinned: boolean;
   activeSpace: string;
-  onClick: (blockId: string) => void;
-  onPinStateChange?: () => void; // Called when successfully pinned
+  onClick: (blockId: number) => void;
+  onPinStateChange?: () => void;
 }
 
 export const TabItem: React.FC<TabItemProps> = ({ 

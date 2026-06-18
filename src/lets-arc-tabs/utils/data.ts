@@ -8,9 +8,7 @@ export const arcTabsState = proxy({
   unpinningBlocks: [] as number[]
 });
 
-export const unpinBlock = async (blockId: string | number) => {
-  const idNum = Number(blockId);
-  
+export const unpinBlock = async (idNum: number) => {
   // Optimistic UI update: instantly hide from UI
   if (!arcTabsState.unpinningBlocks.includes(idNum)) {
     arcTabsState.unpinningBlocks.push(idNum);
@@ -46,8 +44,8 @@ export const unpinBlock = async (blockId: string | number) => {
     await new Promise(r => setTimeout(r, 200));
 
     // Check if it worked
-    let pinned = await orca.invokeBackend("get-blocks-with-tags", [pinTagName]);
-    let isPinned = pinned.some((b: any) => Number(b.id) === idNum);
+    let pinned = await fetchPinnedBlocks();
+    let isPinned = pinned.some((b: any) => b.id === idNum);
 
     if (isPinned) {
       console.log("Background unpin failed, using Nav fallback...");
@@ -114,14 +112,13 @@ export const unpinBlock = async (blockId: string | number) => {
   }
 };
 
-export const renamePinnedBlock = async (blockId: string | number, newName: string) => {
-  const idNum = Number(blockId);
+export const renamePinnedBlock = async (idNum: number, newName: string) => {
   const settings = arcTabsPluginInstance?.getSettings() || {};
   const pinTagName = settings.pinTagName || "ArcTab";
 
   // Check if it already has the tag
-  let pinned = await orca.invokeBackend("get-blocks-with-tags", [pinTagName]);
-  let isPinned = pinned.some((b: any) => Number(b.id) === idNum);
+  let pinned = await fetchPinnedBlocks();
+  let isPinned = pinned.some((b: any) => b.id === idNum);
 
   if (!isPinned) {
     // Need to tag it first, but typically rename happens on pinned tabs
@@ -141,10 +138,8 @@ export const renamePinnedBlock = async (blockId: string | number, newName: strin
   });
 };
 
-export const pinBlock = async (blockId: string | number, spaceId: string) => {
+export const pinBlock = async (idNum: number, spaceId: string) => {
   try {
-    const idNum = Number(blockId);
-    
     const settings = arcTabsPluginInstance?.getSettings() || {};
     const pinTagName = settings.pinTagName || "ArcTab";
 
@@ -165,8 +160,8 @@ export const pinBlock = async (blockId: string | number, spaceId: string) => {
     await new Promise(r => setTimeout(r, 200));
 
     // Check if it worked
-    let pinned = await orca.invokeBackend("get-blocks-with-tags", [pinTagName]);
-    let isPinned = pinned.some((b: any) => Number(b.id) === idNum);
+    let pinned = await fetchPinnedBlocks();
+    let isPinned = pinned.some((b: any) => b.id === idNum);
 
     if (!isPinned) {
       console.log("Background pin failed, using Nav fallback...");
@@ -246,5 +241,9 @@ export const pinBlock = async (blockId: string | number, spaceId: string) => {
 export const fetchPinnedBlocks = async (): Promise<any[]> => {
   const settings = arcTabsPluginInstance?.getSettings() || {};
   const pinTagName = settings.pinTagName || "ArcTab";
-  return await orca.invokeBackend("get-blocks-with-tags", [pinTagName]);
+  const blocks = await orca.invokeBackend("get-blocks-with-tags", [pinTagName]) || [];
+  return blocks.map((b: any) => ({
+    ...b,
+    id: Number(b.id)
+  }));
 };
