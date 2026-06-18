@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useSnapshot } from "valtio";
 import { t } from "@/libs/l10n";
 
@@ -9,9 +9,7 @@ import {
   getFocusedBlock,
 } from "../utils/nav";
 import {
-  syncPinnedBlocksWithBackend,
   pinBlock,
-  activePinningBlocks,
   arcTabsState,
   addRecentBlock,
 } from "../utils/data";
@@ -21,7 +19,6 @@ import { arcTabsPluginInstance } from "../index";
 const getBlockTitle = (block: any, id: string | number) => {
   if (!block) return `Block ${String(id).substring(0, 8)}`;
   
-  // Try to get journal date if it's a journal block
   const reprProp = block.properties?.find((p: any) => p.name === "_repr");
   if (reprProp && reprProp.value?.type === "journal" && reprProp.value?.date) {
     const d = new Date(reprProp.value.date);
@@ -47,13 +44,11 @@ const getBlockTitle = (block: any, id: string | number) => {
 const getBlockIcon = (block: any) => {
   if (!block) return '📄';
   
-  // 1. Check custom icon property
   const iconProp = block.properties?.find((p: any) => p.name === "_icon");
   if (iconProp && iconProp.value) {
     return iconProp.value;
   }
   
-  // 2. Check if journal block
   const reprProp = block.properties?.find((p: any) => p.name === "_repr");
   if (reprProp && reprProp.value?.type === "journal") {
     return '📅';
@@ -72,34 +67,18 @@ export const ArcSidebar: React.FC = () => {
 
   const [activeSpace, setActiveSpace] = useState("default");
 
-  // Load pinned blocks on mount
   useEffect(() => {
     const settings = arcTabsPluginInstance?.getSettings() || {};
     if (Object.keys(arcTabsState.pinnedOrder).length === 0) {
       arcTabsState.pinnedOrder = settings.pinnedOrder || {};
     }
-    syncPinnedBlocksWithBackend();
   }, []);
 
-  const openBlockIdsRef = useRef<number[]>([]);
-  const openBlockIds = useMemo(() => {
-    const newIds = getActiveBlocks(state.panels, activePinningBlocks)
-      .map(Number)
-      .sort((a, b) => a - b);
-    const prevIds = openBlockIdsRef.current;
-    if (
-      prevIds.length === newIds.length &&
-      prevIds.every((id, i) => id === newIds[i])
-    ) {
-      return prevIds;
-    }
-    openBlockIdsRef.current = newIds;
-    return newIds;
-  }, [state.panels]);
+  const openBlockIds = useMemo(
+    () => getActiveBlocks(state.panels).map(Number),
+    [state.panels],
+  );
 
-  const activeBlockIds = openBlockIds;
-
-  // Filter and SORT pinned blocks for the active space, with stable title/icon
   const currentSpacePinnedBlocks = useMemo(() => {
     const orderObj = localArcTabsState.pinnedOrder || {};
     const orderArray = (orderObj[activeSpace] || []) as number[];
@@ -124,18 +103,20 @@ export const ArcSidebar: React.FC = () => {
         if (indexB === -1) return -1;
         return indexA - indexB;
       })
-      .map((b) => ({
-        ...b,
-        _title: getBlockTitle(b, b.id),
-        _icon: getBlockIcon(b),
-      }));
+      .map((b) => {
+        const fullBlock = state.blocks[b.id] || b;
+        return {
+          ...b,
+          _title: getBlockTitle(fullBlock, b.id),
+          _icon: getBlockIcon(fullBlock),
+        };
+      });
   }, [localArcTabsState.pinnedBlocks, localArcTabsState.pinnedOrder, activeSpace]);
 
-  // Synchronize all open panel blocks into the recentlyVisited list stably
   useEffect(() => {
     let changed = false;
     const list = [...arcTabsState.recentlyVisited];
-    activeBlockIds.forEach((id) => {
+    openBlockIds.forEach((id) => {
       if (!list.some((item) => item.id === id)) {
         const block = state.blocks[id];
         const title = getBlockTitle(block, id);
@@ -155,7 +136,7 @@ export const ArcSidebar: React.FC = () => {
         console.error(e);
       }
     }
-  }, [activeBlockIds]);
+  }, [openBlockIds]);
 
   const todayTabs = useMemo(() => {
     const pinnedIds = currentSpacePinnedBlocks.map((b) => b.id);
@@ -170,16 +151,14 @@ export const ArcSidebar: React.FC = () => {
     currentSpacePinnedBlocks,
   ]);
 
-  // Find currently focused block in the active panel
   const focusedBlock = useMemo(() => {
-    return getFocusedBlock(state.panels, state.activePanel, activePinningBlocks);
+    return getFocusedBlock(state.panels, state.activePanel);
   }, [state.panels, state.activePanel]);
 
   const isBlockCached = !!(focusedBlock && state.blocks[focusedBlock]);
 
-  // Track page visits
   useEffect(() => {
-    if (focusedBlock && !activePinningBlocks.has(focusedBlock)) {
+    if (focusedBlock) {
       const block = state.blocks[focusedBlock];
       const title = getBlockTitle(block, focusedBlock);
       const icon = getBlockIcon(block);
@@ -187,9 +166,6 @@ export const ArcSidebar: React.FC = () => {
     }
   }, [focusedBlock, isBlockCached]);
 
-
-
-  // Filter out pinned blocks from Today tabs
   const filteredTodayTabs = useMemo(() => {
     const pinnedIds = currentSpacePinnedBlocks.map((b) => b.id);
     return todayTabs.filter((tab) => !pinnedIds.includes(tab.id));
@@ -210,27 +186,15 @@ export const ArcSidebar: React.FC = () => {
   };
 
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault(); // Required to allow drop
+    e.preventDefault();
   };
 
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     try {
-      const types = Array.from(e.dataTransfer.types);
-      console.log("Drop types: " + types.join(", "));
-
       const textData = e.dataTransfer.getData("text/plain");
       const jsonData = e.dataTransfer.getData("application/json");
       const orcaBlocks = e.dataTransfer.getData("application/x-orca-blocks");
-
-      console.log(
-        "text: " +
-          (textData ? "yes" : "no") +
-          ", json: " +
-          (jsonData ? "yes" : "no") +
-          ", orca: " +
-          (orcaBlocks ? "yes" : "no"),
-      );
 
       const data = jsonData || orcaBlocks || textData;
       if (data) {
@@ -238,12 +202,11 @@ export const ArcSidebar: React.FC = () => {
         try {
           parsed = JSON.parse(data);
         } catch (err) {
-          parsed = data; // fallback to string
+          parsed = data;
         }
 
         let ids: string[] = [];
 
-        // Handle various potential formats for Orca block drag payload
         if (typeof parsed === "object" && parsed !== null) {
           if (parsed.id) ids.push(parsed.id);
           else if (Array.isArray(parsed.blockIds)) ids = parsed.blockIds;
@@ -252,8 +215,6 @@ export const ArcSidebar: React.FC = () => {
         } else if (typeof parsed === "string") {
           ids.push(parsed);
         }
-
-        console.log("Parsed ids: " + ids.join(", "));
 
         for (const id of ids) {
           const numId = Number(id);
@@ -277,7 +238,7 @@ export const ArcSidebar: React.FC = () => {
           className="arc-sidebar-section"
           onDragOver={handleDragOver}
           onDrop={handleDrop}
-          style={{ minHeight: "50px" }} // Ensure there is droppable area even if empty
+          style={{ minHeight: "50px" }}
         >
           <div className="arc-sidebar-section-title">{t("arcTabs.pinned")}</div>
           {currentSpacePinnedBlocks.length === 0 && (

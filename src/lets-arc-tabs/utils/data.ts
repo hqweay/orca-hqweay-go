@@ -1,88 +1,7 @@
 import { DataImporter } from "@/libs/DataImporter";
 import { arcTabsPluginInstance } from "../index";
 import { proxy } from "valtio";
-import { PropType } from "@/libs/consts";
-import {
-  findMainPanelId,
-  findArcTabsPanelId,
-  findArcTabsPanelWidth,
-} from "./nav";
-
-export const activePinningBlocks = new Set<number>();
-
-/** Blocks optimistically unpinned; filtered out until backend catches up. */
-export const optimisticUnpinnedIds = new Set<number>();
-
-/** Global flag to suppress tooltip during pin/unpin animation */
-export let isAnimating = false;
-let animatingTimer: ReturnType<typeof setTimeout> | null = null;
-
-export const setAnimating = (value: boolean) => {
-  if (animatingTimer) {
-    clearTimeout(animatingTimer);
-    animatingTimer = null;
-  }
-  if (value) {
-    isAnimating = true;
-  } else {
-    // Delay to prevent tooltip flash during list reorder
-    animatingTimer = setTimeout(() => {
-      isAnimating = false;
-    }, 150);
-  }
-};
-
-const getPinnedOrderFromSettings = (): Record<string, number[]> => {
-  const settings = arcTabsPluginInstance?.getSettings() || {};
-  return (settings.pinnedOrder || {}) as Record<string, number[]>;
-};
-
-const getAllOrderedPinIds = (orderObj: Record<string, number[]>): Set<number> =>
-  new Set(Object.values(orderObj).flat());
-
-/** Merge backend fetch with optimistic pin/unpin state to avoid UI flicker. */
-export const syncPinnedBlocksWithBackend = async () => {
-  const backendBlocks = await fetchPinnedBlocks();
-  const orderObj =
-    Object.keys(arcTabsState.pinnedOrder).length > 0
-      ? arcTabsState.pinnedOrder
-      : getPinnedOrderFromSettings();
-  const orderIds = getAllOrderedPinIds(orderObj);
-  const backendIds = new Set(backendBlocks.map((b) => b.id));
-
-  const pendingOptimisticPins = arcTabsState.pinnedBlocks.filter(
-    (b) =>
-      !optimisticUnpinnedIds.has(b.id) &&
-      orderIds.has(b.id) &&
-      !backendIds.has(b.id),
-  );
-
-  const byId = new Map<number, any>();
-  for (const block of backendBlocks) {
-    if (!optimisticUnpinnedIds.has(block.id)) {
-      byId.set(block.id, block);
-    }
-  }
-  for (const block of pendingOptimisticPins) {
-    if (!byId.has(block.id)) {
-      byId.set(block.id, block);
-    }
-  }
-
-  const merged = Array.from(byId.values());
-  const currentIds = arcTabsState.pinnedBlocks
-    .map((b) => b.id)
-    .sort((a, b) => a - b);
-  const mergedIds = merged.map((b) => b.id).sort((a, b) => a - b);
-  if (
-    currentIds.length === mergedIds.length &&
-    currentIds.every((id, index) => id === mergedIds[index])
-  ) {
-    return;
-  }
-
-  arcTabsState.pinnedBlocks = merged;
-};
+import { findMainPanelId } from "./nav";
 
 const revertOptimisticPin = (idNum: number, spaceId: string) => {
   arcTabsState.pinnedBlocks = arcTabsState.pinnedBlocks.filter(
@@ -137,7 +56,6 @@ export const arcTabsState = proxy({
 });
 
 export const addRecentBlock = (idNum: number, title: string, icon: string) => {
-  // If already in list, DO NOT change its position (keep it stable), but update title/icon if changed
   const existingIdx = arcTabsState.recentlyVisited.findIndex(
     (item) => item.id === idNum,
   );
@@ -150,7 +68,6 @@ export const addRecentBlock = (idNum: number, title: string, icon: string) => {
         arcTabsState.recentlyVisited[existingIdx].title.startsWith("Block ") ||
         !arcTabsState.recentlyVisited[existingIdx].title;
 
-      // Avoid overwriting a real title with a generic "Block x" title
       if (!(newTitleIsGeneric && !oldTitleIsGeneric)) {
         arcTabsState.recentlyVisited[existingIdx].title = title;
         changed = true;
@@ -201,10 +118,6 @@ export const removeRecentBlock = (idNum: number) => {
 };
 
 export const unpinBlock = async (idNum: number) => {
-  setAnimating(true);
-  optimisticUnpinnedIds.add(idNum);
-
-  // Optimistic UI update: instantly hide from UI
   arcTabsState.pinnedBlocks = arcTabsState.pinnedBlocks.filter(
     (b) => b.id !== idNum,
   );
@@ -213,106 +126,37 @@ export const unpinBlock = async (idNum: number) => {
   const orderObj = { ...(arcTabsState.pinnedOrder || settings.pinnedOrder || {}) };
   const pinTagName = settings.pinTagName || "ArcTab";
 
-  let changed = false;
   for (const space of Object.keys(orderObj)) {
     const arr = [...orderObj[space]];
     const idx = arr.indexOf(idNum);
     if (idx !== -1) {
       arr.splice(idx, 1);
       orderObj[space] = arr;
-      changed = true;
     }
   }
-
-  if (changed) {
-    arcTabsState.pinnedOrder = orderObj;
-    await arcTabsPluginInstance.updateSettings({ pinnedOrder: orderObj });
-  }
-
-  let backendSynced = false;
+  arcTabsState.pinnedOrder = orderObj;
+  await arcTabsPluginInstance.updateSettings({ pinnedOrder: orderObj });
 
   try {
-    let pinned = await fetchPinnedBlocks();
-    let isPinned = pinned.some((b: any) => b.id === idNum);
+    const mainPanelId = findMainPanelId(orca.state.panels);
+    if (!mainPanelId) return;
 
-    if (isPinned) {
-      // Add to exclude set BEFORE creating temp panel to prevent flicker
-      activePinningBlocks.add(idNum);
-      
-      const activePanelId = orca.state.activePanel;
+    orca.nav.goTo("block", { blockId: idNum }, mainPanelId);
+    orca.nav.switchFocusTo(mainPanelId);
+    await new Promise((r) => setTimeout(r, 500));
 
-      const originalWidth = findArcTabsPanelWidth(orca.state.panels) || 250;
-
-      const arcTabsPanelId = findArcTabsPanelId(orca.state.panels);
-      const targetPanelId = arcTabsPanelId || activePanelId;
-
-      const tempPanelId = orca.nav.addTo(targetPanelId, "bottom", {
-        view: "block",
-        viewArgs: { blockId: idNum },
-        viewState: {},
-      });
-
-      if (tempPanelId) {
-        const style = document.createElement("style");
-        style.id = `hide-temp-panel-${tempPanelId}`;
-        style.innerHTML = `
-          .orca-panel[data-panel-id="${tempPanelId}"],
-          div[data-panel-id="${tempPanelId}"] {
-            position: absolute !important;
-            opacity: 0 !important;
-            width: 1px !important;
-            height: 1px !important;
-            pointer-events: none !important;
-            z-index: -999 !important;
-          }
-        `;
-        document.head.appendChild(style);
-
-        orca.nav.switchFocusTo(tempPanelId);
-      }
-
-      await new Promise((r) => setTimeout(r, 500));
-
-      await orca.commands.invokeEditorCommand(
-        "core.editor.removeTag",
-        null,
-        idNum,
-        pinTagName,
-      );
-
-      if (tempPanelId) {
-        orca.nav.close(tempPanelId);
-        const style = document.getElementById(`hide-temp-panel-${tempPanelId}`);
-        if (style) style.remove();
-        orca.nav.switchFocusTo(activePanelId);
-
-        const arcTabsPanelId = findArcTabsPanelId(orca.state.panels);
-        if (arcTabsPanelId) {
-          orca.nav.changeSizes(arcTabsPanelId, [
-            originalWidth,
-            window.innerWidth - originalWidth,
-          ]);
-        }
-
-        setTimeout(() => activePinningBlocks.delete(idNum), 100);
-      }
-
-      await new Promise((r) => setTimeout(r, 300));
-      backendSynced = true;
-    }
+    await orca.commands.invokeEditorCommand(
+      "core.editor.removeTag",
+      null,
+      idNum,
+      pinTagName,
+    );
   } catch (e) {
     console.error("Failed to remove pin tag", e);
-  } finally {
-    optimisticUnpinnedIds.delete(idNum);
-    if (!backendSynced) {
-      await syncPinnedBlocksWithBackend();
-    }
-    setAnimating(false);
   }
 };
 
 export const pinBlock = async (idNum: number, spaceId: string) => {
-  setAnimating(true);
   const settings = arcTabsPluginInstance?.getSettings() || {};
   const pinTagName = settings.pinTagName || "ArcTab";
 
@@ -348,13 +192,18 @@ export const pinBlock = async (idNum: number, spaceId: string) => {
     nextPinnedBlocks.push(optimisticBlock);
   }
 
-  // Update both atomically to prevent intermediate state flicker
   arcTabsState.pinnedOrder = orderObj;
   arcTabsState.pinnedBlocks = nextPinnedBlocks;
   arcTabsPluginInstance?.updateSettings({ pinnedOrder: orderObj });
 
   try {
-    // First try DataImporter directly (works if block is already active)
+    const mainPanelId = findMainPanelId(orca.state.panels);
+    if (!mainPanelId) return;
+
+    orca.nav.goTo("block", { blockId: idNum }, mainPanelId);
+    orca.nav.switchFocusTo(mainPanelId);
+    await new Promise((r) => setTimeout(r, 500));
+
     await DataImporter.applyTag(idNum, {
       name: pinTagName,
       properties: [
@@ -366,102 +215,10 @@ export const pinBlock = async (idNum: number, spaceId: string) => {
         },
       ],
     });
-
-    await new Promise((r) => setTimeout(r, 200));
-
-    let pinned = await fetchPinnedBlocks();
-    let isPinned = pinned.some((b: any) => b.id === idNum);
-
-    if (!isPinned) {
-      activePinningBlocks.add(idNum);
-      const activePanelId = orca.state.activePanel;
-
-      const originalWidth = findArcTabsPanelWidth(orca.state.panels) || 250;
-
-      const arcTabsPanelId = findArcTabsPanelId(orca.state.panels);
-      const targetPanelId = arcTabsPanelId || activePanelId;
-
-      const tempPanelId = orca.nav.addTo(targetPanelId, "bottom", {
-        view: "block",
-        viewArgs: { blockId: idNum },
-        viewState: {},
-      });
-
-      if (tempPanelId) {
-        const style = document.createElement("style");
-        style.id = `hide-temp-panel-${tempPanelId}`;
-        style.innerHTML = `
-          .orca-panel[data-panel-id="${tempPanelId}"],
-          div[data-panel-id="${tempPanelId}"] {
-            position: absolute !important;
-            opacity: 0 !important;
-            width: 1px !important;
-            height: 1px !important;
-            pointer-events: none !important;
-            z-index: -999 !important;
-          }
-        `;
-        document.head.appendChild(style);
-
-        orca.nav.switchFocusTo(tempPanelId);
-
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        await DataImporter.applyTag(idNum, {
-          name: pinTagName,
-          properties: [
-            {
-              name: "Space",
-              type: 3,
-              value: [spaceId],
-              typeArgs: { subType: "multi", choices: [spaceId] },
-            },
-          ],
-        });
-
-        orca.nav.close(tempPanelId);
-
-        const cleanupStyle = document.getElementById(
-          `hide-temp-panel-${tempPanelId}`,
-        );
-        if (cleanupStyle) cleanupStyle.remove();
-        orca.nav.switchFocusTo(activePanelId);
-
-        const arcTabsPanelId = findArcTabsPanelId(orca.state.panels);
-        if (arcTabsPanelId) {
-          orca.nav.changeSizes(arcTabsPanelId, [
-            originalWidth,
-            window.innerWidth - originalWidth,
-          ]);
-        }
-
-        setTimeout(() => activePinningBlocks.delete(idNum), 100);
-      }
-
-      pinned = await fetchPinnedBlocks();
-      isPinned = pinned.some((b: any) => b.id === idNum);
-    }
-
-    if (!isPinned) {
-      revertOptimisticPin(idNum, spaceId);
-      setAnimating(false);
-      return;
-    }
   } catch (err: any) {
     console.error("Pin failed", err);
     revertOptimisticPin(idNum, spaceId);
-  } finally {
-    setAnimating(false);
   }
 };
 
-export const fetchPinnedBlocks = async (): Promise<any[]> => {
-  const settings = arcTabsPluginInstance?.getSettings() || {};
-  const pinTagName = settings.pinTagName || "ArcTab";
-  const blocks =
-    (await orca.invokeBackend("get-blocks-with-tags", [pinTagName])) || [];
-  return blocks.map((b: any) => ({
-    ...b,
-    id: Number(b.id),
-  }));
-};
+
