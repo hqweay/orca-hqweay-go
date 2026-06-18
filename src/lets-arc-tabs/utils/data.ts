@@ -33,6 +33,22 @@ export const pinBlock = async (blockId: string | number, spaceId: string) => {
       });
 
       if (tempPanelId) {
+        // Inject CSS to completely hide the temporary panel and prevent layout shift
+        const style = document.createElement("style");
+        style.id = `hide-temp-panel-${tempPanelId}`;
+        style.innerHTML = `
+          .orca-panel[data-panel-id="${tempPanelId}"],
+          div[data-panel-id="${tempPanelId}"] {
+            position: absolute !important;
+            opacity: 0 !important;
+            width: 1px !important;
+            height: 1px !important;
+            pointer-events: none !important;
+            z-index: -999 !important;
+          }
+        `;
+        document.head.appendChild(style);
+
         // Switch focus to the temp panel so the editor becomes active
         orca.nav.switchFocusTo(tempPanelId);
 
@@ -52,6 +68,10 @@ export const pinBlock = async (blockId: string | number, spaceId: string) => {
         });
         
         orca.nav.close(tempPanelId);
+        
+        // Clean up CSS
+        const cleanupStyle = document.getElementById(`hide-temp-panel-${tempPanelId}`);
+        if (cleanupStyle) cleanupStyle.remove();
         orca.nav.switchFocusTo(activePanelId);
       }
     }
