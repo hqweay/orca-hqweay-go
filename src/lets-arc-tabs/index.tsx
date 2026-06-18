@@ -37,7 +37,12 @@ export default class ArcTabsPlugin extends BasePlugin {
           orca.nav.close(existingPanel.id);
         } else {
           // Open as a split to the left of the active panel
-          orca.nav.addTo(orca.state.activePanel, 'left', { view: 'arcTabs', viewArgs: {}, viewState: {} });
+          orca.nav.addTo(orca.state.activePanel, 'left', { 
+            view: 'arcTabs', 
+            viewArgs: {}, 
+            viewState: {},
+            locked: true // Prevent this panel from being replaced by other blocks
+          } as any);
         }
       },
       t('arcTabs') // Display name in command palette
