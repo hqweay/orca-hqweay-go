@@ -19,3 +19,6 @@
 [submodule "vendor/orca-tabs-plugin"]
 	path = vendor/orca-tabs-plugin
 	url = git@github.com:SaXz2/orca-tabs-plugin.git
+[submodule "vendor/orca-note-cli"]
+	path = vendor/orca-note-cli
+	url = git@github.com:sethyuan/orca-note-cli.git
