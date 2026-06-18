@@ -36,13 +36,20 @@ export default class ArcTabsPlugin extends BasePlugin {
           // If already open, close it (toggle behavior)
           orca.nav.close(existingPanel.id);
         } else {
-          // Open as a split to the left of the active panel
-          orca.nav.addTo(orca.state.activePanel, 'left', { 
-            view: 'arcTabs', 
-            viewArgs: {}, 
+          const newPanelId = orca.nav.addTo(orca.state.activePanel, "left", {
+            view: "arcTabs",
+            viewArgs: {},
             viewState: {},
-            locked: true // Prevent this panel from being replaced by other blocks
+            locked: true, // Prevent this panel from being replaced by other blocks
           } as any);
+          
+          if (newPanelId) {
+            // Wait for the panel to be mounted in the DOM, then resize it
+            setTimeout(() => {
+              // 250px for sidebar, the rest for the main panel
+              orca.nav.changeSizes(newPanelId, [250, window.innerWidth - 250]);
+            }, 50);
+          }
         }
       },
       t('arcTabs') // Display name in command palette
