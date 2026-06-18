@@ -51,3 +51,30 @@ export const getFocusedBlock = (panel: any, activePanelId: string | null): numbe
   
   return null;
 };
+
+export const findArcTabsPanelId = (panel: any): string | null => {
+  if (panel.view === 'arcTabs') {
+    return panel.id;
+  }
+  if (panel.children) {
+    for (const child of panel.children) {
+      const id = findArcTabsPanelId(child);
+      if (id) return id;
+    }
+  }
+  return null;
+};
+
+export const findArcTabsPanelWidth = (panel: any): number | null => {
+  if (panel.view === 'arcTabs') {
+    return panel.width || null;
+  }
+  if (panel.children) {
+    for (const child of panel.children) {
+      const w = findArcTabsPanelWidth(child);
+      if (w) return w;
+    }
+  }
+  return null;
+};
+
