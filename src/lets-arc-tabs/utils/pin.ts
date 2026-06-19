@@ -87,7 +87,7 @@ export const pinBlock = async (idNum: number, spaceId: string) => {
   }
 
   try {
-    const mainPanelId = findMainPanelId(orca.state.panels);
+    const mainPanelId = findMainPanelId(orca.state.panels, orca.state.activePanel);
     
     if (!mainPanelId) {
       console.error("[ArcTabs] No main panel found");
@@ -135,7 +135,7 @@ export const unpinBlock = async (idNum: number, space?: string) => {
   );
 
   try {
-    const mainPanelId = findMainPanelId(orca.state.panels);
+    const mainPanelId = findMainPanelId(orca.state.panels, orca.state.activePanel);
     if (!mainPanelId) return;
 
     orca.nav.goTo("block", { blockId: idNum }, mainPanelId);

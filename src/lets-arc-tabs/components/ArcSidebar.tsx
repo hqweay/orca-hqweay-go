@@ -163,9 +163,10 @@ export const ArcSidebar: React.FC = () => {
   }, [focusedBlock, isBlockCached]);
 
   const handleTabClick = (blockId: number) => {
-    const mainPanelId = findMainPanelId(state.panels);
+    const mainPanelId = findMainPanelId(state.panels, state.activePanel);
     if (mainPanelId) {
       orca.nav.goTo("block", { blockId }, mainPanelId);
+      orca.nav.switchFocusTo(mainPanelId);
     } else {
       const sidebarPanelId = orca.state.activePanel;
       orca.nav.addTo(sidebarPanelId, "right", {

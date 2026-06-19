@@ -1,10 +1,34 @@
-export const findMainPanelId = (panel: any): string | null => {
+export const findMainPanelId = (panel: any, activePanelId?: string | null): string | null => {
+  if (activePanelId) {
+    const findActive = (p: any): string | null => {
+      if (p.id === activePanelId && (p.view === 'block' || p.view === 'journal')) return p.id;
+      if (p.children && Array.isArray(p.children)) {
+        for (const child of p.children) {
+          const id = findActive(child);
+          if (id) return id;
+        }
+      }
+      return null;
+    };
+    const activeId = findActive(panel);
+    if (activeId) return activeId;
+  }
+
   if (panel.view === 'block' || panel.view === 'journal') {
     return panel.id;
   }
-  if (panel.children) {
-    for (const child of panel.children) {
-      const id = findMainPanelId(child);
+  
+  if (panel.children && Array.isArray(panel.children)) {
+    if ('activeChildIndex' in panel && typeof panel.activeChildIndex === 'number') {
+      const activeChild = panel.children[panel.activeChildIndex];
+      if (activeChild) {
+        const id = findMainPanelId(activeChild, activePanelId);
+        if (id) return id;
+      }
+    }
+    
+    for (let i = panel.children.length - 1; i >= 0; i--) {
+      const id = findMainPanelId(panel.children[i], activePanelId);
       if (id) return id;
     }
   }

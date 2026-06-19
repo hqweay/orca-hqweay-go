@@ -74,7 +74,7 @@ export const addSpaceChoice = async (spaceName: string) => {
   const newChoices = [...existingChoices, spaceName];
   
   try {
-    const mainPanelId = findMainPanelId(orca.state.panels);
+    const mainPanelId = findMainPanelId(orca.state.panels, orca.state.activePanel);
     if (!mainPanelId) return;
     
     orca.nav.goTo("block", { blockId: tagBlock.id }, mainPanelId);
