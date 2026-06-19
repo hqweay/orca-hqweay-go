@@ -263,93 +263,37 @@ export const ArcSidebar: React.FC = () => {
     try {
       const types = Array.from(e.dataTransfer.types);
 
-      // DEBUG: Log all drag data
-      console.log("[ArcTabs] Drop event - MIME types:", types);
-      types.forEach((t) => {
-        const data = e.dataTransfer.getData(t);
-        console.log(`[ArcTabs]   ${t}:`, data.substring(0, 200));
+      // Find orca/{repoId} type (exact match)
+      const orcaRepoType = types.find((t) => {
+        const parts = t.split("/");
+        return parts.length === 2 && parts[0] === "orca";
       });
-
-      // Orca uses custom MIME types like "orca/_doc_8" for block drags
-      const orcaCustomType = types.find((t) => t.startsWith("orca/"));
-      const orcaCustomData = orcaCustomType
-        ? e.dataTransfer.getData(orcaCustomType)
+      const orcaRepoData = orcaRepoType
+        ? e.dataTransfer.getData(orcaRepoType)
         : "";
       const textData = e.dataTransfer.getData("text/plain");
-      const jsonData = e.dataTransfer.getData("application/json");
-      const orcaBlocks = e.dataTransfer.getData("application/x-orca-blocks");
-      const textHtml = e.dataTransfer.getData("text/html");
 
-      // Try to extract block ID from various data formats
+      // Try to extract block ID
       let ids: string[] = [];
 
-      // 0. Try Orca custom type data first (highest priority)
-      // Orca uses format: {"blocks": [blockId, ...]}
-      if (orcaCustomData) {
+      if (orcaRepoData) {
         try {
-          const parsed = JSON.parse(orcaCustomData);
+          const parsed = JSON.parse(orcaRepoData);
           if (parsed && Array.isArray(parsed.blocks)) {
             ids = parsed.blocks.map(String);
           } else if (parsed && parsed.id) {
             ids.push(String(parsed.id));
-          } else if (parsed && parsed.blockId) {
-            ids.push(String(parsed.blockId));
           }
-        } catch (e) {
-          // Not JSON, try as plain text block ID
-          const numId = Number(orcaCustomData);
-          if (!isNaN(numId) && numId > 0) {
-            ids.push(String(numId));
-          }
-        }
-      }
-
-      // 1. Try JSON data
-      if (ids.length === 0 && jsonData) {
-        try {
-          const parsed = JSON.parse(jsonData);
-          if (parsed.id) ids.push(String(parsed.id));
-          else if (Array.isArray(parsed.blockIds))
-            ids = parsed.blockIds.map(String);
-          else if (Array.isArray(parsed) && parsed[0]?.id)
-            ids = parsed.map((b: any) => String(b.id));
         } catch (e) {
           // ignore
         }
       }
 
-      // 2. Try orca-blocks data
-      if (ids.length === 0 && orcaBlocks) {
-        try {
-          const parsed = JSON.parse(orcaBlocks);
-          if (parsed.id) ids.push(String(parsed.id));
-          else if (Array.isArray(parsed.blockIds))
-            ids = parsed.blockIds.map(String);
-          else if (Array.isArray(parsed) && parsed[0]?.id)
-            ids = parsed.map((b: any) => String(b.id));
-        } catch (e) {
-          // ignore
-        }
-      }
-
-      // 3. Try text data (might be a block ID or URL)
+      // Fallback: try text/plain as block ID
       if (ids.length === 0 && textData) {
         const numId = Number(textData);
         if (!isNaN(numId) && numId > 0) {
           ids.push(String(numId));
-        } else {
-          const blockMatch = textData.match(/(?:block\/|#)(\d+)/);
-          if (blockMatch) {
-            ids.push(blockMatch[1]);
-          }
-        }
-      }
-
-      // 4. Try HTML data (might contain block ID in data attribute)
-      if (ids.length === 0 && textHtml) {
-        const blockMatch = textHtml.match(/data-block-id="(\d+)"/);
-        if (blockMatch) {
-          ids.push(blockMatch[1]);
         }
       }
 
