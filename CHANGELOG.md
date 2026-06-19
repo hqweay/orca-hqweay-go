@@ -1,3 +1,13 @@
+## [2.11.2](/compare/v2.11.1...v2.11.2) (2026-06-19)
+
+Update to 2.11.2
+
+
+### Features
+
+* add configurable limit for recently visited tabs and fix sidebar layout to make today section scrollable adb27fc
+* refactor sidebar layout to pin tabs at the top and add configurable today tabs limit 9a77eaa
+
 ## [2.11.1](/compare/v2.11.0...v2.11.1) (2026-06-19)
 
 
