@@ -1,6 +1,8 @@
 export const findMainPanelId = (panel: any, activePanelId?: string | null): string | null => {
+  if (panel.locked) return null;
   if (activePanelId) {
     const findActive = (p: any): string | null => {
+      if (p.locked) return null;
       if (p.id === activePanelId && (p.view === 'block' || p.view === 'journal')) return p.id;
       if (p.children && Array.isArray(p.children)) {
         for (const child of p.children) {
@@ -36,6 +38,7 @@ export const findMainPanelId = (panel: any, activePanelId?: string | null): stri
 };
 
 export const getActiveBlocks = (panel: any): string[] => {
+  if (panel.locked) return [];
   if ('children' in panel && Array.isArray(panel.children)) {
     return panel.children.flatMap(getActiveBlocks);
   } else if (panel.view === 'block' && panel.viewArgs?.blockId) {
@@ -51,6 +54,7 @@ export const getActiveBlocks = (panel: any): string[] => {
 
 export const getFocusedBlock = (panel: any, activePanelId: string | null): number | null => {
   if (!activePanelId || !panel) return null;
+  if (panel.locked) return null;
   
   if (panel.id === activePanelId) {
     if (panel.view === 'block' && panel.viewArgs?.blockId) {
