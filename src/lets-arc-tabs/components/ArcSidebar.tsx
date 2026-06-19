@@ -402,7 +402,7 @@ export const ArcSidebar: React.FC = () => {
             title={space}
             onClick={() => setActiveSpace(space)}
           >
-            {space.charAt(0).toUpperCase()}
+            {Array.from(space)[0]?.toUpperCase()}
           </div>
         ))}
 
