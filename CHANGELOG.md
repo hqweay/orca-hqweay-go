@@ -1,6 +1,20 @@
-## [2.11.2](/compare/v2.11.1...v2.11.2) (2026-06-19)
+## [2.11.3](/compare/v2.11.2...v2.11.3) (2026-06-19)
 
-Update to 2.11.2
+Update to 2.11.3
+
+
+### Features
+
+* add LinkTools plugin to convert between block references and links with context menu support 78b6d18
+* add metadata extraction menu item and optimize context menu close timing b65e64f
+* add slide-out animation to ArcSidebar and disable lefthook in workspace 3c2410e
+* display tab action buttons and unpin icon when tab is active or hovered 661b7ff
+* extend context menu logic to support both block links and block references 18356db
+* implement drag-and-drop functionality for tab items and update cursor styles 1d0114e
+* inject browser mode option into block link context menu 1a29444
+* localize context menu items and refactor event listener cleanup logic aae3f99
+
+## [2.11.2](/compare/v2.11.1...v2.11.2) (2026-06-19)
 
 
 ### Features
