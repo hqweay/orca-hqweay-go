@@ -115,6 +115,7 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
       {state.stackedBlocks.length === 0 ? (
         <div
           className={`roam-sidebar-empty ${isDragOver ? "roam-sidebar-empty-active" : ""}`}
+          contentEditable={false}
         >
           <div className="roam-sidebar-empty-icon">
             {isDragOver ? (
@@ -140,12 +141,10 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  padding: "4px 8px 4px 12px"
+                  padding: "4px 8px 4px 12px",
                 }}
               >
-                <div
-                  style={{ flex: 1, overflow: "hidden" }}
-                >
+                <div style={{ flex: 1, overflow: "hidden" }}>
                   <BlockBreadcrumb blockId={b.id} />
                 </div>
                 <div
@@ -163,13 +162,13 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    borderRadius: "4px"
+                    borderRadius: "4px",
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.opacity = "1";
                     e.currentTarget.style.color =
                       "var(--orca-color-danger-5, #ef4444)";
-                    e.currentTarget.style.backgroundColor = 
+                    e.currentTarget.style.backgroundColor =
                       "var(--orca-color-danger-1, #fee2e2)";
                   }}
                   onMouseLeave={(e) => {
@@ -199,6 +198,7 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
           ))}
           <div
             className={`roam-sidebar-dropzone-footer ${isDragOver ? "roam-sidebar-dropzone-active" : ""}`}
+            contentEditable={false}
           >
             <div className="roam-sidebar-dropzone-icon">
               {isDragOver ? (
