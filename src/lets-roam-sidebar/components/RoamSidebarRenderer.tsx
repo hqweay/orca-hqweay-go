@@ -10,6 +10,7 @@ import {
   expandAll,
   toggleBlockCollapse,
 } from "../utils/state";
+import React from "react";
 
 interface RendererProps {
   panelId: string;
