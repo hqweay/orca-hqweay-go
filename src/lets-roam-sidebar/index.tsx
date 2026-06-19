@@ -48,11 +48,11 @@ export default class RoamSidebarPlugin extends BasePlugin {
       "lets-roam-sidebar.toggle",
       async () => {
         // Find existing roam-sidebar panel
-        const findPanelWithView = (panel: any, viewName: string): any => {
-          if (panel.view === viewName) return panel;
+        const findPanelWithView = (panel: any, viewName: string, reprName: string): any => {
+          if (panel.view === viewName && panel.viewArgs?.repr === reprName) return panel;
           if (panel.children) {
             for (const child of panel.children) {
-              const found = findPanelWithView(child, viewName);
+              const found = findPanelWithView(child, viewName, reprName);
               if (found) return found;
             }
           }
@@ -61,7 +61,8 @@ export default class RoamSidebarPlugin extends BasePlugin {
 
         const existingPanel = findPanelWithView(
           orca.state.panels,
-          RENDERER_TYPE,
+          "block",
+          RENDERER_TYPE
         );
         if (existingPanel) {
           orca.nav.close(existingPanel.id);
@@ -69,24 +70,30 @@ export default class RoamSidebarPlugin extends BasePlugin {
         }
 
         // Find or create roam-sidebar block
-        const blocks = await orca.invokeBackend("get-blocks-with-tags", [
-          RENDERER_TYPE,
-        ]);
-        let targetBlockId: number | null = null;
+        let targetBlockId: number | null = await orca.plugins.getData("lets-roam-sidebar", "globalBlockId");
+        
+        if (!targetBlockId) {
+          const blocks = await orca.invokeBackend("get-blocks-with-tags", [
+            RENDERER_TYPE,
+          ]);
 
-        if (blocks && blocks.length > 0) {
-          targetBlockId = Number(blocks[0].id);
-        } else {
-          targetBlockId = (await orca.commands.invokeEditorCommand(
-            "core.editor.insertBlock",
-            null,
-            null,
-            "lastChild",
-            [{ t: "t", v: "Roam Sidebar" }],
-            { type: "text" },
-          )) as number;
+          if (blocks && blocks.length > 0) {
+            targetBlockId = Number(blocks[0].id);
+            await orca.plugins.setData("lets-roam-sidebar", "globalBlockId", targetBlockId);
+          } else {
+            targetBlockId = (await orca.commands.invokeEditorCommand(
+              "core.editor.insertBlock",
+              null,
+              null,
+              "lastChild",
+              [{ t: "t", v: "Roam Sidebar" }],
+              { type: "text" },
+            )) as number;
+          }
 
           if (targetBlockId) {
+            await orca.plugins.setData("lets-roam-sidebar", "globalBlockId", targetBlockId);
+            
             await orca.commands.invokeEditorCommand(
               "core.editor.createAlias",
               null,
