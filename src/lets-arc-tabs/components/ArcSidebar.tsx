@@ -69,6 +69,8 @@ const StyleInjector = () => (
   <style dangerouslySetInnerHTML={{ __html: styles }} />
 );
 
+const SIDEBAR_WIDTH = 250;
+
 export const ArcSidebar: React.FC = () => {
   const state = useSnapshot(orca.state);
   const localArcTabsState = useSnapshot(arcTabsState);
@@ -104,17 +106,17 @@ export const ArcSidebar: React.FC = () => {
       if (parent) {
         // Find the split-pane wrapper which controls the flex
         const wrapper = parent.closest(".SplitPane") as HTMLElement || parent;
-        wrapper.style.setProperty("flex", "0 0 250px", "important");
-        wrapper.style.setProperty("width", "250px", "important");
-        wrapper.style.setProperty("min-width", "250px", "important");
-        wrapper.style.setProperty("max-width", "250px", "important");
+        wrapper.style.setProperty("flex", `0 0 ${SIDEBAR_WIDTH}px`, "important");
+        wrapper.style.setProperty("width", `${SIDEBAR_WIDTH}px`, "important");
+        wrapper.style.setProperty("min-width", `${SIDEBAR_WIDTH}px`, "important");
+        wrapper.style.setProperty("max-width", `${SIDEBAR_WIDTH}px`, "important");
         
         // Sometimes react-split-pane applies flex to the parent of the panel
         if (parent.style) {
-          parent.style.setProperty("flex", "0 0 250px", "important");
-          parent.style.setProperty("width", "250px", "important");
-          parent.style.setProperty("min-width", "250px", "important");
-          parent.style.setProperty("max-width", "250px", "important");
+          parent.style.setProperty("flex", `0 0 ${SIDEBAR_WIDTH}px`, "important");
+          parent.style.setProperty("width", `${SIDEBAR_WIDTH}px`, "important");
+          parent.style.setProperty("min-width", `${SIDEBAR_WIDTH}px`, "important");
+          parent.style.setProperty("max-width", `${SIDEBAR_WIDTH}px`, "important");
         }
       }
     }
