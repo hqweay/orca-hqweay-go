@@ -1,6 +1,6 @@
 {
   "name": "orca-hqweay-go",
-  "version": "2.8.1",
+  "version": "2.9.0",
   "description": "虎鲸笔记插件：恐龙工具箱",
   "type": "module",
   "scripts": {

@@ -1,6 +1,61 @@
-## [2.8.1](/compare/v2.8.0...v2.8.1) (2026-06-05)
+# [2.9.0](/compare/v2.8.1...v2.9.0) (2026-06-19)
 
-Update to 2.8.1
+新增 lets-arc-tabs 和 lets-roam-sidebar 俩插件
+
+
+### Bug Fixes
+
+* disable content editing for sidebar empty state and footer to prevent unintended input 4f28600
+* improve drag-and-drop state management and layout in RoamSidebarRenderer 9fe8b31
+* improve panel lookup precision and implement persistent block ID caching in sidebar toggle logic 75e8ece
+* improve sync logic for pinned blocks to prevent unnecessary updates and enhance UI stability 48ed3f0
+* inject and remove CSS to suppress temporary panel rendering and prevent layout shifts 56eb3bb
+* prevent navigation and block retrieval from locked panels 416f1cc
+* use Array.from to correctly capitalize first character of Unicode space names 02ee615
+
+
+### Features
+
+* add activePinningBlocks state to hide blocks during async pinning and improve pinned block sorting logic ad5a9e2
+* add Arc Tabs documentation and enable overflow rendering for tab context menus c99fff0
+* add Arc-style sidebar plugin for tab management and workspace navigation 75dd35d
+* add arc-today-tabs class and replace slide-in animation with zoom-in effect for sidebar tabs b4e960f
+* add configurable grid and list layout modes for pinned tabs in the sidebar 8ffa65b
+* add context menu for unpinning and renaming tabs with support for tag removal and metadata updates 3b2fec1
+* add persistent recently visited block tracking with tab closing functionality a0c03c6
+* add pin functionality and sidebar tab management with support for space-based categorization b32c9a9
+* add Roam Sidebar plugin to allow stacking and viewing blocks in a side panel 87adf6a
+* add support for dynamic block icons in tabs and recent history e0b756b
+* add version update notification with release notes link upon plugin initialization 2d92461
+* **arc-sidebar:** implement drag-and-drop functionality for pinning blocks with visual feedback a92bfb3
+* **arc-tabs:** update translation keys for pinned tags and layout descriptions eb76e53
+* **data:** implement automatic loading of pinned blocks 5fec8eb
+* display formatted journal date as block title in ArcSidebar de78de0
+* enhance ArcSidebar and TabItem components with improved block handling and animations 5fcf086
+* enhance pinned tab management by introducing pinnedOrder state and syncing with backend 495aa75
+* enhance tab navigation by tracking active panels and updating sidebar focus logic 60ec14c
+* **i18n:** update translation keys to use hyphenated format and add missing translations 9f376d8
+* implement automatic pin tag schema synchronization and display name resolution for Arc tabs 38d325b
+* implement configurable pin tag name in Arc Tabs settings and replace custom button with system UI component 3b26451
+* implement optimistic UI updates for block pinning and unpinning with state-based filtering fc9cf78
+* implement utility functions to find Arc Tabs panel ID and width for improved navigation handling a2d712c
+* lock arcTabs panel upon creation to prevent replacement by other blocks c02c908
+* persist sidebar state to block _repr and add toggle/collapse/expand functionality for stacked blocks 866b786
+* redesign lets-roam-sidebar UI with visual drop zones, breadcrumbs, and improved drag-and-drop interaction states cc7016c
+* refactor ArcSidebar and TabItem components, introduce new pin and recent utilities 8129ed6
+* refactor tab right-zone layout and add slide-in entry animations ce26fc5
+* replace native prompt rename with inline input UI and add optimistic updates with navigation fallback 5ce7283
+* set initial panel size for arcTabs when opening in a new split 02b2531
+* **spaces:** add functionality to asynchronously add new space choices 3ce507a
+* **spaces:** enhance space management by refining space property retrieval and loading logic ca817ff
+* **spaces:** implement loading spaces from tag and update space choices management 76d7886
+* **spaces:** replace input field with modal for adding new spaces 5ac8319
+* **spaces:** update space property retrieval logic to use alias instead of name fc28862
+* truncate block text titles in ArcSidebar to 20 characters 1aa7775
+* **ui:** refactor unpin button positioning and styling in TabItem 13a6453
+* **ui:** update TabItem component to improve pin/unpin button visibility and styling c9cd214
+
+## [2.8.1](/compare/v2.8.0...v2.8.1) (2026-06-05)
 
 
 ### Bug Fixes
