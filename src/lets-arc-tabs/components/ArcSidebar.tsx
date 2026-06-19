@@ -95,6 +95,31 @@ export const ArcSidebar: React.FC = () => {
     loadPinnedBlocks();
   }, [activeSpace]);
 
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  // Force the parent container's width to prevent Orca from resizing it
+  useEffect(() => {
+    if (containerRef.current) {
+      const parent = containerRef.current.closest(".orca-panel") as HTMLElement || containerRef.current.parentElement;
+      if (parent) {
+        // Find the split-pane wrapper which controls the flex
+        const wrapper = parent.closest(".SplitPane") as HTMLElement || parent;
+        wrapper.style.setProperty("flex", "0 0 250px", "important");
+        wrapper.style.setProperty("width", "250px", "important");
+        wrapper.style.setProperty("min-width", "250px", "important");
+        wrapper.style.setProperty("max-width", "250px", "important");
+        
+        // Sometimes react-split-pane applies flex to the parent of the panel
+        if (parent.style) {
+          parent.style.setProperty("flex", "0 0 250px", "important");
+          parent.style.setProperty("width", "250px", "important");
+          parent.style.setProperty("min-width", "250px", "important");
+          parent.style.setProperty("max-width", "250px", "important");
+        }
+      }
+    }
+  }, [state.panels]);
+
   const openBlockIds = useMemo(
     () => getActiveBlocks(state.panels).map(Number),
     [state.panels],
@@ -287,7 +312,7 @@ export const ArcSidebar: React.FC = () => {
   };
 
   return (
-    <div className="arc-sidebar-container">
+    <div className="arc-sidebar-container" ref={containerRef}>
       <StyleInjector />
 
       <div className="arc-sidebar-content">
