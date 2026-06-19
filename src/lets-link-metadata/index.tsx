@@ -8,6 +8,7 @@ import { DEFAULT_RULES } from "./defaultRules";
 import { DataImporter, BlockData } from "@/libs/DataImporter";
 import { BrowserModal } from "./components/BrowserModal";
 import { ensureBlockInState } from "@/libs/utils";
+import { injectContextMenu } from "./context-menu";
 import React from "react";
 
 const DEFAULT_QUICK_LINKS = [
@@ -35,6 +36,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
   private modalContainer: HTMLElement | null = null;
   private lastVisitedUrl: string | null = null;
   private lastClipboardUrl: string | null = null;
+  private contextMenuInjector: ReturnType<typeof injectContextMenu> | null = null;
 
   public async load(): Promise<void> {
     if (orca.blockMenuCommands.registerBlockMenuCommand) {
@@ -148,6 +150,12 @@ export default class LinkMetadataPlugin extends BasePlugin {
       },
     );
 
+    // 注入右键菜单
+    this.contextMenuInjector = injectContextMenu(
+      this.logger,
+      this.handleOpenBrowser.bind(this)
+    );
+
     this.logger.info(`${this.name} loaded.`);
   }
 
@@ -157,6 +165,8 @@ export default class LinkMetadataPlugin extends BasePlugin {
     );
     orca.commands.unregisterCommand(`${this.name}.extract-metadata`);
     orca.commands.unregisterEditorCommand(`${this.name}.open-browser`);
+    this.contextMenuInjector?.disconnect();
+    this.contextMenuInjector = null;
     this.destroyBrowserModal();
     this.logger.info(`${this.name} unloaded.`);
   }
