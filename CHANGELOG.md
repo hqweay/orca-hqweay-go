@@ -1,3 +1,23 @@
+## [2.11.1](/compare/v2.11.0...v2.11.1) (2026-06-19)
+
+Update to 2.11.1
+
+
+### Bug Fixes
+
+* enforce fixed 250px sidebar width to prevent unintended resizing by Orca panels 839b704
+* handle multi-byte characters in tab title initials using Array.from bbbbc57
+* prevent Orca from resizing the Arc sidebar by enforcing fixed width styles 115730b
+
+
+### Features
+
+* add dynamic journal date icon rendering and improve sidebar style observer stability d8c9520
+* add renderIcon helper to support TabItem icon rendering for custom classes and fallbacks 4d17f1e
+* add support for custom block colors to tab icons and titles 86e2173
+* make sidebar width configurable via plugin settings and lock dimensions dynamically 14fec39
+* refactor renderIcon layout and update date icon styling for improved visual consistency ac404ee
+
 # [2.11.0](/compare/v2.10.2...v2.11.0) (2026-06-19)
 
 ## [2.10.2](/compare/v2.10.1...v2.10.2) (2026-06-19)
