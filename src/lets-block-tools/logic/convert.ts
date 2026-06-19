@@ -117,9 +117,8 @@ export async function executeRefToTextPin(blockIds: number[]) {
         if (fragment.t === "r") {
           let baseLabel = await getRefLabel(fragment, block);
           baseLabel = baseLabel.trim();
-          if (baseLabel.endsWith("📌")) {
-            baseLabel = baseLabel.slice(0, -1).trim();
-          }
+          // 使用正则移除末尾的 📌（支持 emoji）
+          baseLabel = baseLabel.replace(/\u{1F4CC}$/u, "").trim();
 
           if (baseLabel) {
             newContent.push({
