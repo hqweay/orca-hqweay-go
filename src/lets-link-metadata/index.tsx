@@ -39,49 +39,6 @@ export default class LinkMetadataPlugin extends BasePlugin {
   private contextMenuInjector: ReturnType<typeof injectContextMenu> | null = null;
 
   public async load(): Promise<void> {
-    if (orca.blockMenuCommands.registerBlockMenuCommand) {
-      orca.blockMenuCommands.registerBlockMenuCommand(
-        `${this.name}.extract-metadata`,
-        {
-          worksOnMultipleBlocks: false,
-          render: (blockId: number, rootBlockId: number, close: any) => {
-            const MenuText = orca.components.MenuText;
-            if (!MenuText) return null;
-
-            const block = orca.state.blocks[blockId];
-            if (!block) return null;
-
-            const url = this.findUrlInBlock(block);
-            if (!url) return null;
-
-            return (
-              <>
-                <MenuText
-                  preIcon="ti ti-link"
-                  title={t("Extract Link Metadata")}
-                  onClick={() => {
-                    close();
-                    orca.commands.invokeCommand(
-                      `${this.name}.extract-metadata`,
-                      blockId,
-                    );
-                  }}
-                />
-                <MenuText
-                  preIcon="ti ti-world"
-                  title={t("Metadata: Browser Mode")}
-                  onClick={async () => {
-                    close();
-                    await this.handleOpenBrowser(url, block);
-                  }}
-                />
-              </>
-            );
-          },
-        },
-      );
-    }
-
     // Auto/Static Command
     orca.commands.registerCommand(
       `${this.name}.extract-metadata`,
@@ -166,9 +123,6 @@ export default class LinkMetadataPlugin extends BasePlugin {
   }
 
   public async unload(): Promise<void> {
-    orca.blockMenuCommands.unregisterBlockMenuCommand(
-      `${this.name}.extract-metadata`,
-    );
     orca.commands.unregisterCommand(`${this.name}.extract-metadata`);
     orca.commands.unregisterEditorCommand(`${this.name}.open-browser`);
     this.contextMenuInjector?.disconnect();
