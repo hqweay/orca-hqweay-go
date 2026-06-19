@@ -23,37 +23,28 @@ export function injectContextMenu(logger: any): ContextMenuInjector {
         injectedMenu = null;
       }
 
-      const menuTexts = menu.querySelectorAll(".orca-menu-text");
-      let isLinkMenu = false;
-      menuTexts.forEach((item) => {
-        if (item.textContent?.includes("编辑链接")) {
-          isLinkMenu = true;
-        }
-      });
+      const target = e.target as HTMLElement;
 
-      if (!isLinkMenu) {
-        logger?.debug?.("[Context Menu] Not a link menu, skipping");
+      // 检测类型：块链接 或 块引用
+      const blockLinkElement = findBlockLinkElement(target);
+      const blockRefElement = findBlockReferenceElement(target);
+
+      if (!blockLinkElement && !blockRefElement) {
+        logger?.debug?.("[Context Menu] Not a block link or reference, skipping");
         return;
       }
 
-      logger?.debug?.("[Context Menu] Found link menu, looking for block...");
+      logger?.debug?.("[Context Menu] Found:", blockLinkElement ? "block link" : "block reference");
 
-      // 检查是否是块链接 (orca-note://xxx/block?blockId=xxx)
-      const linkElement = findBlockLinkElement(e.target as HTMLElement);
-      if (!linkElement) {
-        logger?.debug?.("[Context Menu] Not a block link, skipping");
-        return;
-      }
-
-      const targetBlock = findTargetBlock(e.target as HTMLElement);
+      const targetBlock = findTargetBlock(target);
       if (!targetBlock) {
-        logger?.debug?.("[Context Menu] No target block found for", e.target);
+        logger?.debug?.("[Context Menu] No target block found");
         return;
       }
 
       const blockId = getBlockIdFromElement(targetBlock);
       if (!blockId) {
-        logger?.debug?.("[Context Menu] No block ID found for element", targetBlock);
+        logger?.debug?.("[Context Menu] No block ID found");
         return;
       }
 
@@ -63,7 +54,7 @@ export function injectContextMenu(logger: any): ContextMenuInjector {
         return;
       }
 
-      logger?.debug?.("[Context Menu] Found block:", blockId, block.content);
+      logger?.debug?.("[Context Menu] Block content:", block.content);
 
       const hasRef = block.content.some((f) => f.t === "r");
       const hasLink = block.content.some(
@@ -72,6 +63,8 @@ export function injectContextMenu(logger: any): ContextMenuInjector {
 
       if (!hasRef && !hasLink) return;
 
+      // 查找锚点菜单项
+      const menuTexts = menu.querySelectorAll(".orca-menu-text");
       let anchorItem: HTMLElement | null = null;
       for (const item of menuTexts) {
         if (item.textContent?.includes("转换为文本")) {
@@ -84,6 +77,7 @@ export function injectContextMenu(logger: any): ContextMenuInjector {
       const parentNode = anchorItem.parentNode as ParentNode | null;
       if (!parentNode) return;
 
+      // 清除已注入的菜单项
       const existingInjected = menu.querySelectorAll(
         '[data-orca-context-inject]'
       );
@@ -91,6 +85,7 @@ export function injectContextMenu(logger: any): ContextMenuInjector {
 
       const fragment = document.createDocumentFragment();
 
+      // 注入菜单项
       if (hasRef) {
         const refToLink = createMenuItem(
           "ti ti-link",
@@ -190,15 +185,12 @@ function createMenuItem(
 function findTargetBlock(element: HTMLElement): HTMLElement | null {
   let el: HTMLElement | null = element;
   while (el && el !== document.body) {
-    // 检查 data-id 属性 (虎鲸笔记使用)
     if (el.getAttribute("data-id")) {
       return el;
     }
-    // 检查 data-block-id 属性
     if (el.getAttribute("data-block-id")) {
       return el;
     }
-    // 检查 id 属性 (格式: block-{id})
     if (el.id && /^block-\d+$/.test(el.id)) {
       return el;
     }
@@ -208,7 +200,6 @@ function findTargetBlock(element: HTMLElement): HTMLElement | null {
 }
 
 function getBlockIdFromElement(element: HTMLElement): number | null {
-  // 支持 data-id 和 data-block-id
   const blockIdAttr =
     element.getAttribute("data-id") ||
     element.getAttribute("data-block-id") ||
@@ -223,15 +214,25 @@ function getBlockIdFromElement(element: HTMLElement): number | null {
 function findBlockLinkElement(element: HTMLElement): HTMLElement | null {
   let el: HTMLElement | null = element;
   while (el && el !== document.body) {
-    // 检查是否是 a 标签且包含块链接
     if (el.tagName === "A") {
       const href = el.getAttribute("href") || "";
       const dataL = el.getAttribute("data-l") || "";
-      // 块链接格式: orca-note://xxx/block?blockId=xxx
       if (/^orca-note:\/\/.+\/block\?blockId=\d+$/.test(href) ||
           /^orca-note:\/\/.+\/block\?blockId=\d+$/.test(dataL)) {
         return el;
       }
+    }
+    el = el.parentElement;
+  }
+  return null;
+}
+
+function findBlockReferenceElement(element: HTMLElement): HTMLElement | null {
+  let el: HTMLElement | null = element;
+  while (el && el !== document.body) {
+    // 块引用标识: data-type="r"
+    if (el.getAttribute("data-type") === "r") {
+      return el;
     }
     el = el.parentElement;
   }
