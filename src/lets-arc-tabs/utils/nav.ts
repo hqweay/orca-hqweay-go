@@ -43,7 +43,7 @@ export const getActiveBlocks = (panel: any): string[] => {
   } else if (panel.view === 'journal' && panel.viewState) {
     const blockIds = Object.keys(panel.viewState).filter(k => !isNaN(Number(k)));
     if (blockIds.length > 0) {
-      return blockIds;
+      return [blockIds[0]];
     }
   }
   return [];

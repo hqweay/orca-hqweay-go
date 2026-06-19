@@ -115,30 +115,7 @@ export const ArcSidebar: React.FC = () => {
     });
   }, [localArcTabsState.pinnedBlocks, activeSpace, state.blocks]);
 
-  useEffect(() => {
-    let changed = false;
-    const list = [...arcTabsState.recentlyVisited];
-    openBlockIds.forEach((id) => {
-      if (!list.some((item) => item.id === id)) {
-        const block = state.blocks[id];
-        const title = getBlockTitle(block, id);
-        const icon = getBlockIcon(block);
-        list.unshift({ id, title, icon });
-        changed = true;
-      }
-    });
-    if (changed) {
-      arcTabsState.recentlyVisited = list.slice(0, 15);
-      try {
-        localStorage.setItem(
-          "orca-arc-tabs-recent",
-          JSON.stringify(arcTabsState.recentlyVisited),
-        );
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  }, [openBlockIds]);
+
 
   const todayTabs = useMemo(() => {
     const currentSpacePinnedIds = getBlocksInSpace(activeSpace || DEFAULT_SPACE).map((b) => b.id);
