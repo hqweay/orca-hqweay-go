@@ -3,6 +3,8 @@ import { t, setupL10N } from "./libs/l10n";
 import zhCN from "./translations/zhCN";
 import { BasePlugin } from "./libs/BasePlugin";
 import { SettingsBoard } from "./components/SettingsBoard";
+import { UpdateModal } from "./components/UpdateModal";
+import { getChangesSince } from "./changelog";
 import cloneDeep from "lodash.clonedeep";
 import { Logger, LogLevel } from "./libs/logger";
 import pkg from "../package.json";
@@ -17,6 +19,29 @@ const pluginModules: Record<string, any> =
 
 export const pluginInstances: BasePlugin[] = [];
 let unsubscribeSettings: (() => void) | null = null;
+let updateModalContainer: HTMLElement | null = null;
+let updateModalRoot: any = null;
+
+function showUpdateModal(entries: any[]) {
+  if (!updateModalContainer) {
+    updateModalContainer = document.createElement("div");
+    document.body.appendChild(updateModalContainer);
+    const { createRoot } = window as any;
+    updateModalRoot = createRoot(updateModalContainer);
+  }
+
+  const handleClose = () => {
+    updateModalRoot?.render(null);
+  };
+
+  updateModalRoot?.render(
+    React.createElement(UpdateModal, {
+      visible: true,
+      onClose: handleClose,
+      entries,
+    })
+  );
+}
 
 async function fixData() {
   // 修复脏数据 (Fix dirty data for block 27074)
@@ -47,14 +72,13 @@ export async function load(_name: string) {
   const currentVersion = pkg.version;
   const lastSeenVersion = await orca.plugins.getData(_name, "lastSeenVersion");
   if (lastSeenVersion !== currentVersion) {
+    const changes = getChangesSince(lastSeenVersion || "0.0.0");
     orca.notify(
       "info",
-      `恐龙工具箱已更新至版本 v${currentVersion}。点击提示跳转查看更新说明`,
+      `恐龙工具箱已更新至版本 v${currentVersion}，共 ${changes.length} 个版本更新。点击查看详情`,
       {
         title: "🎉 新版本更新",
-        action: () => {
-          orca.invokeBackend("shell-open", "https://leay.net/20260120023137/");
-        },
+        action: () => showUpdateModal(changes),
       },
     );
     await orca.plugins.setData(_name, "lastSeenVersion", currentVersion);

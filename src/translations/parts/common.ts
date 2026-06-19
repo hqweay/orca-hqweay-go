@@ -181,4 +181,8 @@ export default {
   "General Settings": "常规设置",
   "Default URL when browser opens": "浏览器打开时默认加载的 URL",
   "Set as Homepage": "设为主页",
+
+  // Update Modal
+  "What's New": "更新日志",
+  "Got it": "我知道了",
 };
