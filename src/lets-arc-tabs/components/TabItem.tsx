@@ -44,9 +44,16 @@ export const TabItem: React.FC<TabItemProps> = ({
 
   const Tooltip = orca.components.Tooltip;
 
+  const renderIcon = (iconValue?: string, fallback: string = "📄") => {
+    if (!iconValue) return fallback;
+    if (iconValue.startsWith("ti ")) {
+      return <i className={iconValue} style={{ fontSize: "16px" }} />;
+    }
+    return iconValue;
+  };
+
   if (displayMode === "grid") {
     const hasCustomIcon = icon && icon !== "📄";
-    const displayIcon = hasCustomIcon ? icon : null;
     const initialText = title
       ? Array.from(String(title).trim())[0]?.toUpperCase() || "?"
       : "?";
@@ -59,7 +66,7 @@ export const TabItem: React.FC<TabItemProps> = ({
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          {displayIcon ? displayIcon : <span className="arc-tab-initial">{initialText}</span>}
+          {hasCustomIcon ? renderIcon(icon) : <span className="arc-tab-initial">{initialText}</span>}
           {isPinned && isHovered && (
             <span
               className="arc-tab-grid-unpin"
@@ -85,7 +92,7 @@ export const TabItem: React.FC<TabItemProps> = ({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <span className="arc-tab-icon">{icon || "📄"}</span>
+        <span className="arc-tab-icon">{renderIcon(icon)}</span>
         <span className="arc-tab-title">{title}</span>
 
         {isPinned ? (
