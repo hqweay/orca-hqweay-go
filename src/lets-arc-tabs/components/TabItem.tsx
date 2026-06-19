@@ -46,7 +46,10 @@ export const TabItem: React.FC<TabItemProps> = ({
 
   const Tooltip = orca.components.Tooltip;
 
-  const renderIcon = (iconValue?: React.ReactNode, fallback: React.ReactNode = "📄") => {
+  const renderIcon = (
+    iconValue?: React.ReactNode,
+    fallback: React.ReactNode = "📄",
+  ) => {
     if (!iconValue) return <span style={{ color }}>{fallback}</span>;
     if (typeof iconValue === "string") {
       if (iconValue.startsWith("ti ")) {
@@ -57,9 +60,22 @@ export const TabItem: React.FC<TabItemProps> = ({
         const d = new Date(dateStr);
         if (!isNaN(d.getTime())) {
           const day = d.getDate();
-          const monthNames = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
+          const monthNames = [
+            "1月",
+            "2月",
+            "3月",
+            "4月",
+            "5月",
+            "6月",
+            "7月",
+            "8月",
+            "9月",
+            "10月",
+            "11月",
+            "12月",
+          ];
           const month = monthNames[d.getMonth()];
-          
+
           return (
             <svg
               width="18"
@@ -69,17 +85,25 @@ export const TabItem: React.FC<TabItemProps> = ({
               xmlns="http://www.w3.org/2000/svg"
               style={{ flexShrink: 0, verticalAlign: "middle" }}
             >
-              <rect x="2" y="2" width="16" height="16" rx="3" fill="currentColor" opacity="0.1" />
-              <rect x="2" y="2" width="16" height="16" rx="3" stroke="currentColor" strokeWidth="1.2" opacity="0.6" />
-              <rect x="2" y="2" width="16" height="5" rx="2" fill="currentColor" opacity="0.8" />
+              <rect x="2" y="2" width="16" height="16" rx="3" fill="#DBEAFE" />
+              <rect
+                x="2"
+                y="2"
+                width="16"
+                height="16"
+                rx="3"
+                stroke="#60A5FA"
+                strokeWidth="1"
+              />
+              <rect x="2" y="2" width="16" height="6" rx="2" fill="#1D4ED8" />
               <text
                 x="10"
-                y="6"
-                fontSize="4"
-                fontWeight="600"
+                y="5.5"
+                fontSize="4.5"
+                fontWeight="700"
                 textAnchor="middle"
                 dominantBaseline="central"
-                fill="white"
+                fill="#F0F9FF"
                 fontFamily="system-ui, -apple-system, sans-serif"
               >
                 {month}
@@ -91,7 +115,7 @@ export const TabItem: React.FC<TabItemProps> = ({
                 fontWeight="700"
                 textAnchor="middle"
                 dominantBaseline="central"
-                fill="currentColor"
+                fill="#1E40AF"
                 fontFamily="system-ui, -apple-system, sans-serif"
               >
                 {day}
@@ -101,7 +125,18 @@ export const TabItem: React.FC<TabItemProps> = ({
         }
       }
     }
-    return <span style={{ color, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{iconValue}</span>;
+    return (
+      <span
+        style={{
+          color,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {iconValue}
+      </span>
+    );
   };
 
   if (displayMode === "grid") {
@@ -118,7 +153,13 @@ export const TabItem: React.FC<TabItemProps> = ({
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          {hasCustomIcon ? renderIcon(icon) : <span className="arc-tab-initial" style={{ color }}>{initialText}</span>}
+          {hasCustomIcon ? (
+            renderIcon(icon)
+          ) : (
+            <span className="arc-tab-initial" style={{ color }}>
+              {initialText}
+            </span>
+          )}
           {isPinned && isHovered && (
             <span
               className="arc-tab-grid-unpin"
@@ -145,21 +186,29 @@ export const TabItem: React.FC<TabItemProps> = ({
         onMouseLeave={() => setIsHovered(false)}
       >
         <span className="arc-tab-icon">{renderIcon(icon)}</span>
-        <span className="arc-tab-title" style={{ color }}>{title}</span>
+        <span className="arc-tab-title" style={{ color }}>
+          {title}
+        </span>
 
         {isPinned ? (
           <button
             className="arc-tab-action-btn"
             title={t("arc-tabs.unpin")}
-            style={{ marginLeft: '8px', flexShrink: 0 }}
-            onClick={(e) => { e.stopPropagation(); handleUnpinClick(); }}
+            style={{ marginLeft: "8px", flexShrink: 0 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleUnpinClick();
+            }}
           >
             <i className="ti ti-x" />
           </button>
         ) : (
           <div className="arc-tab-right-zone">
             {isHovered ? (
-              <div className="arc-tab-actions" onClick={(e) => e.stopPropagation()}>
+              <div
+                className="arc-tab-actions"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <button
                   className="arc-tab-action-btn"
                   title={t("arc-tabs.pin")}
