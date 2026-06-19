@@ -53,6 +53,7 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
     const newStateJSON = JSON.stringify(roamSidebarState.stackedBlocks);
 
     if (currentJSON !== newStateJSON) {
+      const plainStackedBlocks = JSON.parse(newStateJSON);
       orca.commands.invokeEditorCommand(
         "core.editor.setProperties",
         null,
@@ -63,7 +64,7 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
             type: 0,
             value: {
               ...reprVal,
-              stackedBlocks: roamSidebarState.stackedBlocks,
+              stackedBlocks: plainStackedBlocks,
             },
           },
         ],
