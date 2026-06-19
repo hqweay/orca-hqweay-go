@@ -20,6 +20,8 @@ export default {
   "arc-tabs.layoutDescription": "选择侧边栏中固定标签的显示布局。",
   "arc-tabs.sidebarWidth": "侧边栏宽度",
   "arc-tabs.sidebarWidthDesc": "设置侧边栏的固定宽度（像素）。",
+  "arc-tabs.todayLimit": "今日数量",
+  "arc-tabs.todayLimitDesc": "侧边栏显示的最近访问块数量。",
   "arc-tabs.pin": "固定",
   "arc-tabs.unpin": "取消固定",
   "arc-tabs.close": "关闭",

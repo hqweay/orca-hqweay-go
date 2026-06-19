@@ -194,9 +194,10 @@ export const ArcSidebar: React.FC = () => {
     const currentSpacePinnedIds = getBlocksInSpace(
       activeSpace || DEFAULT_SPACE,
     ).map((b) => b.id);
+    const todayLimit = arcTabsPluginInstance?.getSettings()?.todayLimit || 30;
     return localArcTabsState.recentlyVisited
       .filter((item) => !currentSpacePinnedIds.includes(item.id))
-      .slice(0, 15);
+      .slice(0, todayLimit);
   }, [
     localArcTabsState.recentlyVisited,
     localArcTabsState.pinnedBlocks,
@@ -375,45 +376,24 @@ export const ArcSidebar: React.FC = () => {
     <div className="arc-sidebar-container" ref={containerRef}>
       <StyleInjector />
 
-      <div className="arc-sidebar-content">
-        {/* Pinned Tabs Section */}
-        <div
-          className={`arc-sidebar-section arc-drop-zone ${isDragOver ? "drag-over" : ""}`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          style={{ minHeight: "50px" }}
-        >
-          <div className="arc-sidebar-section-title">
-            {t("arc-tabs.pinned")}
+      {/* Pinned Tabs Section - Fixed */}
+      <div
+        className={`arc-sidebar-pinned arc-drop-zone ${isDragOver ? "drag-over" : ""}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        <div className="arc-sidebar-section-title">
+          {t("arc-tabs.pinned")}
+        </div>
+        {currentSpacePinnedBlocks.length === 0 && (
+          <div className={`arc-drop-hint ${isDragOver ? "drag-over" : ""}`}>
+            {isDragOver ? "释放以固定" : t("arc-tabs.noPinned")}
           </div>
-          {currentSpacePinnedBlocks.length === 0 && (
-            <div className={`arc-drop-hint ${isDragOver ? "drag-over" : ""}`}>
-              {isDragOver ? "释放以固定" : t("arc-tabs.noPinned")}
-            </div>
-          )}
-          {localArcTabsState.pinnedDisplayMode === "grid" ? (
-            <div className="arc-pinned-grid">
-              {currentSpacePinnedBlocks.map((block) => {
-                const isActive = openBlockIds.includes(block.id);
-                return (
-                  <TabItem
-                    key={block.id}
-                    blockId={block.id}
-                    title={block._title}
-                    isActive={isActive}
-                    isPinned={true}
-                    activeSpace={activeSpace || spaces[0] || DEFAULT_SPACE}
-                    onClick={handleTabClick}
-                    icon={block._icon}
-                    color={getBlockColor(block)}
-                    displayMode="grid"
-                  />
-                );
-              })}
-            </div>
-          ) : (
-            currentSpacePinnedBlocks.map((block) => {
+        )}
+        {localArcTabsState.pinnedDisplayMode === "grid" ? (
+          <div className="arc-pinned-grid">
+            {currentSpacePinnedBlocks.map((block) => {
               const isActive = openBlockIds.includes(block.id);
               return (
                 <TabItem
@@ -426,39 +406,57 @@ export const ArcSidebar: React.FC = () => {
                   onClick={handleTabClick}
                   icon={block._icon}
                   color={getBlockColor(block)}
-                  displayMode="list"
+                  displayMode="grid"
                 />
               );
-            })
-          )}
-        </div>
-
-        {/* Today Tabs Section */}
-        <div className="arc-sidebar-section arc-today-tabs">
-          <div className="arc-sidebar-section-title">{t("arc-tabs.today")}</div>
-          {todayTabs.map((tab) => {
-            const block = state.blocks[tab.id];
-            const isActive = openBlockIds.includes(tab.id);
-            const title = block
-              ? getBlockTitle(block, tab.id)
-              : tab.title || `Block ${tab.id}`;
-            const icon = block ? getBlockIcon(block) : tab.icon || "📄";
-
+            })}
+          </div>
+        ) : (
+          currentSpacePinnedBlocks.map((block) => {
+            const isActive = openBlockIds.includes(block.id);
             return (
               <TabItem
-                key={tab.id}
-                blockId={tab.id}
-                title={title}
+                key={block.id}
+                blockId={block.id}
+                title={block._title}
                 isActive={isActive}
-                isPinned={false}
+                isPinned={true}
                 activeSpace={activeSpace || spaces[0] || DEFAULT_SPACE}
                 onClick={handleTabClick}
-                icon={icon}
+                icon={block._icon}
                 color={getBlockColor(block)}
+                displayMode="list"
               />
             );
-          })}
-        </div>
+          })
+        )}
+      </div>
+
+      {/* Today Tabs Section - Scrollable */}
+      <div className="arc-sidebar-today">
+        <div className="arc-sidebar-section-title">{t("arc-tabs.today")}</div>
+        {todayTabs.map((tab) => {
+          const block = state.blocks[tab.id];
+          const isActive = openBlockIds.includes(tab.id);
+          const title = block
+            ? getBlockTitle(block, tab.id)
+            : tab.title || `Block ${tab.id}`;
+          const icon = block ? getBlockIcon(block) : tab.icon || "📄";
+
+          return (
+            <TabItem
+              key={tab.id}
+              blockId={tab.id}
+              title={title}
+              isActive={isActive}
+              isPinned={false}
+              activeSpace={activeSpace || spaces[0] || DEFAULT_SPACE}
+              onClick={handleTabClick}
+              icon={icon}
+              color={getBlockColor(block)}
+            />
+          );
+        })}
       </div>
 
       <div className="arc-sidebar-footer">

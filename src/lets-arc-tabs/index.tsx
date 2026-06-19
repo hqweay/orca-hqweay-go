@@ -168,6 +168,7 @@ export default class ArcTabsPlugin extends BasePlugin {
       pinTagName: "ArcTab",
       pinnedDisplayMode: "grid",
       sidebarWidth: 250,
+      todayLimit: 30,
     };
   }
 
@@ -211,6 +212,20 @@ export default class ArcTabsPlugin extends BasePlugin {
               onChange={(e) => {
                 const val = parseInt(e.target.value);
                 if (!isNaN(val)) updateSettings({ sidebarWidth: val });
+              }}
+              style={{ width: "100px" }}
+            />
+          </SettingsItem>
+          <SettingsItem
+            label={t("arc-tabs.todayLimit")}
+            description={t("arc-tabs.todayLimitDesc")}
+          >
+            <orca.components.Input
+              type="number"
+              value={settings.todayLimit ?? 30}
+              onChange={(e) => {
+                const val = parseInt(e.target.value);
+                if (!isNaN(val) && val > 0) updateSettings({ todayLimit: val });
               }}
               style={{ width: "100px" }}
             />

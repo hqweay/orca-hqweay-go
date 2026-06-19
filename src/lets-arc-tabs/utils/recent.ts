@@ -1,4 +1,5 @@
 import { arcTabsState, LOCAL_STORAGE_KEY } from "./data";
+import { arcTabsPluginInstance } from "../index";
 
 const persistRecent = () => {
   try {
@@ -40,7 +41,8 @@ export const addRecentBlock = (idNum: number, title: string, icon: string) => {
 
   const list = [...arcTabsState.recentlyVisited];
   list.unshift({ id: idNum, title: title || `Block ${idNum}`, icon: icon || "" });
-  arcTabsState.recentlyVisited = list.slice(0, 15);
+  const todayLimit = arcTabsPluginInstance?.getSettings()?.todayLimit || 30;
+  arcTabsState.recentlyVisited = list.slice(0, todayLimit);
   persistRecent();
 };
 

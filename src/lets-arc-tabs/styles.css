@@ -33,8 +33,15 @@
   box-shadow: 0 0 0 2px var(--orca-color-primary-2);
 }
 
-/* Scrollable Content */
-.arc-sidebar-content {
+/* Pinned Section - Fixed at top */
+.arc-sidebar-pinned {
+  flex-shrink: 0;
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--orca-color-border-1);
+}
+
+/* Today Section - Scrollable */
+.arc-sidebar-today {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
@@ -131,6 +138,7 @@
 
 /* Footer / Spaces */
 .arc-sidebar-footer {
+  flex-shrink: 0;
   padding: 8px 16px;
   border-top: 1px solid var(--orca-color-border-1);
   display: flex;
