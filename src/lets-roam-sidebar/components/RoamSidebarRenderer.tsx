@@ -60,9 +60,12 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
     return ids.filter((id) => !isNaN(id) && id > 0);
   };
 
+  const dragCounter = React.useRef(0);
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    dragCounter.current = 0;
     setIsDragOver(false);
 
     try {
@@ -75,25 +78,38 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
     }
   };
 
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current += 1;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragOver(true);
+    }
+  };
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = "copy";
-    if (!isDragOver) setIsDragOver(true);
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsDragOver(false);
+    dragCounter.current -= 1;
+    if (dragCounter.current === 0) {
+      setIsDragOver(false);
+    }
   };
 
   return (
     <div
       className={`roam-sidebar-container ${isDragOver ? "roam-sidebar-drag-over" : ""}`}
-      onDropCapture={handleDrop}
-      onDragOverCapture={handleDragOver}
+      onDrop={handleDrop}
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
+      style={{ minHeight: "100vh", paddingBottom: "100px" }}
     >
       <style dangerouslySetInnerHTML={{ __html: styles }} />
       {state.stackedBlocks.length === 0 ? (
