@@ -11,6 +11,7 @@ interface TabItemProps {
   activeSpace: string;
   onClick: (blockId: number) => void;
   icon?: string;
+  color?: string;
   displayMode?: "grid" | "list";
 }
 
@@ -22,6 +23,7 @@ export const TabItem: React.FC<TabItemProps> = ({
   activeSpace,
   onClick,
   icon,
+  color,
   displayMode = "list",
 }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -45,11 +47,11 @@ export const TabItem: React.FC<TabItemProps> = ({
   const Tooltip = orca.components.Tooltip;
 
   const renderIcon = (iconValue?: string, fallback: string = "📄") => {
-    if (!iconValue) return fallback;
+    if (!iconValue) return <span style={{ color }}>{fallback}</span>;
     if (iconValue.startsWith("ti ")) {
-      return <i className={iconValue} style={{ fontSize: "16px" }} />;
+      return <i className={iconValue} style={{ fontSize: "16px", color }} />;
     }
-    return iconValue;
+    return <span style={{ color }}>{iconValue}</span>;
   };
 
   if (displayMode === "grid") {
@@ -66,7 +68,7 @@ export const TabItem: React.FC<TabItemProps> = ({
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          {hasCustomIcon ? renderIcon(icon) : <span className="arc-tab-initial">{initialText}</span>}
+          {hasCustomIcon ? renderIcon(icon) : <span className="arc-tab-initial" style={{ color }}>{initialText}</span>}
           {isPinned && isHovered && (
             <span
               className="arc-tab-grid-unpin"
@@ -93,7 +95,7 @@ export const TabItem: React.FC<TabItemProps> = ({
         onMouseLeave={() => setIsHovered(false)}
       >
         <span className="arc-tab-icon">{renderIcon(icon)}</span>
-        <span className="arc-tab-title">{title}</span>
+        <span className="arc-tab-title" style={{ color }}>{title}</span>
 
         {isPinned ? (
           <button

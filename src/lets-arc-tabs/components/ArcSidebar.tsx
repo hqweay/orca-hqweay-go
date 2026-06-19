@@ -71,6 +71,15 @@ const getBlockIcon = (block: any) => {
   return "📄";
 };
 
+const getBlockColor = (block: any) => {
+  if (!block) return undefined;
+  const colorProp = block.properties?.find((p: any) => p.name === "_color");
+  if (colorProp && colorProp.value) {
+    return colorProp.value;
+  }
+  return undefined;
+};
+
 const StyleInjector = () => (
   <style dangerouslySetInnerHTML={{ __html: styles }} />
 );
@@ -393,6 +402,7 @@ export const ArcSidebar: React.FC = () => {
                     activeSpace={activeSpace || spaces[0] || DEFAULT_SPACE}
                     onClick={handleTabClick}
                     icon={block._icon}
+                    color={getBlockColor(block)}
                     displayMode="grid"
                   />
                 );
@@ -411,6 +421,7 @@ export const ArcSidebar: React.FC = () => {
                   activeSpace={activeSpace || spaces[0] || DEFAULT_SPACE}
                   onClick={handleTabClick}
                   icon={block._icon}
+                  color={getBlockColor(block)}
                   displayMode="list"
                 />
               );
@@ -439,6 +450,7 @@ export const ArcSidebar: React.FC = () => {
                 activeSpace={activeSpace || spaces[0] || DEFAULT_SPACE}
                 onClick={handleTabClick}
                 icon={icon}
+                color={getBlockColor(block)}
               />
             );
           })}
