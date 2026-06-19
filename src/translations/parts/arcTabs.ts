@@ -18,6 +18,8 @@ export default {
   "arc-tabs.tagName": "固定标签名称",
   "arc-tabs.tagDescription": "用于标记固定块的标签名称。",
   "arc-tabs.layoutDescription": "选择侧边栏中固定标签的显示布局。",
+  "arc-tabs.sidebarWidth": "侧边栏宽度",
+  "arc-tabs.sidebarWidthDesc": "设置侧边栏的固定宽度（像素）。",
   "arc-tabs.pin": "固定",
   "arc-tabs.unpin": "取消固定",
   "arc-tabs.close": "关闭",

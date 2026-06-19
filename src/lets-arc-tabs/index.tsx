@@ -45,11 +45,10 @@ export default class ArcTabsPlugin extends BasePlugin {
           } as any);
 
           if (newPanelId) {
-            // Wait for the panel to be mounted in the DOM, then resize it
-            setTimeout(() => {
-              // 250px for sidebar, the rest for the main panel
-              orca.nav.changeSizes(newPanelId, [250, window.innerWidth - 250]);
-            }, 50);
+            const width = arcTabsPluginInstance?.getSettings()?.sidebarWidth || 250;
+            // Synchronously update layout state to avoid initial flash 
+            // from default equal-split calculation
+            orca.nav.changeSizes(newPanelId, [width, window.innerWidth - width]);
           }
         }
       },
@@ -168,6 +167,7 @@ export default class ArcTabsPlugin extends BasePlugin {
       ...super.getDefaultSettings(),
       pinTagName: "ArcTab",
       pinnedDisplayMode: "grid",
+      sidebarWidth: 250,
     };
   }
 
@@ -199,6 +199,20 @@ export default class ArcTabsPlugin extends BasePlugin {
                 updateSettings({ pinnedDisplayMode: selected[0] })
               }
               width="100%"
+            />
+          </SettingsItem>
+          <SettingsItem
+            label={t("arc-tabs.sidebarWidth")}
+            description={t("arc-tabs.sidebarWidthDesc")}
+          >
+            <orca.components.Input
+              type="number"
+              value={settings.sidebarWidth ?? 250}
+              onChange={(e) => {
+                const val = parseInt(e.target.value);
+                if (!isNaN(val)) updateSettings({ sidebarWidth: val });
+              }}
+              style={{ width: "100px" }}
             />
           </SettingsItem>
         </SettingsSection>

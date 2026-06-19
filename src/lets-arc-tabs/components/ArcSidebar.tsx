@@ -10,7 +10,12 @@ import {
 } from "../utils/nav";
 import { arcTabsState, DEFAULT_SPACE } from "../utils/data";
 import { pinBlock, loadPinnedBlocks } from "../utils/pin";
-import { getSpaces, getBlocksInSpace, addSpaceChoice, loadSpacesFromTag } from "../utils/spaces";
+import {
+  getSpaces,
+  getBlocksInSpace,
+  addSpaceChoice,
+  loadSpacesFromTag,
+} from "../utils/spaces";
 import { addRecentBlock } from "../utils/recent";
 import { TabItem } from "./TabItem";
 import { arcTabsPluginInstance } from "../index";
@@ -18,15 +23,16 @@ import { arcTabsPluginInstance } from "../index";
 const getBlockTitle = (block: any, id: string | number) => {
   if (!block) return `Block ${String(id).substring(0, 8)}`;
 
-  const pinTagName = arcTabsPluginInstance?.getSettings()?.pinTagName || "ArcTab";
+  const pinTagName =
+    arcTabsPluginInstance?.getSettings()?.pinTagName || "ArcTab";
   const tagRef = block.refs?.find((r: any) => r.alias === pinTagName);
-  
+
   const displayName =
     tagRef?.data?.find((p: any) => p.name === "displayName")?.value ||
     block.properties?.find((p: any) => p.name === "displayName")?.value;
-  
+
   if (displayName) return displayName;
-  
+
   const reprProp = block.properties?.find((p: any) => p.name === "_repr");
   if (reprProp && reprProp.value?.type === "journal" && reprProp.value?.date) {
     const d = new Date(reprProp.value.date);
@@ -37,7 +43,7 @@ const getBlockTitle = (block: any, id: string | number) => {
       return `${yyyy}-${mm}-${dd}`;
     }
   }
-  
+
   if (block.aliases && block.aliases.length > 0) return block.aliases[0];
   if (block.text && block.text.trim().length > 0) {
     let text = block.text.trim();
@@ -50,26 +56,24 @@ const getBlockTitle = (block: any, id: string | number) => {
 };
 
 const getBlockIcon = (block: any) => {
-  if (!block) return '📄';
-  
+  if (!block) return "📄";
+
   const iconProp = block.properties?.find((p: any) => p.name === "_icon");
   if (iconProp && iconProp.value) {
     return iconProp.value;
   }
-  
+
   const reprProp = block.properties?.find((p: any) => p.name === "_repr");
   if (reprProp && reprProp.value?.type === "journal") {
-    return '📅';
+    return "📅";
   }
-  
-  return '📄';
+
+  return "📄";
 };
 
 const StyleInjector = () => (
   <style dangerouslySetInnerHTML={{ __html: styles }} />
 );
-
-const SIDEBAR_WIDTH = 250;
 
 export const ArcSidebar: React.FC = () => {
   const state = useSnapshot(orca.state);
@@ -78,7 +82,10 @@ export const ArcSidebar: React.FC = () => {
   const [activeSpace, setActiveSpace] = useState<string | null>(null);
   const [showNewSpaceInput, setShowNewSpaceInput] = useState(false);
   const [newSpaceName, setNewSpaceName] = useState("");
-  const spaces = useMemo(() => getSpaces(), [localArcTabsState.pinnedBlocks, localArcTabsState.spaceChoices]);
+  const spaces = useMemo(
+    () => getSpaces(),
+    [localArcTabsState.pinnedBlocks, localArcTabsState.spaceChoices],
+  );
 
   useEffect(() => {
     loadPinnedBlocks();
@@ -99,24 +106,30 @@ export const ArcSidebar: React.FC = () => {
 
   const containerRef = React.useRef<HTMLDivElement>(null);
 
-  // Force the parent container's width to prevent Orca from resizing it
+  // Apply strict width constraint based on plugin settings
   useEffect(() => {
     if (containerRef.current) {
-      const parent = containerRef.current.closest(".orca-panel") as HTMLElement || containerRef.current.parentElement;
+      const parent =
+        (containerRef.current.closest(".orca-panel") as HTMLElement) ||
+        containerRef.current.parentElement;
       if (parent) {
-        // Find the split-pane wrapper which controls the flex
-        const wrapper = parent.closest(".SplitPane") as HTMLElement || parent;
-        wrapper.style.setProperty("flex", `0 0 ${SIDEBAR_WIDTH}px`, "important");
-        wrapper.style.setProperty("width", `${SIDEBAR_WIDTH}px`, "important");
-        wrapper.style.setProperty("min-width", `${SIDEBAR_WIDTH}px`, "important");
-        wrapper.style.setProperty("max-width", `${SIDEBAR_WIDTH}px`, "important");
+        // Read user's preferred sidebar width
+        const width = arcTabsPluginInstance?.getSettings()?.sidebarWidth || 250;
         
-        // Sometimes react-split-pane applies flex to the parent of the panel
+        // Find the split-pane wrapper which controls the flex
+        const wrapper = (parent.closest(".SplitPane") as HTMLElement) || parent;
+
+        // Strictly lock the dimensions
+        wrapper.style.setProperty("flex", `0 0 ${width}px`, "important");
+        wrapper.style.setProperty("width", `${width}px`, "important");
+        wrapper.style.setProperty("min-width", `${width}px`, "important");
+        wrapper.style.setProperty("max-width", `${width}px`, "important");
+
         if (parent.style) {
-          parent.style.setProperty("flex", `0 0 ${SIDEBAR_WIDTH}px`, "important");
-          parent.style.setProperty("width", `${SIDEBAR_WIDTH}px`, "important");
-          parent.style.setProperty("min-width", `${SIDEBAR_WIDTH}px`, "important");
-          parent.style.setProperty("max-width", `${SIDEBAR_WIDTH}px`, "important");
+          parent.style.setProperty("flex", `0 0 ${width}px`, "important");
+          parent.style.setProperty("width", `${width}px`, "important");
+          parent.style.setProperty("min-width", `${width}px`, "important");
+          parent.style.setProperty("max-width", `${width}px`, "important");
         }
       }
     }
@@ -142,14 +155,18 @@ export const ArcSidebar: React.FC = () => {
     });
   }, [localArcTabsState.pinnedBlocks, activeSpace, state.blocks]);
 
-
-
   const todayTabs = useMemo(() => {
-    const currentSpacePinnedIds = getBlocksInSpace(activeSpace || DEFAULT_SPACE).map((b) => b.id);
+    const currentSpacePinnedIds = getBlocksInSpace(
+      activeSpace || DEFAULT_SPACE,
+    ).map((b) => b.id);
     return localArcTabsState.recentlyVisited
       .filter((item) => !currentSpacePinnedIds.includes(item.id))
       .slice(0, 15);
-  }, [localArcTabsState.recentlyVisited, localArcTabsState.pinnedBlocks, activeSpace]);
+  }, [
+    localArcTabsState.recentlyVisited,
+    localArcTabsState.pinnedBlocks,
+    activeSpace,
+  ]);
 
   const focusedBlock = useMemo(() => {
     return getFocusedBlock(state.panels, state.activePanel);
@@ -206,13 +223,15 @@ export const ArcSidebar: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);
-    
+
     try {
       const types = Array.from(e.dataTransfer.types);
-      
+
       // Orca uses custom MIME types like "orca/_doc_8" for block drags
-      const orcaCustomType = types.find(t => t.startsWith("orca/"));
-      const orcaCustomData = orcaCustomType ? e.dataTransfer.getData(orcaCustomType) : "";
+      const orcaCustomType = types.find((t) => t.startsWith("orca/"));
+      const orcaCustomData = orcaCustomType
+        ? e.dataTransfer.getData(orcaCustomType)
+        : "";
       const textData = e.dataTransfer.getData("text/plain");
       const jsonData = e.dataTransfer.getData("application/json");
       const orcaBlocks = e.dataTransfer.getData("application/x-orca-blocks");
@@ -220,7 +239,7 @@ export const ArcSidebar: React.FC = () => {
 
       // Try to extract block ID from various data formats
       let ids: string[] = [];
-      
+
       // 0. Try Orca custom type data first (highest priority)
       // Orca uses format: {"blocks": [blockId, ...]}
       if (orcaCustomData) {
@@ -241,31 +260,35 @@ export const ArcSidebar: React.FC = () => {
           }
         }
       }
-      
+
       // 1. Try JSON data
       if (ids.length === 0 && jsonData) {
         try {
           const parsed = JSON.parse(jsonData);
           if (parsed.id) ids.push(String(parsed.id));
-          else if (Array.isArray(parsed.blockIds)) ids = parsed.blockIds.map(String);
-          else if (Array.isArray(parsed) && parsed[0]?.id) ids = parsed.map((b: any) => String(b.id));
+          else if (Array.isArray(parsed.blockIds))
+            ids = parsed.blockIds.map(String);
+          else if (Array.isArray(parsed) && parsed[0]?.id)
+            ids = parsed.map((b: any) => String(b.id));
         } catch (e) {
           // ignore
         }
       }
-      
+
       // 2. Try orca-blocks data
       if (ids.length === 0 && orcaBlocks) {
         try {
           const parsed = JSON.parse(orcaBlocks);
           if (parsed.id) ids.push(String(parsed.id));
-          else if (Array.isArray(parsed.blockIds)) ids = parsed.blockIds.map(String);
-          else if (Array.isArray(parsed) && parsed[0]?.id) ids = parsed.map((b: any) => String(b.id));
+          else if (Array.isArray(parsed.blockIds))
+            ids = parsed.blockIds.map(String);
+          else if (Array.isArray(parsed) && parsed[0]?.id)
+            ids = parsed.map((b: any) => String(b.id));
         } catch (e) {
           // ignore
         }
       }
-      
+
       // 3. Try text data (might be a block ID or URL)
       if (ids.length === 0 && textData) {
         const numId = Number(textData);
@@ -286,7 +309,7 @@ export const ArcSidebar: React.FC = () => {
           ids.push(blockMatch[1]);
         }
       }
-      
+
       if (ids.length === 0) {
         return;
       }
@@ -326,13 +349,15 @@ export const ArcSidebar: React.FC = () => {
           onDrop={handleDrop}
           style={{ minHeight: "50px" }}
         >
-          <div className="arc-sidebar-section-title">{t("arc-tabs.pinned")}</div>
+          <div className="arc-sidebar-section-title">
+            {t("arc-tabs.pinned")}
+          </div>
           {currentSpacePinnedBlocks.length === 0 && (
             <div className={`arc-drop-hint ${isDragOver ? "drag-over" : ""}`}>
               {isDragOver ? "释放以固定" : t("arc-tabs.noPinned")}
             </div>
           )}
-          {localArcTabsState.pinnedDisplayMode === 'grid' ? (
+          {localArcTabsState.pinnedDisplayMode === "grid" ? (
             <div className="arc-pinned-grid">
               {currentSpacePinnedBlocks.map((block) => {
                 const isActive = openBlockIds.includes(block.id);
@@ -380,8 +405,8 @@ export const ArcSidebar: React.FC = () => {
             const title = block
               ? getBlockTitle(block, tab.id)
               : tab.title || `Block ${tab.id}`;
-            const icon = block ? getBlockIcon(block) : (tab.icon || '📄');
- 
+            const icon = block ? getBlockIcon(block) : tab.icon || "📄";
+
             return (
               <TabItem
                 key={tab.id}
@@ -445,7 +470,13 @@ export const ArcSidebar: React.FC = () => {
               border: "1px solid var(--orca-color-border-2)",
             }}
           >
-            <h3 style={{ margin: "0 0 16px 0", fontSize: "15px", fontWeight: 600 }}>
+            <h3
+              style={{
+                margin: "0 0 16px 0",
+                fontSize: "15px",
+                fontWeight: 600,
+              }}
+            >
               {t("arc-tabs.newSpace")}
             </h3>
             <orca.components.Input
@@ -462,7 +493,14 @@ export const ArcSidebar: React.FC = () => {
               autoFocus
               width="100%"
             />
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "16px" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "8px",
+                marginTop: "16px",
+              }}
+            >
               <orca.components.Button
                 variant="plain"
                 onClick={() => {
