@@ -217,8 +217,8 @@ export default class ArcTabsPlugin extends BasePlugin {
             />
           </SettingsItem>
           <SettingsItem
-            label={t("arc-tabs.todayLimit")}
-            description={t("arc-tabs.todayLimitDesc")}
+            label={t("arc-tabs.recentLimit")}
+            description={t("arc-tabs.recentLimitDesc")}
           >
             <orca.components.Input
               type="number"

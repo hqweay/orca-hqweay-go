@@ -434,7 +434,7 @@ export const ArcSidebar: React.FC = () => {
 
       {/* Today Tabs Section - Scrollable */}
       <div className="arc-sidebar-today">
-        <div className="arc-sidebar-section-title">{t("arc-tabs.today")}</div>
+        <div className="arc-sidebar-section-title">{t("arc-tabs.recent")}</div>
         {todayTabs.map((tab) => {
           const block = state.blocks[tab.id];
           const isActive = openBlockIds.includes(tab.id);
