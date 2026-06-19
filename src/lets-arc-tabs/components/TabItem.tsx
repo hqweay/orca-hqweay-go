@@ -44,6 +44,13 @@ export const TabItem: React.FC<TabItemProps> = ({
     removeRecentBlock(blockId);
   };
 
+  const handleDragStart = (e: React.DragEvent) => {
+    const repoId = orca.state.repo || "default";
+    e.dataTransfer.setData(`orca/${repoId}`, JSON.stringify({ blocks: [blockId] }));
+    e.dataTransfer.setData("text/plain", String(blockId));
+    e.dataTransfer.effectAllowed = "copy";
+  };
+
   const Tooltip = orca.components.Tooltip;
 
   const renderIcon = (
@@ -149,6 +156,8 @@ export const TabItem: React.FC<TabItemProps> = ({
       <Tooltip text={title}>
         <div
           className={`arc-tab-grid-item ${isActive ? "active" : ""}`}
+          draggable
+          onDragStart={handleDragStart}
           onClick={() => onClick(blockId)}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
@@ -181,6 +190,8 @@ export const TabItem: React.FC<TabItemProps> = ({
     <Tooltip text={title}>
       <div
         className={`arc-tab-item ${isActive ? "active" : ""}`}
+        draggable
+        onDragStart={handleDragStart}
         onClick={() => onClick(blockId)}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}

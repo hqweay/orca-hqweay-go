@@ -263,6 +263,13 @@ export const ArcSidebar: React.FC = () => {
     try {
       const types = Array.from(e.dataTransfer.types);
 
+      // DEBUG: Log all drag data
+      console.log("[ArcTabs] Drop event - MIME types:", types);
+      types.forEach((t) => {
+        const data = e.dataTransfer.getData(t);
+        console.log(`[ArcTabs]   ${t}:`, data.substring(0, 200));
+      });
+
       // Orca uses custom MIME types like "orca/_doc_8" for block drags
       const orcaCustomType = types.find((t) => t.startsWith("orca/"));
       const orcaCustomData = orcaCustomType
