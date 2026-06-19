@@ -1,3 +1,4 @@
+import { t } from "@/libs/l10n";
 import {
   executeRefToLink,
   executeLinkToRef,
@@ -93,7 +94,7 @@ export function injectContextMenu(logger: any): ContextMenuInjector {
       if (hasRef) {
         const refToLink = createMenuItem(
           "ti ti-link",
-          "转换为块链接",
+          t("link-tools.convertToBlockLink"),
           async () => {
             await executeRefToLink([blockId]);
             closeMenu();
@@ -103,7 +104,7 @@ export function injectContextMenu(logger: any): ContextMenuInjector {
 
         const refToTextPin = createMenuItem(
           "ti ti-pin",
-          "转换为文本📌",
+          t("link-tools.convertToTextPin"),
           async () => {
             await executeRefToTextPin([blockId]);
             closeMenu();
@@ -113,7 +114,7 @@ export function injectContextMenu(logger: any): ContextMenuInjector {
 
         const refToPin = createMenuItem(
           "ti ti-pin-filled",
-          "转换为📌",
+          t("link-tools.convertToPin"),
           async () => {
             await executeRefToPin([blockId]);
             closeMenu();
@@ -125,7 +126,7 @@ export function injectContextMenu(logger: any): ContextMenuInjector {
       if (hasLink) {
         const linkToRef = createMenuItem(
           "ti ti-blockquote",
-          "转换为块引用",
+          t("link-tools.convertToBlockRef"),
           async () => {
             await executeLinkToRef([blockId]);
             closeMenu();
@@ -141,9 +142,7 @@ export function injectContextMenu(logger: any): ContextMenuInjector {
     }, 50);
   };
 
-  document.addEventListener("contextmenu", handleContextMenu, true);
-
-  const handleMenuClose = () => {
+  const handleClick = () => {
     if (injectedMenu) {
       const items = injectedMenu.querySelectorAll("[data-orca-context-inject]");
       items.forEach((el) => el.remove());
@@ -151,17 +150,21 @@ export function injectContextMenu(logger: any): ContextMenuInjector {
     }
   };
 
-  document.addEventListener("click", handleMenuClose, true);
-  document.addEventListener("mousedown", (e) => {
+  const handleMouseDown = (e: MouseEvent) => {
     if (!(e.target as HTMLElement).closest(".orca-context-menu")) {
-      handleMenuClose();
+      handleClick();
     }
-  }, true);
+  };
+
+  document.addEventListener("contextmenu", handleContextMenu, true);
+  document.addEventListener("click", handleClick, true);
+  document.addEventListener("mousedown", handleMouseDown, true);
 
   return {
     disconnect: () => {
       document.removeEventListener("contextmenu", handleContextMenu, true);
-      document.removeEventListener("click", handleMenuClose, true);
+      document.removeEventListener("click", handleClick, true);
+      document.removeEventListener("mousedown", handleMouseDown, true);
     },
   };
 }
