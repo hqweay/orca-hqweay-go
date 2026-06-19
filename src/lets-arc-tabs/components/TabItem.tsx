@@ -56,52 +56,43 @@ export const TabItem: React.FC<TabItemProps> = ({
         const dateStr = iconValue.replace("__journal__:", "");
         const d = new Date(dateStr);
         if (!isNaN(d.getTime())) {
-          const day = String(d.getDate()).padStart(2, "0");
-          const monthStr = [
-            "JAN", "FEB", "MAR", "APR", "MAY", "JUN", 
-            "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
-          ][d.getMonth()];
+          const day = d.getDate();
+          const monthNames = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
+          const month = monthNames[d.getMonth()];
           
           return (
             <svg
-              width="20"
-              height="20"
-              viewBox="0 0 22 18"
+              width="18"
+              height="18"
+              viewBox="0 0 20 20"
+              fill="none"
               xmlns="http://www.w3.org/2000/svg"
-              style={{ flexShrink: 0 }}
+              style={{ flexShrink: 0, verticalAlign: "middle" }}
             >
-              <rect
-                x="1.5"
-                y="1.5"
-                width="18"
-                height="18"
-                rx="3"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              />
-              <path d="M1.5 6.5 L18.5 6.5" stroke="currentColor" strokeWidth="1.5" />
+              <rect x="2" y="2" width="16" height="16" rx="3" fill="currentColor" opacity="0.1" />
+              <rect x="2" y="2" width="16" height="16" rx="3" stroke="currentColor" strokeWidth="1.2" opacity="0.6" />
+              <rect x="2" y="2" width="16" height="5" rx="2" fill="currentColor" opacity="0.8" />
               <text
                 x="10"
-                y="4.2"
-                fontSize="3.5"
-                fontWeight="800"
+                y="6"
+                fontSize="4"
+                fontWeight="600"
                 textAnchor="middle"
                 dominantBaseline="central"
-                fill="currentColor"
-                fontFamily="sans-serif"
+                fill="white"
+                fontFamily="system-ui, -apple-system, sans-serif"
               >
-                {monthStr}
+                {month}
               </text>
               <text
                 x="10"
-                y="11.2"
-                fontSize="7.5"
-                fontWeight="800"
+                y="13"
+                fontSize="8"
+                fontWeight="700"
                 textAnchor="middle"
                 dominantBaseline="central"
                 fill="currentColor"
-                fontFamily="sans-serif"
+                fontFamily="system-ui, -apple-system, sans-serif"
               >
                 {day}
               </text>
