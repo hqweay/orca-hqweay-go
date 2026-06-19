@@ -4,6 +4,7 @@ import zhCN from "./translations/zhCN";
 import { BasePlugin } from "./libs/BasePlugin";
 import { SettingsBoard } from "./components/SettingsBoard";
 import { UpdateModal } from "./components/UpdateModal";
+import { AboutModal } from "./components/AboutModal";
 import { getChangesSince } from "./changelog";
 import cloneDeep from "lodash.clonedeep";
 import { Logger, LogLevel } from "./libs/logger";
@@ -39,6 +40,29 @@ function showUpdateModal(entries: any[]) {
       visible: true,
       onClose: handleClose,
       entries,
+    })
+  );
+}
+
+let aboutModalContainer: HTMLElement | null = null;
+let aboutModalRoot: any = null;
+
+function showAboutModal() {
+  if (!aboutModalContainer) {
+    aboutModalContainer = document.createElement("div");
+    document.body.appendChild(aboutModalContainer);
+    const { createRoot } = window as any;
+    aboutModalRoot = createRoot(aboutModalContainer);
+  }
+
+  const handleClose = () => {
+    aboutModalRoot?.render(null);
+  };
+
+  aboutModalRoot?.render(
+    React.createElement(AboutModal, {
+      visible: true,
+      onClose: handleClose,
     })
   );
 }
@@ -88,6 +112,12 @@ export async function load(_name: string) {
     "subplugins.settings",
     () => openSettingsBoard(_name),
     t("Open Sub-plugin Settings"),
+  );
+
+  orca.commands.registerCommand(
+    "subplugins.about",
+    () => showAboutModal(),
+    t("About Dinosaur Toolbox"),
   );
 
   // Register headbar button

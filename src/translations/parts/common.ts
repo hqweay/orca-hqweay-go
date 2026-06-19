@@ -185,4 +185,16 @@ export default {
   // Update Modal
   "What's New": "更新日志",
   "Got it": "我知道了",
+
+  // About Modal
+  About: "关于",
+  "Dinosaur Toolbox": "恐龙工具箱",
+  "About Dinosaur Toolbox": "关于恐龙工具箱",
+  "A powerful plugin collection for Orca Note, providing various tools to enhance your note-taking experience.":
+    "为虎鲸笔记打造的增强插件集合，提供多种工具提升您的笔记体验。",
+  Links: "相关链接",
+  Feedback: "反馈",
+  Sponsor: "赞助",
+  "Scan to sponsor": "扫码赞助",
+  Author: "作者",
 };

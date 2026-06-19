@@ -126,6 +126,41 @@ export function SettingsBoard({ onClose, mainPluginName }: SettingsBoardProps) {
                 </div>
               ))
             )}
+
+            {/* 关于按钮 */}
+            <div
+              style={{
+                borderTop: "1px solid var(--b3-theme-surface-lighter)",
+                marginTop: "12px",
+                paddingTop: "12px",
+              }}
+            >
+              <div
+                onClick={() => {
+                  onClose();
+                  orca.commands.invokeCommand("subplugins.about");
+                }}
+                style={{
+                  padding: "12px 24px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  opacity: 0.7,
+                  fontSize: "0.9em",
+                  transition: "opacity 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.opacity = "1";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.opacity = "0.7";
+                }}
+              >
+                <i className="ti ti-info-circle" style={{ fontSize: "16px" }} />
+                {t("About")}
+              </div>
+            </div>
           </div>
 
           {/* Main Area */}
