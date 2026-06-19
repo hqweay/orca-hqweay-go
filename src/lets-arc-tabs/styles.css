@@ -90,7 +90,8 @@
   margin-bottom: 2px;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.1s ease;
+  transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: arcTabSlideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .arc-tab-item:hover {
@@ -100,7 +101,6 @@
 .arc-tab-item.active {
   background-color: var(--orca-color-primary-1);
   color: var(--orca-color-primary-6);
-  font-weight: 500;
 }
 
 .arc-tab-icon {
@@ -182,9 +182,10 @@
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: arcTabSlideIn 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
   border: 1px solid var(--orca-color-border-2);
   background-color: var(--orca-color-bg-2);
   font-size: 18px;
@@ -264,13 +265,19 @@
   color: var(--orca-color-danger-5, #ef4444);
 }
 
+.arc-tab-right-zone {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 48px;
+  flex-shrink: 0;
+}
+
 .arc-tab-actions {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-left: 8px;
   animation: arcTabFadeIn 0.1s ease-in-out;
-  flex-shrink: 0;
 }
 
 .arc-tab-action-btn {
@@ -324,3 +331,23 @@
   }
 }
 
+@keyframes arcTabSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-bottom: 0;
+    overflow: hidden;
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+    max-height: 36px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    margin-bottom: 2px;
+    overflow: hidden;
+  }
+}

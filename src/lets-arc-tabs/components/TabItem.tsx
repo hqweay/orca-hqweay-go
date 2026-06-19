@@ -97,25 +97,29 @@ export const TabItem: React.FC<TabItemProps> = ({
           >
             <i className="ti ti-x" />
           </button>
-        ) : isHovered ? (
-          <div className="arc-tab-actions" onClick={(e) => e.stopPropagation()}>
-            <button
-              className="arc-tab-action-btn"
-              title={t("arc-tabs.pin")}
-              onClick={handlePinClick}
-            >
-              <i className="ti ti-pin" />
-            </button>
-            <button
-              className="arc-tab-action-btn"
-              title={t("arc-tabs.close")}
-              onClick={handleCloseClick}
-            >
-              <i className="ti ti-x" />
-            </button>
-          </div>
         ) : (
-          isActive && <div className="arc-tab-active-dot" />
+          <div className="arc-tab-right-zone">
+            {isHovered ? (
+              <div className="arc-tab-actions" onClick={(e) => e.stopPropagation()}>
+                <button
+                  className="arc-tab-action-btn"
+                  title={t("arc-tabs.pin")}
+                  onClick={handlePinClick}
+                >
+                  <i className="ti ti-pin" />
+                </button>
+                <button
+                  className="arc-tab-action-btn"
+                  title={t("arc-tabs.close")}
+                  onClick={handleCloseClick}
+                >
+                  <i className="ti ti-x" />
+                </button>
+              </div>
+            ) : isActive ? (
+              <div className="arc-tab-active-dot" />
+            ) : null}
+          </div>
         )}
       </div>
     </Tooltip>
