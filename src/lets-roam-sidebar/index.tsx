@@ -18,8 +18,11 @@ export default class RoamSidebarPlugin extends BasePlugin {
         div[repr="roam-sidebar"] ~ .orca-block-editor-sidetools {
           display: none;
         }
-        div[repr="roam-sidebar"] {
-          overflow-y: hidden;
+        div[repr="roam-sidebar"] .orca-block-editor {
+          padding-left: 0 !important;
+          padding-right: 0 !important;
+          max-width: 100% !important;
+          margin: 0 !important;
         }
         `,
       { id: RENDERER_TYPE },
