@@ -5,6 +5,7 @@ import { BasePlugin } from "./libs/BasePlugin";
 import { SettingsBoard } from "./components/SettingsBoard";
 import cloneDeep from "lodash.clonedeep";
 import { Logger, LogLevel } from "./libs/logger";
+import pkg from "../package.json";
 
 // Auto-scan sub-plugins. Test plugins (lets-test-*) are only included in development.
 const pluginModules: Record<string, any> =
@@ -42,6 +43,23 @@ async function fixData() {
 export async function load(_name: string) {
   setupL10N(orca.state.locale, { "zh-CN": zhCN });
   // fixData();
+
+  const currentVersion = pkg.version;
+  const lastSeenVersion = await orca.plugins.getData(_name, "lastSeenVersion");
+  if (lastSeenVersion !== currentVersion) {
+    orca.notify(
+      "info",
+      `恐龙工具箱已更新至版本 v${currentVersion}。点击提示跳转查看更新说明`,
+      {
+        title: "🎉 新版本更新",
+        action: () => {
+          orca.invokeBackend("shell-open", "https://leay.net/20260120023137/");
+        },
+      },
+    );
+    await orca.plugins.setData(_name, "lastSeenVersion", currentVersion);
+  }
+
   orca.commands.registerCommand(
     "subplugins.settings",
     () => openSettingsBoard(_name),
