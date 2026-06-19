@@ -10,7 +10,7 @@ interface TabItemProps {
   isPinned: boolean;
   activeSpace: string;
   onClick: (blockId: number) => void;
-  icon?: string;
+  icon?: React.ReactNode;
   color?: string;
   displayMode?: "grid" | "list";
 }
@@ -46,12 +46,71 @@ export const TabItem: React.FC<TabItemProps> = ({
 
   const Tooltip = orca.components.Tooltip;
 
-  const renderIcon = (iconValue?: string, fallback: string = "📄") => {
+  const renderIcon = (iconValue?: React.ReactNode, fallback: React.ReactNode = "📄") => {
     if (!iconValue) return <span style={{ color }}>{fallback}</span>;
-    if (iconValue.startsWith("ti ")) {
-      return <i className={iconValue} style={{ fontSize: "16px", color }} />;
+    if (typeof iconValue === "string") {
+      if (iconValue.startsWith("ti ")) {
+        return <i className={iconValue} style={{ fontSize: "16px", color }} />;
+      }
+      if (iconValue.startsWith("__journal__:")) {
+        const dateStr = iconValue.replace("__journal__:", "");
+        const d = new Date(dateStr);
+        if (!isNaN(d.getTime())) {
+          const day = String(d.getDate()).padStart(2, "0");
+          const monthStr = [
+            "JAN", "FEB", "MAR", "APR", "MAY", "JUN", 
+            "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+          ][d.getMonth()];
+          
+          return (
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 22 18"
+              xmlns="http://www.w3.org/2000/svg"
+              style={{ flexShrink: 0 }}
+            >
+              <rect
+                x="1.5"
+                y="1.5"
+                width="18"
+                height="18"
+                rx="3"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+              <path d="M1.5 6.5 L18.5 6.5" stroke="currentColor" strokeWidth="1.5" />
+              <text
+                x="10"
+                y="4.2"
+                fontSize="3.5"
+                fontWeight="800"
+                textAnchor="middle"
+                dominantBaseline="central"
+                fill="currentColor"
+                fontFamily="sans-serif"
+              >
+                {monthStr}
+              </text>
+              <text
+                x="10"
+                y="11.2"
+                fontSize="7.5"
+                fontWeight="800"
+                textAnchor="middle"
+                dominantBaseline="central"
+                fill="currentColor"
+                fontFamily="sans-serif"
+              >
+                {day}
+              </text>
+            </svg>
+          );
+        }
+      }
     }
-    return <span style={{ color }}>{iconValue}</span>;
+    return <span style={{ color, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{iconValue}</span>;
   };
 
   if (displayMode === "grid") {

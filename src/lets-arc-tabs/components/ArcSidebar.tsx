@@ -64,8 +64,8 @@ const getBlockIcon = (block: any) => {
   }
 
   const reprProp = block.properties?.find((p: any) => p.name === "_repr");
-  if (reprProp && reprProp.value?.type === "journal") {
-    return "📅";
+  if (reprProp && reprProp.value?.type === "journal" && reprProp.value?.date) {
+    return `__journal__:${reprProp.value.date}`;
   }
 
   return "📄";
@@ -125,16 +125,17 @@ export const ArcSidebar: React.FC = () => {
     if (!parent) return;
 
     const wrapper = (parent.closest(".SplitPane") as HTMLElement) || parent;
-    
+
     // Helper function to enforce width
     const enforceWidth = () => {
       const width = arcTabsPluginInstance?.getSettings()?.sidebarWidth || 250;
-      
+
       const applyStyles = (el: HTMLElement) => {
         const currentFlex = el.style.getPropertyValue("flex");
         const expectedFlex = `0 0 ${width}px`;
-        const hasImportant = el.style.getPropertyPriority("flex") === "important";
-        
+        const hasImportant =
+          el.style.getPropertyPriority("flex") === "important";
+
         // Only update if it's actually different to avoid infinite observer loops
         if (currentFlex !== expectedFlex || !hasImportant) {
           el.style.setProperty("flex", expectedFlex, "important");
@@ -158,7 +159,10 @@ export const ArcSidebar: React.FC = () => {
 
     observer.observe(wrapper, { attributes: true, attributeFilter: ["style"] });
     if (parent !== wrapper) {
-      observer.observe(parent, { attributes: true, attributeFilter: ["style"] });
+      observer.observe(parent, {
+        attributes: true,
+        attributeFilter: ["style"],
+      });
     }
 
     return () => {
