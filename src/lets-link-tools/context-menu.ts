@@ -1,11 +1,9 @@
 import {
-  hasBlockReference,
-  hasBlockLink,
   executeRefToLink,
   executeLinkToRef,
   executeRefToTextPin,
   executeRefToPin,
-} from "./logic";
+} from "../lets-block-tools/logic";
 
 interface ContextMenuInjector {
   disconnect: () => void;
