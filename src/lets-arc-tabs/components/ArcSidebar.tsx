@@ -324,7 +324,7 @@ export const ArcSidebar: React.FC = () => {
   };
 
   return (
-    <div className={`arc-sidebar-container ${localArcTabsState.isClosing ? "arc-sidebar-closing" : ""}`} ref={containerRef}>
+    <div className="arc-sidebar-container" ref={containerRef}>
       <StyleInjector />
 
       {/* Pinned Tabs Section - Fixed */}

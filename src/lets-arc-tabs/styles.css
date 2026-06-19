@@ -8,7 +8,6 @@
   font-family: inherit;
   box-sizing: border-box;
   width: 100%;
-  animation: arcSidebarSlideIn 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .arc-sidebar-container.arc-sidebar-closing {
