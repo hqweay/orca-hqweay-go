@@ -1,6 +1,7 @@
 import { proxy } from "valtio";
 
 export const LOCAL_STORAGE_KEY = "orca-arc-tabs-recent";
+export const DEFAULT_SPACE = "🪐";
 
 export interface RecentTab {
   id: number;

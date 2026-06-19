@@ -3,7 +3,7 @@ import { t } from "@/libs/l10n";
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import type { Block } from "../orca.d.ts";
 import { ArcSidebar } from "./components/ArcSidebar";
-import { arcTabsState } from "./utils/data";
+import { arcTabsState, DEFAULT_SPACE } from "./utils/data";
 
 export let arcTabsPluginInstance: ArcTabsPlugin;
 
@@ -119,7 +119,7 @@ export default class ArcTabsPlugin extends BasePlugin {
           propsToAdd.push({
             name: "Space",
             type: 6,
-            typeArgs: { subType: "multi", choices: ["default"] },
+            typeArgs: { subType: "multi", choices: [DEFAULT_SPACE] },
           });
         }
         if (!hasDisplayNameProp) {

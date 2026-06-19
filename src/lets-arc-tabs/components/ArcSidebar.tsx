@@ -8,7 +8,7 @@ import {
   findMainPanelId,
   getFocusedBlock,
 } from "../utils/nav";
-import { arcTabsState } from "../utils/data";
+import { arcTabsState, DEFAULT_SPACE } from "../utils/data";
 import { pinBlock, loadPinnedBlocks } from "../utils/pin";
 import { getSpaces, getBlocksInSpace, addSpaceChoice, loadSpacesFromTag } from "../utils/spaces";
 import { addRecentBlock } from "../utils/recent";
@@ -141,7 +141,7 @@ export const ArcSidebar: React.FC = () => {
   }, [openBlockIds]);
 
   const todayTabs = useMemo(() => {
-    const currentSpacePinnedIds = getBlocksInSpace(activeSpace || "default").map((b) => b.id);
+    const currentSpacePinnedIds = getBlocksInSpace(activeSpace || DEFAULT_SPACE).map((b) => b.id);
     return localArcTabsState.recentlyVisited
       .filter((item) => !currentSpacePinnedIds.includes(item.id))
       .slice(0, 15);
@@ -287,7 +287,7 @@ export const ArcSidebar: React.FC = () => {
         return;
       }
 
-      const targetSpace = activeSpace || spaces[0] || "default";
+      const targetSpace = activeSpace || spaces[0] || DEFAULT_SPACE;
       for (const id of ids) {
         const numId = Number(id);
         if (!isNaN(numId) && numId > 0) {
@@ -339,7 +339,7 @@ export const ArcSidebar: React.FC = () => {
                     title={block._title}
                     isActive={isActive}
                     isPinned={true}
-                    activeSpace={activeSpace || spaces[0] || "default"}
+                    activeSpace={activeSpace || spaces[0] || DEFAULT_SPACE}
                     onClick={handleTabClick}
                     icon={block._icon}
                     displayMode="grid"
@@ -357,7 +357,7 @@ export const ArcSidebar: React.FC = () => {
                   title={block._title}
                   isActive={isActive}
                   isPinned={true}
-                  activeSpace={activeSpace || spaces[0] || "default"}
+                  activeSpace={activeSpace || spaces[0] || DEFAULT_SPACE}
                   onClick={handleTabClick}
                   icon={block._icon}
                   displayMode="list"
@@ -385,7 +385,7 @@ export const ArcSidebar: React.FC = () => {
                 title={title}
                 isActive={isActive}
                 isPinned={false}
-                activeSpace={activeSpace || spaces[0] || "default"}
+                activeSpace={activeSpace || spaces[0] || DEFAULT_SPACE}
                 onClick={handleTabClick}
                 icon={icon}
               />
