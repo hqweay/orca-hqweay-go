@@ -1,6 +1,7 @@
 export default {
   "roam-sidebar": "右侧边栏全局收集箱",
-  "roam-sidebar.description": "在右侧面板打开全局单例收集箱，通过拖拽存放块",
+  "roam-sidebar.description":
+    "在右侧面板打开全局单例收集箱，通过拖拽存放块，类似 roam research sidebar.",
   "roam-sidebar.sidetool": "Roam Sidebar",
   "roam-sidebar.expand-all": "展开全部",
   "roam-sidebar.collapse-all": "折叠全部",
