@@ -2,12 +2,9 @@ import React from 'react';
 import { BasePlugin } from '@/libs/BasePlugin';
 import { t } from '@/libs/l10n';
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
-import { DataImporter } from "@/libs/DataImporter";
-import { PropType } from "@/libs/consts";
 import type { Block } from "../orca.d.ts";
 import { ArcSidebar } from './components/ArcSidebar';
 import { arcTabsState } from './utils/data';
-import { loadPinnedBlocks } from './utils/pin';
 
 export let arcTabsPluginInstance: ArcTabsPlugin;
 

@@ -1,6 +1,6 @@
 import { proxy } from "valtio";
 
-const LOCAL_STORAGE_KEY = "orca-arc-tabs-recent";
+export const LOCAL_STORAGE_KEY = "orca-arc-tabs-recent";
 
 export interface RecentTab {
   id: number;

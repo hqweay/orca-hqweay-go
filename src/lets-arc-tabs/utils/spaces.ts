@@ -54,16 +54,6 @@ export const getBlocksInSpace = (space: string): any[] => {
   );
 };
 
-export const getUnassignedBlocks = (): any[] => {
-  return arcTabsState.pinnedBlocks.filter(
-    (b) => getSpaceProperty(b).length === 0
-  );
-};
-
-export const getSpacePropertyForBlock = (blockId: number): string[] => {
-  const block = arcTabsState.pinnedBlocks.find((b) => b.id === blockId);
-  return block ? getSpaceProperty(block) : [];
-};
 
 export const addSpaceChoice = async (spaceName: string) => {
   const settings = arcTabsPluginInstance?.getSettings() || {};

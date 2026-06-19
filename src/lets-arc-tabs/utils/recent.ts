@@ -1,6 +1,4 @@
-import { arcTabsState } from "./data";
-
-const LOCAL_STORAGE_KEY = "orca-arc-tabs-recent";
+import { arcTabsState, LOCAL_STORAGE_KEY } from "./data";
 
 const persistRecent = () => {
   try {

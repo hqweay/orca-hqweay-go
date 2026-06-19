@@ -95,8 +95,6 @@ export const ArcSidebar: React.FC = () => {
     loadPinnedBlocks();
   }, [activeSpace]);
 
-
-
   const openBlockIds = useMemo(
     () => getActiveBlocks(state.panels).map(Number),
     [state.panels],
@@ -163,8 +161,6 @@ export const ArcSidebar: React.FC = () => {
       addRecentBlock(focusedBlock, title, icon);
     }
   }, [focusedBlock, isBlockCached]);
-
-  const filteredTodayTabs = todayTabs;
 
   const handleTabClick = (blockId: number) => {
     const mainPanelId = findMainPanelId(state.panels);
@@ -312,8 +308,6 @@ export const ArcSidebar: React.FC = () => {
     }
   };
 
-
-
   return (
     <div className="arc-sidebar-container">
       <StyleInjector />
@@ -375,7 +369,7 @@ export const ArcSidebar: React.FC = () => {
         {/* Today Tabs Section */}
         <div className="arc-sidebar-section">
           <div className="arc-sidebar-section-title">{t("arc-tabs.today")}</div>
-          {filteredTodayTabs.map((tab) => {
+          {todayTabs.map((tab) => {
             const block = state.blocks[tab.id];
             const isActive = openBlockIds.includes(tab.id);
             const title = block
