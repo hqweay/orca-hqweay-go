@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSnapshot } from "valtio";
 import styles from "../styles.css?inline";
+import { t } from "@/libs/l10n";
 import {
   roamSidebarState,
   addStackedBlock,
@@ -175,10 +176,14 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
             )}
           </div>
           <div className="roam-sidebar-empty-text">
-            {isDragOver ? "释放以添加块" : "拖拽块到此处"}
+            {isDragOver
+              ? t("roam-sidebar.drop-to-add")
+              : t("roam-sidebar.drag-here")}
           </div>
           <div className="roam-sidebar-empty-hint">
-            {isDragOver ? "松开鼠标" : "分屏查看内容"}
+            {isDragOver
+              ? t("roam-sidebar.release-mouse")
+              : t("roam-sidebar.split-view")}
           </div>
         </div>
       ) : (
@@ -196,10 +201,12 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
             }}
           >
             <div style={{ cursor: "pointer" }} onClick={expandAll}>
-              <i className="ti ti-layout-bottombar-expand" /> 展开全部
+              <i className="ti ti-layout-bottombar-expand" />{" "}
+              {t("roam-sidebar.expand-all")}
             </div>
             <div style={{ cursor: "pointer" }} onClick={collapseAll}>
-              <i className="ti ti-layout-topbar-collapse" /> 折叠全部
+              <i className="ti ti-layout-topbar-collapse" />{" "}
+              {t("roam-sidebar.collapse-all")}
             </div>
           </div>
           {state.stackedBlocks.map((b) => (
@@ -234,7 +241,7 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
                 </div>
                 <div
                   className="roam-sidebar-item-close-action"
-                  title="关闭"
+                  title={t("roam-sidebar.close-card")}
                   onClick={(e) => {
                     e.stopPropagation();
                     removeStackedBlock(b.id);
@@ -292,7 +299,11 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
                 <i className="ti ti-dots" />
               )}
             </div>
-            <span>{isDragOver ? "释放以添加" : "继续添加块"}</span>
+            <span>
+              {isDragOver
+                ? t("roam-sidebar.drop-to-append")
+                : t("roam-sidebar.continue-adding")}
+            </span>
           </div>
         </div>
       )}

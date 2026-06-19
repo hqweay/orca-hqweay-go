@@ -1,12 +1,13 @@
 import { BasePlugin } from "../libs/BasePlugin";
 import { RoamSidebarRenderer } from "./components/RoamSidebarRenderer";
 import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
+import { t } from "@/libs/l10n";
 import "./styles.css";
 
 const RENDERER_TYPE = "roam-sidebar";
 
 export default class RoamSidebarPlugin extends BasePlugin {
-  protected headbarButtonId = "lets-roam-sidebar.toggle";
+  protected headbarButtonId = "roam-sidebar";
 
   async load() {
     // Hide unnecessary editor UI for this renderer
@@ -45,11 +46,16 @@ export default class RoamSidebarPlugin extends BasePlugin {
 
     // Register command to open roam sidebar in left panel
     orca.commands.registerCommand(
-      "lets-roam-sidebar.toggle",
+      "roam-sidebar",
       async () => {
         // Find existing roam-sidebar panel
-        const findPanelWithView = (panel: any, viewName: string, reprName: string): any => {
-          if (panel.view === viewName && panel.viewArgs?.repr === reprName) return panel;
+        const findPanelWithView = (
+          panel: any,
+          viewName: string,
+          reprName: string,
+        ): any => {
+          if (panel.view === viewName && panel.viewArgs?.repr === reprName)
+            return panel;
           if (panel.children) {
             for (const child of panel.children) {
               const found = findPanelWithView(child, viewName, reprName);
@@ -62,7 +68,7 @@ export default class RoamSidebarPlugin extends BasePlugin {
         const existingPanel = findPanelWithView(
           orca.state.panels,
           "block",
-          RENDERER_TYPE
+          RENDERER_TYPE,
         );
         if (existingPanel) {
           orca.nav.close(existingPanel.id);
@@ -70,8 +76,11 @@ export default class RoamSidebarPlugin extends BasePlugin {
         }
 
         // Find or create roam-sidebar block
-        let targetBlockId: number | null = await orca.plugins.getData("lets-roam-sidebar", "globalBlockId");
-        
+        let targetBlockId: number | null = await orca.plugins.getData(
+          "lets-roam-sidebar",
+          "globalBlockId",
+        );
+
         if (!targetBlockId) {
           const blocks = await orca.invokeBackend("get-blocks-with-tags", [
             RENDERER_TYPE,
@@ -79,7 +88,11 @@ export default class RoamSidebarPlugin extends BasePlugin {
 
           if (blocks && blocks.length > 0) {
             targetBlockId = Number(blocks[0].id);
-            await orca.plugins.setData("lets-roam-sidebar", "globalBlockId", targetBlockId);
+            await orca.plugins.setData(
+              "lets-roam-sidebar",
+              "globalBlockId",
+              targetBlockId,
+            );
           } else {
             targetBlockId = (await orca.commands.invokeEditorCommand(
               "core.editor.insertBlock",
@@ -92,8 +105,12 @@ export default class RoamSidebarPlugin extends BasePlugin {
           }
 
           if (targetBlockId) {
-            await orca.plugins.setData("lets-roam-sidebar", "globalBlockId", targetBlockId);
-            
+            await orca.plugins.setData(
+              "lets-roam-sidebar",
+              "globalBlockId",
+              targetBlockId,
+            );
+
             await orca.commands.invokeEditorCommand(
               "core.editor.createAlias",
               null,
@@ -122,19 +139,17 @@ export default class RoamSidebarPlugin extends BasePlugin {
           } as any);
         }
       },
-      "Toggle Roam Sidebar",
+      t("roam-sidebar.description"),
     );
 
     // Register editor sidetool (right side button)
-    orca.editorSidetools.registerEditorSidetool("lets-roam-sidebar.sidetool", {
+    orca.editorSidetools.registerEditorSidetool("roam-sidebar.sidetool", {
       render: (_rootBlockId, _panelId) => {
         return (
           <orca.components.Button
             variant="plain"
-            title="Roam Sidebar"
-            onClick={() =>
-              orca.commands.invokeCommand("lets-roam-sidebar.toggle")
-            }
+            title={t("roam-sidebar")}
+            onClick={() => orca.commands.invokeCommand("roam-sidebar")}
             className="orca-block-editor-sidetools-btn"
           >
             <i
@@ -148,8 +163,8 @@ export default class RoamSidebarPlugin extends BasePlugin {
   }
 
   async unload() {
-    orca.commands.unregisterCommand("lets-roam-sidebar.toggle");
-    orca.editorSidetools.unregisterEditorSidetool("lets-roam-sidebar.sidetool");
+    orca.commands.unregisterCommand("roam-sidebar");
+    orca.editorSidetools.unregisterEditorSidetool("roam-sidebar.sidetool");
     if (orca.state.blockRenderers[RENDERER_TYPE]) {
       orca.renderers.unregisterBlock(RENDERER_TYPE);
     }
