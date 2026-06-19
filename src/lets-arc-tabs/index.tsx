@@ -34,8 +34,12 @@ export default class ArcTabsPlugin extends BasePlugin {
 
         const existingPanel = findPanelWithView(orca.state.panels, "arcTabs");
         if (existingPanel) {
-          // If already open, close it (toggle behavior)
-          orca.nav.close(existingPanel.id);
+          // If already open, animate close then close
+          arcTabsState.isClosing = true;
+          setTimeout(() => {
+            orca.nav.close(existingPanel.id);
+            arcTabsState.isClosing = false;
+          }, 200);
         } else {
           const newPanelId = orca.nav.addTo(orca.state.activePanel, "left", {
             view: "arcTabs",
