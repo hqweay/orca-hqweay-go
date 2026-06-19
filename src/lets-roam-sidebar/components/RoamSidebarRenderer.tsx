@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSnapshot } from "valtio";
 import styles from "../styles.css?inline";
 import {
   roamSidebarState,
   addStackedBlock,
   removeStackedBlock,
+  collapseAll,
+  expandAll,
+  toggleBlockCollapse,
 } from "../utils/state";
 
 interface RendererProps {
@@ -16,11 +19,57 @@ interface RendererProps {
 }
 
 export const RoamSidebarRenderer = (props: RendererProps) => {
-  const { panelId } = props;
+  const { panelId, blockId } = props;
   const state = useSnapshot(roamSidebarState);
   const [isDragOver, setIsDragOver] = useState(false);
+  const isInitialized = useRef(false);
   const Block = orca.components.Block;
   const BlockBreadcrumb = orca.components.BlockBreadcrumb;
+
+  // Initialize from block's _repr
+  useEffect(() => {
+    const block = orca.state.blocks[blockId];
+    if (block) {
+      const reprProp = block.properties?.find((p: any) => p.name === "_repr");
+      if (reprProp && reprProp.value?.stackedBlocks) {
+        // Hydrate from DB
+        roamSidebarState.stackedBlocks = reprProp.value.stackedBlocks;
+      }
+    }
+    isInitialized.current = true;
+  }, [blockId]);
+
+  // Save to block's _repr when state changes
+  useEffect(() => {
+    if (!isInitialized.current) return;
+
+    const block = orca.state.blocks[blockId];
+    if (!block) return;
+
+    const reprProp = block.properties?.find((p: any) => p.name === "_repr");
+    const reprVal = reprProp?.value || { type: "roam-sidebar" };
+
+    const currentJSON = JSON.stringify(reprVal.stackedBlocks || []);
+    const newStateJSON = JSON.stringify(roamSidebarState.stackedBlocks);
+
+    if (currentJSON !== newStateJSON) {
+      orca.commands.invokeEditorCommand(
+        "core.editor.setProperties",
+        null,
+        [blockId],
+        [
+          {
+            name: "_repr",
+            type: 0,
+            value: {
+              ...reprVal,
+              stackedBlocks: roamSidebarState.stackedBlocks,
+            },
+          },
+        ],
+      );
+    }
+  }, [state.stackedBlocks, blockId]);
 
   const parseDragData = (e: React.DragEvent): number[] => {
     const types = Array.from(e.dataTransfer.types);
@@ -133,6 +182,25 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
         </div>
       ) : (
         <div className="roam-sidebar-stack">
+          <div
+            className="roam-sidebar-toolbar"
+            contentEditable={false}
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              padding: "4px 12px",
+              gap: "8px",
+              opacity: 0.6,
+              fontSize: "13px",
+            }}
+          >
+            <div style={{ cursor: "pointer" }} onClick={expandAll}>
+              <i className="ti ti-layout-bottombar-expand" /> 展开全部
+            </div>
+            <div style={{ cursor: "pointer" }} onClick={collapseAll}>
+              <i className="ti ti-layout-topbar-collapse" /> 折叠全部
+            </div>
+          </div>
           {state.stackedBlocks.map((b) => (
             <div key={b.id} className="roam-sidebar-item">
               <div
@@ -144,6 +212,22 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
                   padding: "4px 8px 4px 12px",
                 }}
               >
+                <div
+                  style={{
+                    cursor: "pointer",
+                    marginRight: "8px",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                  onClick={() => toggleBlockCollapse(b.id)}
+                >
+                  <i
+                    className={
+                      b.collapsed ? "ti ti-caret-right" : "ti ti-caret-down"
+                    }
+                    style={{ fontSize: "14px" }}
+                  />
+                </div>
                 <div style={{ flex: 1, overflow: "hidden" }}>
                   <BlockBreadcrumb blockId={b.id} />
                 </div>
@@ -185,13 +269,13 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
                 data-orca-block-root="true"
               >
                 <Block
-                  key={`roam-block-${b.id}`}
+                  key={`roam-block-${b.id}-${b.collapsed}`}
                   panelId={panelId}
                   blockId={b.id}
                   blockLevel={0}
                   indentLevel={0}
                   renderingMode="normal"
-                  initiallyCollapsed={false}
+                  initiallyCollapsed={!!b.collapsed}
                 />
               </div>
             </div>

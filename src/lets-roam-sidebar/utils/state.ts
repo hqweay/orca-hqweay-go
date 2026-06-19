@@ -2,6 +2,7 @@ import { proxy } from "valtio";
 
 export interface StackedBlock {
   id: number;
+  collapsed?: boolean;
 }
 
 export const roamSidebarState = proxy({
@@ -13,7 +14,7 @@ export const addStackedBlock = (blockId: number) => {
   if (existingIdx >= 0) {
     roamSidebarState.stackedBlocks.splice(existingIdx, 1);
   }
-  roamSidebarState.stackedBlocks.unshift({ id: blockId });
+  roamSidebarState.stackedBlocks.unshift({ id: blockId, collapsed: false });
 };
 
 export const removeStackedBlock = (blockId: number) => {
@@ -21,4 +22,19 @@ export const removeStackedBlock = (blockId: number) => {
   if (existingIdx >= 0) {
     roamSidebarState.stackedBlocks.splice(existingIdx, 1);
   }
+};
+
+export const toggleBlockCollapse = (blockId: number) => {
+  const block = roamSidebarState.stackedBlocks.find(b => b.id === blockId);
+  if (block) {
+    block.collapsed = !block.collapsed;
+  }
+};
+
+export const collapseAll = () => {
+  roamSidebarState.stackedBlocks.forEach(b => (b.collapsed = true));
+};
+
+export const expandAll = () => {
+  roamSidebarState.stackedBlocks.forEach(b => (b.collapsed = false));
 };
