@@ -1,0 +1,101 @@
+.roam-sidebar-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  background-color: var(--orca-bg-primary);
+}
+
+.roam-sidebar-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--orca-text-muted);
+  font-size: 14px;
+  padding: 20px;
+  text-align: center;
+  border: 2px dashed var(--orca-border-color);
+  margin: 10px;
+  border-radius: 8px;
+}
+
+.roam-sidebar-stack {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  gap: 15px;
+}
+
+.roam-sidebar-item {
+  border: 1px solid var(--orca-border-color);
+  border-radius: 8px;
+  background-color: var(--orca-bg-secondary);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.roam-sidebar-item-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: var(--orca-bg-tertiary, var(--orca-bg-primary));
+  border-bottom: 1px solid var(--orca-border-color);
+  user-select: none;
+}
+
+.roam-sidebar-item-toggle {
+  cursor: pointer;
+  margin-right: 8px;
+  font-size: 12px;
+  color: var(--orca-text-muted);
+  width: 16px;
+  text-align: center;
+}
+
+.roam-sidebar-item-title {
+  flex: 1;
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.roam-sidebar-item-close {
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  color: var(--orca-text-muted);
+}
+
+.roam-sidebar-item-close:hover {
+  background-color: var(--orca-bg-hover);
+  color: var(--orca-text-danger, red);
+}
+
+.roam-sidebar-item-content {
+  padding: 12px;
+  background-color: var(--orca-bg-primary);
+  /* Ensure the block editor has room and doesn't bleed out */
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.roam-sidebar-dropzone-footer {
+  margin-top: 10px;
+  padding: 20px;
+  border: 2px dashed var(--orca-border-color);
+  border-radius: 8px;
+  color: var(--orca-text-muted);
+  text-align: center;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.roam-sidebar-dropzone-footer:hover {
+  background-color: var(--orca-bg-hover);
+  border-color: var(--orca-brand-primary);
+}
