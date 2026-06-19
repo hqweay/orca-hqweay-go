@@ -40,28 +40,6 @@ export const TabItem: React.FC<TabItemProps> = ({
 
   const handleCloseClick = () => {
     removeRecentBlock(blockId);
-
-    const panels = orca.state.panels;
-    const findPanelIdByBlockId = (panel: any): string | null => {
-      if (
-        panel.view === "block" &&
-        Number(panel.viewArgs?.blockId) === blockId
-      ) {
-        return panel.id;
-      }
-      if (panel.children) {
-        for (const child of panel.children) {
-          const found = findPanelIdByBlockId(child);
-          if (found) return found;
-        }
-      }
-      return null;
-    };
-
-    const panelId = findPanelIdByBlockId(panels);
-    if (panelId) {
-      orca.nav.close(panelId);
-    }
   };
 
   const Tooltip = orca.components.Tooltip;
