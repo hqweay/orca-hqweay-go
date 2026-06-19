@@ -1,25 +1,24 @@
-import React from 'react';
-import { BasePlugin } from '@/libs/BasePlugin';
-import { t } from '@/libs/l10n';
+import { BasePlugin } from "@/libs/BasePlugin";
+import { t } from "@/libs/l10n";
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import type { Block } from "../orca.d.ts";
-import { ArcSidebar } from './components/ArcSidebar';
-import { arcTabsState } from './utils/data';
+import { ArcSidebar } from "./components/ArcSidebar";
+import { arcTabsState } from "./utils/data";
 
 export let arcTabsPluginInstance: ArcTabsPlugin;
 
 export default class ArcTabsPlugin extends BasePlugin {
-  protected headbarButtonId = 'arc-tabs.openSidebar';
+  protected headbarButtonId = "arc-tabs.openSidebar";
 
   async load() {
     arcTabsPluginInstance = this;
-    
+
     // Register the native panel
-    orca.panels.registerPanel('arcTabs', ArcSidebar);
+    orca.panels.registerPanel("arcTabs", ArcSidebar);
 
     // Register a command to open the panel
     orca.commands.registerCommand(
-      'arc-tabs.openSidebar',
+      "arc-tabs.openSidebar",
       () => {
         // Find if it's already open
         const findPanelWithView = (panel: any, viewName: string): any => {
@@ -33,7 +32,7 @@ export default class ArcTabsPlugin extends BasePlugin {
           return null;
         };
 
-        const existingPanel = findPanelWithView(orca.state.panels, 'arcTabs');
+        const existingPanel = findPanelWithView(orca.state.panels, "arcTabs");
         if (existingPanel) {
           // If already open, close it (toggle behavior)
           orca.nav.close(existingPanel.id);
@@ -44,7 +43,7 @@ export default class ArcTabsPlugin extends BasePlugin {
             viewState: {},
             locked: true, // Prevent this panel from being replaced by other blocks
           } as any);
-          
+
           if (newPanelId) {
             // Wait for the panel to be mounted in the DOM, then resize it
             setTimeout(() => {
@@ -54,14 +53,14 @@ export default class ArcTabsPlugin extends BasePlugin {
           }
         }
       },
-      t('arc-tabs') // Display name in command palette
+      t("arc-tabs"), // Display name in command palette
     );
 
     // Bind a default shortcut if desired (optional)
     // orca.commands.bindShortcut('arc-tabs.openSidebar', 'cmd+shift+a');
 
     const settings = this.getSettings();
-    arcTabsState.pinnedDisplayMode = settings.pinnedDisplayMode || 'grid';
+    arcTabsState.pinnedDisplayMode = settings.pinnedDisplayMode || "grid";
 
     this.ensurePinTagSchema();
   }
@@ -76,7 +75,7 @@ export default class ArcTabsPlugin extends BasePlugin {
 
   private async ensurePinTagSchema() {
     const settings = this.getSettings();
-    const pinTagName = settings.pinTagName || 'ArcTab';
+    const pinTagName = settings.pinTagName || "ArcTab";
     if (!pinTagName) return;
     try {
       let tagBlock = (await orca.invokeBackend(
@@ -111,8 +110,10 @@ export default class ArcTabsPlugin extends BasePlugin {
       if (tagBlock) {
         const existingProps = tagBlock.properties || [];
         const hasSpaceProp = existingProps.some((p: any) => p.name === "Space");
-        const hasDisplayNameProp = existingProps.some((p: any) => p.name === "displayName");
-        
+        const hasDisplayNameProp = existingProps.some(
+          (p: any) => p.name === "displayName",
+        );
+
         const propsToAdd: any[] = [];
         if (!hasSpaceProp) {
           propsToAdd.push({
@@ -125,9 +126,9 @@ export default class ArcTabsPlugin extends BasePlugin {
           propsToAdd.push({
             name: "displayName",
             type: 1,
-            });
+          });
         }
-        
+
         if (propsToAdd.length > 0) {
           await orca.commands.invokeEditorCommand(
             "core.editor.setProperties",
@@ -144,8 +145,8 @@ export default class ArcTabsPlugin extends BasePlugin {
 
   async unload() {
     // Unregister everything
-    orca.panels.unregisterPanel('arcTabs');
-    orca.commands.unregisterCommand('arc-tabs.openSidebar');
+    orca.panels.unregisterPanel("arcTabs");
+    orca.commands.unregisterCommand("arc-tabs.openSidebar");
   }
 
   // Render the headbar button
@@ -154,8 +155,8 @@ export default class ArcTabsPlugin extends BasePlugin {
     return (
       <Button
         variant="plain"
-        title={t('arc-tabs.description')}
-        onClick={() => orca.commands.invokeCommand('arc-tabs.openSidebar')}
+        title={t("arc-tabs.description")}
+        onClick={() => orca.commands.invokeCommand("arc-tabs.openSidebar")}
       >
         <i className="ti ti-folders" style={{ fontSize: "16px" }} />
       </Button>
@@ -165,8 +166,8 @@ export default class ArcTabsPlugin extends BasePlugin {
   getDefaultSettings() {
     return {
       ...super.getDefaultSettings(),
-      pinTagName: 'ArcTab',
-      pinnedDisplayMode: 'grid'
+      pinTagName: "ArcTab",
+      pinnedDisplayMode: "grid",
     };
   }
 
@@ -179,7 +180,7 @@ export default class ArcTabsPlugin extends BasePlugin {
             description={t("arc-tabs.tagDescription")}
           >
             <orca.components.Input
-              value={settings.pinTagName || 'ArcTab'}
+              value={settings.pinTagName || "ArcTab"}
               onChange={(e) => updateSettings({ pinTagName: e.target.value })}
               placeholder="ArcTab"
             />
@@ -189,12 +190,14 @@ export default class ArcTabsPlugin extends BasePlugin {
             description={t("arc-tabs.layoutDescription")}
           >
             <orca.components.Select
-              selected={[settings.pinnedDisplayMode || 'grid']}
+              selected={[settings.pinnedDisplayMode || "grid"]}
               options={[
-                { value: 'grid', label: t('arc-tabs.layoutGrid') },
-                { value: 'list', label: t('arc-tabs.layoutList') }
+                { value: "grid", label: t("arc-tabs.layoutGrid") },
+                { value: "list", label: t("arc-tabs.layoutList") },
               ]}
-              onChange={(selected) => updateSettings({ pinnedDisplayMode: selected[0] })}
+              onChange={(selected) =>
+                updateSettings({ pinnedDisplayMode: selected[0] })
+              }
               width="100%"
             />
           </SettingsItem>
