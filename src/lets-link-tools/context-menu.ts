@@ -85,26 +85,41 @@ export function injectContextMenu(logger: any): ContextMenuInjector {
 
       const fragment = document.createDocumentFragment();
 
+      // 关闭菜单的辅助函数
+      const closeMenu = () => {
+        menu.style.display = "none";
+        injectedMenu = null;
+      };
+
       // 注入菜单项
       if (hasRef) {
         const refToLink = createMenuItem(
           "ti ti-link",
           "转换为块链接",
-          () => executeRefToLink([blockId])
+          async () => {
+            await executeRefToLink([blockId]);
+            closeMenu();
+          }
         );
         fragment.appendChild(refToLink);
 
         const refToTextPin = createMenuItem(
           "ti ti-pin",
           "转换为文本📌",
-          () => executeRefToTextPin([blockId])
+          async () => {
+            await executeRefToTextPin([blockId]);
+            closeMenu();
+          }
         );
         fragment.appendChild(refToTextPin);
 
         const refToPin = createMenuItem(
           "ti ti-pin-filled",
           "转换为📌",
-          () => executeRefToPin([blockId])
+          async () => {
+            await executeRefToPin([blockId]);
+            closeMenu();
+          }
         );
         fragment.appendChild(refToPin);
       }
@@ -113,7 +128,10 @@ export function injectContextMenu(logger: any): ContextMenuInjector {
         const linkToRef = createMenuItem(
           "ti ti-blockquote",
           "转换为块引用",
-          () => executeLinkToRef([blockId])
+          async () => {
+            await executeLinkToRef([blockId]);
+            closeMenu();
+          }
         );
         fragment.appendChild(linkToRef);
       }
