@@ -238,7 +238,8 @@
   z-index: 1;
 }
 
-.arc-tab-grid-item:hover .arc-tab-grid-unpin {
+.arc-tab-grid-item:hover .arc-tab-grid-unpin,
+.arc-tab-grid-item.active .arc-tab-grid-unpin {
   opacity: 1;
 }
 
@@ -324,7 +325,8 @@
   opacity: 0;
 }
 
-.arc-tab-item:hover .arc-tab-action-btn {
+.arc-tab-item:hover .arc-tab-action-btn,
+.arc-tab-item.active .arc-tab-action-btn {
   opacity: 1;
 }
 

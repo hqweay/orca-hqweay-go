@@ -169,7 +169,7 @@ export const TabItem: React.FC<TabItemProps> = ({
               {initialText}
             </span>
           )}
-          {isPinned && isHovered && (
+          {isPinned && (isActive || isHovered) && (
             <span
               className="arc-tab-grid-unpin"
               title={t("arc-tabs.unpin")}
@@ -215,7 +215,7 @@ export const TabItem: React.FC<TabItemProps> = ({
           </button>
         ) : (
           <div className="arc-tab-right-zone">
-            {isHovered ? (
+            {isActive || isHovered ? (
               <div
                 className="arc-tab-actions"
                 onClick={(e) => e.stopPropagation()}
@@ -235,8 +235,6 @@ export const TabItem: React.FC<TabItemProps> = ({
                   <i className="ti ti-x" />
                 </button>
               </div>
-            ) : isActive ? (
-              <div className="arc-tab-active-dot" />
             ) : null}
           </div>
         )}
