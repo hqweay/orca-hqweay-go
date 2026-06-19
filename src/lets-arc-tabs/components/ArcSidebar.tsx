@@ -106,34 +106,56 @@ export const ArcSidebar: React.FC = () => {
 
   const containerRef = React.useRef<HTMLDivElement>(null);
 
-  // Apply strict width constraint based on plugin settings
+  // Apply strict width constraint based on plugin settings (Extreme Performance Mode)
   useEffect(() => {
-    if (containerRef.current) {
-      const parent =
-        (containerRef.current.closest(".orca-panel") as HTMLElement) ||
-        containerRef.current.parentElement;
-      if (parent) {
-        // Read user's preferred sidebar width
-        const width = arcTabsPluginInstance?.getSettings()?.sidebarWidth || 250;
+    if (!containerRef.current) return;
+
+    const parent =
+      (containerRef.current.closest(".orca-panel") as HTMLElement) ||
+      containerRef.current.parentElement;
+    if (!parent) return;
+
+    const wrapper = (parent.closest(".SplitPane") as HTMLElement) || parent;
+    
+    // Helper function to enforce width
+    const enforceWidth = () => {
+      const width = arcTabsPluginInstance?.getSettings()?.sidebarWidth || 250;
+      
+      const applyStyles = (el: HTMLElement) => {
+        const currentFlex = el.style.getPropertyValue("flex");
+        const expectedFlex = `0 0 ${width}px`;
+        const hasImportant = el.style.getPropertyPriority("flex") === "important";
         
-        // Find the split-pane wrapper which controls the flex
-        const wrapper = (parent.closest(".SplitPane") as HTMLElement) || parent;
-
-        // Strictly lock the dimensions
-        wrapper.style.setProperty("flex", `0 0 ${width}px`, "important");
-        wrapper.style.setProperty("width", `${width}px`, "important");
-        wrapper.style.setProperty("min-width", `${width}px`, "important");
-        wrapper.style.setProperty("max-width", `${width}px`, "important");
-
-        if (parent.style) {
-          parent.style.setProperty("flex", `0 0 ${width}px`, "important");
-          parent.style.setProperty("width", `${width}px`, "important");
-          parent.style.setProperty("min-width", `${width}px`, "important");
-          parent.style.setProperty("max-width", `${width}px`, "important");
+        // Only update if it's actually different to avoid infinite observer loops
+        if (currentFlex !== expectedFlex || !hasImportant) {
+          el.style.setProperty("flex", expectedFlex, "important");
+          el.style.setProperty("width", `${width}px`, "important");
+          el.style.setProperty("min-width", `${width}px`, "important");
+          el.style.setProperty("max-width", `${width}px`, "important");
         }
-      }
+      };
+
+      applyStyles(wrapper);
+      if (parent.style) applyStyles(parent);
+    };
+
+    // 1. Enforce immediately on mount
+    enforceWidth();
+
+    // 2. Setup MutationObserver to fiercely guard the style against the layout engine
+    const observer = new MutationObserver(() => {
+      enforceWidth();
+    });
+
+    observer.observe(wrapper, { attributes: true, attributeFilter: ["style"] });
+    if (parent !== wrapper) {
+      observer.observe(parent, { attributes: true, attributeFilter: ["style"] });
     }
-  }, [state.panels]);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []); // <-- Empty dependency array! Only runs once on mount!
 
   const openBlockIds = useMemo(
     () => getActiveBlocks(state.panels).map(Number),
