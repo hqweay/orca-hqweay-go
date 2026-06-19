@@ -368,7 +368,7 @@ export const ArcSidebar: React.FC = () => {
         </div>
 
         {/* Today Tabs Section */}
-        <div className="arc-sidebar-section">
+        <div className="arc-sidebar-section arc-today-tabs">
           <div className="arc-sidebar-section-title">{t("arc-tabs.today")}</div>
           {todayTabs.map((tab) => {
             const block = state.blocks[tab.id];
