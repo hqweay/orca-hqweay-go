@@ -6,7 +6,8 @@ interface ContextMenuInjector {
 
 export function injectContextMenu(
   logger: any,
-  openBrowser: (url: string, block: any) => Promise<void>
+  openBrowser: (url: string, block: any) => Promise<void>,
+  extractMetadata: (blockId: number) => Promise<void>
 ): ContextMenuInjector {
   let injectedMenu: HTMLElement | null = null;
 
@@ -69,15 +70,27 @@ export function injectContextMenu(
         injectedMenu = null;
       };
 
-      const menuItem = createMenuItem(
+      // 提取元数据
+      const extractItem = createMenuItem(
+        "ti ti-link",
+        t("Extract Link Metadata"),
+        async () => {
+          closeMenu();
+          await extractMetadata(blockId);
+        }
+      );
+      fragment.appendChild(extractItem);
+
+      // 在网页视图打开
+      const browserItem = createMenuItem(
         "ti ti-world",
         t("Metadata: Browser Mode"),
         async () => {
-          await openBrowser(url, block);
           closeMenu();
+          await openBrowser(url, block);
         }
       );
-      fragment.appendChild(menuItem);
+      fragment.appendChild(browserItem);
 
       // 插入到锚点之前（在转换选项之前）
       parentNode.insertBefore(fragment, anchorItem);

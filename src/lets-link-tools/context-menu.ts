@@ -96,8 +96,8 @@ export function injectContextMenu(logger: any): ContextMenuInjector {
           "ti ti-link",
           t("link-tools.convertToBlockLink"),
           async () => {
-            await executeRefToLink([blockId]);
             closeMenu();
+            await executeRefToLink([blockId]);
           }
         );
         fragment.appendChild(refToLink);
@@ -106,8 +106,8 @@ export function injectContextMenu(logger: any): ContextMenuInjector {
           "ti ti-pin",
           t("link-tools.convertToTextPin"),
           async () => {
-            await executeRefToTextPin([blockId]);
             closeMenu();
+            await executeRefToTextPin([blockId]);
           }
         );
         fragment.appendChild(refToTextPin);
@@ -116,8 +116,8 @@ export function injectContextMenu(logger: any): ContextMenuInjector {
           "ti ti-pin-filled",
           t("link-tools.convertToPin"),
           async () => {
-            await executeRefToPin([blockId]);
             closeMenu();
+            await executeRefToPin([blockId]);
           }
         );
         fragment.appendChild(refToPin);
@@ -128,8 +128,8 @@ export function injectContextMenu(logger: any): ContextMenuInjector {
           "ti ti-blockquote",
           t("link-tools.convertToBlockRef"),
           async () => {
-            await executeLinkToRef([blockId]);
             closeMenu();
+            await executeLinkToRef([blockId]);
           }
         );
         fragment.appendChild(linkToRef);

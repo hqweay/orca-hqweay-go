@@ -153,7 +153,13 @@ export default class LinkMetadataPlugin extends BasePlugin {
     // 注入右键菜单
     this.contextMenuInjector = injectContextMenu(
       this.logger,
-      this.handleOpenBrowser.bind(this)
+      this.handleOpenBrowser.bind(this),
+      async (blockId: number) => {
+        await orca.commands.invokeCommand(
+          `${this.name}.extract-metadata`,
+          blockId,
+        );
+      }
     );
 
     this.logger.info(`${this.name} loaded.`);
