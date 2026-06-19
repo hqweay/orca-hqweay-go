@@ -48,7 +48,7 @@ export const TabItem: React.FC<TabItemProps> = ({
     const hasCustomIcon = icon && icon !== "📄";
     const displayIcon = hasCustomIcon ? icon : null;
     const initialText = title
-      ? String(title).trim().substring(0, 1).toUpperCase()
+      ? Array.from(String(title).trim())[0]?.toUpperCase() || "?"
       : "?";
 
     return (
