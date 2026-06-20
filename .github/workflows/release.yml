@@ -55,23 +55,20 @@ jobs:
       - name: Generate Release Body
         id: release_body
         run: |
-          npx conventional-changelog -p angular -i CHANGELOG.md -s -r 1
-          # The above command updates CHANGELOG.md, but we just want to extract the top entry.
-          # Actually, 'conventional-changelog' is hard to make output JUST the new entry cleanly to stdout without context.
-          # A better way for CI is using a dedicated action or script.
-          # But since we have `CHANGELOG.md` in the repo (committed by update-version.sh), we can try to parse it?
-          # Easier: Just use the git tag message or the commit message like before?
-          # User wants "changelog" as description.
-          # Let's try to grab the latest entry from CHANGELOG.md
-          # Assuming structure:
-          # ## [Version] ...
-          # content...
-          # ## [Old Version] ...
+          # 从 CHANGELOG.md 提取当前版本的更新日志
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "Extracting changelog for version: $VERSION"
           
-          # We can use awk to extract the first section.
-          awk '/^#+ \[/{if (found) exit; found=1; print; next} found {print}' CHANGELOG.md > release_body.md
+          # 使用 awk 提取当前版本的 changelog 条目
+          awk '/^## v'"$VERSION"'/{found=1; next} /^## v/{if(found) exit} found{print}' CHANGELOG.md > release_body.md
           
-          # Debug
+          # 如果提取失败，使用默认内容
+          if [ ! -s release_body.md ]; then
+            echo "## v${VERSION}" > release_body.md
+            echo "" >> release_body.md
+            echo "See [CHANGELOG.md](https://github.com/hqweay/orca-hqweay-go/blob/main/CHANGELOG.md) for details." >> release_body.md
+          fi
+          
           cat release_body.md
 
       - name: Release

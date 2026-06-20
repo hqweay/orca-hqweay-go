@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { t } from "@/libs/l10n";
-import { CHANGELOG } from "../changelog";
+import { parseChangelog } from "../libs/changelog-parser";
 import { SPONSOR_QR_BASE64 } from "../assets/sponsor-qr";
 import pkg from "../../package.json";
+import CHANGELOG_RAW from "../../CHANGELOG.md?raw";
 
 interface AboutModalProps {
   visible: boolean;
@@ -266,16 +267,18 @@ function AboutContent() {
 }
 
 function ChangelogContent() {
+  const changelog = useMemo(() => parseChangelog(CHANGELOG_RAW), []);
+
   return (
     <div>
-      {CHANGELOG.map((entry) => (
-        <div key={entry.version} style={{ marginBottom: "20px" }}>
+      {changelog.map((entry) => (
+        <div key={entry.version} style={{ marginBottom: "24px" }}>
           <div
             style={{
               display: "flex",
               alignItems: "center",
               gap: "8px",
-              marginBottom: "10px",
+              marginBottom: "12px",
             }}
           >
             <span
@@ -290,22 +293,35 @@ function ChangelogContent() {
             >
               v{entry.version}
             </span>
-            <span style={{ fontSize: "12px", opacity: 0.5 }}>{entry.date}</span>
           </div>
-          <ul
-            style={{
-              margin: 0,
-              paddingLeft: "20px",
-              fontSize: "13px",
-              lineHeight: "1.6",
-            }}
-          >
-            {entry.changes.map((change, idx) => (
-              <li key={idx} style={{ marginBottom: "4px" }}>
-                {change}
-              </li>
-            ))}
-          </ul>
+          {entry.sections.map((section, sIdx) => (
+            <div key={sIdx} style={{ marginBottom: "12px" }}>
+              <div
+                style={{
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  marginBottom: "6px",
+                  opacity: 0.8,
+                }}
+              >
+                {section.title}
+              </div>
+              <ul
+                style={{
+                  margin: 0,
+                  paddingLeft: "20px",
+                  fontSize: "13px",
+                  lineHeight: "1.6",
+                }}
+              >
+                {section.items.map((item, iIdx) => (
+                  <li key={iIdx} style={{ marginBottom: "4px" }}>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
       ))}
     </div>

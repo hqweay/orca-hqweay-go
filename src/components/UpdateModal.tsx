@@ -1,6 +1,6 @@
 import React from "react";
 import { t } from "@/libs/l10n";
-import { ChangelogEntry } from "../changelog";
+import { ChangelogEntry } from "../libs/changelog-parser";
 
 interface UpdateModalProps {
   visible: boolean;
@@ -73,14 +73,14 @@ export function UpdateModal({ visible, onClose, entries }: UpdateModalProps) {
           }}
         >
           {entries.map((entry) => (
-            <div key={entry.version} style={{ marginBottom: "20px" }}>
-              {/* 版本号和日期 */}
+            <div key={entry.version} style={{ marginBottom: "24px" }}>
+              {/* 版本号 */}
               <div
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: "8px",
-                  marginBottom: "10px",
+                  marginBottom: "12px",
                 }}
               >
                 <span
@@ -95,31 +95,37 @@ export function UpdateModal({ visible, onClose, entries }: UpdateModalProps) {
                 >
                   v{entry.version}
                 </span>
-                <span
-                  style={{
-                    fontSize: "12px",
-                    opacity: 0.5,
-                  }}
-                >
-                  {entry.date}
-                </span>
               </div>
 
-              {/* 变更列表 */}
-              <ul
-                style={{
-                  margin: 0,
-                  paddingLeft: "20px",
-                  fontSize: "13px",
-                  lineHeight: "1.6",
-                }}
-              >
-                {entry.changes.map((change, idx) => (
-                  <li key={idx} style={{ marginBottom: "4px" }}>
-                    {change}
-                  </li>
-                ))}
-              </ul>
+              {/* 分类变更 */}
+              {entry.sections.map((section, sIdx) => (
+                <div key={sIdx} style={{ marginBottom: "12px" }}>
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      marginBottom: "6px",
+                      opacity: 0.8,
+                    }}
+                  >
+                    {section.title}
+                  </div>
+                  <ul
+                    style={{
+                      margin: 0,
+                      paddingLeft: "20px",
+                      fontSize: "13px",
+                      lineHeight: "1.6",
+                    }}
+                  >
+                    {section.items.map((item, iIdx) => (
+                      <li key={iIdx} style={{ marginBottom: "4px" }}>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </div>
           ))}
         </div>

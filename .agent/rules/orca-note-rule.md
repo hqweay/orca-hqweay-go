@@ -105,21 +105,30 @@ export default class MyPlugin extends BasePlugin {
 最后：如无必要，勿增实体。使用中文回复。
 
 ## 7. 更新日志维护 (Changelog)
-每次修改代码后，**必须**同步更新 `src/changelog.ts`：
+使用 Changesets 管理版本和更新日志：
 
-1. **版本号**：从 `package.json` 的 `version` 字段读取
-2. **格式**：在 `CHANGELOG` 数组头部添加新条目
-3. **内容**：只写 1-3 条最重要的变更，使用简洁的中文描述
-4. **时机**：在完成所有代码修改后、提交前更新
+### 开发时
+```bash
+pnpm changeset          # 交互式填写变更描述
+# 生成 .changeset/xxx.md 文件
+```
 
-```typescript
-// 示例：添加新版本条目
-{
-  version: "2.12.0",  // 从 package.json 读取
-  date: "2026-06-20", // 当前日期
-  changes: [
-    "新增链接工具：右键块链接/引用时支持快捷转换",
-    "优化更新说明：使用弹窗替代外部链接",
-  ],
-}
+### 发版时
+```bash
+pnpm changeset version  # 自动更新 package.json + CHANGELOG.md
+./update-version.sh 2.13.0 "发布说明"
+```
+
+### CHANGELOG.md 格式
+```markdown
+## v2.13.0
+
+### New Features
+- 新增xxx功能
+
+### Improvements
+- 优化xxx
+
+### Bug Fixes
+- 修复xxx
 ```

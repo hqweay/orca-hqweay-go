@@ -5,10 +5,11 @@ import { BasePlugin } from "./libs/BasePlugin";
 import { SettingsBoard } from "./components/SettingsBoard";
 import { UpdateModal } from "./components/UpdateModal";
 import { AboutModal } from "./components/AboutModal";
-import { getChangesSince } from "./changelog";
+import { parseChangelog, getChangesSinceVersion } from "./libs/changelog-parser";
 import cloneDeep from "lodash.clonedeep";
 import { Logger, LogLevel } from "./libs/logger";
 import pkg from "../package.json";
+import CHANGELOG_RAW from "../CHANGELOG.md?raw";
 
 // Auto-scan sub-plugins. Test plugins (lets-test-*) are only included in development.
 const pluginModules: Record<string, any> =
@@ -96,7 +97,8 @@ export async function load(_name: string) {
   const currentVersion = pkg.version;
   const lastSeenVersion = await orca.plugins.getData(_name, "lastSeenVersion");
   if (lastSeenVersion !== currentVersion) {
-    const changes = getChangesSince(lastSeenVersion || "0.0.0");
+    const allChanges = parseChangelog(CHANGELOG_RAW);
+    const changes = getChangesSinceVersion(allChanges, lastSeenVersion || "0.0.0");
     orca.notify(
       "info",
       `恐龙工具箱已更新至版本 v${currentVersion}，共 ${changes.length} 个版本更新。点击查看详情`,
