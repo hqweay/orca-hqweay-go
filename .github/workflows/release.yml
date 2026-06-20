@@ -1,147 +1,128 @@
-name: Create Release on Tag Push
+name: Release
 
 on:
   push:
     tags:
-      - "*"
+      - "v*"
+
+# 并发控制：同一时间只运行一个 release
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+# 最小权限原则
+permissions:
+  contents: write
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
     steps:
-      # Checkout
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      # Install Node.js
-      - name: Install Node.js
-        uses: actions/setup-node@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
-          registry-url: "https://registry.npmjs.org"
+          node-version: 20
 
-        # Install pnpm
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        id: pnpm-install
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          version: 8
-          run_install: false
+          version: 9
 
-      # Get pnpm store directory
-      - name: Get pnpm store directory
+      - name: Get pnpm store
         id: pnpm-cache
         shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+        run: echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
 
-      # Setup pnpm cache
-      - name: Setup pnpm cache
-        uses: actions/cache@v3
+      - name: Cache pnpm
+        uses: actions/cache@v4
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-
 
-      # Install dependencies
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
-      # Build for production, 这一步会生成一个 package.zip
-      - name: Build for production
+      - name: Type check
+        run: pnpm tsc --noEmit
+
+      - name: Build
         run: pnpm build
 
-      - name: Generate Release Body
-        id: release_body
+      - name: Extract changelog
+        id: changelog
         run: |
-          # 从 CHANGELOG.md 提取当前版本的更新日志
-          VERSION=${GITHUB_REF#refs/tags/v}
-          echo "Extracting changelog for version: $VERSION"
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
           
-          # 使用 awk 提取当前版本的 changelog 条目
+          # 提取当前版本的 changelog
           awk '/^## v'"$VERSION"'/{found=1; next} /^## v/{if(found) exit} found{print}' CHANGELOG.md > release_body.md
           
-          # 如果提取失败，使用默认内容
           if [ ! -s release_body.md ]; then
-            echo "## v${VERSION}" > release_body.md
-            echo "" >> release_body.md
-            echo "See [CHANGELOG.md](https://github.com/hqweay/orca-hqweay-go/blob/main/CHANGELOG.md) for details." >> release_body.md
+            echo "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details." > release_body.md
           fi
-          
-          cat release_body.md
 
-      - name: Release
+      - name: Create Release
         uses: ncipollo/release-action@v1
         with:
-          owner: hqweay
-          repo: orca-hqweay-go
-          allowUpdates: true
-          artifactErrorsFailBuild: true
-          artifacts: "package.zip"
-          token: ${{ secrets.RELEASE_TOKEN }}
-          prerelease: false
+          tag: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          artifacts: "build/dist/package.zip"
           bodyFile: release_body.md
+          token: ${{ secrets.RELEASE_TOKEN }}
 
-      - name: Auto Create PR to Plugin Registry
-        if: endsWith(github.ref, '.0')
+  # 可选：自动创建 PR 到插件市集
+  update-registry:
+    needs: release
+    if: endsWith(github.ref_name, '.0')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Update plugin registry
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          UPSTREAM_REPO: sethyuan/awesome-orcanote
-          FORK_REPO: hqweay/awesome-orcanote
-          PLUGIN_ID: orca-hqweay-go
         run: |
-          # 1. 提取版本号
-          VERSION=${GITHUB_REF#refs/tags/}
-          VERSION=${VERSION#v}
-          echo "Deploying version: ${VERSION}"
-
-          # 2. Clone Fork 仓库
-          git clone https://${GH_TOKEN}@github.com/${FORK_REPO}.git registry
+          VERSION=${GITHUB_REF_NAME#v}
+          
+          git clone https://${GH_TOKEN}@github.com/hqweay/awesome-orcanote.git registry
           cd registry
-
-          # 3. 配置 Git
+          
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # 4. 同步官方最新代码并切分支
-          git remote add upstream https://github.com/${UPSTREAM_REPO}.git
+          
+          git remote add upstream https://github.com/sethyuan/awesome-orcanote.git
           git fetch upstream
-          BRANCH_NAME="update-${PLUGIN_ID}-v${VERSION}"
+          
+          BRANCH_NAME="update-orca-hqweay-go-v${VERSION}"
           git checkout -B ${BRANCH_NAME} upstream/main
-
-          # 5. 更新 plugins.json 数据
+          
+          # 更新 plugins.json
           node -e "
             const fs = require('fs');
-            const file = 'plugins.json';
-            const data = JSON.parse(fs.readFileSync(file, 'utf8'));
-            const plugin = data.find(p => p.id === '${PLUGIN_ID}');
+            const data = JSON.parse(fs.readFileSync('plugins.json', 'utf8'));
+            const plugin = data.find(p => p.id === 'orca-hqweay-go');
             if (plugin) {
               plugin.version = '${VERSION}';
               plugin.updated = new Date().toISOString();
-              plugin.zip = 'https://github.com/hqweay/orca-hqweay-go/releases/download/v${VERSION}/package.zip';
-              fs.writeFileSync(file, JSON.stringify(data, null, 2) + '\n');
-              console.log('Successfully updated plugins.json');
+              plugin.zip = 'https://github.com/${{ github.repository }}/releases/download/v${VERSION}/package.zip';
+              fs.writeFileSync('plugins.json', JSON.stringify(data, null, 2) + '\n');
             } else {
-              console.error('Plugin not found in registry!');
               process.exit(1);
             }
           "
-
-          # 6. 提交修改并 Push
+          
           git add plugins.json
-          git commit -m "chore: update ${PLUGIN_ID} to v${VERSION}"
-          git push -f origin ${BRANCH_NAME}
-
-          # 7. 组装 PR 内容并向官方仓库发起 PR
-          echo "🚀 Automated PR to update **${PLUGIN_ID}** to version **${VERSION}**." > pr_body.md
-          echo "" >> pr_body.md
-          echo "### 📝 Changelog:" >> pr_body.md
-          cat ../release_body.md >> pr_body.md
-
+          git commit -m "chore: update orca-hqweay-go to v${VERSION}"
+          git push origin ${BRANCH_NAME}
+          
           gh pr create \
-            --repo ${UPSTREAM_REPO} \
+            --repo sethyuan/awesome-orcanote \
             --head hqweay:${BRANCH_NAME} \
             --base main \
-            --title "Update plugin ${PLUGIN_ID} to v${VERSION}" \
-            --body-file pr_body.md
+            --title "Update orca-hqweay-go to v${VERSION}" \
+            --body "Automated PR to update plugin version."
