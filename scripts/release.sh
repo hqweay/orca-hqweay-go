@@ -2,6 +2,8 @@
 set -e
 
 # 恐龙工具箱发版工具
+# 配置：git remote 名称
+GIT_REMOTE="my"
 
 show_menu() {
     echo ""
@@ -98,7 +100,7 @@ do_release() {
     
     # 4. 打 tag 并推送
     git tag "v$NEW_VERSION"
-    git push origin main --tags
+    git push "$GIT_REMOTE" main --tags
     
     echo ""
     echo "✅ 已发布 v$NEW_VERSION"
