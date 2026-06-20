@@ -115,8 +115,11 @@ pnpm changeset          # 交互式填写变更描述
 
 ### 发版时
 ```bash
-pnpm changeset version  # 自动更新 package.json + CHANGELOG.md
-./update-version.sh 2.13.0 "发布说明"
+pnpm release            # 交互式发版工具
+# 1) 添加变更
+# 2) 预览变更
+# 3) 发布版本
+# 4) 退出
 ```
 
 ### CHANGELOG.md 格式
