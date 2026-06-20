@@ -107,6 +107,17 @@ export default class MyPlugin extends BasePlugin {
 ## 7. 更新日志维护 (Changelog)
 使用 Changesets 管理版本和更新日志：
 
+**【AI 注意事项】**：AI 绝不能直接修改 `CHANGELOG.md` 文件！
+如果 AI 完成了某些功能需要记录更新日志，请直接在 `.changeset/` 目录下创建一个随机命名的 Markdown 文件（例如 `.changeset/ai-update-xxx.md`）。文件内容格式必须如下：
+```markdown
+---
+"orca-hqweay-go": patch  # 或者 minor, major
+---
+
+- [你的变更描述]
+```
+或者，AI 也可以在回复中提醒用户手动运行 `pnpm changeset` 来生成。
+
 ### 开发时
 ```bash
 pnpm changeset          # 交互式填写变更描述
