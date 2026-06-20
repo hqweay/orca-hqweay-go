@@ -5,7 +5,10 @@ import { BasePlugin } from "./libs/BasePlugin";
 import { SettingsBoard } from "./components/SettingsBoard";
 import { UpdateModal } from "./components/UpdateModal";
 import { AboutModal } from "./components/AboutModal";
-import { parseChangelog, getChangesSinceVersion } from "./libs/changelog-parser";
+import {
+  parseChangelog,
+  getChangesSinceVersion,
+} from "./libs/changelog-parser";
 import cloneDeep from "lodash.clonedeep";
 import { Logger, LogLevel } from "./libs/logger";
 import pkg from "../package.json";
@@ -41,7 +44,7 @@ function showUpdateModal(entries: any[]) {
       visible: true,
       onClose: handleClose,
       entries,
-    })
+    }),
   );
 }
 
@@ -64,7 +67,7 @@ function showAboutModal() {
     React.createElement(AboutModal, {
       visible: true,
       onClose: handleClose,
-    })
+    }),
   );
 }
 
@@ -98,7 +101,10 @@ export async function load(_name: string) {
   const lastSeenVersion = await orca.plugins.getData(_name, "lastSeenVersion");
   if (lastSeenVersion !== currentVersion) {
     const allChanges = parseChangelog(CHANGELOG_RAW);
-    const changes = getChangesSinceVersion(allChanges, lastSeenVersion || "0.0.0");
+    const changes = getChangesSinceVersion(
+      allChanges,
+      lastSeenVersion || "0.0.0",
+    );
     orca.notify(
       "info",
       `恐龙工具箱已更新至版本 v${currentVersion}，共 ${changes.length} 个版本更新。点击查看详情`,
