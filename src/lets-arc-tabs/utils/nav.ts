@@ -29,12 +29,24 @@ export const findMainPanelId = (panel: any, activePanelId?: string | null): stri
       }
     }
     
-    for (let i = panel.children.length - 1; i >= 0; i--) {
+    for (let i = 0; i < panel.children.length; i++) {
       const id = findMainPanelId(panel.children[i], activePanelId);
       if (id) return id;
     }
   }
   return null;
+};
+
+export const isEditorPanel = (panel: any, panelId: string): boolean => {
+  if (panel.id === panelId) {
+    return panel.view === 'block' || panel.view === 'journal';
+  }
+  if (panel.children && Array.isArray(panel.children)) {
+    for (const child of panel.children) {
+      if (isEditorPanel(child, panelId)) return true;
+    }
+  }
+  return false;
 };
 
 export const getActiveBlocks = (panel: any): string[] => {

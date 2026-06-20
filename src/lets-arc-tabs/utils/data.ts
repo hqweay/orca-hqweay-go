@@ -13,6 +13,7 @@ export const arcTabsState = proxy({
   pinnedBlocks: [] as any[],
   pinnedDisplayMode: "grid" as "grid" | "list",
   spaceChoices: [] as string[],
+  lastActiveEditorPanelId: null as string | null,
   recentlyVisited: (() => {
     try {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);

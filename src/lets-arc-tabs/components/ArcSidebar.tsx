@@ -7,6 +7,7 @@ import {
   getActiveBlocks,
   findMainPanelId,
   getFocusedBlock,
+  isEditorPanel,
 } from "../utils/nav";
 import { arcTabsState, DEFAULT_SPACE } from "../utils/data";
 import { pinBlock, loadPinnedBlocks } from "../utils/pin";
@@ -95,6 +96,12 @@ export const ArcSidebar: React.FC = () => {
     () => getSpaces(),
     [localArcTabsState.pinnedBlocks, localArcTabsState.spaceChoices],
   );
+
+  useEffect(() => {
+    if (state.activePanel && isEditorPanel(state.panels, state.activePanel)) {
+      arcTabsState.lastActiveEditorPanelId = state.activePanel;
+    }
+  }, [state.activePanel, state.panels]);
 
   useEffect(() => {
     loadPinnedBlocks();
@@ -220,7 +227,8 @@ export const ArcSidebar: React.FC = () => {
   }, [focusedBlock, isBlockCached]);
 
   const handleTabClick = (blockId: number) => {
-    const mainPanelId = findMainPanelId(state.panels, state.activePanel);
+    const activeEditor = localArcTabsState.lastActiveEditorPanelId || state.activePanel;
+    const mainPanelId = findMainPanelId(state.panels, activeEditor);
     if (mainPanelId) {
       orca.nav.goTo("block", { blockId }, mainPanelId);
       orca.nav.switchFocusTo(mainPanelId);
