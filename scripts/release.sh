@@ -13,7 +13,9 @@ show_menu() {
     echo "  1) 添加变更 (changeset)"
     echo "  2) 预览变更"
     echo "  3) 发布版本"
-    echo "  4) 退出"
+    echo "  4) 更新市集"
+    echo "  5) 发布并更新市集 (一键)"
+    echo "  6) 退出"
     echo ""
 }
 
@@ -107,10 +109,53 @@ do_release() {
     echo "🔗 https://github.com/hqweay/orca-hqweay-go/releases/tag/v$NEW_VERSION"
 }
 
+update_registry() {
+    CURRENT_VERSION=$(jq -r '.version' package.json)
+    echo ""
+    echo "📦 当前版本: v$CURRENT_VERSION"
+    echo ""
+    read -p "确认更新市集？[y/N] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "已取消"
+        return 0
+    fi
+    
+    echo ""
+    echo "🚀 正在触发市集更新..."
+    
+    # 使用 gh CLI 触发 workflow_dispatch
+    if command -v gh &> /dev/null; then
+        gh workflow run update-registry.yml -f version="$CURRENT_VERSION"
+        echo "✅ 已触发市集更新 workflow"
+        echo "🔗 https://github.com/hqweay/orca-hqweay-go/actions/workflows/update-registry.yml"
+    else
+        echo "❌ 未安装 gh CLI"
+        echo "请手动触发: https://github.com/hqweay/orca-hqweay-go/actions/workflows/update-registry.yml"
+    fi
+}
+
+do_release_and_registry() {
+    # 先发布
+    do_release
+    if [ $? -eq 0 ]; then
+        # 发布成功后更新市集
+        echo ""
+        echo "📦 正在更新市集..."
+        if command -v gh &> /dev/null; then
+            CURRENT_VERSION=$(jq -r '.version' package.json)
+            gh workflow run update-registry.yml -f version="$CURRENT_VERSION"
+            echo "✅ 已触发市集更新 workflow"
+        else
+            echo "⚠️ 未安装 gh CLI，请手动触发市集更新"
+        fi
+    fi
+}
+
 # 主循环
 while true; do
     show_menu
-    read -p "请选择 [1-4]: " choice
+    read -p "请选择 [1-6]: " choice
     
     case $choice in
         1)
@@ -123,6 +168,12 @@ while true; do
             do_release
             ;;
         4)
+            update_registry
+            ;;
+        5)
+            do_release_and_registry
+            ;;
+        6)
             echo "👋 再见!"
             exit 0
             ;;
