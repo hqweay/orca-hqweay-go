@@ -1,6 +1,14 @@
-## [2.11.3](/compare/v2.11.2...v2.11.3) (2026-06-19)
+# [2.12.0](/compare/v2.11.3...v2.12.0) (2026-06-20)
 
-Update to 2.11.3
+Update to 2.12.0
+
+
+### Features
+
+* add About modal with changelog 1f66e09
+* implement in-app update notification modal displaying version changelogs 921011f
+
+## [2.11.3](/compare/v2.11.2...v2.11.3) (2026-06-19)
 
 
 ### Features
