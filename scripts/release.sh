@@ -3,7 +3,7 @@ set -e
 
 # 恐龙工具箱发版工具
 # 配置：git remote 名称
-GIT_REMOTE="my"
+GIT_REMOTE="private"
 
 show_menu() {
     echo ""

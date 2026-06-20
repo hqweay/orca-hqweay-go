@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.12.3
+
+### Patch Changes
+
+- 优化发版流程
+
 ## 2.12.2
 
 ### Patch Changes
