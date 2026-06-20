@@ -105,14 +105,17 @@ export async function load(_name: string) {
       allChanges,
       lastSeenVersion || "0.0.0",
     );
-    orca.notify(
-      "info",
-      `恐龙工具箱已更新至版本 v${currentVersion}，共 ${changes.length} 个版本更新。点击查看详情`,
-      {
-        title: "🎉 新版本更新",
-        action: () => showUpdateModal(changes),
-      },
-    );
+    // 延迟 3 秒显示，不打断用户工作流
+    setTimeout(() => {
+      orca.notify(
+        "info",
+        `恐龙工具箱已更新至版本 v${currentVersion}，共 ${changes.length} 个版本更新。点击查看详情`,
+        {
+          title: "🎉 新版本更新",
+          action: () => showUpdateModal(changes),
+        },
+      );
+    }, 3000);
     await orca.plugins.setData(_name, "lastSeenVersion", currentVersion);
   }
 
