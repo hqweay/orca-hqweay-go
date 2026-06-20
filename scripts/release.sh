@@ -5,12 +5,24 @@ set -e
 # 配置：git remote 名称
 GIT_REMOTE="private"
 
+# 统计 changeset 数量
+count_changesets() {
+    local count=0
+    for file in .changeset/*.md; do
+        [ "$file" = ".changeset/README.md" ] && continue
+        [ ! -f "$file" ] && continue
+        count=$((count + 1))
+    done
+    echo $count
+}
+
+# 显示菜单
 show_menu() {
     echo ""
     echo "🦕 恐龙工具箱发版工具"
     echo "========================"
     echo ""
-    echo "  1) 添加变更 (changeset)"
+    echo "  1) 添加变更"
     echo "  2) 预览变更"
     echo "  3) 发布版本"
     echo "  4) 更新市集"
@@ -19,6 +31,157 @@ show_menu() {
     echo ""
 }
 
+# 智能添加变更
+smart_add_changeset() {
+    CHANGESET_COUNT=$(count_changesets)
+    
+    if [ $CHANGESET_COUNT -gt 0 ]; then
+        # 有 changeset，显示并询问
+        echo ""
+        echo "📋 已有 $CHANGESET_COUNT 个 changeset:"
+        preview_changes
+        echo ""
+        echo "  1) 继续添加"
+        echo "  2) 预览"
+        echo "  3) 返回"
+        echo ""
+        read -p "请选择 [1-3]: " sub_choice
+        case $sub_choice in
+            1) pnpm changeset ;;
+            2) preview_changes ;;
+            *) return 0 ;;
+        esac
+    else
+        # 无 changeset，询问生成方式
+        echo ""
+        echo "📋 没有 changeset 文件"
+        echo ""
+        echo "  1) 手动添加 (changeset)"
+        echo "  2) 从 commit 生成"
+        echo "  3) 返回"
+        echo ""
+        read -p "请选择 [1-3]: " sub_choice
+        case $sub_choice in
+            1) pnpm changeset ;;
+            2) generate_from_commits ;;
+            *) return 0 ;;
+        esac
+    fi
+}
+
+# 从 commit 生成 changeset
+generate_from_commits() {
+    echo ""
+    echo "📝 从 commit 生成 changeset..."
+    
+    # 获取上次 tag
+    LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+    
+    if [ -z "$LAST_TAG" ]; then
+        echo "没有找到 tag，将使用所有 commit"
+        COMMITS=$(git log --oneline --no-merges)
+    else
+        echo "上次发版: $LAST_TAG"
+        COMMITS=$(git log ${LAST_TAG}..HEAD --oneline --no-merges)
+    fi
+    
+    if [ -z "$COMMITS" ]; then
+        echo "没有新的 commit"
+        return 0
+    fi
+    
+    echo ""
+    echo "📋 待处理的 commit:"
+    echo "$COMMITS" | head -10
+    
+    # 解析 commit 类型
+    MINOR_COMMITS=""
+    PATCH_COMMITS=""
+    
+    while IFS= read -r line; do
+        MSG=$(echo "$line" | cut -d' ' -f2-)
+        if echo "$MSG" | grep -qE "^feat(\(.+\))?!?: "; then
+            DESC=$(echo "$MSG" | sed 's/^feat(\(.*\))\?!: //')
+            MINOR_COMMITS="${MINOR_COMMITS}- ${DESC}\n"
+        elif echo "$MSG" | grep -qE "^(fix|perf)(\(.+\))?!?: "; then
+            DESC=$(echo "$MSG" | sed 's/^[a-z]*\(([^)]*)\)\?!: //')
+            PATCH_COMMITS="${PATCH_COMMITS}- ${DESC}\n"
+        fi
+    done <<< "$COMMITS"
+    
+    # 确定版本类型
+    if [ -n "$MINOR_COMMITS" ]; then
+        BUMP_TYPE="minor"
+        echo ""
+        echo "📦 检测到新功能，将创建 minor 变更"
+    elif [ -n "$PATCH_COMMITS" ]; then
+        BUMP_TYPE="patch"
+        echo ""
+        echo "📦 检测到修复，将创建 patch 变更"
+    else
+        echo ""
+        echo "⚠️ 没有检测到 feat/fix/perf 类型的 commit"
+        echo "请手动添加 changeset"
+        pnpm changeset
+        return
+    fi
+    
+    # 显示将生成的内容
+    echo ""
+    echo "将生成以下 changeset:"
+    echo "------------------------"
+    if [ -n "$MINOR_COMMITS" ]; then
+        echo -e "$MINOR_COMMITS"
+    fi
+    if [ -n "$PATCH_COMMITS" ]; then
+        echo -e "$PATCH_COMMITS"
+    fi
+    echo "------------------------"
+    
+    echo ""
+    read -p "确认生成？[y/N] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "已取消"
+        return 0
+    fi
+    
+    # 生成 changeset 文件
+    TIMESTAMP=$(date +%s)
+    CHANGESET_FILE=".changeset/auto-${TIMESTAMP}.md"
+    
+    # 合并所有描述
+    ALL_DESCRIPTIONS=""
+    if [ -n "$MINOR_COMMITS" ]; then
+        ALL_DESCRIPTIONS=$(echo -e "$MINOR_COMMITS" | sed 's/^- //' | tr '\n' ';' | sed 's/;$//')
+    fi
+    if [ -n "$PATCH_COMMITS" ]; then
+        if [ -n "$ALL_DESCRIPTIONS" ]; then
+            ALL_DESCRIPTIONS="${ALL_DESCRIPTIONS};$(echo -e "$PATCH_COMMITS" | sed 's/^- //' | tr '\n' ';' | sed 's/;$//')"
+        else
+            ALL_DESCRIPTIONS=$(echo -e "$PATCH_COMMITS" | sed 's/^- //' | tr '\n' ';' | sed 's/;$//')
+        fi
+    fi
+    
+    # 将分号替换为逗号
+    FINAL_DESCRIPTION=$(echo "$ALL_DESCRIPTIONS" | sed 's/;/, /g')
+    
+    cat > "$CHANGESET_FILE" << EOF
+---
+"orca-hqweay-go": ${BUMP_TYPE}
+---
+
+${FINAL_DESCRIPTION}
+EOF
+    
+    echo ""
+    echo "✅ 已生成: $CHANGESET_FILE"
+    echo ""
+    echo "内容预览:"
+    cat "$CHANGESET_FILE"
+}
+
+# 预览变更
 preview_changes() {
     echo ""
     echo "📋 待发布变更:"
@@ -32,9 +195,7 @@ preview_changes() {
         CHANGESET_COUNT=$((CHANGESET_COUNT + 1))
         
         # 解析 changeset 文件
-        # 格式: ---\n"package": type\n---\n\n描述
         TYPE=$(grep -oE '(patch|minor|major)' "$file" | head -1)
-        # 获取第二个 --- 之后的内容，去除空行
         DESCRIPTION=$(awk 'BEGIN{c=0} /^---$/{c++; next} c>=2 && NF{print}' "$file")
         
         echo "• [$TYPE] $DESCRIPTION"
@@ -42,7 +203,6 @@ preview_changes() {
     
     if [ $CHANGESET_COUNT -eq 0 ]; then
         echo "没有待发布的变更"
-        echo "请先运行 '添加变更' 创建 changeset"
         return 0
     fi
     
@@ -53,19 +213,13 @@ preview_changes() {
     CURRENT_VERSION=$(jq -r '.version' package.json)
     echo ""
     echo "📦 当前版本: $CURRENT_VERSION"
-    echo "📦 下个版本: (运行 changeset version 后自动计算)"
     
     return 0
 }
 
+# 发布版本
 do_release() {
-    # 检查是否有 changeset
-    CHANGESET_COUNT=0
-    for file in .changeset/*.md; do
-        [ "$file" = ".changeset/README.md" ] && continue
-        [ ! -f "$file" ] && continue
-        CHANGESET_COUNT=$((CHANGESET_COUNT + 1))
-    done
+    CHANGESET_COUNT=$(count_changesets)
     
     if [ $CHANGESET_COUNT -eq 0 ]; then
         echo "❌ 没有待发布的变更"
@@ -88,7 +242,7 @@ do_release() {
     echo ""
     echo "🚀 开始发版..."
     
-    # 1. changeset version (自动更新 package.json + CHANGELOG.md)
+    # 1. changeset version
     pnpm changeset version
     
     # 2. 获取新版本号
@@ -109,6 +263,7 @@ do_release() {
     echo "🔗 https://github.com/hqweay/orca-hqweay-go/releases/tag/v$NEW_VERSION"
 }
 
+# 更新市集
 update_registry() {
     CURRENT_VERSION=$(jq -r '.version' package.json)
     echo ""
@@ -124,7 +279,6 @@ update_registry() {
     echo ""
     echo "🚀 正在触发市集更新..."
     
-    # 使用 gh CLI 触发 workflow_dispatch
     if command -v gh &> /dev/null; then
         gh workflow run update-registry.yml -f version="$CURRENT_VERSION"
         echo "✅ 已触发市集更新 workflow"
@@ -135,11 +289,10 @@ update_registry() {
     fi
 }
 
+# 发布并更新市集
 do_release_and_registry() {
-    # 先发布
     do_release
     if [ $? -eq 0 ]; then
-        # 发布成功后更新市集
         echo ""
         echo "📦 正在更新市集..."
         if command -v gh &> /dev/null; then
@@ -159,7 +312,7 @@ while true; do
     
     case $choice in
         1)
-            pnpm changeset
+            smart_add_changeset
             ;;
         2)
             preview_changes
