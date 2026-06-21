@@ -26,6 +26,58 @@ export const BlockNavPanel: React.FC = () => {
   const state = useSnapshot(blockNavState);
   const orcaState = useSnapshot(orca.state);
 
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const parent =
+      (containerRef.current.closest(".orca-panel") as HTMLElement) ||
+      containerRef.current.parentElement;
+    if (!parent) return;
+
+    const wrapper = (parent.closest(".SplitPane") as HTMLElement) || parent;
+
+    const enforceWidth = () => {
+      const width = 250;
+
+      const applyStyles = (el: HTMLElement) => {
+        const currentFlex = el.style.getPropertyValue("flex");
+        const expectedFlex = `0 0 ${width}px`;
+        const hasImportant =
+          el.style.getPropertyPriority("flex") === "important";
+
+        if (currentFlex !== expectedFlex || !hasImportant) {
+          el.style.setProperty("flex", expectedFlex, "important");
+          el.style.setProperty("width", `${width}px`, "important");
+          el.style.setProperty("min-width", `${width}px`, "important");
+          el.style.setProperty("max-width", `${width}px`, "important");
+        }
+      };
+
+      applyStyles(wrapper);
+      if (parent.style) applyStyles(parent);
+    };
+
+    enforceWidth();
+
+    const observer = new MutationObserver(() => {
+      enforceWidth();
+    });
+
+    observer.observe(wrapper, { attributes: true, attributeFilter: ["style"] });
+    if (parent !== wrapper) {
+      observer.observe(parent, {
+        attributes: true,
+        attributeFilter: ["style"],
+      });
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   const loadChildren = useCallback(async (blockId: number) => {
     const blocks = await getChildBlocks(blockId);
     const items = buildNavItems(blocks);
@@ -119,6 +171,7 @@ export const BlockNavPanel: React.FC = () => {
 
   return (
     <div
+      ref={containerRef}
       className={`block-nav-panel ${isDragOver ? "block-nav-panel-drag-over" : ""}`}
       {...dragHandlers}
     >

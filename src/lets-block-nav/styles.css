@@ -2,8 +2,11 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--orca-color-bg-1);
-  border-left: 1px solid var(--orca-color-border);
+  background-color: var(--orca-color-bg-1);
+  color: var(--orca-text-color);
+  font-family: inherit;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .block-nav-panel-drag-over {
@@ -12,7 +15,7 @@
 
 .block-nav-header {
   padding: 12px 16px;
-  border-bottom: 1px solid var(--orca-color-border);
+  border-bottom: 1px solid var(--orca-color-border-1);
 }
 
 .block-nav-header-title {
@@ -29,7 +32,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
-  border-bottom: 1px solid var(--orca-color-border);
+  border-bottom: 1px solid var(--orca-color-border-1);
   font-size: 12px;
 }
 
@@ -47,22 +50,24 @@
   gap: 4px;
   padding: 4px 8px;
   border-radius: 4px;
+  transition: all 0.2s ease;
 }
 
 .block-nav-toolbar-btn:hover {
-  background: var(--orca-color-bg-2);
+  background-color: var(--orca-color-bg-2);
   color: var(--orca-color-text-1);
 }
 
 .block-nav-toolbar-btn-danger:hover {
-  background: var(--orca-color-danger-1, rgba(239, 68, 68, 0.1));
+  background-color: var(--orca-color-danger-1, rgba(239, 68, 68, 0.1));
   color: var(--orca-color-danger-5, #ef4444);
 }
 
 .block-nav-content {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 0;
+  overflow-x: hidden;
+  padding: 12px 0;
 }
 
 .block-nav-empty {
@@ -83,26 +88,51 @@
 .block-nav-node {
   display: flex;
   align-items: center;
-  padding: 6px 12px;
+  padding: 6px 8px;
+  margin: 0 8px 2px 8px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: navNodeSlideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .block-nav-node:hover {
-  background: var(--orca-color-bg-2);
+  background-color: var(--orca-color-bg-2);
 }
 
 .block-nav-node-selected {
-  background: var(--orca-color-primary-1, rgba(59, 130, 246, 0.1));
+  background-color: var(--orca-color-primary-1);
+  color: var(--orca-color-primary-6);
 }
 
 .block-nav-node-selected:hover {
-  background: var(--orca-color-primary-2, rgba(59, 130, 246, 0.15));
+  background-color: var(--orca-color-primary-2);
 }
 
 .block-nav-node-drag-over {
-  background: var(--orca-color-primary-2, rgba(59, 130, 246, 0.15));
-  border-top: 2px solid var(--orca-color-primary-5, #3b82f6);
+  background-color: var(--orca-color-primary-1);
+  box-shadow: 0 0 0 2px var(--orca-color-primary-5);
+}
+
+@keyframes navNodeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-bottom: 0;
+    overflow: hidden;
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+    max-height: 36px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    margin-bottom: 2px;
+    overflow: hidden;
+  }
 }
 
 .block-nav-node-checkbox {
