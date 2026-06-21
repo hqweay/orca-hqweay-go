@@ -192,11 +192,12 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
     if (!searchRegex || !text) return text;
     
     const parts = text.split(searchRegex);
+    const lowerFilter = state.filterText.toLowerCase();
     
     return (
       <>
         {parts.map((part, i) => 
-          searchRegex.test(part) ? (
+          part.toLowerCase() === lowerFilter ? (
             <mark key={i} style={{ backgroundColor: 'rgba(255, 212, 0, 0.4)', color: 'inherit', borderRadius: '2px', padding: '0 2px' }}>
               {part}
             </mark>
