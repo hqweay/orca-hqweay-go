@@ -12,7 +12,6 @@ export interface BlockNavState {
   rootBlockId: number | null;
   items: BlockNavItem[];
   selectedIds: Set<number>;
-  expandedIds: Set<number>;
   lastActiveEditorPanelId: string | null;
 }
 
@@ -20,7 +19,6 @@ export const blockNavState = proxy<BlockNavState>({
   rootBlockId: null,
   items: [],
   selectedIds: new Set(),
-  expandedIds: new Set(),
   lastActiveEditorPanelId: null,
 });
 
@@ -28,7 +26,6 @@ export const setRootBlock = (blockId: number | null) => {
   blockNavState.rootBlockId = blockId;
   blockNavState.items = [];
   blockNavState.selectedIds = new Set();
-  blockNavState.expandedIds = new Set();
 };
 
 export const setItems = (items: BlockNavItem[]) => {
@@ -66,24 +63,4 @@ export const selectRange = (id: number) => {
 
 export const clearSelection = () => {
   blockNavState.selectedIds.clear();
-};
-
-export const toggleExpand = (id: number) => {
-  if (blockNavState.expandedIds.has(id)) {
-    blockNavState.expandedIds.delete(id);
-  } else {
-    blockNavState.expandedIds.add(id);
-  }
-};
-
-export const expandAll = () => {
-  blockNavState.items.forEach((item) => {
-    if (item.children && item.children.length > 0) {
-      blockNavState.expandedIds.add(item.id);
-    }
-  });
-};
-
-export const collapseAll = () => {
-  blockNavState.expandedIds.clear();
 };

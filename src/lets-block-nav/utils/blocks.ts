@@ -39,9 +39,9 @@ export const moveBlockToParent = async (
   position?: number
 ): Promise<void> => {
   await orca.commands.invokeEditorCommand(
-    "core.editor.moveBlock",
+    "core.editor.moveBlocks",
     null,
-    blockId,
+    [blockId],
     newParentId,
     position ?? "lastChild"
   );

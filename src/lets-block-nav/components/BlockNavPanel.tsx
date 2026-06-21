@@ -6,8 +6,6 @@ import {
   setRootBlock,
   setItems,
   clearSelection,
-  expandAll,
-  collapseAll,
 } from "../utils/state";
 import {
   getCurrentBlockId,
@@ -186,16 +184,6 @@ export const BlockNavPanel: React.FC = () => {
       </div>
 
       <div className="block-nav-toolbar">
-        <div className="block-nav-toolbar-actions">
-          <span onClick={expandAll} className="block-nav-toolbar-btn">
-            <i className="ti ti-layout-bottombar-expand" />{" "}
-            {t("block-nav.expand-all")}
-          </span>
-          <span onClick={collapseAll} className="block-nav-toolbar-btn">
-            <i className="ti ti-layout-topbar-collapse" />{" "}
-            {t("block-nav.collapse-all")}
-          </span>
-        </div>
         {state.selectedIds.size > 0 && (
           <div className="block-nav-toolbar-selection">
             <span onClick={clearSelection} className="block-nav-toolbar-btn">

@@ -5,7 +5,6 @@ import {
   blockNavState,
   toggleSelect,
   selectRange,
-  toggleExpand,
   BlockNavItem,
 } from "../utils/state";
 
@@ -22,7 +21,6 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
 }) => {
   const state = useSnapshot(blockNavState);
   const isSelected = state.selectedIds.has(item.id);
-  const isExpanded = state.expandedIds.has(item.id);
   const hasChildren = item.children && item.children.length > 0;
 
   const [isDragOver, setIsDragOver] = React.useState(false);
@@ -49,15 +47,6 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
     },
     [item.id]
   );
-
-  const handleExpandClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      toggleExpand(item.id);
-    },
-    [item.id]
-  );
-
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -125,14 +114,6 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
       <div className="block-nav-node-checkbox" onClick={handleCheckboxChange}>
         <i className={isSelected ? "ti ti-checkbox" : "ti ti-square"} />
       </div>
-
-      {hasChildren ? (
-        <div className="block-nav-node-expand" onClick={handleExpandClick}>
-          <i className={isExpanded ? "ti ti-caret-down" : "ti ti-caret-right"} />
-        </div>
-      ) : (
-        <div className="block-nav-node-expand" />
-      )}
 
       <div className="block-nav-node-content">
         <span className="block-nav-node-title">{item.text}</span>
