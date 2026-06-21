@@ -20,7 +20,7 @@ export default class ArcTabsPlugin extends BasePlugin {
     // Register a command to open the panel
     orca.commands.registerCommand(
       "arc-tabs.openSidebar",
-      () => {
+      (overrideSide?: "left" | "right") => {
         // Find if it's already open
         const findPanelWithView = (panel: any, viewName: string): any => {
           if (panel.view === viewName) return panel;
@@ -37,18 +37,22 @@ export default class ArcTabsPlugin extends BasePlugin {
         if (existingPanel) {
           orca.nav.close(existingPanel.id);
         } else {
-          const getLeftMostPanelId = (panel: any): string => {
+          const defaultSide = this.getSettings()?.sidebarPosition || "left";
+          const side = overrideSide || defaultSide;
+
+          const getTargetPanelId = (panel: any, targetSide: "left" | "right"): string => {
             if (panel.view) return panel.id;
             if (panel.children && panel.children.length > 0) {
-              return getLeftMostPanelId(panel.children[0]);
+              const childIndex = targetSide === "left" ? 0 : panel.children.length - 1;
+              return getTargetPanelId(panel.children[childIndex], targetSide);
             }
             return panel.id;
           };
 
-          const targetPanelId = orca.state.panels ? getLeftMostPanelId(orca.state.panels) : orca.state.activePanel;
+          const targetPanelId = orca.state.panels ? getTargetPanelId(orca.state.panels, side) : orca.state.activePanel;
           if (!targetPanelId) return;
 
-          const newPanelId = orca.nav.addTo(targetPanelId, "left", {
+          const newPanelId = orca.nav.addTo(targetPanelId, side, {
             view: "arcTabs",
             viewArgs: {},
             viewState: {},
@@ -59,7 +63,7 @@ export default class ArcTabsPlugin extends BasePlugin {
             const width = arcTabsPluginInstance?.getSettings()?.sidebarWidth || 250;
             // Synchronously update layout state to avoid initial flash 
             // from default equal-split calculation
-            orca.nav.changeSizes(newPanelId, [width, window.innerWidth - width]);
+            orca.nav.changeSizes(newPanelId, side === "left" ? [width, window.innerWidth - width] : [window.innerWidth - width, width]);
           }
         }
       },
@@ -85,7 +89,20 @@ export default class ArcTabsPlugin extends BasePlugin {
       this.name,
       "ti ti-folders",
       t("arc-tabs.description"),
-      () => orca.commands.invokeCommand("arc-tabs.openSidebar")
+      (e: MouseEvent) => {
+        const defaultSide = this.getSettings()?.sidebarPosition || "left";
+        const oppositeSide = defaultSide === "left" ? "right" : "left";
+        if (e.shiftKey) {
+          orca.commands.invokeCommand("arc-tabs.openSidebar", oppositeSide);
+        } else {
+          orca.commands.invokeCommand("arc-tabs.openSidebar");
+        }
+      },
+      (e: MouseEvent) => {
+        const defaultSide = this.getSettings()?.sidebarPosition || "left";
+        const oppositeSide = defaultSide === "left" ? "right" : "left";
+        orca.commands.invokeCommand("arc-tabs.openSidebar", oppositeSide);
+      }
     );
 
     const settings = this.getSettings();
@@ -233,6 +250,22 @@ export default class ArcTabsPlugin extends BasePlugin {
               ]}
               onChange={(selected) =>
                 updateSettings({ pinnedDisplayMode: selected[0] })
+              }
+              width="100%"
+            />
+          </SettingsItem>
+          <SettingsItem
+            label={t("arc-tabs.sidebarPosition") || "Sidebar Position"}
+            description={t("arc-tabs.sidebarPositionDesc") || "Default side to open the Arc Tabs panel. Right-click the button to open on the opposite side."}
+          >
+            <orca.components.Select
+              selected={[settings.sidebarPosition || "left"]}
+              options={[
+                { value: "left", label: "Left" },
+                { value: "right", label: "Right" },
+              ]}
+              onChange={(selected) =>
+                updateSettings({ sidebarPosition: selected[0] })
               }
               width="100%"
             />

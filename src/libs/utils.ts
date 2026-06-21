@@ -143,7 +143,8 @@ export const injectLeftHeadbarButton = (
   id: string,
   iconClass: string,
   titleText: string,
-  onClick: () => void
+  onClick: (e: MouseEvent) => void,
+  onRightClick?: (e: MouseEvent) => void
 ) => {
   const inject = () => {
     const toggleBtn = document.querySelector(".orca-headbar-sidebar-toggle");
@@ -195,7 +196,13 @@ export const injectLeftHeadbarButton = (
     icon.style.fontSize = "16px";
     btn.appendChild(icon);
 
-    btn.addEventListener("click", onClick);
+    btn.addEventListener("click", onClick as any);
+    if (onRightClick) {
+      btn.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        onRightClick(e);
+      });
+    }
     wrapper.appendChild(btn);
   };
   
