@@ -5,6 +5,7 @@ import {
   blockNavState,
   BlockNavItem,
 } from "../utils/state";
+import { BlockIcon } from "../../libs/components/BlockIcon";
 
 interface BlockNodeItemProps {
   item: BlockNavItem;
@@ -134,8 +135,11 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
+      <div className="block-nav-node-icon" style={{ marginRight: '8px', display: 'flex', alignItems: 'center' }}>
+        <BlockIcon iconValue={item.icon} color={item.color} />
+      </div>
       <div className="block-nav-node-content">
-        <span className="block-nav-node-title">{item.text}</span>
+        <span className="block-nav-node-title" style={{ color: item.color }}>{item.text}</span>
         {hasChildren && (
           <span className="block-nav-node-count">{item.children!.length}</span>
         )}

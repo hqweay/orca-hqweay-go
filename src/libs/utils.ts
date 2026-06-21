@@ -85,3 +85,56 @@ export async function ensureBlockInState(
   }
   return block || null;
 }
+
+export const getBlockTitle = (block: any, fallbackId: string | number): string => {
+  if (!block) return `Block ${String(fallbackId).substring(0, 8)}`;
+
+  const displayName = block.properties?.find((p: any) => p.name === "displayName")?.value;
+  if (displayName) return String(displayName);
+
+  const reprProp = block.properties?.find((p: any) => p.name === "_repr");
+  if (reprProp && reprProp.value?.type === "journal" && reprProp.value?.date) {
+    const d = new Date(reprProp.value.date);
+    if (!isNaN(d.getTime())) {
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+  }
+
+  if (block.aliases && block.aliases.length > 0) return String(block.aliases[0]);
+  if (block.text && block.text.trim().length > 0) {
+    let text = block.text.trim();
+    if (text.length > 20) {
+      return text.substring(0, 20) + "...";
+    }
+    return text;
+  }
+  return `Block ${String(fallbackId).substring(0, 8)}`;
+};
+
+export const getBlockIcon = (block: any) => {
+  if (!block) return "📄";
+
+  const iconProp = block.properties?.find((p: any) => p.name === "_icon");
+  if (iconProp && iconProp.value) {
+    return String(iconProp.value);
+  }
+
+  const reprProp = block.properties?.find((p: any) => p.name === "_repr");
+  if (reprProp && reprProp.value?.type === "journal" && reprProp.value?.date) {
+    return `__journal__:${reprProp.value.date}`;
+  }
+
+  return "📄";
+};
+
+export const getBlockColor = (block: any): string | undefined => {
+  if (!block) return undefined;
+  const colorProp = block.properties?.find((p: any) => p.name === "_color");
+  if (colorProp && colorProp.value) {
+    return String(colorProp.value);
+  }
+  return undefined;
+};

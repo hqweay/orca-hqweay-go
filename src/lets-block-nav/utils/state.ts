@@ -3,6 +3,8 @@ import { proxy } from "valtio";
 export interface BlockNavItem {
   id: number;
   text?: string;
+  icon?: string;
+  color?: string;
   children?: number[];
   selected?: boolean;
   collapsed?: boolean;

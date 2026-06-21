@@ -32,10 +32,14 @@ export const getChildBlocks = async (blockId: number): Promise<Block[]> => {
     .filter((b): b is Block => b !== undefined);
 };
 
+import { getBlockTitle as getBlockTitleUtil, getBlockIcon, getBlockColor } from "../../libs/utils";
+
 export const buildNavItems = (blocks: Block[]): BlockNavItem[] => {
   return blocks.map((b) => ({
     id: Number(b.id),
-    text: b.text || `Block ${b.id}`,
+    text: getBlockTitleUtil(b, b.id),
+    icon: getBlockIcon(b),
+    color: getBlockColor(b),
     children: b.children || [],
     selected: false,
     collapsed: false,
@@ -56,9 +60,7 @@ export const moveBlockToParent = async (
   );
 };
 
-
 export const getBlockTitle = (blockId: number): string => {
   const block = orca.state.blocks[blockId];
-  if (!block) return `Block ${blockId}`;
-  return block.text || `Block ${blockId}`;
+  return getBlockTitleUtil(block, blockId);
 };

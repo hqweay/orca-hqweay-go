@@ -56,30 +56,7 @@ const getBlockTitle = (block: any, id: string | number) => {
   return `Block ${String(id).substring(0, 8)}`;
 };
 
-const getBlockIcon = (block: any) => {
-  if (!block) return "📄";
-
-  const iconProp = block.properties?.find((p: any) => p.name === "_icon");
-  if (iconProp && iconProp.value) {
-    return iconProp.value;
-  }
-
-  const reprProp = block.properties?.find((p: any) => p.name === "_repr");
-  if (reprProp && reprProp.value?.type === "journal" && reprProp.value?.date) {
-    return `__journal__:${reprProp.value.date}`;
-  }
-
-  return "📄";
-};
-
-const getBlockColor = (block: any) => {
-  if (!block) return undefined;
-  const colorProp = block.properties?.find((p: any) => p.name === "_color");
-  if (colorProp && colorProp.value) {
-    return colorProp.value;
-  }
-  return undefined;
-};
+import { getBlockIcon, getBlockColor } from "../../libs/utils";
 
 const StyleInjector = () => (
   <style dangerouslySetInnerHTML={{ __html: styles }} />
