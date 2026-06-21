@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.0.1
+
+### Patch Changes
+
+- 新增大纲导航
+
 ## 3.0.0
 
 ### New Features
