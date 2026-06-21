@@ -182,6 +182,29 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
   const icon = getBlockIcon(block as any);
   const color = getBlockColor(block as any);
 
+  const renderHighlightedTitle = (text: string, filterText: string) => {
+    if (!filterText.trim() || !text) return text;
+    
+    // Escape regex specials from filterText
+    const safeFilter = filterText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${safeFilter})`, 'gi');
+    const parts = text.split(regex);
+    
+    return (
+      <>
+        {parts.map((part, i) => 
+          regex.test(part) ? (
+            <mark key={i} style={{ backgroundColor: 'rgba(255, 212, 0, 0.4)', color: 'inherit', borderRadius: '2px', padding: '0 2px' }}>
+              {part}
+            </mark>
+          ) : (
+            <span key={i}>{part}</span>
+          )
+        )}
+      </>
+    );
+  };
+
   return (
     <>
       <div
@@ -209,7 +232,9 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
           <BlockIcon iconValue={icon} color={color} />
         </div>
         <div className="block-nav-node-content">
-          <span className="block-nav-node-title" style={{ color }}>{title}</span>
+          <span className="block-nav-node-title" style={{ color }}>
+            {isSearching ? renderHighlightedTitle(title, state.filterText) : title}
+          </span>
         </div>
       </div>
       
