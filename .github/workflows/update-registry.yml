@@ -71,12 +71,23 @@ jobs:
               ref: 'heads/main'
             });
 
-            await github.rest.git.createRef({
-              owner: 'hqweay',
-              repo: 'awesome-orcanote',
-              ref: `refs/heads/${BRANCH_NAME}`,
-              sha: mainRef.object.sha
-            });
+            try {
+              await github.rest.git.createRef({
+                owner: 'hqweay',
+                repo: 'awesome-orcanote',
+                ref: `refs/heads/${BRANCH_NAME}`,
+                sha: mainRef.object.sha
+              });
+            } catch (error) {
+              console.log('Branch may already exist, forcing update...');
+              await github.rest.git.updateRef({
+                owner: 'hqweay',
+                repo: 'awesome-orcanote',
+                ref: `heads/${BRANCH_NAME}`,
+                sha: mainRef.object.sha,
+                force: true
+              });
+            }
 
             // 在自己的 fork 分支中提交修改
             await github.rest.repos.createOrUpdateFileContents({
