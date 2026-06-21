@@ -247,7 +247,7 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
       
       {isExpanded && hasChildren && (
         <div className="block-nav-children-container">
-          {childrenIds.map((childId) => (
+          {childrenIds.map((childId: string) => (
             <BlockNodeItem
               key={Number(childId)}
               blockId={Number(childId)}

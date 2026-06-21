@@ -149,7 +149,7 @@ export const BlockNavPanel: React.FC = () => {
             isDescendant = true;
             break;
           }
-          let currentBlock = orca.state.blocks[currentId];
+          let currentBlock: any = orca.state.blocks[currentId];
           if (!currentBlock) {
             await ensureBlockInState(currentId);
             currentBlock = orca.state.blocks[currentId];
@@ -200,7 +200,7 @@ export const BlockNavPanel: React.FC = () => {
     return state.rootBlockId
       ? orcaState.blocks[state.rootBlockId]?.children?.join(",")
       : undefined;
-  }, [state.rootBlockId, orcaState.blocks[state.rootBlockId]?.children]);
+  }, [state.rootBlockId, state.rootBlockId ? orcaState.blocks[state.rootBlockId as number]?.children : undefined]);
 
   useEffect(() => {
     if (state.rootBlockId) {

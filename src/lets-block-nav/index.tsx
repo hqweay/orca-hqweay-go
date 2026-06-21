@@ -130,7 +130,7 @@ export default class BlockNavPlugin extends BasePlugin {
   }
 
   renderCustomSettings(settings: any, updateSettings: (val: any) => void) {
-    const { SettingsSection, SettingsItem } = orca.components;
+    const { SettingsSection, SettingsItem } = orca.components as any;
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
         <SettingsSection title={t(`${this.name}.settings`) || "Block Nav Settings"}>
