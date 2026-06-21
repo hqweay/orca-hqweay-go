@@ -98,6 +98,32 @@ export const BlockNavPanel: React.FC = () => {
     if (!activeBlockId) return;
 
     const resolveAndLoad = async () => {
+      // 1. Check if the newly focused block is a descendant of the current sidebar root.
+      // If it is, we are just "exploring" inside the current tree, so keep the sidebar stable!
+      if (blockNavState.rootBlockId) {
+        let isDescendant = false;
+        let currentId: number | null = activeBlockId;
+        while (currentId) {
+          if (currentId === blockNavState.rootBlockId) {
+            isDescendant = true;
+            break;
+          }
+          let currentBlock = orca.state.blocks[currentId];
+          if (!currentBlock) {
+            await ensureBlockInState(currentId);
+            currentBlock = orca.state.blocks[currentId];
+          }
+          if (!currentBlock || !currentBlock.parent) {
+            break;
+          }
+          currentId = Number(currentBlock.parent);
+        }
+        
+        // Keep sidebar stable and exit early!
+        if (isDescendant) return;
+      }
+
+      // 2. If it's a completely new context (or zooming OUT of the current tree), reset the root.
       let block = orca.state.blocks[activeBlockId!];
       if (!block) {
         await ensureBlockInState(activeBlockId!);
