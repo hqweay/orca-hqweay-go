@@ -64,3 +64,13 @@ export const getBlockTitle = (blockId: number): string => {
   const block = orca.state.blocks[blockId];
   return getBlockTitleUtil(block, blockId);
 };
+
+export const getBlockIconForId = (blockId: number): string | undefined => {
+  const block = orca.state.blocks[blockId];
+  return getBlockIcon(block);
+};
+
+export const getBlockColorForId = (blockId: number): string | undefined => {
+  const block = orca.state.blocks[blockId];
+  return getBlockColor(block);
+};

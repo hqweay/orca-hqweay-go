@@ -12,10 +12,13 @@ import {
   buildNavItems,
   moveBlockToParent,
   getBlockTitle,
+  getBlockIconForId,
+  getBlockColorForId,
 } from "../utils/blocks";
 import { useDragDrop } from "../utils/useDragDrop";
 import { BlockNodeItem } from "./BlockNodeItem";
 import { findMainPanelId, isEditorPanel, getFocusedBlock } from "../utils/nav";
+import { BlockIcon } from "../../libs/components/BlockIcon";
 import styles from "../styles.css?inline";
 
 export const BlockNavPanel: React.FC = () => {
@@ -176,10 +179,15 @@ export const BlockNavPanel: React.FC = () => {
       <style dangerouslySetInnerHTML={{ __html: styles }} />
 
       <div className="block-nav-header">
-        <div className="block-nav-header-title">
-          {state.rootBlockId
-            ? getBlockTitle(state.rootBlockId)
-            : t("block-nav.no-block")}
+        <div className="block-nav-header-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: state.rootBlockId ? getBlockColorForId(state.rootBlockId) : undefined }}>
+          {state.rootBlockId ? (
+            <>
+              <BlockIcon iconValue={getBlockIconForId(state.rootBlockId)} color={getBlockColorForId(state.rootBlockId)} />
+              <span>{getBlockTitle(state.rootBlockId)}</span>
+            </>
+          ) : (
+            t("block-nav.no-block")
+          )}
         </div>
       </div>
 
