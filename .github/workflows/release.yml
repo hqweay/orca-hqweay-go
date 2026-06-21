@@ -99,6 +99,45 @@ jobs:
             echo "Successfully synced README and CHANGELOG."
           fi
 
+      - name: Sync README to Blog
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          git clone https://x-access-token:${GH_TOKEN}@github.com/hqweay/my-blog.git blog-repo
+          
+          cat << EOF > new_post.md
+          ---
+          permalink: /20260120023137/
+          title: 恐龙工具箱（虎鲸笔记版）
+          date: "2026-01-20 02:31:37"
+          updated: "$(date +"%Y-%m-%d %H:%M:%S")"
+          tags:
+            - ArcTab
+          comments: true
+          toc: true
+          ---
+          
+          EOF
+          
+          # Remove leading spaces from the cat heredoc
+          sed -i.bak 's/^[ \t]*//' new_post.md
+          rm new_post.md.bak
+          
+          cat README.md >> new_post.md
+          
+          mv new_post.md blog-repo/source/_posts/20260120023137.md
+          
+          cd blog-repo
+          git add source/_posts/20260120023137.md
+          
+          if git diff --staged --quiet; then
+            echo "No changes to blog."
+          else
+            git commit -m "docs: update 恐龙工具箱 for ${{ github.ref_name }}"
+            git push
+            echo "Successfully synced README to Blog."
+          fi
+
       - name: Trigger Registry Update
         if: contains(github.event.head_commit.message, '[update registry]')
         env:
