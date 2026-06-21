@@ -76,6 +76,7 @@ jobs:
           artifacts: "package.zip"
           bodyFile: release_body.md
           token: ${{ secrets.RELEASE_TOKEN }}
+          allowUpdates: true
 
       - name: Sync Docs to Public Repo
         env:
