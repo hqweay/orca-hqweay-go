@@ -1,5 +1,6 @@
 import { BasePlugin } from "@/libs/BasePlugin";
 import { t } from "@/libs/l10n";
+import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import { BlockNavPanel } from "./components/BlockNavPanel";
 import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
 import "./styles.css";
@@ -117,7 +118,6 @@ export default class BlockNavPlugin extends BasePlugin {
   }
 
   renderCustomSettings(settings: any, updateSettings: (val: any) => void) {
-    const { SettingsSection, SettingsItem } = orca.components as any;
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
         <SettingsSection title={t(`${this.name}.settings`) || "Block Nav Settings"}>
