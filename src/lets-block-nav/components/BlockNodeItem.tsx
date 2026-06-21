@@ -178,7 +178,7 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
 
   if (!block) return null; // Block not loaded yet
 
-  const title = getBlockTitleUtil(block as any, blockId);
+  const title = getBlockTitleUtil(block as any, blockId, 0);
   const icon = getBlockIcon(block as any);
   const color = getBlockColor(block as any);
 
@@ -232,7 +232,7 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
           <BlockIcon iconValue={icon} color={color} />
         </div>
         <div className="block-nav-node-content">
-          <span className="block-nav-node-title" style={{ color }}>
+          <span className="block-nav-node-title" style={{ color }} title={title}>
             {isSearching ? renderHighlightedTitle(title, state.filterText) : title}
           </span>
         </div>

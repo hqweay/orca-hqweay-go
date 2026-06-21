@@ -47,9 +47,9 @@ export const moveBlockToParent = async (
   );
 };
 
-export const getBlockTitle = (blockId: number): string => {
+export const getBlockTitle = (blockId: number, maxLength?: number): string => {
   const block = orca.state.blocks[blockId];
-  return getBlockTitleUtil(block, blockId);
+  return getBlockTitleUtil(block, blockId, maxLength);
 };
 
 export const getBlockIconForId = (blockId: number): string | undefined => {

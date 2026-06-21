@@ -86,7 +86,7 @@ export async function ensureBlockInState(
   return block || null;
 }
 
-export const getBlockTitle = (block: any, fallbackId: string | number): string => {
+export const getBlockTitle = (block: any, fallbackId: string | number, maxLength: number = 20): string => {
   if (!block) return `Block ${String(fallbackId).substring(0, 8)}`;
 
   const displayName = block.properties?.find((p: any) => p.name === "displayName")?.value;
@@ -106,8 +106,8 @@ export const getBlockTitle = (block: any, fallbackId: string | number): string =
   if (block.aliases && block.aliases.length > 0) return String(block.aliases[0]);
   if (block.text && block.text.trim().length > 0) {
     let text = block.text.trim();
-    if (text.length > 20) {
-      return text.substring(0, 20) + "...";
+    if (maxLength > 0 && text.length > maxLength) {
+      return text.substring(0, maxLength) + "...";
     }
     return text;
   }

@@ -457,6 +457,7 @@ export const BlockNavPanel: React.FC = () => {
                   color={getBlockColorForId(state.rootBlockId)}
                 />
                 <span
+                  title={getBlockTitle(state.rootBlockId, 0)}
                   style={{
                     fontWeight: 600,
                     overflow: "hidden",
@@ -464,7 +465,7 @@ export const BlockNavPanel: React.FC = () => {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {getBlockTitle(state.rootBlockId)}
+                  {getBlockTitle(state.rootBlockId, 0)}
                 </span>
               </>
             ) : (
