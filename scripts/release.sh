@@ -219,6 +219,7 @@ preview_changes() {
 
 # 发布版本
 do_release() {
+    local WITH_REGISTRY=$1
     CHANGESET_COUNT=$(count_changesets)
     
     if [ $CHANGESET_COUNT -eq 0 ]; then
@@ -252,7 +253,11 @@ do_release() {
     
     # 3. 提交
     git add .
-    git commit -m "release: v$NEW_VERSION"
+    if [ "$WITH_REGISTRY" = "with_registry" ]; then
+        git commit -m "release: v$NEW_VERSION [update registry]"
+    else
+        git commit -m "release: v$NEW_VERSION"
+    fi
     
     # 4. 打 tag 并推送
     git tag "v$NEW_VERSION"
@@ -261,6 +266,10 @@ do_release() {
     echo ""
     echo "✅ 已发布 v$NEW_VERSION"
     echo "🔗 https://github.com/hqweay/orca-hqweay-go/releases/tag/v$NEW_VERSION"
+    
+    if [ "$WITH_REGISTRY" = "with_registry" ]; then
+        echo "⏳ Github Action 将在 Release 构建完成后自动为你更新市集！"
+    fi
 }
 
 # 更新市集
@@ -291,18 +300,7 @@ update_registry() {
 
 # 发布并更新市集
 do_release_and_registry() {
-    do_release
-    if [ $? -eq 0 ]; then
-        echo ""
-        echo "📦 正在更新市集..."
-        if command -v gh &> /dev/null; then
-            CURRENT_VERSION=$(jq -r '.version' package.json)
-            gh workflow run update-registry.yml -f version="$CURRENT_VERSION"
-            echo "✅ 已触发市集更新 workflow"
-        else
-            echo "⚠️ 未安装 gh CLI，请手动触发市集更新"
-        fi
-    fi
+    do_release "with_registry"
 }
 
 # 主循环

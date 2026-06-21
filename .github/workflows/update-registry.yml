@@ -102,27 +102,15 @@ jobs:
 
             // 5. 向上游创建或更新 PR
             let changelog = '';
-            let attempts = 0;
-            const maxAttempts = 15; // 15 * 10s = 150 seconds
-            
-            while (attempts < maxAttempts) {
-              try {
-                const { data: release } = await github.rest.repos.getReleaseByTag({
-                  owner: 'hqweay',
-                  repo: 'orca-hqweay-go',
-                  tag: `v${VERSION}`
-                });
-                changelog = `\n\n### Release Notes\n\n${release.body}`;
-                break;
-              } catch (error) {
-                console.log(`Release v${VERSION} not found yet. Waiting 10s... (Attempt ${attempts + 1}/${maxAttempts})`);
-                await new Promise(r => setTimeout(r, 10000));
-                attempts++;
-              }
-            }
-            
-            if (!changelog) {
-              console.log('Failed to fetch release notes after multiple attempts.');
+            try {
+              const { data: release } = await github.rest.repos.getReleaseByTag({
+                owner: 'hqweay',
+                repo: 'orca-hqweay-go',
+                tag: `v${VERSION}`
+              });
+              changelog = `\n\n### Release Notes\n\n${release.body}`;
+            } catch (error) {
+              console.log('Failed to fetch release notes:', error.message);
               changelog = `\n\n### Release Notes\n\n[View Release v${VERSION} on GitHub](https://github.com/hqweay/orca-hqweay-go/releases/tag/v${VERSION})`;
             }
 
