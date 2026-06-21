@@ -14,7 +14,7 @@ export function parseChangelog(markdown: string): ChangelogEntry[] {
   let currentSection: { title: string; items: string[] } | null = null;
 
   for (const line of lines) {
-    const versionMatch = line.match(/^## v(\d+\.\d+\.\d+)/);
+    const versionMatch = line.match(/^## v?(\d+\.\d+\.\d+)/);
     if (versionMatch) {
       if (currentEntry) {
         if (currentSection) {
