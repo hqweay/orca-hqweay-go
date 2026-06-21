@@ -256,6 +256,9 @@ An Arc-browser-like modern tabs and sidebar management system for Orca Note to b
   - **Dynamic Combination**: Merges all currently open panel views with your recently visited blocks history (deduplicated, up to 15 blocks cached via LocalStorage).
   - **Visual Cache**: Automatically caches titles and custom icons so that the sidebar renders instantly even on a fresh restart or offline.
 - **Zero Latency**: State is managed globally via Valtio reactive proxy, offering 0ms instantaneous UI feedback.
+- **Flexible Left/Right Docking**:
+  - **Default Side Setting**: Configure whether the sidebar defaults to opening on the **Left** or **Right** in the plugin settings.
+  - **Quick Opposite Open**: Regardless of your default setting, simply **Right-Click** the top bar button, or **Shift + Click** it, and the sidebar will magically pop open on the opposite side of the screen.
 
 ### 22. 🌳 Block Navigator
 
@@ -273,6 +276,9 @@ Introduces a modern, structured global sidebar outline tree for Orca Note, desig
   - **Native Hover Tooltips**: Even if the text is extremely long, hovering the mouse will reveal the full node content word-for-word via the browser's native tooltip.
 - **Seamless Native UI Integration**:
   - Attached right next to the native left sidebar toggle button, naturally blending into Orca's top bar ecosystem.
+- **Flexible Left/Right Docking**:
+  - Configure the outline tree to default to the **Left** or **Right** side via settings.
+  - **Right-Click** or **Shift + Click** the top bar icon to instantly summon the outline on the opposite side of the screen!
 
 ## Development
 
