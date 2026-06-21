@@ -14,7 +14,7 @@ import { useDragDrop } from "../utils/useDragDrop";
 import { BlockNodeItem } from "./BlockNodeItem";
 import { findMainPanelId, isEditorPanel, getFocusedBlock } from "../utils/nav";
 import { BlockIcon } from "../../libs/components/BlockIcon";
-import { ensureBlockInState } from "../../libs/utils";
+import { ensureBlockInState, getBlockTitle as getBlockTitleUtil } from "../../libs/utils";
 import styles from "../styles.css?inline";
 
 export const BlockNavPanel: React.FC = () => {
@@ -336,8 +336,9 @@ export const BlockNavPanel: React.FC = () => {
     for (const block of blockTree) {
       let blockText = "";
       try {
-        if (typeof block.text === "string") {
-          blockText = block.text.toLowerCase();
+        const title = getBlockTitleUtil(block, block.id, 0);
+        if (typeof title === "string") {
+          blockText = title.toLowerCase();
         }
       } catch (e) {
         console.warn("[BlockNavSearch] failed to extract text for block:", block.id, e);
