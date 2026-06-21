@@ -3,6 +3,7 @@ import { useSnapshot } from "valtio";
 import {
   blockNavState,
   toggleNodeExpansion,
+  searchCache,
 } from "../utils/state";
 import { BlockIcon } from "../../libs/components/BlockIcon";
 import { getBlockTitle as getBlockTitleUtil, getBlockIcon, getBlockColor, ensureBlockInState } from "../../libs/utils";
@@ -23,12 +24,23 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
   onDropOnNode,
 }) => {
   const state = useSnapshot(blockNavState);
-  const block = useSnapshot(orca.state).blocks[blockId];
+  const isSearching = state.isSearching;
   
-  const isExpanded = !!state.expandedIds[blockId];
+  // Use searchCache if searching, otherwise use reactive blocks
+  const stateBlock = useSnapshot(orca.state).blocks[blockId];
+  const block = isSearching ? (searchCache.map.get(blockId) || stateBlock) : stateBlock;
+  
+  const isMatched = isSearching ? !!state.searchMatchedIds[blockId] : false;
+  const isExpandedAncestor = isSearching ? !!state.searchExpandedIds[blockId] : false;
+  
+  const isExpanded = isSearching 
+    ? isExpandedAncestor 
+    : !!state.expandedIds[blockId];
+    
   const isFocused = blockId === focusedBlockId;
   const childrenIds = block?.children || [];
-  const hasChildren = childrenIds.length > 0;
+  // When searching, if a node is matched but isn't an ancestor to other matches, we don't need to expand it to show its children
+  const hasChildren = childrenIds.length > 0 && (!isSearching || isExpandedAncestor);
 
   const [isDragOver, setIsDragOver] = React.useState(false);
   const dragCounter = React.useRef(0);
@@ -57,6 +69,7 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
   );
 
   const [dropPosition, setDropPosition] = React.useState<"before" | "after" | "inside" | null>(null);
+
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -145,6 +158,12 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
     if (dropPosition === "before") dropClassName = "block-nav-node-drop-before";
     else if (dropPosition === "after") dropClassName = "block-nav-node-drop-after";
     else dropClassName = "block-nav-node-drag-over"; // inside
+  }
+
+  // CRITICAL FIX: Early return must be AFTER all hooks!
+  // Filter out blocks that don't match and aren't ancestors of a match
+  if (isSearching && !isMatched && !isExpandedAncestor) {
+    return null;
   }
 
   if (!block) return null; // Block not loaded yet

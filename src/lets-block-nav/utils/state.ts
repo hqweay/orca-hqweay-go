@@ -5,6 +5,10 @@ export interface BlockNavState {
   expandedIds: Record<number, boolean>;
   lastActiveEditorPanelId: string | null;
   navigatedToBlockId: number | null;
+  filterText: string;
+  isSearching: boolean;
+  searchMatchedIds: Record<number, boolean>;
+  searchExpandedIds: Record<number, boolean>;
 }
 
 export const blockNavState = proxy<BlockNavState>({
@@ -12,7 +16,18 @@ export const blockNavState = proxy<BlockNavState>({
   expandedIds: {},
   lastActiveEditorPanelId: null,
   navigatedToBlockId: null,
+  filterText: "",
+  isSearching: false,
+  searchMatchedIds: {},
+  searchExpandedIds: {},
 });
+
+// A plain object to hold the massive tree data, avoiding Valtio deep proxy crashes
+export const searchCache = {
+  tree: null as any[] | null,
+  rootId: null as number | null,
+  map: new Map<number, any>(),
+};
 
 export const setRootBlock = (blockId: number | null) => {
   blockNavState.rootBlockId = blockId;
