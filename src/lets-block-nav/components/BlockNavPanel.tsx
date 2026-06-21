@@ -99,8 +99,8 @@ export const BlockNavPanel: React.FC = () => {
 
     const resolveAndLoad = async () => {
       // 1. Check if the newly focused block is a descendant of the current sidebar root.
-      // If it is, we are just "exploring" inside the current tree, so keep the sidebar stable!
-      if (blockNavState.rootBlockId) {
+      // Only keep the sidebar stable if the navigation was triggered from the sidebar!
+      if (blockNavState.rootBlockId && activeBlockId === blockNavState.navigatedToBlockId) {
         let isDescendant = false;
         let currentId: number | null = activeBlockId;
         while (currentId) {
@@ -224,6 +224,7 @@ export const BlockNavPanel: React.FC = () => {
   );
 
   const handleNavigate = useCallback((blockId: number) => {
+    blockNavState.navigatedToBlockId = blockId;
     const activeEditor = state.lastActiveEditorPanelId || orcaState.activePanel;
     const mainPanelId = findMainPanelId(orca.state.panels, activeEditor);
     if (mainPanelId) {

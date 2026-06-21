@@ -4,12 +4,14 @@ export interface BlockNavState {
   rootBlockId: number | null;
   expandedIds: Record<number, boolean>;
   lastActiveEditorPanelId: string | null;
+  navigatedToBlockId: number | null;
 }
 
 export const blockNavState = proxy<BlockNavState>({
   rootBlockId: null,
   expandedIds: {},
   lastActiveEditorPanelId: null,
+  navigatedToBlockId: null,
 });
 
 export const setRootBlock = (blockId: number | null) => {
