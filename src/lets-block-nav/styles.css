@@ -114,6 +114,18 @@
   box-shadow: 0 0 0 2px var(--orca-color-primary-5);
 }
 
+.block-nav-node-drop-before {
+  border-top: 2px solid var(--orca-color-primary-5);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.block-nav-node-drop-after {
+  border-bottom: 2px solid var(--orca-color-primary-5);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
 @keyframes navNodeSlideIn {
   from {
     opacity: 0;

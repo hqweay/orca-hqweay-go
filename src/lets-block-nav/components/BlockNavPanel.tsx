@@ -127,10 +127,20 @@ export const BlockNavPanel: React.FC = () => {
   );
 
   const handleDropOnNode = useCallback(
-    async (blockIds: number[], targetId: number) => {
+    async (blockIds: number[], targetId: number, position: "before" | "after" | "inside") => {
       for (const id of blockIds) {
         if (id === targetId) continue;
-        await moveBlockToParent(id, targetId);
+        if (position === "inside") {
+          await moveBlockToParent(id, targetId);
+        } else {
+          await orca.commands.invokeEditorCommand(
+            "core.editor.moveBlocks",
+            null,
+            [id],
+            targetId,
+            position
+          );
+        }
       }
       if (state.rootBlockId) {
         await loadChildren(state.rootBlockId);

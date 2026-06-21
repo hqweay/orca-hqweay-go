@@ -11,7 +11,7 @@ import {
 interface BlockNodeItemProps {
   item: BlockNavItem;
   onNavigate: (blockId: number) => void;
-  onDropOnNode: (blockIds: number[], targetId: number) => void;
+  onDropOnNode: (blockIds: number[], targetId: number, position: "before" | "after" | "inside") => void;
 }
 
 export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
@@ -47,6 +47,8 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
     },
     [item.id]
   );
+  const [dropPosition, setDropPosition] = React.useState<"before" | "after" | "inside" | null>(null);
+
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -60,6 +62,7 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
     dragCounter.current -= 1;
     if (dragCounter.current === 0) {
       setIsDragOver(false);
+      setDropPosition(null);
     }
   }, []);
 
@@ -67,7 +70,33 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = "move";
+
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    if (y < rect.height * 0.25) {
+      setDropPosition("before");
+    } else if (y > rect.height * 0.75) {
+      setDropPosition("after");
+    } else {
+      setDropPosition("inside");
+    }
   }, []);
+
+  const handleDragStart = useCallback(
+    (e: React.DragEvent) => {
+      const repoId = orca.state.repo || "default";
+      const ids = state.selectedIds.has(item.id)
+        ? Array.from(state.selectedIds)
+        : [item.id];
+      e.dataTransfer.setData(
+        `orca/${repoId}`,
+        JSON.stringify({ blocks: ids })
+      );
+      e.dataTransfer.setData("text/plain", ids.join(","));
+      e.dataTransfer.effectAllowed = "copyMove";
+    },
+    [item.id, state.selectedIds]
+  );
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -75,6 +104,8 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
       e.stopPropagation();
       dragCounter.current = 0;
       setIsDragOver(false);
+      const currentPos = dropPosition;
+      setDropPosition(null);
 
       const types = Array.from(e.dataTransfer.types);
       const orcaRepoType = types.find((t) => {
@@ -93,19 +124,28 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
           ids = parsed.blockIds.map(Number);
 
         if (ids.length > 0) {
-          onDropOnNode(ids, item.id);
+          onDropOnNode(ids, item.id, currentPos || "inside");
         }
       } catch (err) {
         console.error("[BlockNav] Failed to parse drop data:", err);
       }
     },
-    [item.id, onDropOnNode]
+    [item.id, onDropOnNode, dropPosition]
   );
+
+  let dropClassName = "";
+  if (isDragOver && dropPosition) {
+    if (dropPosition === "before") dropClassName = "block-nav-node-drop-before";
+    else if (dropPosition === "after") dropClassName = "block-nav-node-drop-after";
+    else dropClassName = "block-nav-node-drag-over"; // inside
+  }
 
   return (
     <div
-      className={`block-nav-node ${isSelected ? "block-nav-node-selected" : ""} ${isDragOver ? "block-nav-node-drag-over" : ""}`}
+      className={`block-nav-node ${isSelected ? "block-nav-node-selected" : ""} ${dropClassName}`}
+      draggable={true}
       onClick={handleClick}
+      onDragStart={handleDragStart}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
