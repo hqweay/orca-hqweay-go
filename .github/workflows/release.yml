@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 # 并发控制：同一时间只运行一个 release
 concurrency:
