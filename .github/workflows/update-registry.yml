@@ -75,7 +75,7 @@ jobs:
               owner: 'hqweay',
               repo: 'awesome-orcanote',
               ref: `refs/heads/${BRANCH_NAME}`,
-              sha: mainRef.data.object.sha
+              sha: mainRef.object.sha
             });
 
             await github.rest.repos.createOrUpdateFileContents({
