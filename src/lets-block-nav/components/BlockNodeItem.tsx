@@ -13,6 +13,7 @@ interface BlockNodeItemProps {
   depth: number;
   focusedBlockId: number | null;
   onNavigate: (blockId: number) => void;
+  onRightClick: (blockId: number) => void;
   onDropOnNode: (blockIds: number[], targetId: number, position: "before" | "after" | "inside") => void;
 }
 
@@ -21,6 +22,7 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
   depth,
   focusedBlockId,
   onNavigate,
+  onRightClick,
   onDropOnNode,
 }) => {
   const state = useSnapshot(blockNavState);
@@ -53,6 +55,15 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
     [blockId, onNavigate]
   );
 
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onRightClick(blockId);
+    },
+    [blockId, onRightClick]
+  );
+
   const handleToggle = useCallback(
     async (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -69,7 +80,6 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
   );
 
   const [dropPosition, setDropPosition] = React.useState<"before" | "after" | "inside" | null>(null);
-
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -178,6 +188,7 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
         className={`block-nav-node ${isFocused ? "block-nav-node-selected" : ""} ${dropClassName}`}
         draggable={true}
         onClick={handleClick}
+        onContextMenu={handleContextMenu}
         onDragStart={handleDragStart}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
@@ -211,6 +222,7 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
               depth={depth + 1}
               focusedBlockId={focusedBlockId}
               onNavigate={onNavigate}
+              onRightClick={onRightClick}
               onDropOnNode={onDropOnNode}
             />
           ))}

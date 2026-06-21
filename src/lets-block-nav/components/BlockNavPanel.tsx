@@ -266,6 +266,11 @@ export const BlockNavPanel: React.FC = () => {
     [state.lastActiveEditorPanelId, orcaState.activePanel],
   );
 
+  const handleRightClick = useCallback((blockId: number) => {
+    setRootBlock(blockId);
+    handleNavigate(blockId);
+  }, [handleNavigate]);
+
   const handleSearch = useCallback(async (text: string) => {
     console.log("[BlockNavSearch] handleSearch called with text:", text);
     blockNavState.filterText = text;
@@ -503,6 +508,7 @@ export const BlockNavPanel: React.FC = () => {
               depth={0}
               focusedBlockId={focusedBlockId}
               onNavigate={handleNavigate}
+              onRightClick={handleRightClick}
               onDropOnNode={handleDropOnNode}
             />
           ))
