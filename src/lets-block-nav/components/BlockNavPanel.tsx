@@ -19,6 +19,7 @@ import { useDragDrop } from "../utils/useDragDrop";
 import { BlockNodeItem } from "./BlockNodeItem";
 import { findMainPanelId, isEditorPanel, getFocusedBlock } from "../utils/nav";
 import { BlockIcon } from "../../libs/components/BlockIcon";
+import { ensureBlockInState } from "../../libs/utils";
 import styles from "../styles.css?inline";
 
 export const BlockNavPanel: React.FC = () => {
@@ -119,18 +120,28 @@ export const BlockNavPanel: React.FC = () => {
   const handleDrop = useCallback(
     async (blockIds: number[]) => {
       if (!state.rootBlockId) return;
+      if (state.lastActiveEditorPanelId) {
+        orca.nav.switchFocusTo(state.lastActiveEditorPanelId);
+      }
       for (const id of blockIds) {
+        await ensureBlockInState(id);
+        await ensureBlockInState(state.rootBlockId);
         await moveBlockToParent(id, state.rootBlockId);
       }
       await loadChildren(state.rootBlockId);
     },
-    [state.rootBlockId, loadChildren]
+    [state.rootBlockId, state.lastActiveEditorPanelId, loadChildren]
   );
 
   const handleDropOnNode = useCallback(
     async (blockIds: number[], targetId: number, position: "before" | "after" | "inside") => {
+      if (state.lastActiveEditorPanelId) {
+        orca.nav.switchFocusTo(state.lastActiveEditorPanelId);
+      }
       for (const id of blockIds) {
         if (id === targetId) continue;
+        await ensureBlockInState(id);
+        await ensureBlockInState(targetId);
         if (position === "inside") {
           await moveBlockToParent(id, targetId);
         } else {
