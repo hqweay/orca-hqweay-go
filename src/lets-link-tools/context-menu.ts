@@ -6,11 +6,16 @@ import {
   executeRefToPin,
 } from "../lets-block-tools/logic";
 
+import { BasePlugin } from "@/libs/BasePlugin";
+
 interface ContextMenuInjector {
   disconnect: () => void;
 }
 
-export function injectContextMenu(logger: any): ContextMenuInjector {
+export function injectContextMenu(
+  logger: any,
+  plugin: BasePlugin,
+): ContextMenuInjector {
   let injectedMenu: HTMLElement | null = null;
 
   const handleContextMenu = async (e: MouseEvent) => {
@@ -29,11 +34,16 @@ export function injectContextMenu(logger: any): ContextMenuInjector {
       const blockRefElement = findBlockReferenceElement(target);
 
       if (!blockLinkElement && !blockRefElement) {
-        logger?.debug?.("[Context Menu] Not a block link or reference, skipping");
+        logger?.debug?.(
+          "[Context Menu] Not a block link or reference, skipping",
+        );
         return;
       }
 
-      logger?.debug?.("[Context Menu] Found:", blockLinkElement ? "block link" : "block reference");
+      logger?.debug?.(
+        "[Context Menu] Found:",
+        blockLinkElement ? "block link" : "block reference",
+      );
 
       const targetBlock = findTargetBlock(target);
       if (!targetBlock) {
@@ -49,7 +59,10 @@ export function injectContextMenu(logger: any): ContextMenuInjector {
 
       const block = orca.state.blocks[blockId];
       if (!block || !block.content) {
-        logger?.debug?.("[Context Menu] Block not found or no content:", blockId);
+        logger?.debug?.(
+          "[Context Menu] Block not found or no content:",
+          blockId,
+        );
         return;
       }
 
@@ -57,7 +70,7 @@ export function injectContextMenu(logger: any): ContextMenuInjector {
 
       const hasRef = block.content.some((f) => f.t === "r");
       const hasLink = block.content.some(
-        (f) => f.t === "l" && typeof f.l === "string"
+        (f) => f.t === "l" && typeof f.l === "string",
       );
 
       if (!hasRef && !hasLink) return;
@@ -78,7 +91,7 @@ export function injectContextMenu(logger: any): ContextMenuInjector {
 
       // 清除已注入的菜单项
       const existingInjected = menu.querySelectorAll(
-        '[data-orca-context-inject]'
+        "[data-orca-context-inject]",
       );
       existingInjected.forEach((el) => el.remove());
 
@@ -91,48 +104,58 @@ export function injectContextMenu(logger: any): ContextMenuInjector {
       };
 
       // 注入菜单项
+      const settings = plugin.getSettings() || {};
+
       if (hasRef) {
-        const refToLink = createMenuItem(
-          "ti ti-link",
-          t("link-tools.convertToBlockLink"),
-          async () => {
-            closeMenu();
-            await executeRefToLink([blockId]);
-          }
-        );
-        fragment.appendChild(refToLink);
+        if (settings.enableRefToLink !== false) {
+          const refToLink = createMenuItem(
+            "ti ti-link",
+            t("link-tools.convertToBlockLink"),
+            async () => {
+              closeMenu();
+              await executeRefToLink([blockId]);
+            },
+          );
+          fragment.appendChild(refToLink);
+        }
 
-        const refToTextPin = createMenuItem(
-          "ti ti-pin",
-          t("link-tools.convertToTextPin"),
-          async () => {
-            closeMenu();
-            await executeRefToTextPin([blockId]);
-          }
-        );
-        fragment.appendChild(refToTextPin);
+        if (settings.enableRefToTextPin !== false) {
+          const refToTextPin = createMenuItem(
+            "ti ti-pin",
+            t("link-tools.convertToTextPin"),
+            async () => {
+              closeMenu();
+              await executeRefToTextPin([blockId]);
+            },
+          );
+          fragment.appendChild(refToTextPin);
+        }
 
-        const refToPin = createMenuItem(
-          "ti ti-pin-filled",
-          t("link-tools.convertToPin"),
-          async () => {
-            closeMenu();
-            await executeRefToPin([blockId]);
-          }
-        );
-        fragment.appendChild(refToPin);
+        if (settings.enableRefToPin !== false) {
+          const refToPin = createMenuItem(
+            "ti ti-pin-filled",
+            t("link-tools.convertToPin"),
+            async () => {
+              closeMenu();
+              await executeRefToPin([blockId]);
+            },
+          );
+          fragment.appendChild(refToPin);
+        }
       }
 
       if (hasLink) {
-        const linkToRef = createMenuItem(
-          "ti ti-blockquote",
-          t("link-tools.convertToBlockRef"),
-          async () => {
-            closeMenu();
-            await executeLinkToRef([blockId]);
-          }
-        );
-        fragment.appendChild(linkToRef);
+        if (settings.enableLinkToRef !== false) {
+          const linkToRef = createMenuItem(
+            "ti ti-blockquote",
+            t("link-tools.convertToBlockRef"),
+            async () => {
+              closeMenu();
+              await executeLinkToRef([blockId]);
+            },
+          );
+          fragment.appendChild(linkToRef);
+        }
       }
 
       parentNode.insertBefore(fragment, anchorItem.nextSibling);
@@ -172,7 +195,7 @@ export function injectContextMenu(logger: any): ContextMenuInjector {
 function createMenuItem(
   iconClass: string,
   text: string,
-  onClick: () => Promise<void>
+  onClick: () => Promise<void>,
 ): HTMLElement {
   const item = document.createElement("div");
   item.className = "orca-menu-text";
@@ -236,8 +259,10 @@ function findBlockLinkElement(element: HTMLElement): HTMLElement | null {
     if (el.tagName === "A") {
       const href = el.getAttribute("href") || "";
       const dataL = el.getAttribute("data-l") || "";
-      if (/^orca-note:\/\/.+\/block\?blockId=\d+$/.test(href) ||
-          /^orca-note:\/\/.+\/block\?blockId=\d+$/.test(dataL)) {
+      if (
+        /^orca-note:\/\/.+\/block\?blockId=\d+$/.test(href) ||
+        /^orca-note:\/\/.+\/block\?blockId=\d+$/.test(dataL)
+      ) {
         return el;
       }
     }
