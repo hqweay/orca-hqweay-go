@@ -29,9 +29,14 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
   const isSearching = state.isSearching;
   
   // Use searchCache if searching, otherwise use reactive blocks
-  const blocksSnap = useSnapshot(orca.state.blocks);
-  const stateBlock = blocksSnap[blockId];
+  const stateBlock = orca.state.blocks[blockId];
   const block = isSearching ? (searchCache.map.get(blockId) || stateBlock) : stateBlock;
+
+  const searchRegex = React.useMemo(() => {
+    if (!state.filterText.trim()) return null;
+    const safeFilter = state.filterText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`(${safeFilter})`, 'gi');
+  }, [state.filterText]);
   
   const isMatched = isSearching ? !!state.searchMatchedIds[blockId] : false;
   const isExpandedAncestor = isSearching ? !!state.searchExpandedIds[blockId] : false;
@@ -72,9 +77,9 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
       
       // If we are expanding, ensure children are loaded in memory
       if (!isExpanded && hasChildren) {
-        for (const childId of childrenIds) {
-          await ensureBlockInState(Number(childId));
-        }
+        await Promise.all(
+          childrenIds.map((childId: string | number) => ensureBlockInState(Number(childId)))
+        );
       }
     },
     [blockId, isExpanded, hasChildren, childrenIds]
@@ -183,21 +188,15 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
   const icon = getBlockIcon(block as any);
   const color = getBlockColor(block as any);
 
-  const renderHighlightedTitle = (text: string, filterText: string) => {
-    if (!filterText.trim() || !text) return text;
+  const renderHighlightedTitle = (text: string) => {
+    if (!searchRegex || !text) return text;
     
-    // Escape regex specials from filterText
-    const regex = React.useMemo(() => {
-      const safeFilter = filterText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      return new RegExp(`(${safeFilter})`, 'gi');
-    }, [filterText]);
-
-    const parts = text.split(regex);
+    const parts = text.split(searchRegex);
     
     return (
       <>
         {parts.map((part, i) => 
-          regex.test(part) ? (
+          searchRegex.test(part) ? (
             <mark key={i} style={{ backgroundColor: 'rgba(255, 212, 0, 0.4)', color: 'inherit', borderRadius: '2px', padding: '0 2px' }}>
               {part}
             </mark>
@@ -237,7 +236,9 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
         </div>
         <div className="block-nav-node-content">
           <span className="block-nav-node-title" style={{ color }} title={title}>
-            {isSearching ? renderHighlightedTitle(title, state.filterText) : title}
+            {isSearching && isMatched
+                ? renderHighlightedTitle(title as string)
+                : title}
           </span>
         </div>
       </div>
