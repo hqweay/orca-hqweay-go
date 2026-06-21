@@ -144,3 +144,22 @@ Topic (Notes/Sources) and Item (Flashcards) use the same FSRS engine but require
 - **Anti-pattern**: Avoid storing weights (the 17 parameters) per-card. It wastes space and prevents global optimization.
 - **Solution**: Store weights in Global Settings. Users can paste a comma-separated string of 17 numbers (v5 standard) into a single Textarea.
 - **Advanced**: Supporting separate weight sets for `Topic` vs. `Item` types to allow for gentler or stricter scheduling patterns for different content types.
+
+## CI/CD & Automated Release Workflows
+
+### 1. Changelog Extraction Robustness
+- **Issue**: Regular expressions extracting versions from `CHANGELOG.md` originally strictly expected a `v` prefix (e.g., `^## v...`). However, modern tools like `Changeset` default to outputting raw versions (e.g., `## 3.0.0`).
+- **Fix**: Update `awk` scripts in GitHub Actions and internal TS parsers (e.g., `changelog-parser.ts`) to use `^## v?`. Making the `v` prefix optional ensures backward compatibility with manually written logs and forward compatibility with automated tooling.
+
+### 2. Eliminating Workflow Race Conditions (Release vs. Registry PR)
+- **Issue**: A local bash script sequentially executed `git push --tags` (which triggers a remote `release.yml`) and immediately followed it with `gh workflow run update-registry.yml`. This caused a severe race condition: the registry updater would attempt to fetch GitHub Release Notes before the `release.yml` action had finished compiling and publishing them.
+- **Anti-pattern**: Adding `sleep` or building 15-minute polling `while` loops inside the downstream Github Action to wait for the upstream Action to finish. This wastes CI minutes and is brittle.
+- **Elegant Solution**: 
+  - **Commit Flags**: The local script simply appends a flag to the commit message (e.g., `git commit -m "release: v3.0.0 [update registry]"`).
+  - **Conditional Downstream Trigger**: The `release.yml` action is given the responsibility to trigger the next step. At the very end of `release.yml`, a step evaluates `if: contains(github.event.head_commit.message, '[update registry]')` and triggers `update-registry.yml`.
+  - **Result**: Zero race conditions, zero polling, and the user retains granular control (can choose "Release Only" or "Release + Registry Update" locally).
+
+### 3. Multi-Repo Documentation Synchronization
+- **Concept**: A single source of truth (the private dev repository) can seamlessly update public-facing properties without manual intervention.
+- **Implementation**: Leveraging the `RELEASE_TOKEN` (PAT), the `release.yml` action clones external repositories, overwrites files, and pushes commits automatically.
+- **Hexo Blog Syncing Trick**: When syncing a standard `README.md` to a Hexo blog post, YAML frontmatter must be prepended. Using `cat << EOF > post.md` combined with dynamic shell commands like `updated: "$(date +"%Y-%m-%d %H:%M:%S")"` ensures the blog accurately reflects the exact release timestamp, without cluttering the source `README.md` with static blog metadata.
