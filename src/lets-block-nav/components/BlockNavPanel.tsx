@@ -124,15 +124,19 @@ export const BlockNavPanel: React.FC = () => {
     }
   }, [orcaState.activePanel]);
 
+  const rootBlockChildrenHash = state.rootBlockId 
+    ? orcaState.blocks[state.rootBlockId]?.children?.join(',') 
+    : undefined;
+
   useEffect(() => {
     if (state.rootBlockId) {
       loadChildren(state.rootBlockId);
     }
-  }, [state.expandedIds]);
+  }, [state.rootBlockId, rootBlockChildrenHash]);
 
   const ensureEditorFocus = async (targetBlockId: number) => {
     let editorPanelId = state.lastActiveEditorPanelId;
-    if (!editorPanelId || !orca.state.panels[editorPanelId]) {
+    if (!editorPanelId || !isEditorPanel(orca.state.panels, editorPanelId)) {
       editorPanelId = findMainPanelId(orca.state.panels, orca.state.activePanel);
     }
 
