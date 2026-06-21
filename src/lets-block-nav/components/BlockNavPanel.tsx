@@ -85,7 +85,14 @@ export const BlockNavPanel: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    let blockId = getFocusedBlock(orcaState.panels, state.lastActiveEditorPanelId || orcaState.activePanel);
+    let editorPanelId = state.lastActiveEditorPanelId;
+    if (orcaState.activePanel && isEditorPanel(orcaState.panels, orcaState.activePanel)) {
+      editorPanelId = orcaState.activePanel;
+    } else if (!editorPanelId) {
+      editorPanelId = orcaState.activePanel;
+    }
+
+    let blockId = getFocusedBlock(orcaState.panels, editorPanelId);
     if (!blockId) return;
 
     const resolveAndLoad = async () => {
