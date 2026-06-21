@@ -5,14 +5,12 @@ import {
   blockNavState,
   setRootBlock,
   setItems,
-  clearSelection,
 } from "../utils/state";
 import {
   getCurrentBlockId,
   getChildBlocks,
   buildNavItems,
   moveBlockToParent,
-  deleteBlocks,
   getBlockTitle,
 } from "../utils/blocks";
 import { useDragDrop } from "../utils/useDragDrop";
@@ -149,16 +147,6 @@ export const BlockNavPanel: React.FC = () => {
     [state.rootBlockId, loadChildren]
   );
 
-  const handleDeleteSelected = useCallback(async () => {
-    const ids = Array.from(state.selectedIds);
-    if (ids.length === 0) return;
-    await deleteBlocks(ids);
-    clearSelection();
-    if (state.rootBlockId) {
-      await loadChildren(state.rootBlockId);
-    }
-  }, [state.selectedIds, state.rootBlockId, loadChildren]);
-
   const handleNavigate = useCallback((blockId: number) => {
     const activeEditor = state.lastActiveEditorPanelId || orcaState.activePanel;
     const mainPanelId = findMainPanelId(orca.state.panels, activeEditor);
@@ -191,22 +179,6 @@ export const BlockNavPanel: React.FC = () => {
             ? getBlockTitle(state.rootBlockId)
             : t("block-nav.no-block")}
         </div>
-      </div>
-
-      <div className="block-nav-toolbar">
-        {state.selectedIds.size > 0 && (
-          <div className="block-nav-toolbar-selection">
-            <span onClick={clearSelection} className="block-nav-toolbar-btn">
-              {t("block-nav.clear-selection")}
-            </span>
-            <span
-              onClick={handleDeleteSelected}
-              className="block-nav-toolbar-btn block-nav-toolbar-btn-danger"
-            >
-              <i className="ti ti-trash" /> {t("block-nav.delete-selected")}
-            </span>
-          </div>
-        )}
       </div>
 
       <div className="block-nav-content">

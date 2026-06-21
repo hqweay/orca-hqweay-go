@@ -3,8 +3,6 @@ import { useSnapshot } from "valtio";
 import { t } from "@/libs/l10n";
 import {
   blockNavState,
-  toggleSelect,
-  selectRange,
   BlockNavItem,
 } from "../utils/state";
 
@@ -20,7 +18,6 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
   onDropOnNode,
 }) => {
   const state = useSnapshot(blockNavState);
-  const isSelected = state.selectedIds.has(item.id);
   const hasChildren = item.children && item.children.length > 0;
 
   const [isDragOver, setIsDragOver] = React.useState(false);
@@ -29,23 +26,9 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (e.shiftKey) {
-        selectRange(item.id);
-      } else if (e.ctrlKey || e.metaKey) {
-        toggleSelect(item.id, true);
-      } else {
-        onNavigate(item.id);
-      }
+      onNavigate(item.id);
     },
     [item.id, onNavigate]
-  );
-
-  const handleCheckboxChange = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      toggleSelect(item.id, e.ctrlKey || e.metaKey);
-    },
-    [item.id]
   );
   const [dropPosition, setDropPosition] = React.useState<"before" | "after" | "inside" | null>(null);
 
@@ -85,9 +68,7 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
   const handleDragStart = useCallback(
     (e: React.DragEvent) => {
       const repoId = orca.state.repo || "default";
-      const ids = state.selectedIds.has(item.id)
-        ? Array.from(state.selectedIds)
-        : [item.id];
+      const ids = [item.id];
       e.dataTransfer.setData(
         `orca/${repoId}`,
         JSON.stringify({ blocks: ids })
@@ -95,7 +76,7 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
       e.dataTransfer.setData("text/plain", ids.join(","));
       e.dataTransfer.effectAllowed = "copyMove";
     },
-    [item.id, state.selectedIds]
+    [item.id]
   );
 
   const handleDrop = useCallback(
@@ -142,7 +123,7 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
 
   return (
     <div
-      className={`block-nav-node ${isSelected ? "block-nav-node-selected" : ""} ${dropClassName}`}
+      className={`block-nav-node ${dropClassName}`}
       draggable={true}
       onClick={handleClick}
       onDragStart={handleDragStart}
@@ -151,10 +132,6 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      <div className="block-nav-node-checkbox" onClick={handleCheckboxChange}>
-        <i className={isSelected ? "ti ti-checkbox" : "ti ti-square"} />
-      </div>
-
       <div className="block-nav-node-content">
         <span className="block-nav-node-title">{item.text}</span>
         {hasChildren && (

@@ -56,15 +56,6 @@ export const moveBlockToParent = async (
   );
 };
 
-export const deleteBlocks = async (blockIds: number[]): Promise<void> => {
-  for (const id of blockIds) {
-    await orca.commands.invokeEditorCommand(
-      "core.editor.deleteBlock",
-      null,
-      id
-    );
-  }
-};
 
 export const getBlockTitle = (blockId: number): string => {
   const block = orca.state.blocks[blockId];
