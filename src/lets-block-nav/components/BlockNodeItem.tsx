@@ -8,12 +8,14 @@ import {
 
 interface BlockNodeItemProps {
   item: BlockNavItem;
+  isFocused: boolean;
   onNavigate: (blockId: number) => void;
   onDropOnNode: (blockIds: number[], targetId: number, position: "before" | "after" | "inside") => void;
 }
 
 export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
   item,
+  isFocused,
   onNavigate,
   onDropOnNode,
 }) => {
@@ -123,7 +125,7 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
 
   return (
     <div
-      className={`block-nav-node ${dropClassName}`}
+      className={`block-nav-node ${isFocused ? "block-nav-node-selected" : ""} ${dropClassName}`}
       draggable={true}
       onClick={handleClick}
       onDragStart={handleDragStart}

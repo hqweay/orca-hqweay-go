@@ -165,6 +165,8 @@ export const BlockNavPanel: React.FC = () => {
 
   const { isDragOver, dragHandlers } = useDragDrop({ onDrop: handleDrop });
 
+  const focusedBlockId = getFocusedBlock(orcaState.panels, state.lastActiveEditorPanelId || orcaState.activePanel);
+
   return (
     <div
       ref={containerRef}
@@ -204,6 +206,7 @@ export const BlockNavPanel: React.FC = () => {
                 ...item,
                 children: item.children ? [...item.children] : undefined,
               }}
+              isFocused={item.id === focusedBlockId}
               onNavigate={handleNavigate}
               onDropOnNode={handleDropOnNode}
             />
