@@ -16,7 +16,7 @@ interface TabItemProps {
   displayMode?: "grid" | "list";
 }
 
-export const TabItem: React.FC<TabItemProps> = ({
+export const TabItem: React.FC<TabItemProps> = React.memo(({
   blockId,
   title,
   isActive,
@@ -153,4 +153,4 @@ export const TabItem: React.FC<TabItemProps> = ({
       </div>
     </Tooltip>
   );
-};
+});

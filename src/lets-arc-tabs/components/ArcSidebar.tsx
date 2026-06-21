@@ -93,9 +93,7 @@ export const ArcSidebar: React.FC = () => {
     }
   }, [spaces, activeSpace]);
 
-  useEffect(() => {
-    loadPinnedBlocks();
-  }, [activeSpace]);
+
 
   const containerRef = React.useRef<HTMLDivElement>(null);
 
@@ -154,21 +152,23 @@ export const ArcSidebar: React.FC = () => {
     };
   }, []); // <-- Empty dependency array! Only runs once on mount!
 
-  const openBlockIds = getActiveBlocks(state.panels).map(Number);
+  const openBlockIds = useMemo(() => getActiveBlocks(state.panels).map(Number), [state.panels]);
 
-  const currentSpacePinnedBlocks = (activeSpace
-    ? getBlocksInSpace(activeSpace)
-    : localArcTabsState.pinnedBlocks
-  ).map((b) => {
-    const fullBlock = state.blocks[b.id] || b;
-    return {
-      ...b,
-      _title: getBlockTitle(fullBlock, b.id, 0),
-      _icon: getBlockIcon(fullBlock),
-    };
-  });
+  const currentSpacePinnedBlocks = useMemo(() => {
+    return (activeSpace
+      ? getBlocksInSpace(activeSpace)
+      : localArcTabsState.pinnedBlocks
+    ).map((b) => {
+      const fullBlock = state.blocks[b.id] || b;
+      return {
+        ...b,
+        _title: getBlockTitle(fullBlock, b.id, 0),
+        _icon: getBlockIcon(fullBlock),
+      };
+    });
+  }, [activeSpace, localArcTabsState.pinnedBlocks, state.blocks]);
 
-  const todayTabs = (() => {
+  const todayTabs = useMemo(() => {
     const currentSpacePinnedIds = getBlocksInSpace(
       activeSpace || DEFAULT_SPACE,
     ).map((b) => b.id);
@@ -176,7 +176,7 @@ export const ArcSidebar: React.FC = () => {
     return localArcTabsState.recentlyVisited
       .filter((item) => !currentSpacePinnedIds.includes(item.id))
       .slice(0, todayLimit);
-  })();
+  }, [activeSpace, localArcTabsState.recentlyVisited, localArcTabsState.pinnedBlocks]);
 
   const focusedBlock = getFocusedBlock(state.panels, state.activePanel);
 
