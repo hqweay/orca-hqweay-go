@@ -21,7 +21,7 @@ import { addRecentBlock } from "../utils/recent";
 import { TabItem } from "./TabItem";
 import { arcTabsPluginInstance } from "../index";
 
-const getBlockTitle = (block: any, id: string | number) => {
+const getBlockTitle = (block: any, id: string | number, maxLength: number = 20) => {
   if (!block) return `Block ${String(id).substring(0, 8)}`;
 
   const pinTagName =
@@ -48,8 +48,8 @@ const getBlockTitle = (block: any, id: string | number) => {
   if (block.aliases && block.aliases.length > 0) return block.aliases[0];
   if (block.text && block.text.trim().length > 0) {
     let text = block.text.trim();
-    if (text.length > 20) {
-      return text.substring(0, 20) + "...";
+    if (maxLength > 0 && text.length > maxLength) {
+      return text.substring(0, maxLength) + "...";
     }
     return text;
   }
@@ -163,7 +163,7 @@ export const ArcSidebar: React.FC = () => {
     const fullBlock = state.blocks[b.id] || b;
     return {
       ...b,
-      _title: getBlockTitle(fullBlock, b.id),
+      _title: getBlockTitle(fullBlock, b.id, 0),
       _icon: getBlockIcon(fullBlock),
     };
   });
@@ -185,7 +185,7 @@ export const ArcSidebar: React.FC = () => {
   useEffect(() => {
     if (focusedBlock) {
       const block = state.blocks[focusedBlock];
-      const title = getBlockTitle(block, focusedBlock);
+      const title = getBlockTitle(block, focusedBlock, 0);
       const icon = getBlockIcon(block);
       addRecentBlock(focusedBlock, title, icon);
     }
@@ -363,7 +363,7 @@ export const ArcSidebar: React.FC = () => {
           const block = state.blocks[tab.id];
           const isActive = openBlockIds.includes(tab.id);
           const title = block
-            ? getBlockTitle(block, tab.id)
+            ? getBlockTitle(block, tab.id, 0)
             : tab.title || `Block ${tab.id}`;
           const icon = block ? getBlockIcon(block) : tab.icon || "📄";
 
