@@ -92,7 +92,7 @@ jobs:
             const prBody = `## 🚀 Automated Update\n\nUpdate **${PLUGIN_ID}** to version **v${VERSION}**.\n\n### Changes\n- Version: ${VERSION}\n- Download: ${ZIP_URL}`;
 
             const { data: pr } = await github.rest.pulls.create({
-              owner: 'hqweay',
+              owner: 'sethyuan',
               repo: 'awesome-orcanote',
               title: `Update ${PLUGIN_ID} to v${VERSION}`,
               head: `hqweay:${BRANCH_NAME}`,
