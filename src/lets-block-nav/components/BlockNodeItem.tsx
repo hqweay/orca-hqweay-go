@@ -29,7 +29,8 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
   const isSearching = state.isSearching;
   
   // Use searchCache if searching, otherwise use reactive blocks
-  const stateBlock = orca.state.blocks[blockId];
+  const blocksSnap = useSnapshot(orca.state.blocks);
+  const stateBlock = blocksSnap[blockId];
   const block = isSearching ? (searchCache.map.get(blockId) || stateBlock) : stateBlock;
 
   const searchRegex = React.useMemo(() => {
