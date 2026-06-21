@@ -4,6 +4,7 @@ import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import type { Block } from "../orca.d.ts";
 import { ArcSidebar } from "./components/ArcSidebar";
 import { arcTabsState, DEFAULT_SPACE } from "./utils/data";
+import { injectLeftHeadbarButton, removeLeftHeadbarButton } from "@/libs/utils";
 
 export let arcTabsPluginInstance: ArcTabsPlugin;
 
@@ -62,16 +63,39 @@ export default class ArcTabsPlugin extends BasePlugin {
           }
         }
       },
-      t("arc-tabs"), // Display name in command palette
+      t("arc-tabs.description")
     );
 
-    // Bind a default shortcut if desired (optional)
-    // orca.commands.bindShortcut('arc-tabs.openSidebar', 'cmd+shift+a');
+    orca.editorSidetools.registerEditorSidetool(`${this.name}.sidetool`, {
+      render: (_rootBlockId, _panelId) => {
+        return (
+          <orca.components.Button
+            variant="plain"
+            title={t(this.name)}
+            onClick={() => orca.commands.invokeCommand("arc-tabs.openSidebar")}
+            className="orca-arc-tabs-sidetools-btn"
+          >
+            <i className="ti ti-folders" style={{ fontSize: "16px" }} />
+          </orca.components.Button>
+        );
+      },
+    });
+
+    injectLeftHeadbarButton(
+      this.name,
+      "ti ti-folders",
+      t("arc-tabs.description"),
+      () => orca.commands.invokeCommand("arc-tabs.openSidebar")
+    );
 
     const settings = this.getSettings();
     arcTabsState.pinnedDisplayMode = settings.pinnedDisplayMode || "grid";
 
     this.ensurePinTagSchema();
+  }
+
+  protected syncHeadbar() {
+    // Override BasePlugin to avoid registering on the right side
   }
 
   protected async onConfigChanged(newConfig: any): Promise<void> {
@@ -153,6 +177,7 @@ export default class ArcTabsPlugin extends BasePlugin {
   }
 
   async unload() {
+    removeLeftHeadbarButton(this.name);
     // Unregister everything
     orca.panels.unregisterPanel("arcTabs");
     orca.commands.unregisterCommand("arc-tabs.openSidebar");

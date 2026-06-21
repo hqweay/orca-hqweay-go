@@ -138,3 +138,73 @@ export const getBlockColor = (block: any): string | undefined => {
   }
   return undefined;
 };
+
+export const injectLeftHeadbarButton = (
+  id: string,
+  iconClass: string,
+  titleText: string,
+  onClick: () => void
+) => {
+  const inject = () => {
+    const toggleBtn = document.querySelector(".orca-headbar-sidebar-toggle");
+    if (!toggleBtn || !toggleBtn.parentElement) {
+      setTimeout(inject, 1000);
+      return;
+    }
+
+    let wrapper = toggleBtn.parentElement.querySelector(".orca-left-plugins-wrapper") as HTMLElement;
+    if (!wrapper) {
+      wrapper = document.createElement("div");
+      wrapper.className = "orca-left-plugins-wrapper";
+      wrapper.style.display = "flex";
+      wrapper.style.alignItems = "center";
+      wrapper.style.gap = "2px";
+      wrapper.style.marginLeft = "4px";
+      toggleBtn.insertAdjacentElement("beforebegin", wrapper);
+    }
+
+    let btn = document.getElementById(`left-btn-${id}`);
+    if (btn) btn.remove();
+
+    btn = document.createElement("button");
+    btn.id = `left-btn-${id}`;
+    btn.className = "orca-button plain";
+    btn.title = titleText;
+    btn.style.width = "28px";
+    btn.style.height = "28px";
+    btn.style.display = "flex";
+    btn.style.alignItems = "center";
+    btn.style.justifyContent = "center";
+    btn.style.cursor = "pointer";
+    btn.style.border = "none";
+    btn.style.background = "transparent";
+    btn.style.color = "var(--orca-text-secondary, inherit)";
+    
+    // Mimic the hover effect of other headbar buttons
+    btn.onmouseenter = () => {
+      btn!.style.background = "var(--orca-bg-hover, rgba(0, 0, 0, 0.05))";
+      btn!.style.color = "var(--orca-text-primary, inherit)";
+    };
+    btn.onmouseleave = () => {
+      btn!.style.background = "transparent";
+      btn!.style.color = "var(--orca-text-secondary, inherit)";
+    };
+
+    const icon = document.createElement("i");
+    icon.className = iconClass;
+    icon.style.fontSize = "16px";
+    btn.appendChild(icon);
+
+    btn.addEventListener("click", onClick);
+    wrapper.appendChild(btn);
+  };
+  
+  inject();
+};
+
+export const removeLeftHeadbarButton = (id: string) => {
+  const btn = document.getElementById(`left-btn-${id}`);
+  if (btn) {
+    btn.remove();
+  }
+};

@@ -4,6 +4,8 @@ import { BlockNavPanel } from "./components/BlockNavPanel";
 import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
 import "./styles.css";
 
+import { injectLeftHeadbarButton, removeLeftHeadbarButton } from "@/libs/utils";
+
 const PLUGIN_NAME = "lets-block-nav";
 const PANEL_WIDTH = 250;
 
@@ -74,10 +76,22 @@ export default class BlockNavPlugin extends BasePlugin {
       },
     });
 
+    injectLeftHeadbarButton(
+      this.name,
+      "ti ti-tree",
+      t(`${this.name}.description`),
+      () => orca.commands.invokeCommand(`${this.name}.open`)
+    );
+
     this.logger.info(`${this.name} loaded.`);
   }
 
+  protected syncHeadbar() {
+    // Override BasePlugin to avoid registering on the right side
+  }
+
   async unload() {
+    removeLeftHeadbarButton(this.name);
     orca.commands.unregisterCommand(`${this.name}.open`);
     orca.editorSidetools.unregisterEditorSidetool(`${this.name}.sidetool`);
     orca.panels.unregisterPanel("blockNav");
