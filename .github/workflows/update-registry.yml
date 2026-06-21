@@ -101,7 +101,20 @@ jobs:
             });
 
             // 5. 向上游创建 PR
-            const prBody = `## 🚀 Automated Update\n\nUpdate **${PLUGIN_ID}** to version **v${VERSION}**.\n\n### Changes\n- Version: ${VERSION}\n- Download: ${ZIP_URL}`;
+            let changelog = '';
+            try {
+              const { data: release } = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: `v${VERSION}`
+              });
+              changelog = `\n\n### Release Notes\n\n${release.body}`;
+            } catch (error) {
+              console.log('Failed to fetch release notes:', error.message);
+              changelog = `\n\n### Release Notes\n\n[View Release v${VERSION} on GitHub](https://github.com/${context.repo.owner}/${context.repo.repo}/releases/tag/v${VERSION})`;
+            }
+
+            const prBody = `## 🚀 Automated Update\n\nUpdate **${PLUGIN_ID}** to version **v${VERSION}**.\n\n### Changes\n- Version: ${VERSION}\n- Download: ${ZIP_URL}${changelog}`;
 
             const { data: pr } = await github.rest.pulls.create({
               owner: 'sethyuan',
