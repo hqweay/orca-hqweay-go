@@ -9,6 +9,7 @@ export interface BlockNavState {
   isSearching: boolean;
   searchMatchedIds: Record<number, boolean>;
   searchExpandedIds: Record<number, boolean>;
+  resolvedJournalBlockIds: Record<string, number>;
 }
 
 export const blockNavState = proxy<BlockNavState>({
@@ -20,6 +21,7 @@ export const blockNavState = proxy<BlockNavState>({
   isSearching: false,
   searchMatchedIds: {},
   searchExpandedIds: {},
+  resolvedJournalBlockIds: {},
 });
 
 // A plain object to hold the massive tree data, avoiding Valtio deep proxy crashes

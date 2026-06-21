@@ -125,7 +125,53 @@ export const BlockNavPanel: React.FC = () => {
     currentEditorPanelId = orcaState.activePanel;
   }
 
-  const activeBlockId = getFocusedBlock(orcaState.panels, currentEditorPanelId);
+  const activeBlockId = getFocusedBlock(orcaState.panels, currentEditorPanelId, state.resolvedJournalBlockIds);
+
+  useEffect(() => {
+    const findUnresolvedJournals = (panel: any, unresolved: { key: string, date: any }[]) => {
+      if (!panel) return;
+      if (panel.view === 'journal' && panel.viewArgs?.date) {
+        const date = panel.viewArgs.date;
+        const key = typeof date === 'object' && date.getTime 
+          ? date.getTime().toString() 
+          : String(date);
+        
+        if (!state.resolvedJournalBlockIds[key]) {
+          if (!unresolved.find(u => u.key === key)) {
+            unresolved.push({ key, date });
+          }
+        }
+      }
+      if (panel.children) {
+        for (const child of panel.children) {
+          findUnresolvedJournals(child, unresolved);
+        }
+      }
+    };
+    
+    const unresolved: { key: string, date: any }[] = [];
+    findUnresolvedJournals(orcaState.panels, unresolved);
+    
+    if (unresolved.length > 0) {
+      unresolved.forEach(async ({ key, date }) => {
+        try {
+          // If date is a timestamp string, new Date(Number(date)) might be needed, but usually it's "YYYY-MM-DD" or Date object
+          const dateObj = typeof date === 'string' && !isNaN(Number(date)) 
+            ? new Date(Number(date)) 
+            : typeof date === 'string' 
+              ? new Date(date) 
+              : date;
+              
+          const block = await orca.invokeBackend("get-journal-block", dateObj);
+          if (block && block.id) {
+            blockNavState.resolvedJournalBlockIds[key] = block.id;
+          }
+        } catch (e) {
+          console.error("[BlockNav] Failed to resolve journal block for date:", date, e);
+        }
+      });
+    }
+  }, [orcaState.panels]);
 
   useEffect(() => {
     if (!activeBlockId) return;

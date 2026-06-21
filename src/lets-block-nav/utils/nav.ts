@@ -67,7 +67,7 @@ export const getActiveBlocks = (panel: any): string[] => {
   return [];
 };
 
-export const getFocusedBlock = (panel: any, activePanelId: string | null): number | null => {
+export const getFocusedBlock = (panel: any, activePanelId: string | null, resolvedJournalBlockIds?: Record<string, number>): number | null => {
   if (!activePanelId || !panel) return null;
   if (panel.locked) return null;
   
@@ -75,10 +75,23 @@ export const getFocusedBlock = (panel: any, activePanelId: string | null): numbe
     if (panel.view === 'block' && panel.viewArgs?.blockId) {
       return Number(panel.viewArgs.blockId);
     }
-    if (panel.view === 'journal' && panel.viewState) {
-      const blockIds = Object.keys(panel.viewState).filter(k => !isNaN(Number(k)));
-      if (blockIds.length > 0) {
-        return Number(blockIds[0]);
+    if (panel.view === 'journal') {
+      if (panel.viewArgs?.blockId) {
+        return Number(panel.viewArgs.blockId);
+      }
+      if (panel.viewArgs?.date && resolvedJournalBlockIds) {
+        const key = typeof panel.viewArgs.date === 'object' && panel.viewArgs.date.getTime 
+          ? panel.viewArgs.date.getTime().toString() 
+          : String(panel.viewArgs.date);
+        if (resolvedJournalBlockIds[key]) {
+          return resolvedJournalBlockIds[key];
+        }
+      }
+      if (panel.viewState) {
+        const blockIds = Object.keys(panel.viewState).filter(k => !isNaN(Number(k)));
+        if (blockIds.length > 0) {
+          return Number(blockIds[0]);
+        }
       }
     }
     return null;
@@ -86,7 +99,7 @@ export const getFocusedBlock = (panel: any, activePanelId: string | null): numbe
   
   if (panel.children) {
     for (const child of panel.children) {
-      const id = getFocusedBlock(child, activePanelId);
+      const id = getFocusedBlock(child, activePanelId, resolvedJournalBlockIds);
       if (id) return id;
     }
   }
