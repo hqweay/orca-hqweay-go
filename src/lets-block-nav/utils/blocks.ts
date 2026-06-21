@@ -20,7 +20,16 @@ export const getChildBlocks = async (blockId: number): Promise<Block[]> => {
 
   const childrenIds = Array.from(block.children);
   const childBlocks = await orca.invokeBackend("get-blocks", childrenIds);
-  return (childBlocks || []) as Block[];
+  const blocks = (childBlocks || []) as Block[];
+
+  const blockMap = new Map<number, Block>();
+  for (const b of blocks) {
+    blockMap.set(b.id, b);
+  }
+
+  return childrenIds
+    .map((id) => blockMap.get(id))
+    .filter((b): b is Block => b !== undefined);
 };
 
 export const buildNavItems = (blocks: Block[]): BlockNavItem[] => {
