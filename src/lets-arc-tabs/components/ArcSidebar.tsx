@@ -156,22 +156,19 @@ export const ArcSidebar: React.FC = () => {
 
   const openBlockIds = getActiveBlocks(state.panels).map(Number);
 
-  const currentSpacePinnedBlocks = useMemo(() => {
-    const blocks = activeSpace
-      ? getBlocksInSpace(activeSpace)
-      : localArcTabsState.pinnedBlocks;
+  const currentSpacePinnedBlocks = (activeSpace
+    ? getBlocksInSpace(activeSpace)
+    : localArcTabsState.pinnedBlocks
+  ).map((b) => {
+    const fullBlock = state.blocks[b.id] || b;
+    return {
+      ...b,
+      _title: getBlockTitle(fullBlock, b.id),
+      _icon: getBlockIcon(fullBlock),
+    };
+  });
 
-    return blocks.map((b) => {
-      const fullBlock = state.blocks[b.id] || b;
-      return {
-        ...b,
-        _title: getBlockTitle(fullBlock, b.id),
-        _icon: getBlockIcon(fullBlock),
-      };
-    });
-  }, [localArcTabsState.pinnedBlocks, activeSpace, state.blocks]);
-
-  const todayTabs = useMemo(() => {
+  const todayTabs = (() => {
     const currentSpacePinnedIds = getBlocksInSpace(
       activeSpace || DEFAULT_SPACE,
     ).map((b) => b.id);
@@ -179,11 +176,7 @@ export const ArcSidebar: React.FC = () => {
     return localArcTabsState.recentlyVisited
       .filter((item) => !currentSpacePinnedIds.includes(item.id))
       .slice(0, todayLimit);
-  }, [
-    localArcTabsState.recentlyVisited,
-    localArcTabsState.pinnedBlocks,
-    activeSpace,
-  ]);
+  })();
 
   const focusedBlock = getFocusedBlock(state.panels, state.activePanel);
 
