@@ -13,6 +13,7 @@ export interface BlockNavState {
   items: BlockNavItem[];
   selectedIds: Set<number>;
   expandedIds: Set<number>;
+  lastActiveEditorPanelId: string | null;
 }
 
 export const blockNavState = proxy<BlockNavState>({
@@ -20,6 +21,7 @@ export const blockNavState = proxy<BlockNavState>({
   items: [],
   selectedIds: new Set(),
   expandedIds: new Set(),
+  lastActiveEditorPanelId: null,
 });
 
 export const setRootBlock = (blockId: number | null) => {

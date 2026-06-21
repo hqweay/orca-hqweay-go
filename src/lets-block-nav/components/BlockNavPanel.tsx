@@ -19,6 +19,7 @@ import {
 } from "../utils/blocks";
 import { useDragDrop } from "../utils/useDragDrop";
 import { BlockNodeItem } from "./BlockNodeItem";
+import { findMainPanelId, isEditorPanel, getFocusedBlock } from "../utils/nav";
 import styles from "../styles.css?inline";
 
 export const BlockNavPanel: React.FC = () => {
@@ -32,10 +33,29 @@ export const BlockNavPanel: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const blockId = getCurrentBlockId();
-    if (blockId && blockId !== blockNavState.rootBlockId) {
-      setRootBlock(blockId);
-      loadChildren(blockId);
+    let blockId = getFocusedBlock(orcaState.panels, state.lastActiveEditorPanelId || orcaState.activePanel);
+    if (!blockId) return;
+
+    const resolveAndLoad = async () => {
+      let block = orca.state.blocks[blockId!];
+      if (!block) {
+        block = await orca.invokeBackend("get-block", blockId!);
+      }
+      if (block && block.parent) {
+        blockId = Number(block.parent);
+      }
+      if (blockId && blockId !== blockNavState.rootBlockId) {
+        setRootBlock(blockId);
+        await loadChildren(blockId!);
+      }
+    };
+
+    resolveAndLoad();
+  }, [orcaState.activePanel, orcaState.panels]);
+
+  useEffect(() => {
+    if (orcaState.activePanel && isEditorPanel(orcaState.panels, orcaState.activePanel)) {
+      blockNavState.lastActiveEditorPanelId = orcaState.activePanel;
     }
   }, [orcaState.activePanel, orcaState.panels]);
 
@@ -80,8 +100,20 @@ export const BlockNavPanel: React.FC = () => {
   }, [state.selectedIds, state.rootBlockId, loadChildren]);
 
   const handleNavigate = useCallback((blockId: number) => {
-    orca.nav.goTo("block", { blockId });
-  }, []);
+    const activeEditor = state.lastActiveEditorPanelId || orcaState.activePanel;
+    const mainPanelId = findMainPanelId(orca.state.panels, activeEditor);
+    if (mainPanelId) {
+      orca.nav.goTo("block", { blockId }, mainPanelId);
+      orca.nav.switchFocusTo(mainPanelId);
+    } else {
+      const sidebarPanelId = orca.state.activePanel;
+      orca.nav.addTo(sidebarPanelId, "right", {
+        view: "block",
+        viewArgs: { blockId },
+        viewState: {},
+      });
+    }
+  }, [state.lastActiveEditorPanelId, orcaState.activePanel]);
 
   const { isDragOver, dragHandlers } = useDragDrop({ onDrop: handleDrop });
 

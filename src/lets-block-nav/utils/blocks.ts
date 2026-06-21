@@ -12,10 +12,14 @@ export const getCurrentBlockId = (): number | null => {
 };
 
 export const getChildBlocks = async (blockId: number): Promise<Block[]> => {
-  const block = orca.state.blocks[blockId];
+  let block = orca.state.blocks[blockId];
+  if (!block) {
+    block = await orca.invokeBackend("get-block", blockId);
+  }
   if (!block?.children?.length) return [];
 
-  const childBlocks = await orca.invokeBackend("get-blocks", block.children);
+  const childrenIds = Array.from(block.children);
+  const childBlocks = await orca.invokeBackend("get-blocks", childrenIds);
   return (childBlocks || []) as Block[];
 };
 
