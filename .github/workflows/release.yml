@@ -72,7 +72,7 @@ jobs:
           repo: orca-hqweay-go
           tag: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
-          artifacts: "build/dist/package.zip"
+          artifacts: "package.zip"
           bodyFile: release_body.md
           token: ${{ secrets.RELEASE_TOKEN }}
 
