@@ -1,0 +1,166 @@
+import React, { useEffect, useCallback } from "react";
+import { useSnapshot } from "valtio";
+import { t } from "@/libs/l10n";
+import {
+  blockNavState,
+  setRootBlock,
+  setItems,
+  clearSelection,
+  expandAll,
+  collapseAll,
+} from "../utils/state";
+import {
+  getCurrentBlockId,
+  getChildBlocks,
+  buildNavItems,
+  moveBlockToParent,
+  deleteBlocks,
+  getBlockTitle,
+} from "../utils/blocks";
+import { useDragDrop } from "../utils/useDragDrop";
+import { BlockNodeItem } from "./BlockNodeItem";
+import styles from "../styles.css?inline";
+
+export const BlockNavPanel: React.FC = () => {
+  const state = useSnapshot(blockNavState);
+  const orcaState = useSnapshot(orca.state);
+
+  const loadChildren = useCallback(async (blockId: number) => {
+    const blocks = await getChildBlocks(blockId);
+    const items = buildNavItems(blocks);
+    setItems(items);
+  }, []);
+
+  useEffect(() => {
+    const blockId = getCurrentBlockId();
+    if (blockId && blockId !== blockNavState.rootBlockId) {
+      setRootBlock(blockId);
+      loadChildren(blockId);
+    }
+  }, [orcaState.activePanel, orcaState.panels]);
+
+  useEffect(() => {
+    if (state.rootBlockId) {
+      loadChildren(state.rootBlockId);
+    }
+  }, [state.expandedIds]);
+
+  const handleDrop = useCallback(
+    async (blockIds: number[]) => {
+      if (!state.rootBlockId) return;
+      for (const id of blockIds) {
+        await moveBlockToParent(id, state.rootBlockId);
+      }
+      await loadChildren(state.rootBlockId);
+    },
+    [state.rootBlockId, loadChildren]
+  );
+
+  const handleDropOnNode = useCallback(
+    async (blockIds: number[], targetId: number) => {
+      for (const id of blockIds) {
+        if (id === targetId) continue;
+        await moveBlockToParent(id, targetId);
+      }
+      if (state.rootBlockId) {
+        await loadChildren(state.rootBlockId);
+      }
+    },
+    [state.rootBlockId, loadChildren]
+  );
+
+  const handleDeleteSelected = useCallback(async () => {
+    const ids = Array.from(state.selectedIds);
+    if (ids.length === 0) return;
+    await deleteBlocks(ids);
+    clearSelection();
+    if (state.rootBlockId) {
+      await loadChildren(state.rootBlockId);
+    }
+  }, [state.selectedIds, state.rootBlockId, loadChildren]);
+
+  const handleNavigate = useCallback((blockId: number) => {
+    orca.nav.goTo("block", { blockId });
+  }, []);
+
+  const { isDragOver, dragHandlers } = useDragDrop({ onDrop: handleDrop });
+
+  return (
+    <div
+      className={`block-nav-panel ${isDragOver ? "block-nav-panel-drag-over" : ""}`}
+      {...dragHandlers}
+    >
+      <style dangerouslySetInnerHTML={{ __html: styles }} />
+
+      <div className="block-nav-header">
+        <div className="block-nav-header-title">
+          {state.rootBlockId
+            ? getBlockTitle(state.rootBlockId)
+            : t("block-nav.no-block")}
+        </div>
+      </div>
+
+      <div className="block-nav-toolbar">
+        <div className="block-nav-toolbar-actions">
+          <span onClick={expandAll} className="block-nav-toolbar-btn">
+            <i className="ti ti-layout-bottombar-expand" />{" "}
+            {t("block-nav.expand-all")}
+          </span>
+          <span onClick={collapseAll} className="block-nav-toolbar-btn">
+            <i className="ti ti-layout-topbar-collapse" />{" "}
+            {t("block-nav.collapse-all")}
+          </span>
+        </div>
+        {state.selectedIds.size > 0 && (
+          <div className="block-nav-toolbar-selection">
+            <span onClick={clearSelection} className="block-nav-toolbar-btn">
+              {t("block-nav.clear-selection")}
+            </span>
+            <span
+              onClick={handleDeleteSelected}
+              className="block-nav-toolbar-btn block-nav-toolbar-btn-danger"
+            >
+              <i className="ti ti-trash" /> {t("block-nav.delete-selected")}
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className="block-nav-content">
+        {state.items.length === 0 ? (
+          <div className="block-nav-empty">
+            {isDragOver ? (
+              <>
+                <i className="ti ti-download" />
+                <div>{t("block-nav.drop-to-add")}</div>
+              </>
+            ) : (
+              <>
+                <i className="ti ti-tree" />
+                <div>{t("block-nav.no-children")}</div>
+              </>
+            )}
+          </div>
+        ) : (
+          state.items.map((item) => (
+            <BlockNodeItem
+              key={item.id}
+              item={{
+                ...item,
+                children: item.children ? [...item.children] : undefined,
+              }}
+              onNavigate={handleNavigate}
+              onDropOnNode={handleDropOnNode}
+            />
+          ))
+        )}
+      </div>
+
+      {isDragOver && state.items.length > 0 && (
+        <div className="block-nav-drop-hint">
+          <i className="ti ti-plus" /> {t("block-nav.drop-to-add")}
+        </div>
+      )}
+    </div>
+  );
+};
