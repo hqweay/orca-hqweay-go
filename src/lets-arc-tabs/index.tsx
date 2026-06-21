@@ -70,20 +70,7 @@ export default class ArcTabsPlugin extends BasePlugin {
       t("arc-tabs.description")
     );
 
-    orca.editorSidetools.registerEditorSidetool(`${this.name}.sidetool`, {
-      render: (_rootBlockId, _panelId) => {
-        return (
-          <orca.components.Button
-            variant="plain"
-            title={t(this.name)}
-            onClick={() => orca.commands.invokeCommand("arc-tabs.openSidebar")}
-            className="orca-arc-tabs-sidetools-btn"
-          >
-            <i className="ti ti-folders" style={{ fontSize: "16px" }} />
-          </orca.components.Button>
-        );
-      },
-    });
+
 
     injectLeftHeadbarButton(
       this.name,

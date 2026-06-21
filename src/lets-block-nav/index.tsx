@@ -65,20 +65,7 @@ export default class BlockNavPlugin extends BasePlugin {
       t(`${this.name}.description`)
     );
 
-    orca.editorSidetools.registerEditorSidetool(`${this.name}.sidetool`, {
-      render: (_rootBlockId, _panelId) => {
-        return (
-          <orca.components.Button
-            variant="plain"
-            title={t(this.name)}
-            onClick={() => orca.commands.invokeCommand(`${this.name}.open`)}
-            className="orca-block-editor-sidetools-btn"
-          >
-            <i className="ti ti-tree" style={{ fontSize: "16px" }} />
-          </orca.components.Button>
-        );
-      },
-    });
+
 
     injectLeftHeadbarButton(
       this.name,
@@ -110,7 +97,7 @@ export default class BlockNavPlugin extends BasePlugin {
   async unload() {
     removeLeftHeadbarButton(this.name);
     orca.commands.unregisterCommand(`${this.name}.open`);
-    orca.editorSidetools.unregisterEditorSidetool(`${this.name}.sidetool`);
+
     orca.panels.unregisterPanel("blockNav");
     removeCSSRule(PLUGIN_NAME);
     this.logger.info(`${this.name} unloaded.`);
