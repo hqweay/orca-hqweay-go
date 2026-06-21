@@ -37,15 +37,15 @@ export const loadSpacesFromTag = async (): Promise<string[]> => {
 export const getSpaces = (): string[] => {
   const spaces = new Set<string>();
   
-  for (const block of arcTabsState.pinnedBlocks) {
-    getSpaceProperty(block).forEach((s: string) => spaces.add(s));
-  }
-  
   if (arcTabsState.spaceChoices) {
     arcTabsState.spaceChoices.forEach((s: string) => spaces.add(s));
   }
   
-  return Array.from(spaces).sort();
+  for (const block of arcTabsState.pinnedBlocks) {
+    getSpaceProperty(block).forEach((s: string) => spaces.add(s));
+  }
+  
+  return Array.from(spaces);
 };
 
 export const getBlocksInSpace = (space: string): any[] => {
