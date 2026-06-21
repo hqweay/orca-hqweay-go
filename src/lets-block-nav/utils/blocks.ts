@@ -1,4 +1,3 @@
-import { BlockNavItem } from "./state";
 import { Block } from "../../orca";
 
 export const getCurrentBlockId = (): number | null => {
@@ -33,18 +32,6 @@ export const getChildBlocks = async (blockId: number): Promise<Block[]> => {
 };
 
 import { getBlockTitle as getBlockTitleUtil, getBlockIcon, getBlockColor } from "../../libs/utils";
-
-export const buildNavItems = (blocks: Block[]): BlockNavItem[] => {
-  return blocks.map((b) => ({
-    id: Number(b.id),
-    text: getBlockTitleUtil(b, b.id),
-    icon: getBlockIcon(b),
-    color: getBlockColor(b),
-    children: b.children || [],
-    selected: false,
-    collapsed: false,
-  }));
-};
 
 export const moveBlockToParent = async (
   blockId: number,

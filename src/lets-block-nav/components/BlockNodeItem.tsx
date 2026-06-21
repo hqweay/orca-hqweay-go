@@ -1,27 +1,34 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
 import { useSnapshot } from "valtio";
-import { t } from "@/libs/l10n";
 import {
   blockNavState,
-  BlockNavItem,
+  toggleNodeExpansion,
 } from "../utils/state";
 import { BlockIcon } from "../../libs/components/BlockIcon";
+import { getBlockTitle as getBlockTitleUtil, getBlockIcon, getBlockColor, ensureBlockInState } from "../../libs/utils";
 
 interface BlockNodeItemProps {
-  item: BlockNavItem;
-  isFocused: boolean;
+  blockId: number;
+  depth: number;
+  focusedBlockId: number | null;
   onNavigate: (blockId: number) => void;
   onDropOnNode: (blockIds: number[], targetId: number, position: "before" | "after" | "inside") => void;
 }
 
 export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
-  item,
-  isFocused,
+  blockId,
+  depth,
+  focusedBlockId,
   onNavigate,
   onDropOnNode,
 }) => {
   const state = useSnapshot(blockNavState);
-  const hasChildren = item.children && item.children.length > 0;
+  const block = useSnapshot(orca.state).blocks[blockId];
+  
+  const isExpanded = state.expandedIds.has(blockId);
+  const isFocused = blockId === focusedBlockId;
+  const childrenIds = block?.children || [];
+  const hasChildren = childrenIds.length > 0;
 
   const [isDragOver, setIsDragOver] = React.useState(false);
   const dragCounter = React.useRef(0);
@@ -29,10 +36,26 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      onNavigate(item.id);
+      onNavigate(blockId);
     },
-    [item.id, onNavigate]
+    [blockId, onNavigate]
   );
+
+  const handleToggle = useCallback(
+    async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      toggleNodeExpansion(blockId);
+      
+      // If we are expanding, ensure children are loaded in memory
+      if (!isExpanded && hasChildren) {
+        for (const childId of childrenIds) {
+          await ensureBlockInState(Number(childId));
+        }
+      }
+    },
+    [blockId, isExpanded, hasChildren, childrenIds]
+  );
+
   const [dropPosition, setDropPosition] = React.useState<"before" | "after" | "inside" | null>(null);
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -71,7 +94,7 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
   const handleDragStart = useCallback(
     (e: React.DragEvent) => {
       const repoId = orca.state.repo || "default";
-      const ids = [item.id];
+      const ids = [blockId];
       e.dataTransfer.setData(
         `orca/${repoId}`,
         JSON.stringify({ blocks: ids })
@@ -79,7 +102,7 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
       e.dataTransfer.setData("text/plain", ids.join(","));
       e.dataTransfer.effectAllowed = "copyMove";
     },
-    [item.id]
+    [blockId]
   );
 
   const handleDrop = useCallback(
@@ -108,13 +131,13 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
           ids = parsed.blockIds.map(Number);
 
         if (ids.length > 0) {
-          onDropOnNode(ids, item.id, currentPos || "inside");
+          onDropOnNode(ids, blockId, currentPos || "inside");
         }
       } catch (err) {
         console.error("[BlockNav] Failed to parse drop data:", err);
       }
     },
-    [item.id, onDropOnNode, dropPosition]
+    [blockId, onDropOnNode, dropPosition]
   );
 
   let dropClassName = "";
@@ -124,26 +147,56 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
     else dropClassName = "block-nav-node-drag-over"; // inside
   }
 
+  if (!block) return null; // Block not loaded yet
+
+  const title = getBlockTitleUtil(block as any, blockId);
+  const icon = getBlockIcon(block as any);
+  const color = getBlockColor(block as any);
+
   return (
-    <div
-      className={`block-nav-node ${isFocused ? "block-nav-node-selected" : ""} ${dropClassName}`}
-      draggable={true}
-      onClick={handleClick}
-      onDragStart={handleDragStart}
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
-    >
-      <div className="block-nav-node-icon" style={{ marginRight: '8px', display: 'flex', alignItems: 'center' }}>
-        <BlockIcon iconValue={item.icon} color={item.color} />
+    <>
+      <div
+        className={`block-nav-node ${isFocused ? "block-nav-node-selected" : ""} ${dropClassName}`}
+        draggable={true}
+        onClick={handleClick}
+        onDragStart={handleDragStart}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        style={{ paddingLeft: `${depth * 16}px` }}
+      >
+        <div 
+          className="block-nav-node-toggle" 
+          style={{ width: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: hasChildren ? 'pointer' : 'default', opacity: hasChildren ? 0.6 : 0 }}
+          onClick={hasChildren ? handleToggle : undefined}
+        >
+          {hasChildren && (
+            <i className={`ti ti-chevron-${isExpanded ? 'down' : 'right'}`} style={{ fontSize: '12px' }} />
+          )}
+        </div>
+        <div className="block-nav-node-icon" style={{ marginLeft: '4px', marginRight: '8px', display: 'flex', alignItems: 'center' }}>
+          <BlockIcon iconValue={icon} color={color} />
+        </div>
+        <div className="block-nav-node-content">
+          <span className="block-nav-node-title" style={{ color }}>{title}</span>
+        </div>
       </div>
-      <div className="block-nav-node-content">
-        <span className="block-nav-node-title" style={{ color: item.color }}>{item.text}</span>
-        {hasChildren && (
-          <span className="block-nav-node-count">{item.children!.length}</span>
-        )}
-      </div>
-    </div>
+      
+      {isExpanded && hasChildren && (
+        <div className="block-nav-children-container">
+          {childrenIds.map((childId) => (
+            <BlockNodeItem
+              key={Number(childId)}
+              blockId={Number(childId)}
+              depth={depth + 1}
+              focusedBlockId={focusedBlockId}
+              onNavigate={onNavigate}
+              onDropOnNode={onDropOnNode}
+            />
+          ))}
+        </div>
+      )}
+    </>
   );
 };

@@ -4,12 +4,10 @@ import { t } from "@/libs/l10n";
 import {
   blockNavState,
   setRootBlock,
-  setItems,
 } from "../utils/state";
 import {
   getCurrentBlockId,
   getChildBlocks,
-  buildNavItems,
   moveBlockToParent,
   getBlockTitle,
   getBlockIconForId,
@@ -78,10 +76,13 @@ export const BlockNavPanel: React.FC = () => {
     };
   }, []);
 
-  const loadChildren = useCallback(async (blockId: number) => {
-    const blocks = await getChildBlocks(blockId);
-    const items = buildNavItems(blocks);
-    setItems(items);
+  const ensureRootChildrenLoaded = useCallback(async (blockId: number) => {
+    const block = orca.state.blocks[blockId];
+    if (block?.children?.length) {
+      for (const childId of block.children) {
+        await ensureBlockInState(Number(childId));
+      }
+    }
   }, []);
 
   let currentEditorPanelId = state.lastActiveEditorPanelId;
@@ -99,24 +100,25 @@ export const BlockNavPanel: React.FC = () => {
     const resolveAndLoad = async () => {
       let block = orca.state.blocks[activeBlockId!];
       if (!block) {
-        block = await orca.invokeBackend("get-block", activeBlockId!);
+        await ensureBlockInState(activeBlockId!);
+        block = orca.state.blocks[activeBlockId!];
       }
       if (block && block.parent) {
         const parentId = Number(block.parent);
         if (parentId !== blockNavState.rootBlockId) {
           setRootBlock(parentId);
-          await loadChildren(parentId);
+          await ensureRootChildrenLoaded(parentId);
         }
       } else {
         if (activeBlockId !== blockNavState.rootBlockId) {
           setRootBlock(activeBlockId);
-          await loadChildren(activeBlockId);
+          await ensureRootChildrenLoaded(activeBlockId);
         }
       }
     };
 
     resolveAndLoad();
-  }, [activeBlockId]);
+  }, [activeBlockId, ensureRootChildrenLoaded]);
 
   useEffect(() => {
     if (orcaState.activePanel && isEditorPanel(orcaState.panels, orcaState.activePanel)) {
@@ -130,9 +132,9 @@ export const BlockNavPanel: React.FC = () => {
 
   useEffect(() => {
     if (state.rootBlockId) {
-      loadChildren(state.rootBlockId);
+      ensureRootChildrenLoaded(state.rootBlockId);
     }
-  }, [state.rootBlockId, rootBlockChildrenHash]);
+  }, [state.rootBlockId, rootBlockChildrenHash, ensureRootChildrenLoaded]);
 
   const ensureEditorFocus = async (targetBlockId: number) => {
     let editorPanelId = state.lastActiveEditorPanelId;
@@ -161,9 +163,9 @@ export const BlockNavPanel: React.FC = () => {
         await ensureBlockInState(state.rootBlockId);
         await moveBlockToParent(id, state.rootBlockId);
       }
-      await loadChildren(state.rootBlockId);
+      await ensureRootChildrenLoaded(state.rootBlockId);
     },
-    [state.rootBlockId, state.lastActiveEditorPanelId, loadChildren]
+    [state.rootBlockId, state.lastActiveEditorPanelId, ensureRootChildrenLoaded]
   );
 
   const handleDropOnNode = useCallback(
@@ -189,10 +191,10 @@ export const BlockNavPanel: React.FC = () => {
         }
       }
       if (state.rootBlockId) {
-        await loadChildren(state.rootBlockId);
+        await ensureRootChildrenLoaded(state.rootBlockId);
       }
     },
-    [state.rootBlockId, loadChildren]
+    [state.rootBlockId, ensureRootChildrenLoaded]
   );
 
   const handleNavigate = useCallback((blockId: number) => {
@@ -214,6 +216,10 @@ export const BlockNavPanel: React.FC = () => {
   const { isDragOver, dragHandlers } = useDragDrop({ onDrop: handleDrop });
 
   const focusedBlockId = getFocusedBlock(orcaState.panels, state.lastActiveEditorPanelId || orcaState.activePanel);
+
+  const rootBlock = state.rootBlockId ? orcaState.blocks[state.rootBlockId] : null;
+  const childrenIds = rootBlock?.children || [];
+  const hasItems = childrenIds.length > 0;
 
   return (
     <div
@@ -237,7 +243,7 @@ export const BlockNavPanel: React.FC = () => {
       </div>
 
       <div className="block-nav-content">
-        {state.items.length === 0 ? (
+        {!hasItems ? (
           <div className="block-nav-empty">
             {isDragOver ? (
               <>
@@ -252,14 +258,12 @@ export const BlockNavPanel: React.FC = () => {
             )}
           </div>
         ) : (
-          state.items.map((item) => (
+          childrenIds.map((childId) => (
             <BlockNodeItem
-              key={item.id}
-              item={{
-                ...item,
-                children: item.children ? [...item.children] : undefined,
-              }}
-              isFocused={item.id === focusedBlockId}
+              key={Number(childId)}
+              blockId={Number(childId)}
+              depth={0}
+              focusedBlockId={focusedBlockId}
               onNavigate={handleNavigate}
               onDropOnNode={handleDropOnNode}
             />
@@ -267,7 +271,7 @@ export const BlockNavPanel: React.FC = () => {
         )}
       </div>
 
-      {isDragOver && state.items.length > 0 && (
+      {isDragOver && hasItems && (
         <div className="block-nav-drop-hint">
           <i className="ti ti-plus" /> {t("block-nav.drop-to-add")}
         </div>
