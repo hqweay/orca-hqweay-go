@@ -11,7 +11,7 @@ const PLUGIN_NAME = "lets-block-nav";
 const PANEL_WIDTH = 250;
 
 export default class BlockNavPlugin extends BasePlugin {
-  protected headbarButtonId = `${this.name}.block-nav`;
+  // protected headbarButtonId = `${this.name}.block-nav`;
 
   async load() {
     applyCSSRule(
@@ -22,7 +22,7 @@ export default class BlockNavPlugin extends BasePlugin {
           max-width: ${PANEL_WIDTH}px !important;
         }
       `,
-      { id: PLUGIN_NAME }
+      { id: PLUGIN_NAME },
     );
 
     orca.panels.registerPanel("blockNav", BlockNavPanel);
@@ -39,16 +39,22 @@ export default class BlockNavPlugin extends BasePlugin {
         const defaultSide = this.getSettings()?.sidebarPosition || "left";
         const side = overrideSide || defaultSide;
 
-        const getTargetPanelId = (panel: any, targetSide: "left" | "right"): string => {
+        const getTargetPanelId = (
+          panel: any,
+          targetSide: "left" | "right",
+        ): string => {
           if (panel.view) return panel.id;
           if (panel.children && panel.children.length > 0) {
-            const childIndex = targetSide === "left" ? 0 : panel.children.length - 1;
+            const childIndex =
+              targetSide === "left" ? 0 : panel.children.length - 1;
             return getTargetPanelId(panel.children[childIndex], targetSide);
           }
           return panel.id;
         };
 
-        const targetPanelId = orca.state.panels ? getTargetPanelId(orca.state.panels, side) : orca.state.activePanel;
+        const targetPanelId = orca.state.panels
+          ? getTargetPanelId(orca.state.panels, side)
+          : orca.state.activePanel;
         if (!targetPanelId) return;
 
         const newPanelId = orca.nav.addTo(targetPanelId, side, {
@@ -60,13 +66,16 @@ export default class BlockNavPlugin extends BasePlugin {
 
         if (newPanelId) {
           const width = PANEL_WIDTH;
-          orca.nav.changeSizes(newPanelId, side === "left" ? [width, window.innerWidth - width] : [window.innerWidth - width, width]);
+          orca.nav.changeSizes(
+            newPanelId,
+            side === "left"
+              ? [width, window.innerWidth - width]
+              : [window.innerWidth - width, width],
+          );
         }
       },
-      t(`${this.name}.description`)
+      t(`${this.name}.description`),
     );
-
-
 
     injectLeftHeadbarButton(
       this.name,
@@ -85,7 +94,7 @@ export default class BlockNavPlugin extends BasePlugin {
         const defaultSide = this.getSettings()?.sidebarPosition || "left";
         const oppositeSide = defaultSide === "left" ? "right" : "left";
         orca.commands.invokeCommand(`${this.name}.open`, oppositeSide);
-      }
+      },
     );
 
     this.logger.info(`${this.name} loaded.`);
@@ -120,10 +129,15 @@ export default class BlockNavPlugin extends BasePlugin {
   renderCustomSettings(settings: any, updateSettings: (val: any) => void) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-        <SettingsSection title={t(`${this.name}.settings`) || "Block Nav Settings"}>
+        <SettingsSection
+          title={t(`${this.name}.settings`) || "Block Nav Settings"}
+        >
           <SettingsItem
             label={t(`${this.name}.sidebarPosition`) || "Sidebar Position"}
-            description={t(`${this.name}.sidebarPositionDesc`) || "Default side to open the Block Nav panel. Right-click the button to open on the opposite side."}
+            description={
+              t(`${this.name}.sidebarPositionDesc`) ||
+              "Default side to open the Block Nav panel. Right-click the button to open on the opposite side."
+            }
           >
             <orca.components.Select
               selected={[settings.sidebarPosition || "left"]}

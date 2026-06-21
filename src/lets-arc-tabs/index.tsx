@@ -9,7 +9,7 @@ import { injectLeftHeadbarButton, removeLeftHeadbarButton } from "@/libs/utils";
 export let arcTabsPluginInstance: ArcTabsPlugin;
 
 export default class ArcTabsPlugin extends BasePlugin {
-  protected headbarButtonId = "arc-tabs.openSidebar";
+  // protected headbarButtonId = "arc-tabs.openSidebar";
 
   async load() {
     arcTabsPluginInstance = this;
@@ -40,16 +40,22 @@ export default class ArcTabsPlugin extends BasePlugin {
           const defaultSide = this.getSettings()?.sidebarPosition || "left";
           const side = overrideSide || defaultSide;
 
-          const getTargetPanelId = (panel: any, targetSide: "left" | "right"): string => {
+          const getTargetPanelId = (
+            panel: any,
+            targetSide: "left" | "right",
+          ): string => {
             if (panel.view) return panel.id;
             if (panel.children && panel.children.length > 0) {
-              const childIndex = targetSide === "left" ? 0 : panel.children.length - 1;
+              const childIndex =
+                targetSide === "left" ? 0 : panel.children.length - 1;
               return getTargetPanelId(panel.children[childIndex], targetSide);
             }
             return panel.id;
           };
 
-          const targetPanelId = orca.state.panels ? getTargetPanelId(orca.state.panels, side) : orca.state.activePanel;
+          const targetPanelId = orca.state.panels
+            ? getTargetPanelId(orca.state.panels, side)
+            : orca.state.activePanel;
           if (!targetPanelId) return;
 
           const newPanelId = orca.nav.addTo(targetPanelId, side, {
@@ -60,17 +66,21 @@ export default class ArcTabsPlugin extends BasePlugin {
           } as any);
 
           if (newPanelId) {
-            const width = arcTabsPluginInstance?.getSettings()?.sidebarWidth || 250;
-            // Synchronously update layout state to avoid initial flash 
+            const width =
+              arcTabsPluginInstance?.getSettings()?.sidebarWidth || 250;
+            // Synchronously update layout state to avoid initial flash
             // from default equal-split calculation
-            orca.nav.changeSizes(newPanelId, side === "left" ? [width, window.innerWidth - width] : [window.innerWidth - width, width]);
+            orca.nav.changeSizes(
+              newPanelId,
+              side === "left"
+                ? [width, window.innerWidth - width]
+                : [window.innerWidth - width, width],
+            );
           }
         }
       },
-      t("arc-tabs.description")
+      t("arc-tabs.description"),
     );
-
-
 
     injectLeftHeadbarButton(
       this.name,
@@ -89,7 +99,7 @@ export default class ArcTabsPlugin extends BasePlugin {
         const defaultSide = this.getSettings()?.sidebarPosition || "left";
         const oppositeSide = defaultSide === "left" ? "right" : "left";
         orca.commands.invokeCommand("arc-tabs.openSidebar", oppositeSide);
-      }
+      },
     );
 
     const settings = this.getSettings();
@@ -243,7 +253,10 @@ export default class ArcTabsPlugin extends BasePlugin {
           </SettingsItem>
           <SettingsItem
             label={t("arc-tabs.sidebarPosition") || "Sidebar Position"}
-            description={t("arc-tabs.sidebarPositionDesc") || "Default side to open the Arc Tabs panel. Right-click the button to open on the opposite side."}
+            description={
+              t("arc-tabs.sidebarPositionDesc") ||
+              "Default side to open the Arc Tabs panel. Right-click the button to open on the opposite side."
+            }
           >
             <orca.components.Select
               selected={[settings.sidebarPosition || "left"]}
