@@ -76,6 +76,29 @@ jobs:
           bodyFile: release_body.md
           token: ${{ secrets.RELEASE_TOKEN }}
 
+      - name: Sync Docs to Public Repo
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git clone https://x-access-token:${GH_TOKEN}@github.com/hqweay/orca-hqweay-go.git public-repo
+          
+          cp README.md public-repo/
+          cp CHANGELOG.md public-repo/
+          
+          cd public-repo
+          git add README.md CHANGELOG.md
+          
+          if git diff --staged --quiet; then
+            echo "No changes to sync."
+          else
+            git commit -m "docs: sync README and CHANGELOG for ${{ github.ref_name }}"
+            git push
+            echo "Successfully synced README and CHANGELOG."
+          fi
+
       - name: Trigger Registry Update
         if: contains(github.event.head_commit.message, '[update registry]')
         env:
