@@ -257,6 +257,23 @@ An Arc-browser-like modern tabs and sidebar management system for Orca Note to b
   - **Visual Cache**: Automatically caches titles and custom icons so that the sidebar renders instantly even on a fresh restart or offline.
 - **Zero Latency**: State is managed globally via Valtio reactive proxy, offering 0ms instantaneous UI feedback.
 
+### 22. 🌳 Block Navigator
+
+Introduces a modern, structured global sidebar outline tree for Orca Note, designed specifically for reading and organizing long documents:
+
+- **Global View & Drill-down**:
+  - **Smooth Left-Click Jump**: Click on an outline node, and the right editor instantly focuses while the sidebar itself remains stable without jumping around.
+  - **Focused Right-Click Drill-down**: Right-click on any node to instantly switch the root node of the entire sidebar to that block, perfectly eliminating extra distractions and focusing on the current subtree.
+- **Comprehensive Full-text Search**:
+  - The sidebar comes with an exclusive search box supporting case-insensitive, real-time local filtering.
+  - **Unified Matching**: Thoroughly connects underlying search logic with visual rendering. Even if blocks use custom `displayName` properties or date formats, what you search is exactly what you see.
+  - **Precise Highlighting**: Keywords matching the search are precisely painted with an eye-catching yellow highlight brush in the outline.
+- **Perfect Text Display Experience**:
+  - **Dynamic Truncation**: Say goodbye to rigid JavaScript fixed-length truncation. By utilizing CSS flex layout, it never wraps no matter how narrow the sidebar gets.
+  - **Native Hover Tooltips**: Even if the text is extremely long, hovering the mouse will reveal the full node content word-for-word via the browser's native tooltip.
+- **Seamless Native UI Integration**:
+  - Attached right next to the native left sidebar toggle button, naturally blending into Orca's top bar ecosystem.
+
 ## Development
 
 This project uses a modular architecture:

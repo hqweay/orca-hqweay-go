@@ -1,12 +1,11 @@
 export default {
-  "block-nav": "Block Navigator",
-  "block-nav.description":
-    "Navigate and manage block structure with drag-and-drop",
-  "block-nav.no-block": "No block focused",
-  "block-nav.no-children": "No child blocks",
-  "block-nav.expand-all": "Expand All",
-  "block-nav.collapse-all": "Collapse All",
-  "block-nav.clear-selection": "Clear",
-  "block-nav.delete-selected": "Delete",
-  "block-nav.drop-to-add": "Drop to add as child",
+  "block-nav": "大纲导航",
+  "block-nav.description": "全局侧边栏大纲树，支持全文检索与左右键分离的下钻交互",
+  "block-nav.no-block": "暂无数据",
+  "block-nav.no-children": "无子块",
+  "block-nav.expand-all": "展开全部",
+  "block-nav.collapse-all": "折叠全部",
+  "block-nav.clear-selection": "清除",
+  "block-nav.delete-selected": "删除",
+  "block-nav.drop-to-add": "释放以添加为子块",
 };
