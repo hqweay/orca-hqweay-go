@@ -248,6 +248,8 @@ export const BlockNavPanel: React.FC = () => {
   const childrenIds = rootBlock?.children || [];
   const hasItems = childrenIds.length > 0;
 
+  const parentId = rootBlock?.parent ? Number(rootBlock.parent) : null;
+
   return (
     <div
       ref={containerRef}
@@ -256,12 +258,51 @@ export const BlockNavPanel: React.FC = () => {
     >
       <style dangerouslySetInnerHTML={{ __html: styles }} />
 
-      <div className="block-nav-header">
-        <div className="block-nav-header-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: state.rootBlockId ? getBlockColorForId(state.rootBlockId) : undefined }}>
+      <div className="block-nav-header" style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', borderBottom: '1px solid var(--orca-border)' }}>
+        {parentId && (
+          <div
+            style={{
+              cursor: 'pointer',
+              opacity: 0.6,
+              marginRight: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '4px',
+              borderRadius: '4px'
+            }}
+            className="hover-bg"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNavigate(parentId);
+            }}
+          >
+            <i className="ti ti-arrow-up" />
+          </div>
+        )}
+        <div 
+          className="block-nav-header-title" 
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '8px', 
+            color: state.rootBlockId ? getBlockColorForId(state.rootBlockId) : undefined,
+            cursor: state.rootBlockId ? 'pointer' : 'default',
+            flex: 1,
+            overflow: 'hidden'
+          }}
+          onClick={() => {
+            if (state.rootBlockId) {
+              handleNavigate(state.rootBlockId);
+            }
+          }}
+        >
           {state.rootBlockId ? (
             <>
               <BlockIcon iconValue={getBlockIconForId(state.rootBlockId)} color={getBlockColorForId(state.rootBlockId)} />
-              <span>{getBlockTitle(state.rootBlockId)}</span>
+              <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {getBlockTitle(state.rootBlockId)}
+              </span>
             </>
           ) : (
             t("block-nav.no-block")
