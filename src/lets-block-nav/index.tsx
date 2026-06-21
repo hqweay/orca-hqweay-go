@@ -69,7 +69,7 @@ export default class BlockNavPlugin extends BasePlugin {
 
     injectLeftHeadbarButton(
       this.name,
-      "ti ti-tree",
+      "ti ti-list-details",
       t(`${this.name}.description`),
       (e: MouseEvent) => {
         const defaultSide = this.getSettings()?.sidebarPosition || "left";
@@ -111,7 +111,7 @@ export default class BlockNavPlugin extends BasePlugin {
         title={t(`${this.name}.description`)}
         onClick={() => orca.commands.invokeCommand(`${this.name}.open`)}
       >
-        <i className="ti ti-tree" style={{ fontSize: "16px" }} />
+        <i className="ti ti-list-details" style={{ fontSize: "16px" }} />
       </Button>
     );
   }

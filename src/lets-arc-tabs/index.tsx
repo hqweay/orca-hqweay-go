@@ -74,7 +74,7 @@ export default class ArcTabsPlugin extends BasePlugin {
 
     injectLeftHeadbarButton(
       this.name,
-      "ti ti-folders",
+      "ti ti-layout-sidebar",
       t("arc-tabs.description"),
       (e: MouseEvent) => {
         const defaultSide = this.getSettings()?.sidebarPosition || "left";
@@ -196,7 +196,7 @@ export default class ArcTabsPlugin extends BasePlugin {
         title={t("arc-tabs.description")}
         onClick={() => orca.commands.invokeCommand("arc-tabs.openSidebar")}
       >
-        <i className="ti ti-folders" style={{ fontSize: "16px" }} />
+        <i className="ti ti-layout-sidebar" style={{ fontSize: "16px" }} />
       </Button>
     );
   }
