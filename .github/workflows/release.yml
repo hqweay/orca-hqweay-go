@@ -68,6 +68,8 @@ jobs:
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
+          owner: hqweay
+          repo: orca-hqweay-go
           tag: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
           artifacts: "build/dist/package.zip"
