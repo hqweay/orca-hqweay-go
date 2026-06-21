@@ -135,7 +135,9 @@ export const BlockNavPanel: React.FC = () => {
   const handleDrop = useCallback(
     async (blockIds: number[]) => {
       if (!state.rootBlockId) return;
-      await ensureEditorFocus(state.rootBlockId);
+      if (blockIds.length > 0) {
+        await ensureEditorFocus(blockIds[0]);
+      }
       
       for (const id of blockIds) {
         await ensureBlockInState(id);
@@ -149,7 +151,9 @@ export const BlockNavPanel: React.FC = () => {
 
   const handleDropOnNode = useCallback(
     async (blockIds: number[], targetId: number, position: "before" | "after" | "inside") => {
-      await ensureEditorFocus(targetId);
+      if (blockIds.length > 0) {
+        await ensureEditorFocus(blockIds[0]);
+      }
       
       for (const id of blockIds) {
         if (id === targetId) continue;
