@@ -33,10 +33,18 @@ export default class BlockNavPlugin extends BasePlugin {
           return;
         }
 
-        const activePanelId = orca.state.activePanel;
-        if (!activePanelId) return;
+        const getLeftMostPanelId = (panel: any): string => {
+          if (panel.view) return panel.id;
+          if (panel.children && panel.children.length > 0) {
+            return getLeftMostPanelId(panel.children[0]);
+          }
+          return panel.id;
+        };
 
-        const newPanelId = orca.nav.addTo(activePanelId, "left", {
+        const targetPanelId = orca.state.panels ? getLeftMostPanelId(orca.state.panels) : orca.state.activePanel;
+        if (!targetPanelId) return;
+
+        const newPanelId = orca.nav.addTo(targetPanelId, "left", {
           view: "blockNav",
           viewArgs: {},
           viewState: {},
