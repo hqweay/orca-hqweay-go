@@ -28,7 +28,7 @@ jobs:
 
             // 1. 检查是否已存在 PR
             const existingPRs = await github.rest.pulls.list({
-              owner: 'hqweay',
+              owner: 'sethyuan',
               repo: 'awesome-orcanote',
               head: `hqweay:${BRANCH_NAME}`,
               state: 'open'
@@ -39,9 +39,9 @@ jobs:
               return;
             }
 
-            // 2. 获取 plugins.json
+            // 2. 从上游获取最新的 plugins.json
             const { data: fileData } = await github.rest.repos.getContent({
-              owner: 'hqweay',
+              owner: 'sethyuan',
               repo: 'awesome-orcanote',
               path: 'plugins.json',
               ref: 'main'
@@ -64,9 +64,9 @@ jobs:
             const newContent = JSON.stringify(plugins, null, 2) + '\n';
             const encodedContent = Buffer.from(newContent).toString('base64');
 
-            // 4. 创建分支并提交
+            // 4. 从上游最新的 main 分支在自己的 fork 中创建新分支
             const { data: mainRef } = await github.rest.git.getRef({
-              owner: 'hqweay',
+              owner: 'sethyuan',
               repo: 'awesome-orcanote',
               ref: 'heads/main'
             });
@@ -78,6 +78,7 @@ jobs:
               sha: mainRef.object.sha
             });
 
+            // 在自己的 fork 分支中提交修改
             await github.rest.repos.createOrUpdateFileContents({
               owner: 'hqweay',
               repo: 'awesome-orcanote',
@@ -88,7 +89,7 @@ jobs:
               branch: BRANCH_NAME
             });
 
-            // 5. 创建 PR
+            // 5. 向上游创建 PR
             const prBody = `## 🚀 Automated Update\n\nUpdate **${PLUGIN_ID}** to version **v${VERSION}**.\n\n### Changes\n- Version: ${VERSION}\n- Download: ${ZIP_URL}`;
 
             const { data: pr } = await github.rest.pulls.create({
