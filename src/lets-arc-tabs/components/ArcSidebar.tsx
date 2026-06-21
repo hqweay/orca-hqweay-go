@@ -154,10 +154,7 @@ export const ArcSidebar: React.FC = () => {
     };
   }, []); // <-- Empty dependency array! Only runs once on mount!
 
-  const openBlockIds = useMemo(
-    () => getActiveBlocks(state.panels).map(Number),
-    [state.panels],
-  );
+  const openBlockIds = getActiveBlocks(state.panels).map(Number);
 
   const currentSpacePinnedBlocks = useMemo(() => {
     const blocks = activeSpace
@@ -188,9 +185,7 @@ export const ArcSidebar: React.FC = () => {
     activeSpace,
   ]);
 
-  const focusedBlock = useMemo(() => {
-    return getFocusedBlock(state.panels, state.activePanel);
-  }, [state.panels, state.activePanel]);
+  const focusedBlock = getFocusedBlock(state.panels, state.activePanel);
 
   const isBlockCached = !!(focusedBlock && state.blocks[focusedBlock]);
 

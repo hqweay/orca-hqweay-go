@@ -84,39 +84,45 @@ export const BlockNavPanel: React.FC = () => {
     setItems(items);
   }, []);
 
-  useEffect(() => {
-    let editorPanelId = state.lastActiveEditorPanelId;
-    if (orcaState.activePanel && isEditorPanel(orcaState.panels, orcaState.activePanel)) {
-      editorPanelId = orcaState.activePanel;
-    } else if (!editorPanelId) {
-      editorPanelId = orcaState.activePanel;
-    }
+  let currentEditorPanelId = state.lastActiveEditorPanelId;
+  if (orcaState.activePanel && isEditorPanel(orcaState.panels, orcaState.activePanel)) {
+    currentEditorPanelId = orcaState.activePanel;
+  } else if (!currentEditorPanelId) {
+    currentEditorPanelId = orcaState.activePanel;
+  }
 
-    let blockId = getFocusedBlock(orcaState.panels, editorPanelId);
-    if (!blockId) return;
+  const activeBlockId = getFocusedBlock(orcaState.panels, currentEditorPanelId);
+
+  useEffect(() => {
+    if (!activeBlockId) return;
 
     const resolveAndLoad = async () => {
-      let block = orca.state.blocks[blockId!];
+      let block = orca.state.blocks[activeBlockId!];
       if (!block) {
-        block = await orca.invokeBackend("get-block", blockId!);
+        block = await orca.invokeBackend("get-block", activeBlockId!);
       }
       if (block && block.parent) {
-        blockId = Number(block.parent);
-      }
-      if (blockId && blockId !== blockNavState.rootBlockId) {
-        setRootBlock(blockId);
-        await loadChildren(blockId!);
+        const parentId = Number(block.parent);
+        if (parentId !== blockNavState.rootBlockId) {
+          setRootBlock(parentId);
+          await loadChildren(parentId);
+        }
+      } else {
+        if (activeBlockId !== blockNavState.rootBlockId) {
+          setRootBlock(activeBlockId);
+          await loadChildren(activeBlockId);
+        }
       }
     };
 
     resolveAndLoad();
-  }, [orcaState.activePanel, orcaState.panels]);
+  }, [activeBlockId]);
 
   useEffect(() => {
     if (orcaState.activePanel && isEditorPanel(orcaState.panels, orcaState.activePanel)) {
       blockNavState.lastActiveEditorPanelId = orcaState.activePanel;
     }
-  }, [orcaState.activePanel, orcaState.panels]);
+  }, [orcaState.activePanel]);
 
   useEffect(() => {
     if (state.rootBlockId) {
