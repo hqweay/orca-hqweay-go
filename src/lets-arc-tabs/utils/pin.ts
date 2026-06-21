@@ -2,6 +2,7 @@ import { DataImporter } from "@/libs/DataImporter";
 import { arcTabsPluginInstance } from "../index";
 import { arcTabsState } from "./data";
 import { findMainPanelId } from "./nav";
+import { ensureBlockInState } from "../../libs/utils";
 
 const getPinTagName = () => {
   const settings = arcTabsPluginInstance?.getSettings() || {};
@@ -87,16 +88,17 @@ export const pinBlock = async (idNum: number, spaceId: string) => {
   }
 
   try {
-    const mainPanelId = findMainPanelId(orca.state.panels, orca.state.activePanel);
+    let mainPanelId = findMainPanelId(orca.state.panels, orca.state.activePanel);
     
-    if (!mainPanelId) {
-      console.error("[ArcTabs] No main panel found");
-      return;
+    if (mainPanelId) {
+      orca.nav.switchFocusTo(mainPanelId);
+    } else {
+      // Fallback: No editor exists, force open one so editor commands can run
+      orca.nav.goTo("block", { blockId: idNum });
+      await new Promise((r) => setTimeout(r, 500));
     }
 
-    orca.nav.goTo("block", { blockId: idNum }, mainPanelId);
-    orca.nav.switchFocusTo(mainPanelId);
-    await new Promise((r) => setTimeout(r, 800));
+    await ensureBlockInState(idNum);
 
     await DataImporter.applyTag(idNum, {
       name: pinTagName,
@@ -135,12 +137,17 @@ export const unpinBlock = async (idNum: number, space?: string) => {
   );
 
   try {
-    const mainPanelId = findMainPanelId(orca.state.panels, orca.state.activePanel);
-    if (!mainPanelId) return;
+    let mainPanelId = findMainPanelId(orca.state.panels, orca.state.activePanel);
+    
+    if (mainPanelId) {
+      orca.nav.switchFocusTo(mainPanelId);
+    } else {
+      // Fallback: No editor exists, force open one so editor commands can run
+      orca.nav.goTo("block", { blockId: idNum });
+      await new Promise((r) => setTimeout(r, 500));
+    }
 
-    orca.nav.goTo("block", { blockId: idNum }, mainPanelId);
-    orca.nav.switchFocusTo(mainPanelId);
-    await new Promise((r) => setTimeout(r, 500));
+    await ensureBlockInState(idNum);
 
     await orca.commands.invokeEditorCommand(
       "core.editor.removeTag",

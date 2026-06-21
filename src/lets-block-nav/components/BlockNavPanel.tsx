@@ -117,12 +117,26 @@ export const BlockNavPanel: React.FC = () => {
     }
   }, [state.expandedIds]);
 
+  const ensureEditorFocus = async (targetBlockId: number) => {
+    let editorPanelId = state.lastActiveEditorPanelId;
+    if (!editorPanelId || !orca.state.panels[editorPanelId]) {
+      editorPanelId = findMainPanelId(orca.state.panels, orca.state.activePanel);
+    }
+
+    if (editorPanelId) {
+      orca.nav.switchFocusTo(editorPanelId);
+    } else {
+      // Fallback: No editor exists, force open one so editor commands can run
+      orca.nav.goTo("block", { blockId: targetBlockId });
+      await new Promise((r) => setTimeout(r, 500));
+    }
+  };
+
   const handleDrop = useCallback(
     async (blockIds: number[]) => {
       if (!state.rootBlockId) return;
-      if (state.lastActiveEditorPanelId) {
-        orca.nav.switchFocusTo(state.lastActiveEditorPanelId);
-      }
+      await ensureEditorFocus(state.rootBlockId);
+      
       for (const id of blockIds) {
         await ensureBlockInState(id);
         await ensureBlockInState(state.rootBlockId);
@@ -135,9 +149,8 @@ export const BlockNavPanel: React.FC = () => {
 
   const handleDropOnNode = useCallback(
     async (blockIds: number[], targetId: number, position: "before" | "after" | "inside") => {
-      if (state.lastActiveEditorPanelId) {
-        orca.nav.switchFocusTo(state.lastActiveEditorPanelId);
-      }
+      await ensureEditorFocus(targetId);
+      
       for (const id of blockIds) {
         if (id === targetId) continue;
         await ensureBlockInState(id);
