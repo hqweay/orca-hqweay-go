@@ -25,7 +25,7 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
   const state = useSnapshot(blockNavState);
   const block = useSnapshot(orca.state).blocks[blockId];
   
-  const isExpanded = state.expandedIds.has(blockId);
+  const isExpanded = !!state.expandedIds[blockId];
   const isFocused = blockId === focusedBlockId;
   const childrenIds = block?.children || [];
   const hasChildren = childrenIds.length > 0;

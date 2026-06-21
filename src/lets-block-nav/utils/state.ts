@@ -2,13 +2,13 @@ import { proxy } from "valtio";
 
 export interface BlockNavState {
   rootBlockId: number | null;
-  expandedIds: Set<number>;
+  expandedIds: Record<number, boolean>;
   lastActiveEditorPanelId: string | null;
 }
 
 export const blockNavState = proxy<BlockNavState>({
   rootBlockId: null,
-  expandedIds: new Set<number>(),
+  expandedIds: {},
   lastActiveEditorPanelId: null,
 });
 
@@ -17,9 +17,9 @@ export const setRootBlock = (blockId: number | null) => {
 };
 
 export const toggleNodeExpansion = (blockId: number) => {
-  if (blockNavState.expandedIds.has(blockId)) {
-    blockNavState.expandedIds.delete(blockId);
+  if (blockNavState.expandedIds[blockId]) {
+    delete blockNavState.expandedIds[blockId];
   } else {
-    blockNavState.expandedIds.add(blockId);
+    blockNavState.expandedIds[blockId] = true;
   }
 };
