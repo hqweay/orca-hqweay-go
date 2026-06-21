@@ -59,7 +59,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           
           # 提取当前版本的 changelog
-          awk '/^## v'"$VERSION"'/{found=1; next} /^## v/{if(found) exit} found{print}' CHANGELOG.md > release_body.md
+          awk '/^## v?'"$VERSION"'/{found=1; next} /^## /{if(found) exit} found{print}' CHANGELOG.md > release_body.md
           
           if [ ! -s release_body.md ]; then
             echo "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details." > release_body.md
