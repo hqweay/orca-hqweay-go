@@ -331,11 +331,8 @@ export const BlockNavPanel: React.FC = () => {
     for (const block of blockTree) {
       let blockText = "";
       try {
-        if (block.content && Array.isArray(block.content)) {
-          blockText = block.content
-            .map((c: any) => (c.v ? String(c.v) : ""))
-            .join("")
-            .toLowerCase();
+        if (typeof block.text === "string") {
+          blockText = block.text.toLowerCase();
         }
       } catch (e) {
         console.warn("[BlockNavSearch] failed to extract text for block:", block.id, e);
