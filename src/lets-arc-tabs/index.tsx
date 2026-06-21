@@ -36,7 +36,18 @@ export default class ArcTabsPlugin extends BasePlugin {
         if (existingPanel) {
           orca.nav.close(existingPanel.id);
         } else {
-          const newPanelId = orca.nav.addTo(orca.state.activePanel, "left", {
+          const getLeftMostPanelId = (panel: any): string => {
+            if (panel.view) return panel.id;
+            if (panel.children && panel.children.length > 0) {
+              return getLeftMostPanelId(panel.children[0]);
+            }
+            return panel.id;
+          };
+
+          const targetPanelId = orca.state.panels ? getLeftMostPanelId(orca.state.panels) : orca.state.activePanel;
+          if (!targetPanelId) return;
+
+          const newPanelId = orca.nav.addTo(targetPanelId, "left", {
             view: "arcTabs",
             viewArgs: {},
             viewState: {},
