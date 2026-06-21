@@ -460,11 +460,33 @@ export const BlockNavPanel: React.FC = () => {
 
         {state.rootBlockId && (
           <div style={{ width: "100%" }}>
-            <orca.components.CompositionInput
+            <orca.components.Input
               value={state.filterText}
               onChange={(e: any) => handleSearch(e.target.value)}
               placeholder="Filter..."
               pre={<i className="ti ti-search" style={{ opacity: 0.6 }} />}
+              post={
+                state.filterText ? (
+                  <div
+                    className="hover-bg"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      padding: "2px",
+                      borderRadius: "4px",
+                      opacity: 0.6,
+                    }}
+                    onMouseDown={(e) => {
+                      e.preventDefault(); // Prevent losing focus
+                      handleSearch("");
+                    }}
+                  >
+                    <i className="ti ti-x" />
+                  </div>
+                ) : undefined
+              }
             />
           </div>
         )}
