@@ -17,6 +17,39 @@ import { BlockIcon } from "../../libs/components/BlockIcon";
 import { ensureBlockInState, getBlockTitle as getBlockTitleUtil } from "../../libs/utils";
 import styles from "../styles.css?inline";
 
+const CompositionSafeInput: React.FC<any> = (props) => {
+  const [isComposing, setIsComposing] = React.useState(false);
+  const [localVal, setLocalVal] = React.useState(props.value || "");
+
+  React.useEffect(() => {
+    if (!isComposing) {
+      setLocalVal(props.value || "");
+    }
+  }, [props.value, isComposing]);
+
+  return (
+    <orca.components.Input
+      {...props}
+      value={localVal}
+      onCompositionStart={(e: any) => {
+        setIsComposing(true);
+        props.onCompositionStart?.(e);
+      }}
+      onCompositionEnd={(e: any) => {
+        setIsComposing(false);
+        props.onCompositionEnd?.(e);
+        props.onChange?.(e);
+      }}
+      onChange={(e: any) => {
+        setLocalVal(e.target.value);
+        if (!isComposing) {
+          props.onChange?.(e);
+        }
+      }}
+    />
+  );
+};
+
 export const BlockNavPanel: React.FC = () => {
   const state = useSnapshot(blockNavState);
   const orcaState = useSnapshot(orca.state);
@@ -460,7 +493,7 @@ export const BlockNavPanel: React.FC = () => {
 
         {state.rootBlockId && (
           <div style={{ width: "100%" }}>
-            <orca.components.Input
+            <CompositionSafeInput
               value={state.filterText}
               onChange={(e: any) => handleSearch(e.target.value)}
               placeholder="Filter..."
@@ -478,7 +511,7 @@ export const BlockNavPanel: React.FC = () => {
                       borderRadius: "4px",
                       opacity: 0.6,
                     }}
-                    onMouseDown={(e) => {
+                    onMouseDown={(e: React.MouseEvent) => {
                       e.preventDefault(); // Prevent losing focus
                       handleSearch("");
                     }}
