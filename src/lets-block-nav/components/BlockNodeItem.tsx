@@ -29,7 +29,8 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
   const isSearching = state.isSearching;
   
   // Use searchCache if searching, otherwise use reactive blocks
-  const stateBlock = useSnapshot(orca.state).blocks[blockId];
+  const blocksSnap = useSnapshot(orca.state.blocks);
+  const stateBlock = blocksSnap[blockId];
   const block = isSearching ? (searchCache.map.get(blockId) || stateBlock) : stateBlock;
   
   const isMatched = isSearching ? !!state.searchMatchedIds[blockId] : false;
@@ -186,8 +187,11 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
     if (!filterText.trim() || !text) return text;
     
     // Escape regex specials from filterText
-    const safeFilter = filterText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(`(${safeFilter})`, 'gi');
+    const regex = React.useMemo(() => {
+      const safeFilter = filterText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return new RegExp(`(${safeFilter})`, 'gi');
+    }, [filterText]);
+
     const parts = text.split(regex);
     
     return (

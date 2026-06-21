@@ -76,9 +76,9 @@ export const BlockNavPanel: React.FC = () => {
   const ensureRootChildrenLoaded = useCallback(async (blockId: number) => {
     const block = orca.state.blocks[blockId];
     if (block?.children?.length) {
-      for (const childId of block.children) {
-        await ensureBlockInState(Number(childId));
-      }
+      await Promise.all(
+        block.children.map((childId: string | number) => ensureBlockInState(Number(childId)))
+      );
     }
   }, []);
 
@@ -163,9 +163,11 @@ export const BlockNavPanel: React.FC = () => {
     }
   }, [orcaState.activePanel]);
 
-  const rootBlockChildrenHash = state.rootBlockId
-    ? orcaState.blocks[state.rootBlockId]?.children?.join(",")
-    : undefined;
+  const rootBlockChildrenHash = React.useMemo(() => {
+    return state.rootBlockId
+      ? orcaState.blocks[state.rootBlockId]?.children?.join(",")
+      : undefined;
+  }, [state.rootBlockId, orcaState.blocks[state.rootBlockId]?.children]);
 
   useEffect(() => {
     if (state.rootBlockId) {
@@ -272,10 +274,8 @@ export const BlockNavPanel: React.FC = () => {
   }, [handleNavigate]);
 
   const handleSearch = useCallback(async (text: string) => {
-    console.log("[BlockNavSearch] handleSearch called with text:", text);
     blockNavState.filterText = text;
     if (!text.trim()) {
-      console.log("[BlockNavSearch] empty text, clearing state");
       blockNavState.isSearching = false;
       blockNavState.searchMatchedIds = {};
       blockNavState.searchExpandedIds = {};
@@ -283,7 +283,6 @@ export const BlockNavPanel: React.FC = () => {
     }
 
     if (!blockNavState.rootBlockId) {
-      console.log("[BlockNavSearch] no root block, returning");
       return;
     }
     blockNavState.isSearching = true;
@@ -295,40 +294,26 @@ export const BlockNavPanel: React.FC = () => {
       !Array.isArray(blockTree) ||
       searchCache.rootId !== blockNavState.rootBlockId
     ) {
-      console.log("[BlockNavSearch] fetching get-block-tree...");
-      console.log();
       try {
         blockTree = await orca.invokeBackend(
           "get-block-tree",
           blockNavState.rootBlockId,
         );
-        console.log("[BlockNavSearch] get-block-tree returned. Valid array?", Array.isArray(blockTree), "Length:", blockTree?.length);
         
         if (!blockTree || !Array.isArray(blockTree)) return;
         
-        console.log("[BlockNavSearch] updating searchCache...");
         searchCache.tree = blockTree;
         searchCache.rootId = blockNavState.rootBlockId;
         searchCache.map.clear();
         for (const b of blockTree) {
           searchCache.map.set(b.id, b);
         }
-        console.log("[BlockNavSearch] searchCache updated. Tree size:", searchCache.map.size);
       } catch (e) {
         console.error("Failed to fetch block tree", e);
         return;
       }
-    } else {
-      console.log("[BlockNavSearch] using cached tree. Size:", searchCache.map.size);
     }
 
-    console.log("[BlockNavSearch] building treeMap...");
-    const treeMap = new Map<number, any>();
-    for (const b of blockTree) {
-      treeMap.set(b.id, b);
-    }
-
-    console.log("[BlockNavSearch] executing search text match...");
     const matchedIds: Record<number, boolean> = {};
     const expandedIds: Record<number, boolean> = {};
     const lowerText = text.toLowerCase();
@@ -341,7 +326,7 @@ export const BlockNavPanel: React.FC = () => {
           blockText = title.toLowerCase();
         }
       } catch (e) {
-        console.warn("[BlockNavSearch] failed to extract text for block:", block.id, e);
+        // Ignore extraction errors
       }
 
       if (blockText.includes(lowerText)) {
@@ -349,7 +334,7 @@ export const BlockNavPanel: React.FC = () => {
 
         let current = block.parent;
         let loopCount = 0;
-        while (current && treeMap.has(Number(current))) {
+        while (current && searchCache.map.has(Number(current))) {
           loopCount++;
           if (loopCount > 1000) {
              console.error("[BlockNavSearch] FATAL: infinite loop detected during parent traversal!");
@@ -359,7 +344,7 @@ export const BlockNavPanel: React.FC = () => {
           if (expandedIds[currentId]) break; // Already expanded this path, or hit a circular reference!
           
           expandedIds[currentId] = true;
-          current = treeMap.get(currentId).parent;
+          current = searchCache.map.get(currentId).parent;
           
           // Absolute safeguard against node pointing to itself
           if (current == currentId) break; 
@@ -367,11 +352,9 @@ export const BlockNavPanel: React.FC = () => {
       }
     }
 
-    console.log("[BlockNavSearch] assigning searchMatchedIds and searchExpandedIds to Valtio proxy...");
     try {
       blockNavState.searchMatchedIds = matchedIds;
       blockNavState.searchExpandedIds = expandedIds;
-      console.log("[BlockNavSearch] search state successfully applied.");
     } catch (e) {
       console.error("[BlockNavSearch] CRASH while assigning proxy!", e);
     }
