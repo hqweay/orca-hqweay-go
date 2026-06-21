@@ -34,9 +34,9 @@ jobs:
               state: 'open'
             });
             
-            if (existingPRs.data.length > 0) {
-              console.log(`PR already exists: ${existingPRs.data[0].html_url}`);
-              return;
+            const existingPr = existingPRs.data.length > 0 ? existingPRs.data[0] : null;
+            if (existingPr) {
+              console.log(`Found existing PR: ${existingPr.html_url}`);
             }
 
             // 2. 从上游获取最新的 plugins.json
@@ -100,7 +100,7 @@ jobs:
               branch: BRANCH_NAME
             });
 
-            // 5. 向上游创建 PR
+            // 5. 向上游创建或更新 PR
             let changelog = '';
             try {
               const { data: release } = await github.rest.repos.getReleaseByTag({
@@ -116,13 +116,22 @@ jobs:
 
             const prBody = `## 🚀 Automated Update\n\nUpdate **${PLUGIN_ID}** to version **v${VERSION}**.\n\n### Changes\n- Version: ${VERSION}\n- Download: ${ZIP_URL}${changelog}`;
 
-            const { data: pr } = await github.rest.pulls.create({
-              owner: 'sethyuan',
-              repo: 'awesome-orcanote',
-              title: `Update ${PLUGIN_ID} to v${VERSION}`,
-              head: `hqweay:${BRANCH_NAME}`,
-              base: 'main',
-              body: prBody
-            });
-
-            console.log(`PR created: ${pr.html_url}`);
+            if (existingPr) {
+              await github.rest.pulls.update({
+                owner: 'sethyuan',
+                repo: 'awesome-orcanote',
+                pull_number: existingPr.number,
+                body: prBody
+              });
+              console.log(`PR updated: ${existingPr.html_url}`);
+            } else {
+              const { data: pr } = await github.rest.pulls.create({
+                owner: 'sethyuan',
+                repo: 'awesome-orcanote',
+                title: `Update ${PLUGIN_ID} to v${VERSION}`,
+                head: `hqweay:${BRANCH_NAME}`,
+                base: 'main',
+                body: prBody
+              });
+              console.log(`PR created: ${pr.html_url}`);
+            }
