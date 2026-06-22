@@ -1,6 +1,7 @@
 import React, { useEffect, useCallback, useState, useRef } from "react";
 import { useSnapshot } from "valtio";
 import { t } from "@/libs/l10n";
+import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
 import { blockNavState, setRootBlock, searchCache } from "../utils/state";
 import {
   getCurrentBlockId,
@@ -20,7 +21,7 @@ import {
   findPanelById,
   getRepr,
 } from "../../libs/utils";
-import { blockNavPluginInstance } from "../index";
+import { blockNavPluginInstance, TOC_CSS_ID } from "../index";
 import { parseSearchQuery, matchFilters } from "../utils/searchParser";
 import styles from "../styles.css?inline";
 
@@ -62,6 +63,17 @@ export const BlockNavPanel: React.FC = () => {
   const orcaState = useSnapshot(orca.state);
 
   const containerRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    applyCSSRule(`
+      .orca-toc { display: none !important; }
+      .orca-block-editor-sidetools-btn:has(.ti-align-justified) { display: none !important; }
+    `, { id: TOC_CSS_ID });
+
+    return () => {
+      removeCSSRule(TOC_CSS_ID);
+    };
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;

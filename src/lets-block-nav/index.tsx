@@ -8,6 +8,7 @@ import "./styles.css";
 import { injectLeftHeadbarButton, removeLeftHeadbarButton } from "@/libs/utils";
 
 const PLUGIN_NAME = "lets-block-nav";
+export const TOC_CSS_ID = `${PLUGIN_NAME}-hide-toc`;
 
 export let blockNavPluginInstance: BlockNavPlugin | null = null;
 
@@ -160,7 +161,10 @@ export default class BlockNavPlugin extends BasePlugin {
           </SettingsItem>
           <SettingsItem
             label={t(`${this.name}.sidebarWidth`) || "Sidebar Width"}
-            description={t(`${this.name}.sidebarWidthDesc`) || "Width of the Block Nav sidebar in pixels."}
+            description={
+              t(`${this.name}.sidebarWidthDesc`) ||
+              "Width of the Block Nav sidebar in pixels."
+            }
           >
             <orca.components.Input
               type="number"
