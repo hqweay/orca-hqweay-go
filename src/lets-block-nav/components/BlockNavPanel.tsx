@@ -804,9 +804,9 @@ const FilterInput: React.FC<{
                 color: "var(--orca-color-text-3)",
               }}
               onClick={clearAllFilters}
-              title="Clear all filters"
+              title={t("block-nav.clear-filters") || "清空"}
             >
-              Clear all
+              {t("block-nav.clear-filters") || "清空"}
             </div>
           )}
         </div>

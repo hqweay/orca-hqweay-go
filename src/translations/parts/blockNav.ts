@@ -13,6 +13,7 @@ export default {
   "block-nav.filter-todo": "待办",
   "block-nav.filter-done": "已办",
   "block-nav.filter-image": "图片",
+  "block-nav.clear-filters": "清空",
   "block-nav.zoom-in": "聚焦",
   "block-nav.make-auto-heading": "转为自动标题",
   "block-nav.make-h1": "转为一级标题",
