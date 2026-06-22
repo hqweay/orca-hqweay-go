@@ -43,6 +43,8 @@ export function matchFilters(
       if (repr?.type === "task" && repr?.state !== 1) return true;
     } else if (filter === "done") {
       if (repr?.type === "task" && repr?.state === 1) return true;
+    } else if (filter === "image") {
+      if (repr?.type === "image") return true;
     }
     // Extensibility: add 'code', 'quote' etc. here later
   }

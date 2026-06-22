@@ -663,6 +663,12 @@ export const BlockNavPanel: React.FC = () => {
                     >
                       <i className="ti ti-checkbox" /> {t("block-nav.filter-done") || "已办"}
                     </div>
+                    <div
+                      onClick={() => toggleFilter("image")}
+                      style={getChipStyle(parsed.filters.includes("image"))}
+                    >
+                      <i className="ti ti-photo" /> {t("block-nav.filter-image") || "图片"}
+                    </div>
                   </>
                 );
               })()}
