@@ -426,7 +426,11 @@ export const BlockNavPanel: React.FC = () => {
     const expandedIds: Record<number, boolean> = {};
     const lowerText = parsed.rawText.toLowerCase();
 
-    for (const block of blockTree) {
+    for (const cachedBlock of blockTree) {
+      // Use live block state if available, ensuring edits from the main editor 
+      // are accurately reflected during search without refetching the entire tree.
+      const block = orca.state.blocks[cachedBlock.id] || cachedBlock;
+
       let blockText = "";
       try {
         const title = getBlockTitleUtil(block, block.id, 0);
@@ -470,6 +474,12 @@ export const BlockNavPanel: React.FC = () => {
       console.error("[BlockNavSearch] CRASH while assigning proxy!", e);
     }
   }, []);
+
+  useEffect(() => {
+    if (state.searchTrigger > 0) {
+      handleSearch(state.filterText);
+    }
+  }, [state.searchTrigger, state.filterText, handleSearch]);
 
   const { isDragOver, dragHandlers } = useDragDrop({ onDrop: handleDrop });
 

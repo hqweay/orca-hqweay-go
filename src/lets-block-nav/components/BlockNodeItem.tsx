@@ -109,6 +109,26 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
       if (!blk) return;
       const newRep = getConvertedRepr(blk, level);
 
+      // 1. Instantly update the local search cache AND live state so UI and filters react immediately.
+      // We must update the `properties` array specifically because `matchFilters` uses `getRepr` 
+      // which searches inside `block.properties`.
+      const updateBlockProps = (b: any) => {
+        if (!b) return;
+        b._repr = newRep;
+        if (!b.properties) b.properties = [];
+        const propIndex = b.properties.findIndex((p: any) => p.name === "_repr");
+        if (propIndex >= 0) b.properties[propIndex].value = newRep;
+        else b.properties.push({ name: "_repr", value: newRep, type: 0 });
+      };
+
+      updateBlockProps(searchCache.map.get(blockId));
+      updateBlockProps(orca.state.blocks[blockId]);
+      
+      // 2. If user is currently searching, trigger a fast re-evaluation of the tree
+      if (state.filterText) {
+        blockNavState.searchTrigger++;
+      }
+
       await orca.commands.invokeEditorCommand(
         "core.editor.setProperties",
         null,
