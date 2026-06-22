@@ -12,7 +12,7 @@ interface BlockNodeItemProps {
   blockId: number;
   depth: number;
   focusedBlockId: number | null;
-  onNavigate: (blockId: number) => void;
+  onNavigate: (blockId: number, altKey: boolean) => void;
   onRightClick: (blockId: number) => void;
   onDropOnNode: (blockIds: number[], targetId: number, position: "before" | "after" | "inside") => void;
 }
@@ -57,7 +57,7 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      onNavigate(blockId);
+      onNavigate(blockId, e.altKey || e.metaKey);
     },
     [blockId, onNavigate]
   );

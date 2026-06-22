@@ -331,16 +331,16 @@ export const BlockNavPanel: React.FC = () => {
   );
 
   const executeNavigation = useCallback(
-    (blockId: number, mode: "scroll" | "zoom") => {
+    (blockId: number, mode: "scroll" | "zoom" | "zoom-editor-only") => {
+      blockNavState.navigatedToBlockId = blockId;
       const activeEditor =
         state.lastActiveEditorPanelId || orcaState.activePanel;
       const mainPanelId = findMainPanelId(orca.state.panels, activeEditor);
       if (mainPanelId) {
-        if (mode === "zoom") {
+        if (mode === "zoom" || mode === "zoom-editor-only") {
           orca.nav.goTo("block", { blockId }, mainPanelId);
           orca.nav.switchFocusTo(mainPanelId);
         } else {
-          blockNavState.navigatedToBlockId = blockId;
           setTimeout(() => {
             const panel = findPanelById(orca.state.panels, mainPanelId);
             if (panel?.viewState?.editor?.positionBlock) {
@@ -361,8 +361,8 @@ export const BlockNavPanel: React.FC = () => {
   );
 
   const handleNavigate = useCallback(
-    (blockId: number) => {
-      executeNavigation(blockId, "scroll");
+    (blockId: number, altKey?: boolean) => {
+      executeNavigation(blockId, altKey ? "zoom-editor-only" : "scroll");
     },
     [executeNavigation],
   );
@@ -531,9 +531,9 @@ export const BlockNavPanel: React.FC = () => {
               flex: 1,
               overflow: "hidden",
             }}
-            onClick={() => {
+            onClick={(e) => {
               if (state.rootBlockId) {
-                handleNavigate(state.rootBlockId);
+                handleNavigate(state.rootBlockId, e.altKey || e.metaKey);
               }
             }}
           >
