@@ -138,10 +138,9 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
 
 
 
-      // Wait for React to re-render the block with the new properties, then scroll to it
-      setTimeout(() => {
-        onNavigate(blockId, false);
-      }, 150);
+      // We intentionally do NOT call `onNavigate(blockId, false)` here anymore.
+      // The `positionBlock` call BEFORE conversion already scrolled the block into view.
+      // Calling it again causes a second annoying jitter.
     },
     [blockId],
   );
