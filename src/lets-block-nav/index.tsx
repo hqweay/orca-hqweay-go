@@ -8,18 +8,25 @@ import "./styles.css";
 import { injectLeftHeadbarButton, removeLeftHeadbarButton } from "@/libs/utils";
 
 const PLUGIN_NAME = "lets-block-nav";
-const PANEL_WIDTH = 250;
+
+export let blockNavPluginInstance: BlockNavPlugin | null = null;
 
 export default class BlockNavPlugin extends BasePlugin {
+  constructor(orca: any, initSettings?: any) {
+    super(orca, initSettings);
+    blockNavPluginInstance = this;
+  }
+
   // protected headbarButtonId = `${this.name}.block-nav`;
 
   async load() {
+    const initialWidth = this.getSettings()?.sidebarWidth || 250;
     applyCSSRule(
       `
         .block-nav-panel-wrapper {
-          width: ${PANEL_WIDTH}px !important;
-          min-width: ${PANEL_WIDTH}px !important;
-          max-width: ${PANEL_WIDTH}px !important;
+          width: ${initialWidth}px !important;
+          min-width: ${initialWidth}px !important;
+          max-width: ${initialWidth}px !important;
         }
       `,
       { id: PLUGIN_NAME },
@@ -65,7 +72,7 @@ export default class BlockNavPlugin extends BasePlugin {
         } as any);
 
         if (newPanelId) {
-          const width = PANEL_WIDTH;
+          const width = this.getSettings()?.sidebarWidth || 250;
           orca.nav.changeSizes(
             newPanelId,
             side === "left"
@@ -149,6 +156,18 @@ export default class BlockNavPlugin extends BasePlugin {
                 updateSettings({ sidebarPosition: selected[0] })
               }
               width="100%"
+            />
+          </SettingsItem>
+          <SettingsItem
+            label={t(`${this.name}.sidebarWidth`) || "Sidebar Width"}
+            description={t(`${this.name}.sidebarWidthDesc`) || "Width of the Block Nav sidebar in pixels."}
+          >
+            <orca.components.Input
+              type="number"
+              value={settings.sidebarWidth || 250}
+              onChange={(e: any) =>
+                updateSettings({ sidebarWidth: Number(e.target.value) })
+              }
             />
           </SettingsItem>
         </SettingsSection>

@@ -12,5 +12,7 @@ export default {
   "block-nav.sidebarPosition": "侧边栏位置",
   "block-nav.sidebarPositionDesc":
     "大纲导航默认打开的位置。右键点击按钮可以在另一侧打开。",
+  "block-nav.sidebarWidth": "侧边栏宽度",
+  "block-nav.sidebarWidthDesc": "大纲导航侧边栏的宽度（以像素为单位）。",
   "block-nav.settings": "大纲导航设置",
 };

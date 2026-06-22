@@ -19,6 +19,7 @@ import {
   getBlockTitle as getBlockTitleUtil,
   findPanelById,
 } from "../../libs/utils";
+import { blockNavPluginInstance } from "../index";
 import styles from "../styles.css?inline";
 
 const CompositionSafeInput: React.FC<any> = (props) => {
@@ -71,7 +72,7 @@ export const BlockNavPanel: React.FC = () => {
     const wrapper = (parent.closest(".SplitPane") as HTMLElement) || parent;
 
     const enforceWidth = () => {
-      const width = 250;
+      const width = blockNavPluginInstance?.getSettings()?.sidebarWidth || 250;
 
       const applyStyles = (el: HTMLElement) => {
         const currentFlex = el.style.getPropertyValue("flex");
