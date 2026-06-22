@@ -1,6 +1,6 @@
 import { proxy } from "valtio";
 
-export const LOCAL_STORAGE_KEY = "orca-arc-tabs-recent";
+export const getLocalStorageKey = () => `orca-arc-tabs-recent-${orca.state.repo || 'default'}`;
 export const DEFAULT_SPACE = "🪐";
 
 export interface RecentTab {
@@ -16,7 +16,7 @@ export const arcTabsState = proxy({
   lastActiveEditorPanelId: null as string | null,
   recentlyVisited: (() => {
     try {
-      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+      const saved = localStorage.getItem(getLocalStorageKey());
       if (!saved) return [];
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed)) {

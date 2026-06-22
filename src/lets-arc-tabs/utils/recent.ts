@@ -1,11 +1,11 @@
-import { arcTabsState, LOCAL_STORAGE_KEY } from "./data";
+import { arcTabsState, getLocalStorageKey } from "./data";
 import { arcTabsPluginInstance } from "../index";
 
 const persistRecent = () => {
   try {
     localStorage.setItem(
-      LOCAL_STORAGE_KEY,
-      JSON.stringify(arcTabsState.recentlyVisited)
+      getLocalStorageKey(),
+      JSON.stringify(Array.from(arcTabsState.recentlyVisited))
     );
   } catch (e) {
     console.error(e);
