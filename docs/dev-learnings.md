@@ -163,3 +163,21 @@ Topic (Notes/Sources) and Item (Flashcards) use the same FSRS engine but require
 - **Concept**: A single source of truth (the private dev repository) can seamlessly update public-facing properties without manual intervention.
 - **Implementation**: Leveraging the `RELEASE_TOKEN` (PAT), the `release.yml` action clones external repositories, overwrites files, and pushes commits automatically.
 - **Hexo Blog Syncing Trick**: When syncing a standard `README.md` to a Hexo blog post, YAML frontmatter must be prepended. Using `cat << EOF > post.md` combined with dynamic shell commands like `updated: "$(date +"%Y-%m-%d %H:%M:%S")"` ensures the blog accurately reflects the exact release timestamp, without cluttering the source `README.md` with static blog metadata.
+
+## Navigation & UI Interactions
+
+### 1. 虚拟列表与离屏元素的静默失效 (Virtual Lists & Off-screen Silent Failures)
+- **现象**: 在侧边栏右键一个块执行“转换为标题/文本”操作时，如果该块在主编辑器中由于滚动导致被虚拟列表卸载（Off-screen），`core.editor.setProperties` 可能会因为找不到 DOM 或 React 节点而发生“静默失效”（不报错但无反应）。
+- **解决方案**: 在执行任何依赖编辑器视图的命令（如修改属性）之前，强制执行 `mainPanel.viewState.editor.positionBlock(blockId)`。这能将块拉回渲染视口，确保后续命令顺利落盘。
+- **UX 优化**: 如果只关心拉取而不希望打断用户的视觉焦点，可以结合 `nav.switchFocusTo(mainPanelId)` 进行无刷新的焦点切换。并且要注意消除不必要的二次 `onNavigate` 调用，防止页面发生二次闪烁或反复横跳（Jitter）。
+
+### 2. 前端搜索的即时反馈与全局拦截 (Instant Search Sync & Global Interception)
+- **挑战**: 用户在侧边栏过滤“标题”时，把其中一个结果转换为普通文本。理想情况下该结果应该**瞬间（0ms）**消失。如果依赖后端更新再重拉整个块树，延迟极高且浪费性能。
+- **双轨机制架构 (Dual-track System)**:
+  1. **局部极速伪造 (Cache Hijack)**: 动作发生的瞬间，直接修改内存中 `searchCache.tree` 里的 `block.properties` 数组，并通过 Valtio Proxy 增加 `searchTrigger` 计数器，强制组件以 O(N) 的极速代价进行纯内存的二次搜索。
+  2. **全局活数据拦截 (Live Data Interception)**: 考虑到用户可能直接在编辑器内打字或修改标签，静态的 `searchCache` 树会过时。因此在搜索遍历中：`const block = orca.state.blocks[cachedBlock.id] || cachedBlock;`。优先读取编辑器实时维护的活数据对象，完美捕获跨面板的一切隐式修改，实现数据绝对一致。
+
+### 3. 数据持久化与多库隔离 (Multi-Repo Cache Isolation)
+- **陷阱**: 像 `Arc Tabs` 这样的插件需要将最近浏览的页面缓存到 `localStorage` 中。如果使用静态字符串（如 `orca-arc-tabs-recent`）作为 Key，当用户从工作区 A 切换到工作区 B 时，缓存数据会发生“串改”，甚至指向不存在的 BlockId 导致崩溃。
+- **规范**: 持久化层的所有 Key 必须包含当前的工作区/仓库唯一标识。
+- **实现**: `export const getLocalStorageKey = () => \`orca-arc-tabs-recent-\${orca.state.repo || 'default'}\`;`。确保任何缓存的读写都与当前的 Repo 深度绑定。
