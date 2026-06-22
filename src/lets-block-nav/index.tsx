@@ -4,6 +4,7 @@ import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import { BlockNavPanel } from "./components/BlockNavPanel";
 import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
 import "./styles.css";
+import { blockNavState } from "./utils/state";
 
 import { injectLeftHeadbarButton, removeLeftHeadbarButton } from "@/libs/utils";
 
@@ -21,6 +22,7 @@ export default class BlockNavPlugin extends BasePlugin {
   // protected headbarButtonId = `${this.name}.block-nav`;
 
   async load() {
+    blockNavState.hideBuiltInToc = this.getSettings()?.hideBuiltInToc ?? false;
     const initialWidth = this.getSettings()?.sidebarWidth || 250;
     applyCSSRule(
       `
@@ -112,6 +114,19 @@ export default class BlockNavPlugin extends BasePlugin {
     // Override BasePlugin to avoid registering on the right side
   }
 
+  getDefaultSettings() {
+    return {
+      sidebarPosition: "left",
+      sidebarWidth: 250,
+      hideBuiltInToc: false,
+    };
+  }
+
+  protected async onConfigChanged(newConfig: any) {
+    await super.onConfigChanged(newConfig);
+    blockNavState.hideBuiltInToc = newConfig.hideBuiltInToc ?? false;
+  }
+
   async unload() {
     removeLeftHeadbarButton(this.name);
     orca.commands.unregisterCommand(`${this.name}.open`);
@@ -171,6 +186,20 @@ export default class BlockNavPlugin extends BasePlugin {
               value={settings.sidebarWidth || 250}
               onChange={(e: any) =>
                 updateSettings({ sidebarWidth: Number(e.target.value) })
+              }
+            />
+          </SettingsItem>
+          <SettingsItem
+            label={t(`${this.name}.hideBuiltInToc`) || "Hide Built-in TOC"}
+            description={
+              t(`${this.name}.hideBuiltInTocDesc`) ||
+              "Hide Orca's built-in TOC panel and its trigger button when block-nav is open."
+            }
+          >
+            <orca.components.Switch
+              on={settings.hideBuiltInToc ?? false}
+              onChange={(checked: boolean) =>
+                updateSettings({ hideBuiltInToc: checked })
               }
             />
           </SettingsItem>

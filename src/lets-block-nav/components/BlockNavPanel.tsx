@@ -65,15 +65,17 @@ export const BlockNavPanel: React.FC = () => {
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    applyCSSRule(`
-      .orca-toc { display: none !important; }
-      .orca-block-editor-sidetools-btn:has(.ti-align-justified) { display: none !important; }
-    `, { id: TOC_CSS_ID });
+    if (state.hideBuiltInToc) {
+      applyCSSRule(`
+        .orca-toc { display: none !important; }
+        .orca-block-editor-sidetools-btn:has(.ti-align-justified) { display: none !important; }
+      `, { id: TOC_CSS_ID });
+    }
 
     return () => {
       removeCSSRule(TOC_CSS_ID);
     };
-  }, []);
+  }, [state.hideBuiltInToc]);
 
   useEffect(() => {
     if (!containerRef.current) return;

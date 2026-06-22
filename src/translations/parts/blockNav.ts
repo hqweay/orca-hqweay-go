@@ -25,5 +25,7 @@ export default {
     "大纲导航默认打开的位置。右键点击按钮可以在另一侧打开。",
   "block-nav.sidebarWidth": "侧边栏宽度",
   "block-nav.sidebarWidthDesc": "大纲导航侧边栏的宽度（以像素为单位）。",
+  "block-nav.hideBuiltInToc": "隐藏内置大纲",
+  "block-nav.hideBuiltInTocDesc": "当大纲导航打开时，自动隐藏 Orca 内置的大纲面板及侧边栏触发展开按钮。",
   "block-nav.settings": "大纲导航设置",
 };
