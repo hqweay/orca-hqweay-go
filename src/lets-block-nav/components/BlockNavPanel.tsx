@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useCallback, useState, useRef } from "react";
 import { useSnapshot } from "valtio";
 import { t } from "@/libs/l10n";
 import { blockNavState, setRootBlock, searchCache } from "../utils/state";
@@ -582,97 +582,10 @@ export const BlockNavPanel: React.FC = () => {
 
         {state.rootBlockId && (
           <div style={{ width: "100%" }}>
-            <CompositionSafeInput
-              value={state.filterText}
-              onChange={(e: any) => handleSearch(e.target.value)}
-              placeholder="Filter..."
-              pre={<i className="ti ti-search" style={{ opacity: 0.6 }} />}
-              post={
-                state.filterText ? (
-                  <div
-                    className="hover-bg"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: "pointer",
-                      padding: "2px",
-                      borderRadius: "4px",
-                      opacity: 0.6,
-                    }}
-                    onMouseDown={(e: React.MouseEvent) => {
-                      e.preventDefault(); // Prevent losing focus
-                      handleSearch("");
-                    }}
-                  >
-                    <i className="ti ti-x" />
-                  </div>
-                ) : undefined
-              }
+            <FilterInput
+              filterText={state.filterText}
+              onSearch={handleSearch}
             />
-            <div style={{ display: "flex", gap: "6px", marginTop: "8px", flexWrap: "wrap", padding: "0 2px" }}>
-              {(() => {
-                const parsed = parseSearchQuery(state.filterText);
-                
-                const toggleFilter = (filterKey: string) => {
-                  let newFilters = [...parsed.filters];
-                  if (newFilters.includes(filterKey)) {
-                    newFilters = newFilters.filter(f => f !== filterKey);
-                  } else {
-                    newFilters.push(filterKey);
-                  }
-                  const newText = [
-                    ...newFilters.map(f => `is:${f}`),
-                    parsed.rawText
-                  ].filter(Boolean).join(" ");
-                  handleSearch(newText);
-                };
-
-                const getChipStyle = (isActive: boolean) => ({
-                  fontSize: "12px",
-                  padding: "2px 8px",
-                  borderRadius: "12px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  userSelect: "none" as const,
-                  backgroundColor: isActive ? "var(--b3-theme-primary)" : "transparent",
-                  color: isActive ? "var(--b3-theme-on-primary)" : "var(--b3-theme-on-surface)",
-                  border: `1px solid ${isActive ? "var(--b3-theme-primary)" : "var(--b3-border-color)"}`,
-                  opacity: isActive ? 1 : 0.8
-                });
-
-                return (
-                  <>
-                    <div
-                      onClick={() => toggleFilter("heading")}
-                      style={getChipStyle(parsed.filters.includes("heading"))}
-                    >
-                      <i className="ti ti-heading" /> {t("block-nav.filter-heading") || "标题"}
-                    </div>
-                    <div
-                      onClick={() => toggleFilter("todo")}
-                      style={getChipStyle(parsed.filters.includes("todo"))}
-                    >
-                      <i className="ti ti-square" /> {t("block-nav.filter-todo") || "待办"}
-                    </div>
-                    <div
-                      onClick={() => toggleFilter("done")}
-                      style={getChipStyle(parsed.filters.includes("done"))}
-                    >
-                      <i className="ti ti-checkbox" /> {t("block-nav.filter-done") || "已办"}
-                    </div>
-                    <div
-                      onClick={() => toggleFilter("image")}
-                      style={getChipStyle(parsed.filters.includes("image"))}
-                    >
-                      <i className="ti ti-photo" /> {t("block-nav.filter-image") || "图片"}
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
           </div>
         )}
       </div>
@@ -712,6 +625,193 @@ export const BlockNavPanel: React.FC = () => {
           <i className="ti ti-plus" /> {t("block-nav.drop-to-add")}
         </div>
       )}
+    </div>
+  );
+};
+
+// ─── Filter Input with Dropdown ──────────────────────────────────────────────
+
+const FILTER_OPTIONS = [
+  { key: "heading", icon: "ti ti-heading", label: "标题" },
+  { key: "todo", icon: "ti ti-square", label: "待办" },
+  { key: "done", icon: "ti ti-checkbox", label: "已办" },
+  { key: "image", icon: "ti ti-photo", label: "图片" },
+];
+
+const FilterInput: React.FC<{
+  filterText: string;
+  onSearch: (text: string) => void;
+}> = ({ filterText, onSearch }) => {
+  const parsed = parseSearchQuery(filterText);
+  const hasActiveFilters = parsed.filters.length > 0;
+
+  const toggleFilter = (filterKey: string) => {
+    let newFilters = [...parsed.filters];
+    if (newFilters.includes(filterKey)) {
+      newFilters = newFilters.filter((f) => f !== filterKey);
+    } else {
+      newFilters.push(filterKey);
+    }
+    const newText = [
+      ...newFilters.map((f) => `is:${f}`),
+      parsed.rawText,
+    ]
+      .filter(Boolean)
+      .join(" ");
+    onSearch(newText);
+  };
+
+  const clearAllFilters = () => {
+    onSearch(parsed.rawText);
+  };
+
+  return (
+    <div style={{ position: "relative" }}>
+      {/* Search Input */}
+      <div>
+        <CompositionSafeInput
+          value={filterText}
+          onChange={(e: any) => onSearch(e.target.value)}
+          placeholder="Filter..."
+          pre={
+            <orca.components.ContextMenu
+              menu={(closeMenu) => (
+                <orca.components.Menu>
+                  {FILTER_OPTIONS.map((option) => {
+                    const isActive = parsed.filters.includes(option.key);
+                    return (
+                      <orca.components.MenuText
+                        key={option.key}
+                        preIcon={option.icon}
+                        title={option.label}
+                        postIcon={isActive ? "ti ti-check" : undefined}
+                        style={
+                          isActive
+                            ? {
+                                backgroundColor: "var(--orca-color-primary-1)",
+                                color: "var(--orca-color-primary-5)",
+                              }
+                            : {}
+                        }
+                        onClick={() => {
+                          toggleFilter(option.key);
+                          // We don't necessarily close the menu so they can toggle multiple
+                        }}
+                      />
+                    );
+                  })}
+                </orca.components.Menu>
+              )}
+            >
+              {(openMenu) => (
+                <div
+                  className="hover-bg"
+                  onMouseDown={(e: React.MouseEvent) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openMenu(e);
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    borderRadius: "4px",
+                    color: hasActiveFilters
+                      ? "var(--orca-color-primary-5)"
+                      : "inherit",
+                    opacity: hasActiveFilters ? 1 : 0.6,
+                    width: "24px",
+                    height: "24px",
+                  }}
+                  title="Filter"
+                >
+                  <i className="ti ti-filter" />
+                </div>
+              )}
+            </orca.components.ContextMenu>
+          }
+          post={
+            <div
+              className="hover-bg"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: filterText ? "pointer" : "default",
+                borderRadius: "4px",
+                opacity: filterText ? 0.6 : 0,
+                pointerEvents: filterText ? "auto" : "none",
+                width: "24px",
+                height: "24px",
+              }}
+              onMouseDown={(e: React.MouseEvent) => {
+                if (filterText) {
+                  e.preventDefault();
+                  onSearch("");
+                }
+              }}
+            >
+              <i className="ti ti-x" />
+            </div>
+          }
+        />
+      </div>
+
+      {/* Active Filter Chips (only when filters are active) */}
+      {hasActiveFilters && (
+        <div
+          style={{
+            display: "flex",
+            gap: "4px",
+            marginTop: "6px",
+            flexWrap: "wrap",
+          }}
+        >
+          {parsed.filters.map((filterKey) => {
+            const option = FILTER_OPTIONS.find((o) => o.key === filterKey);
+            if (!option) return null;
+            return (
+              <div
+                key={filterKey}
+                style={{
+                  fontSize: "11px",
+                  padding: "2px 6px",
+                  borderRadius: "10px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  backgroundColor: "var(--orca-color-primary-1)",
+                  color: "var(--orca-color-primary-5)",
+                  cursor: "pointer",
+                }}
+                onClick={() => toggleFilter(filterKey)}
+                title={`Click to remove: ${option.label}`}
+              >
+                <i className={option.icon} style={{ fontSize: "10px" }} />
+                {option.label}
+                <i className="ti ti-x" style={{ fontSize: "10px", opacity: 0.6 }} />
+              </div>
+            );
+          })}
+          {parsed.filters.length > 1 && (
+            <div
+              style={{
+                fontSize: "11px",
+                padding: "2px 6px",
+                borderRadius: "10px",
+                cursor: "pointer",
+                color: "var(--orca-color-text-3)",
+              }}
+              onClick={clearAllFilters}
+              title="Clear all filters"
+            >
+              Clear all
+            </div>
+          )}
+        </div>
+      )}
+
     </div>
   );
 };
