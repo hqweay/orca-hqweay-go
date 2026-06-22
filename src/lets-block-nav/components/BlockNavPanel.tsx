@@ -18,8 +18,10 @@ import {
   ensureBlockInState,
   getBlockTitle as getBlockTitleUtil,
   findPanelById,
+  getRepr,
 } from "../../libs/utils";
 import { blockNavPluginInstance } from "../index";
+import { parseSearchQuery, matchFilters } from "../utils/searchParser";
 import styles from "../styles.css?inline";
 
 const CompositionSafeInput: React.FC<any> = (props) => {
@@ -378,7 +380,10 @@ export const BlockNavPanel: React.FC = () => {
 
   const handleSearch = useCallback(async (text: string) => {
     blockNavState.filterText = text;
-    if (!text.trim()) {
+    const parsed = parseSearchQuery(text);
+    
+    // If no raw text and no filters, exit search mode
+    if (!parsed.rawText && parsed.filters.length === 0) {
       blockNavState.isSearching = false;
       blockNavState.searchMatchedIds = {};
       blockNavState.searchExpandedIds = {};
@@ -419,7 +424,7 @@ export const BlockNavPanel: React.FC = () => {
 
     const matchedIds: Record<number, boolean> = {};
     const expandedIds: Record<number, boolean> = {};
-    const lowerText = text.toLowerCase();
+    const lowerText = parsed.rawText.toLowerCase();
 
     for (const block of blockTree) {
       let blockText = "";
@@ -432,7 +437,10 @@ export const BlockNavPanel: React.FC = () => {
         // Ignore extraction errors
       }
 
-      if (blockText.includes(lowerText)) {
+      const textMatched = !lowerText || blockText.includes(lowerText);
+      const filterMatched = matchFilters(block, parsed.filters, getRepr);
+
+      if (textMatched && filterMatched) {
         matchedIds[block.id] = true;
 
         let current = block.parent;
@@ -592,6 +600,63 @@ export const BlockNavPanel: React.FC = () => {
                 ) : undefined
               }
             />
+            <div style={{ display: "flex", gap: "6px", marginTop: "8px", flexWrap: "wrap", padding: "0 2px" }}>
+              {(() => {
+                const parsed = parseSearchQuery(state.filterText);
+                
+                const toggleFilter = (filterKey: string) => {
+                  let newFilters = [...parsed.filters];
+                  if (newFilters.includes(filterKey)) {
+                    newFilters = newFilters.filter(f => f !== filterKey);
+                  } else {
+                    newFilters.push(filterKey);
+                  }
+                  const newText = [
+                    ...newFilters.map(f => `is:${f}`),
+                    parsed.rawText
+                  ].filter(Boolean).join(" ");
+                  handleSearch(newText);
+                };
+
+                const getChipStyle = (isActive: boolean) => ({
+                  fontSize: "12px",
+                  padding: "2px 8px",
+                  borderRadius: "12px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  userSelect: "none" as const,
+                  backgroundColor: isActive ? "var(--b3-theme-primary)" : "transparent",
+                  color: isActive ? "var(--b3-theme-on-primary)" : "var(--b3-theme-on-surface)",
+                  border: `1px solid ${isActive ? "var(--b3-theme-primary)" : "var(--b3-border-color)"}`,
+                  opacity: isActive ? 1 : 0.8
+                });
+
+                return (
+                  <>
+                    <div
+                      onClick={() => toggleFilter("heading")}
+                      style={getChipStyle(parsed.filters.includes("heading"))}
+                    >
+                      <i className="ti ti-heading" /> {t("block-nav.filter-heading") || "标题"}
+                    </div>
+                    <div
+                      onClick={() => toggleFilter("todo")}
+                      style={getChipStyle(parsed.filters.includes("todo"))}
+                    >
+                      <i className="ti ti-square" /> {t("block-nav.filter-todo") || "待办"}
+                    </div>
+                    <div
+                      onClick={() => toggleFilter("done")}
+                      style={getChipStyle(parsed.filters.includes("done"))}
+                    >
+                      <i className="ti ti-checkbox" /> {t("block-nav.filter-done") || "已办"}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
           </div>
         )}
       </div>

@@ -9,6 +9,9 @@ export default {
   "block-nav.clear-selection": "清除",
   "block-nav.delete-selected": "删除",
   "block-nav.drop-to-add": "释放以添加为子块",
+  "block-nav.filter-heading": "标题",
+  "block-nav.filter-todo": "待办",
+  "block-nav.filter-done": "已办",
   "block-nav.sidebarPosition": "侧边栏位置",
   "block-nav.sidebarPositionDesc":
     "大纲导航默认打开的位置。右键点击按钮可以在另一侧打开。",
