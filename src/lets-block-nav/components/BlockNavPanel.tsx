@@ -361,7 +361,39 @@ export const BlockNavPanel: React.FC = () => {
           setTimeout(() => {
             const panel = findPanelById(orca.state.panels, mainPanelId);
             if (panel?.viewState?.editor?.positionBlock) {
-              panel.viewState.editor.positionBlock(blockId);
+              // Determine if the clicked block is actually rendered in the current editor view.
+              let isDescendant = false;
+              if (panel.view === "journal" && panel.viewArgs?.date) {
+                isDescendant = true;
+              } else if (panel.viewArgs?.blockId) {
+                const currentEditorRootId = Number(panel.viewArgs.blockId);
+                let curr: any = orca.state.blocks[blockId];
+                while (curr) {
+                  if (Number(curr.id) === currentEditorRootId) {
+                    isDescendant = true;
+                    break;
+                  }
+                  if (!curr.parent) break;
+                  curr = orca.state.blocks[Number(curr.parent)];
+                }
+              } else {
+                isDescendant = true; 
+              }
+
+              if (!isDescendant) {
+                // The target block is outside the editor's current view.
+                orca.nav.goTo("block", { blockId }, mainPanelId);
+                orca.nav.switchFocusTo(mainPanelId);
+              } else {
+                let targetId = blockId;
+                if (blockId === blockNavState.rootBlockId) {
+                  const docBlock = orca.state.blocks[blockId];
+                  if (docBlock?.children && docBlock.children.length > 0) {
+                    targetId = Number(docBlock.children[0]);
+                  }
+                }
+                panel.viewState.editor.positionBlock(targetId);
+              }
             }
           }, 50);
         }
