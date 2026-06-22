@@ -6,6 +6,8 @@ import {
   searchCache,
 } from "../utils/state";
 import { findMainPanelId } from "../utils/nav";
+import { getConvertedRepr } from "../utils/blocks";
+import { findPanelById } from "../../libs/utils";
 import { BlockIcon } from "../../libs/components/BlockIcon";
 import {
   getBlockTitle as getBlockTitleUtil,
@@ -92,7 +94,7 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
         
         // CRITICAL: We MUST position the block before conversion, otherwise 
         // the virtual list might not have it rendered, causing setProperties to fail!
-        const mainPanel = orca.state.panels[mainPanelId];
+        const mainPanel = findPanelById(orca.state.panels, mainPanelId);
         if (mainPanel?.viewState?.editor?.positionBlock) {
           mainPanel.viewState.editor.positionBlock(blockId);
           await new Promise((r) => setTimeout(r, 50));
@@ -104,16 +106,8 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
       }
 
       const blk = await ensureBlockInState(blockId);
-      const rep = getRepr(blk) || { type: "text" };
-      const newRep = { ...rep };
-
-      if (level === 0) {
-        newRep.type = "text";
-        delete newRep.level;
-      } else if (level === -1) {
-        newRep.type = "heading";
-        newRep.level = -1;
-      }
+      if (!blk) return;
+      const newRep = getConvertedRepr(blk, level);
 
       await orca.commands.invokeEditorCommand(
         "core.editor.setProperties",

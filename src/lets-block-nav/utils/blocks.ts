@@ -61,3 +61,19 @@ export const getBlockColorForId = (blockId: number): string | undefined => {
   const block = orca.state.blocks[blockId];
   return getBlockColor(block);
 };
+
+export const getConvertedRepr = (block: Block, level: number): any => {
+  // getRepr is assumed to be similar to block._repr, but for safety we initialize it
+  const rep = (block as any)._repr || { type: "text" };
+  const newRep = { ...rep };
+
+  if (level === 0) {
+    newRep.type = "text";
+    delete newRep.level;
+  } else if (level === -1) {
+    newRep.type = "heading";
+    newRep.level = -1;
+  }
+
+  return newRep;
+};
