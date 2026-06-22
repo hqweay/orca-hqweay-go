@@ -65,6 +65,18 @@ export function isValidId(id: any): id is number {
   return typeof id === "number" && !isNaN(id);
 }
 
+export function findPanelById(panel: any, id: string): any {
+  if (!panel) return null;
+  if (panel.id === id) return panel;
+  if (panel.children) {
+    for (const child of panel.children) {
+      const found = findPanelById(child, id);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
 /**
  * Ensures the specified block is loaded and cached in orca.state.blocks.
  * This is crucial before calling editor commands (like moveBlocks) on blocks

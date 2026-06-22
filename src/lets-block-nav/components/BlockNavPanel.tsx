@@ -14,7 +14,11 @@ import { useDragDrop } from "../utils/useDragDrop";
 import { BlockNodeItem } from "./BlockNodeItem";
 import { findMainPanelId, isEditorPanel, getFocusedBlock } from "../utils/nav";
 import { BlockIcon } from "../../libs/components/BlockIcon";
-import { ensureBlockInState, getBlockTitle as getBlockTitleUtil } from "../../libs/utils";
+import {
+  ensureBlockInState,
+  getBlockTitle as getBlockTitleUtil,
+  findPanelById,
+} from "../../libs/utils";
 import styles from "../styles.css?inline";
 
 const CompositionSafeInput: React.FC<any> = (props) => {
@@ -326,15 +330,24 @@ export const BlockNavPanel: React.FC = () => {
     [state.rootBlockId, ensureRootChildrenLoaded],
   );
 
-  const handleNavigate = useCallback(
-    (blockId: number) => {
-      blockNavState.navigatedToBlockId = blockId;
+  const executeNavigation = useCallback(
+    (blockId: number, mode: "scroll" | "zoom") => {
       const activeEditor =
         state.lastActiveEditorPanelId || orcaState.activePanel;
       const mainPanelId = findMainPanelId(orca.state.panels, activeEditor);
       if (mainPanelId) {
-        orca.nav.goTo("block", { blockId }, mainPanelId);
-        orca.nav.switchFocusTo(mainPanelId);
+        if (mode === "zoom") {
+          orca.nav.goTo("block", { blockId }, mainPanelId);
+          orca.nav.switchFocusTo(mainPanelId);
+        } else {
+          blockNavState.navigatedToBlockId = blockId;
+          setTimeout(() => {
+            const panel = findPanelById(orca.state.panels, mainPanelId);
+            if (panel?.viewState?.editor?.positionBlock) {
+              panel.viewState.editor.positionBlock(blockId);
+            }
+          }, 50);
+        }
       } else {
         const sidebarPanelId = orca.state.activePanel;
         orca.nav.addTo(sidebarPanelId, "right", {
@@ -347,10 +360,20 @@ export const BlockNavPanel: React.FC = () => {
     [state.lastActiveEditorPanelId, orcaState.activePanel],
   );
 
-  const handleRightClick = useCallback((blockId: number) => {
-    setRootBlock(blockId);
-    handleNavigate(blockId);
-  }, [handleNavigate]);
+  const handleNavigate = useCallback(
+    (blockId: number) => {
+      executeNavigation(blockId, "scroll");
+    },
+    [executeNavigation],
+  );
+
+  const handleRightClick = useCallback(
+    (blockId: number) => {
+      setRootBlock(blockId);
+      executeNavigation(blockId, "zoom");
+    },
+    [executeNavigation],
+  );
 
   const handleSearch = useCallback(async (text: string) => {
     blockNavState.filterText = text;
@@ -488,7 +511,8 @@ export const BlockNavPanel: React.FC = () => {
               className="hover-bg"
               onClick={(e) => {
                 e.stopPropagation();
-                handleNavigate(parentId);
+                setRootBlock(parentId);
+                executeNavigation(parentId, "zoom");
               }}
             >
               <i className="ti ti-arrow-up" />

@@ -20,6 +20,7 @@ import {
 import { addRecentBlock } from "../utils/recent";
 import { TabItem } from "./TabItem";
 import { arcTabsPluginInstance } from "../index";
+import { getBlockIcon, getBlockColor, findPanelById } from "../../libs/utils";
 
 const getBlockTitle = (block: any, id: string | number, maxLength: number = 20) => {
   if (!block) return `Block ${String(id).substring(0, 8)}`;
@@ -56,7 +57,6 @@ const getBlockTitle = (block: any, id: string | number, maxLength: number = 20) 
   return `Block ${String(id).substring(0, 8)}`;
 };
 
-import { getBlockIcon, getBlockColor } from "../../libs/utils";
 
 const StyleInjector = () => (
   <style dangerouslySetInnerHTML={{ __html: styles }} />
@@ -197,6 +197,13 @@ export const ArcSidebar: React.FC = () => {
     if (mainPanelId) {
       orca.nav.goTo("block", { blockId }, mainPanelId);
       orca.nav.switchFocusTo(mainPanelId);
+
+      setTimeout(() => {
+        const panel = findPanelById(orca.state.panels, mainPanelId);
+        if (panel?.viewState?.editor?.positionBlock) {
+          panel.viewState.editor.positionBlock(blockId);
+        }
+      }, 50);
     } else {
       const sidebarPanelId = orca.state.activePanel;
       orca.nav.addTo(sidebarPanelId, "right", {
