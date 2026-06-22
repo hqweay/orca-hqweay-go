@@ -5,8 +5,15 @@ import {
   toggleNodeExpansion,
   searchCache,
 } from "../utils/state";
+import { findMainPanelId } from "../utils/nav";
 import { BlockIcon } from "../../libs/components/BlockIcon";
-import { getBlockTitle as getBlockTitleUtil, getBlockIcon, getBlockColor, ensureBlockInState } from "../../libs/utils";
+import {
+  getBlockTitle as getBlockTitleUtil,
+  getBlockIcon,
+  getBlockColor,
+  ensureBlockInState,
+  getRepr,
+} from "../../libs/utils";
 import { t } from "../../libs/l10n";
 
 interface BlockNodeItemProps {
@@ -15,7 +22,11 @@ interface BlockNodeItemProps {
   focusedBlockId: number | null;
   onNavigate: (blockId: number, altKey: boolean) => void;
   onRightClick: (blockId: number) => void;
-  onDropOnNode: (blockIds: number[], targetId: number, position: "before" | "after" | "inside") => void;
+  onDropOnNode: (
+    blockIds: number[],
+    targetId: number,
+    position: "before" | "after" | "inside",
+  ) => void;
 }
 
 export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
@@ -28,29 +39,33 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
 }) => {
   const state = useSnapshot(blockNavState);
   const isSearching = state.isSearching;
-  
-  // Use searchCache if searching, otherwise use reactive blocks
+
+  // Use stateBlock if available since it is reactive, fallback to searchCache
   const blocksSnap = useSnapshot(orca.state.blocks);
   const stateBlock = blocksSnap[blockId];
-  const block = isSearching ? (searchCache.map.get(blockId) || stateBlock) : stateBlock;
+  const block =
+    stateBlock || (isSearching ? searchCache.map.get(blockId) : undefined);
 
   const searchRegex = React.useMemo(() => {
     if (!state.filterText.trim()) return null;
-    const safeFilter = state.filterText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return new RegExp(`(${safeFilter})`, 'gi');
+    const safeFilter = state.filterText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`(${safeFilter})`, "gi");
   }, [state.filterText]);
-  
+
   const isMatched = isSearching ? !!state.searchMatchedIds[blockId] : false;
-  const isExpandedAncestor = isSearching ? !!state.searchExpandedIds[blockId] : false;
-  
-  const isExpanded = isSearching 
-    ? isExpandedAncestor 
+  const isExpandedAncestor = isSearching
+    ? !!state.searchExpandedIds[blockId]
+    : false;
+
+  const isExpanded = isSearching
+    ? isExpandedAncestor
     : !!state.expandedIds[blockId];
-    
+
   const isFocused = blockId === focusedBlockId;
   const childrenIds = block?.children || [];
   // When searching, if a node is matched but isn't an ancestor to other matches, we don't need to expand it to show its children
-  const hasChildren = childrenIds.length > 0 && (!isSearching || isExpandedAncestor);
+  const hasChildren =
+    childrenIds.length > 0 && (!isSearching || isExpandedAncestor);
 
   const [isDragOver, setIsDragOver] = React.useState(false);
   const dragCounter = React.useRef(0);
@@ -60,36 +75,83 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
       e.stopPropagation();
       onNavigate(blockId, e.altKey || e.metaKey);
     },
-    [blockId, onNavigate]
+    [blockId, onNavigate],
   );
 
   const handleSetHeading = useCallback(
     async (level: number) => {
-      if (level === 0) {
-        await orca.commands.invokeEditorCommand("core.editor.makeText", null, blockId);
+      // Find the main editor panel reliably
+      let mainPanelId = findMainPanelId(
+        orca.state.panels,
+        state.lastActiveEditorPanelId || orca.state.activePanel,
+      );
+
+      if (mainPanelId) {
+        // Switch focus to the editor panel without triggering a route navigation
+        orca.nav.switchFocusTo(mainPanelId);
+        
+        // CRITICAL: We MUST position the block before conversion, otherwise 
+        // the virtual list might not have it rendered, causing setProperties to fail!
+        const mainPanel = orca.state.panels[mainPanelId];
+        if (mainPanel?.viewState?.editor?.positionBlock) {
+          mainPanel.viewState.editor.positionBlock(blockId);
+          await new Promise((r) => setTimeout(r, 50));
+        }
       } else {
-        await orca.commands.invokeEditorCommand(`core.editor.makeHeading${level}`, null, blockId);
+        // Ultimate fallback if no editor panel is open
+        orca.nav.goTo("block", { blockId });
+        await new Promise((r) => setTimeout(r, 150));
       }
+
+      const blk = await ensureBlockInState(blockId);
+      const rep = getRepr(blk) || { type: "text" };
+      const newRep = { ...rep };
+
+      if (level === 0) {
+        newRep.type = "text";
+        delete newRep.level;
+      } else if (level === -1) {
+        newRep.type = "heading";
+        newRep.level = -1;
+      }
+
+      await orca.commands.invokeEditorCommand(
+        "core.editor.setProperties",
+        null,
+        [blockId],
+        [{ name: "_repr", value: newRep, type: 0 }],
+      );
+
+
+
+      // Wait for React to re-render the block with the new properties, then scroll to it
+      setTimeout(() => {
+        onNavigate(blockId, false);
+      }, 150);
     },
-    [blockId]
+    [blockId],
   );
 
   const handleToggle = useCallback(
     async (e: React.MouseEvent) => {
       e.stopPropagation();
       toggleNodeExpansion(blockId);
-      
+
       // If we are expanding, ensure children are loaded in memory
       if (!isExpanded && hasChildren) {
         await Promise.all(
-          childrenIds.map((childId: string | number) => ensureBlockInState(Number(childId)))
+          childrenIds.map((childId: string | number) =>
+            ensureBlockInState(Number(childId)),
+          ),
         );
       }
     },
-    [blockId, isExpanded, hasChildren, childrenIds]
+    [blockId, isExpanded, hasChildren, childrenIds],
   );
 
-  const [dropPosition, setDropPosition] = React.useState<"before" | "after" | "inside" | null>(null);
+  const [dropPosition, setDropPosition] = React.useState<
+    "before" | "after" | "inside" | null
+  >(null);
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -128,14 +190,11 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
     (e: React.DragEvent) => {
       const repoId = orca.state.repo || "default";
       const ids = [blockId];
-      e.dataTransfer.setData(
-        `orca/${repoId}`,
-        JSON.stringify({ blocks: ids })
-      );
+      e.dataTransfer.setData(`orca/${repoId}`, JSON.stringify({ blocks: ids }));
       e.dataTransfer.setData("text/plain", ids.join(","));
       e.dataTransfer.effectAllowed = "copyMove";
     },
-    [blockId]
+    [blockId],
   );
 
   const handleDrop = useCallback(
@@ -170,13 +229,14 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
         console.error("[BlockNav] Failed to parse drop data:", err);
       }
     },
-    [blockId, onDropOnNode, dropPosition]
+    [blockId, onDropOnNode, dropPosition],
   );
 
   let dropClassName = "";
   if (isDragOver && dropPosition) {
     if (dropPosition === "before") dropClassName = "block-nav-node-drop-before";
-    else if (dropPosition === "after") dropClassName = "block-nav-node-drop-after";
+    else if (dropPosition === "after")
+      dropClassName = "block-nav-node-drop-after";
     else dropClassName = "block-nav-node-drag-over"; // inside
   }
 
@@ -194,36 +254,59 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
 
   const renderHighlightedTitle = (text: string) => {
     if (!searchRegex || !text) return text;
-    
+
     const parts = text.split(searchRegex);
     const lowerFilter = state.filterText.toLowerCase();
-    
+
     return (
       <>
-        {parts.map((part, i) => 
+        {parts.map((part, i) =>
           part.toLowerCase() === lowerFilter ? (
-            <mark key={i} style={{ backgroundColor: 'rgba(255, 212, 0, 0.4)', color: 'inherit', borderRadius: '2px', padding: '0 2px' }}>
+            <mark
+              key={i}
+              style={{
+                backgroundColor: "rgba(255, 212, 0, 0.4)",
+                color: "inherit",
+                borderRadius: "2px",
+                padding: "0 2px",
+              }}
+            >
               {part}
             </mark>
           ) : (
             <span key={i}>{part}</span>
-          )
+          ),
         )}
       </>
     );
   };
+
+  const isHeading = getRepr(block || {})?.type === "heading";
 
   return (
     <>
       <orca.components.ContextMenu
         menu={(closeMenu) => (
           <orca.components.Menu>
-            <orca.components.MenuText preIcon="focus-centered" title={t("block-nav.zoom-in") || "聚焦"} onClick={() => { closeMenu(); onRightClick(blockId); }} />
-            <orca.components.MenuSeparator />
-            <orca.components.MenuText preIcon="h-1" title={t("block-nav.make-h1") || "转为一级标题"} onClick={() => { closeMenu(); handleSetHeading(1); }} />
-            <orca.components.MenuText preIcon="h-2" title={t("block-nav.make-h2") || "转为二级标题"} onClick={() => { closeMenu(); handleSetHeading(2); }} />
-            <orca.components.MenuText preIcon="h-3" title={t("block-nav.make-h3") || "转为三级标题"} onClick={() => { closeMenu(); handleSetHeading(3); }} />
-            <orca.components.MenuText preIcon="clear-formatting" title={t("block-nav.make-text") || "转为普通文本"} onClick={() => { closeMenu(); handleSetHeading(0); }} />
+            {isHeading ? (
+              <orca.components.MenuText
+                preIcon="ti ti-clear-formatting"
+                title={t("block-nav.make-text") || "转为普通文本"}
+                onClick={() => {
+                  closeMenu();
+                  handleSetHeading(0);
+                }}
+              />
+            ) : (
+              <orca.components.MenuText
+                preIcon="ti ti-heading"
+                title={t("block-nav.make-auto-heading") || "转为自动标题"}
+                onClick={() => {
+                  closeMenu();
+                  handleSetHeading(-1);
+                }}
+              />
+            )}
           </orca.components.Menu>
         )}
       >
@@ -233,48 +316,91 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
             draggable={true}
             onContextMenu={openMenu as any}
             onDragStart={handleDragStart}
-          onDragEnter={handleDragEnter}
-          onDragLeave={handleDragLeave}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          style={{ paddingLeft: `${depth * 16}px` }}
-        >
-          <div 
-            className="block-nav-node-toggle" 
-            style={{ width: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: hasChildren ? 'pointer' : 'default', opacity: hasChildren ? 0.6 : 0 }}
-            onClick={hasChildren ? handleToggle : undefined}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            style={{ paddingLeft: `${depth * 16}px` }}
           >
-            {hasChildren && (
-              <i className={`ti ti-chevron-${isExpanded ? 'down' : 'right'}`} style={{ fontSize: '12px' }} />
-            )}
-          </div>
-          <div 
-            className="block-nav-node-icon-container" 
-            style={{ marginLeft: '4px', marginRight: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', width: '16px', height: '16px' }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onRightClick(blockId);
-            }}
-            title={t("block-nav.zoom-in") || "聚焦"}
-          >
-            <div className="icon-default" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
-              <BlockIcon iconValue={icon} color={color} />
+            <div
+              className="block-nav-node-toggle"
+              style={{
+                width: "16px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: hasChildren ? "pointer" : "default",
+                opacity: hasChildren ? 0.6 : 0,
+              }}
+              onClick={hasChildren ? handleToggle : undefined}
+            >
+              {hasChildren && (
+                <i
+                  className={`ti ti-chevron-${isExpanded ? "down" : "right"}`}
+                  style={{ fontSize: "12px" }}
+                />
+              )}
             </div>
-            <div className="icon-hover" style={{ display: 'none', alignItems: 'center', justifyContent: 'center', color: 'var(--b3-theme-primary)', fontSize: '14px', width: '100%', height: '100%' }}>
-              <i className="ti ti-focus-centered" />
+            <div
+              className="block-nav-node-icon-container"
+              style={{
+                marginLeft: "4px",
+                marginRight: "8px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                width: "16px",
+                height: "16px",
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRightClick(blockId);
+              }}
+              title={t("block-nav.zoom-in") || "聚焦"}
+            >
+              <div
+                className="icon-default"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "100%",
+                  height: "100%",
+                }}
+              >
+                <BlockIcon iconValue={icon} color={color} />
+              </div>
+              <div
+                className="icon-hover"
+                style={{
+                  display: "none",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "var(--b3-theme-primary)",
+                  fontSize: "14px",
+                  width: "100%",
+                  height: "100%",
+                }}
+              >
+                <i className="ti ti-focus-centered" />
+              </div>
             </div>
-          </div>
-          <div className="block-nav-node-content" onClick={handleClick}>
-            <span className="block-nav-node-title" style={{ color }} title={title as string}>
-              {isSearching && isMatched
+            <div className="block-nav-node-content" onClick={handleClick}>
+              <span
+                className="block-nav-node-title"
+                style={{ color }}
+                title={title as string}
+              >
+                {isSearching && isMatched
                   ? renderHighlightedTitle(title as string)
                   : title}
-            </span>
+              </span>
+            </div>
           </div>
-        </div>
         )}
       </orca.components.ContextMenu>
-      
+
       {isExpanded && hasChildren && (
         <div className="block-nav-children-container">
           {childrenIds.map((childId: string) => (
