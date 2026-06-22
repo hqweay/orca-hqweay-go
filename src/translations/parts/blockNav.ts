@@ -12,6 +12,11 @@ export default {
   "block-nav.filter-heading": "标题",
   "block-nav.filter-todo": "待办",
   "block-nav.filter-done": "已办",
+  "block-nav.zoom-in": "聚焦",
+  "block-nav.make-h1": "转为一级标题",
+  "block-nav.make-h2": "转为二级标题",
+  "block-nav.make-h3": "转为三级标题",
+  "block-nav.make-text": "转为普通文本",
   "block-nav.sidebarPosition": "侧边栏位置",
   "block-nav.sidebarPositionDesc":
     "大纲导航默认打开的位置。右键点击按钮可以在另一侧打开。",

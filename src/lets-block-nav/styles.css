@@ -216,3 +216,11 @@
   justify-content: center;
   gap: 8px;
 }
+
+.block-nav-node-icon-container:hover .icon-default {
+  display: none !important;
+}
+
+.block-nav-node-icon-container:hover .icon-hover {
+  display: flex !important;
+}

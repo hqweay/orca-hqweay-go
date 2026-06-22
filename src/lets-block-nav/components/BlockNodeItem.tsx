@@ -7,6 +7,7 @@ import {
 } from "../utils/state";
 import { BlockIcon } from "../../libs/components/BlockIcon";
 import { getBlockTitle as getBlockTitleUtil, getBlockIcon, getBlockColor, ensureBlockInState } from "../../libs/utils";
+import { t } from "../../libs/l10n";
 
 interface BlockNodeItemProps {
   blockId: number;
@@ -62,13 +63,15 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
     [blockId, onNavigate]
   );
 
-  const handleContextMenu = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      onRightClick(blockId);
+  const handleSetHeading = useCallback(
+    async (level: number) => {
+      if (level === 0) {
+        await orca.commands.invokeEditorCommand("core.editor.makeText", null, blockId);
+      } else {
+        await orca.commands.invokeEditorCommand(`core.editor.makeHeading${level}`, null, blockId);
+      }
     },
-    [blockId, onRightClick]
+    [blockId]
   );
 
   const handleToggle = useCallback(
@@ -212,38 +215,65 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
 
   return (
     <>
-      <div
-        className={`block-nav-node ${isFocused ? "block-nav-node-selected" : ""} ${dropClassName}`}
-        draggable={true}
-        onClick={handleClick}
-        onContextMenu={handleContextMenu}
-        onDragStart={handleDragStart}
-        onDragEnter={handleDragEnter}
-        onDragLeave={handleDragLeave}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
-        style={{ paddingLeft: `${depth * 16}px` }}
+      <orca.components.ContextMenu
+        menu={(closeMenu) => (
+          <orca.components.Menu>
+            <orca.components.MenuText preIcon="focus-centered" title={t("block-nav.zoom-in") || "聚焦"} onClick={() => { closeMenu(); onRightClick(blockId); }} />
+            <orca.components.MenuSeparator />
+            <orca.components.MenuText preIcon="h-1" title={t("block-nav.make-h1") || "转为一级标题"} onClick={() => { closeMenu(); handleSetHeading(1); }} />
+            <orca.components.MenuText preIcon="h-2" title={t("block-nav.make-h2") || "转为二级标题"} onClick={() => { closeMenu(); handleSetHeading(2); }} />
+            <orca.components.MenuText preIcon="h-3" title={t("block-nav.make-h3") || "转为三级标题"} onClick={() => { closeMenu(); handleSetHeading(3); }} />
+            <orca.components.MenuText preIcon="clear-formatting" title={t("block-nav.make-text") || "转为普通文本"} onClick={() => { closeMenu(); handleSetHeading(0); }} />
+          </orca.components.Menu>
+        )}
       >
-        <div 
-          className="block-nav-node-toggle" 
-          style={{ width: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: hasChildren ? 'pointer' : 'default', opacity: hasChildren ? 0.6 : 0 }}
-          onClick={hasChildren ? handleToggle : undefined}
+        {(openMenu, closeMenu) => (
+          <div
+            className={`block-nav-node ${isFocused ? "block-nav-node-selected" : ""} ${dropClassName}`}
+            draggable={true}
+            onContextMenu={openMenu as any}
+            onDragStart={handleDragStart}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          style={{ paddingLeft: `${depth * 16}px` }}
         >
-          {hasChildren && (
-            <i className={`ti ti-chevron-${isExpanded ? 'down' : 'right'}`} style={{ fontSize: '12px' }} />
-          )}
+          <div 
+            className="block-nav-node-toggle" 
+            style={{ width: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: hasChildren ? 'pointer' : 'default', opacity: hasChildren ? 0.6 : 0 }}
+            onClick={hasChildren ? handleToggle : undefined}
+          >
+            {hasChildren && (
+              <i className={`ti ti-chevron-${isExpanded ? 'down' : 'right'}`} style={{ fontSize: '12px' }} />
+            )}
+          </div>
+          <div 
+            className="block-nav-node-icon-container" 
+            style={{ marginLeft: '4px', marginRight: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', width: '16px', height: '16px' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRightClick(blockId);
+            }}
+            title={t("block-nav.zoom-in") || "聚焦"}
+          >
+            <div className="icon-default" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
+              <BlockIcon iconValue={icon} color={color} />
+            </div>
+            <div className="icon-hover" style={{ display: 'none', alignItems: 'center', justifyContent: 'center', color: 'var(--b3-theme-primary)', fontSize: '14px', width: '100%', height: '100%' }}>
+              <i className="ti ti-focus-centered" />
+            </div>
+          </div>
+          <div className="block-nav-node-content" onClick={handleClick}>
+            <span className="block-nav-node-title" style={{ color }} title={title as string}>
+              {isSearching && isMatched
+                  ? renderHighlightedTitle(title as string)
+                  : title}
+            </span>
+          </div>
         </div>
-        <div className="block-nav-node-icon" style={{ marginLeft: '4px', marginRight: '8px', display: 'flex', alignItems: 'center' }}>
-          <BlockIcon iconValue={icon} color={color} />
-        </div>
-        <div className="block-nav-node-content">
-          <span className="block-nav-node-title" style={{ color }} title={title}>
-            {isSearching && isMatched
-                ? renderHighlightedTitle(title as string)
-                : title}
-          </span>
-        </div>
-      </div>
+        )}
+      </orca.components.ContextMenu>
       
       {isExpanded && hasChildren && (
         <div className="block-nav-children-container">
