@@ -713,13 +713,14 @@ export const BlockNavPanel: React.FC = () => {
                       
                       if (state.rootBlockId) {
                         await ensureEditorFocus(state.rootBlockId);
-                        setTimeout(async () => {
-                          if (typeof level === "string") {
-                            await orca.commands.invokeEditorCommand("core.editor.unfoldAll", null);
-                          } else {
-                            await executeEditorExpand(level, state.rootBlockId!);
-                          }
-                        }, 50);
+                        try {
+                          await executeEditorExpand(
+                            level === "All" ? "all" : level,
+                            state.rootBlockId!
+                          );
+                        } catch (err) {
+                          console.error("[BlockNav] editor expand failed", err);
+                        }
                       }
                       return;
                     }
@@ -738,28 +739,21 @@ export const BlockNavPanel: React.FC = () => {
                     );
 
                     if (state.rootBlockId) {
-                      // 聚焦回主编辑器，否则侧边栏会吞掉编辑器命令的上下文
                       await ensureEditorFocus(state.rootBlockId);
-
-                      setTimeout(async () => {
-                        if (level === "All") {
-                          await executeEditorExpand(
-                            "all",
-                            state.rootBlockId!
-                          );
-                        } else {
-                          await executeEditorExpand(
-                            level as number,
-                            state.rootBlockId!
-                          );
-                        }
-                      }, 50);
+                      try {
+                        await executeEditorExpand(
+                          level === "All" ? "all" : level,
+                          state.rootBlockId!
+                        );
+                      } catch (err) {
+                        console.error("[BlockNav] editor expand failed", err);
+                      }
                     }
                   }}
                   title={
                     level === "All"
-                      ? `${t("block-nav.expand-all") || "Expand All"}\n(Right-Click: Editor, Alt-Click: Both)`
-                      : `${t("block-nav.expand-to") || "Expand to L"}${level}\n(Right-Click: Editor, Alt-Click: Both)`
+                      ? `${t("block-nav.expand-all") || "Expand All"}\n(Right: Editor, Alt/Shift+Click: Both)`
+                      : `${t("block-nav.expand-to") || "Expand to L"}${level}\n(Right: Editor, Alt/Shift+Click: Both)`
                   }
                 >
                   {level}
