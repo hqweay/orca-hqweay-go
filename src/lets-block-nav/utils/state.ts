@@ -47,7 +47,7 @@ export const toggleNodeExpansion = (blockId: number) => {
   }
 };
 
-export const executeSnapshotExpand = async (targetDepth: number | "all") => {
+export const executeSnapshotExpand = async (targetDepth: number | "all" | "All") => {
   const rootId = blockNavState.rootBlockId;
   if (!rootId) return;
 
@@ -71,7 +71,7 @@ export const executeSnapshotExpand = async (targetDepth: number | "all") => {
 
   const newExpandedIds: Record<number, boolean> = {};
 
-  if (targetDepth === "all") {
+  if (targetDepth === "all" || targetDepth === "All") {
     for (const b of blockTree) {
       if (b.children && b.children.length > 0) {
         newExpandedIds[b.id] = true;

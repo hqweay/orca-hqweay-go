@@ -712,6 +712,11 @@ export const BlockNavPanel: React.FC = () => {
                   onContextMenu={async (e) => {
                     e.preventDefault();
                     e.stopPropagation();
+                    
+                    const el = e.currentTarget;
+                    el.classList.add("right-click-active");
+                    setTimeout(() => el.classList.remove("right-click-active"), 150);
+
                     if (state.rootBlockId) {
                       // 聚焦回主编辑器，否则侧边栏会吞掉编辑器命令的上下文
                       await ensureEditorFocus(state.rootBlockId);

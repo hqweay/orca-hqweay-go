@@ -229,7 +229,8 @@
   transition: transform 0.1s ease, background-color 0.1s ease;
 }
 
-.block-nav-depth-btn:active {
+.block-nav-depth-btn:active,
+.block-nav-depth-btn.right-click-active {
   background-color: var(--orca-color-primary-2) !important;
   transform: scale(0.93);
 }
