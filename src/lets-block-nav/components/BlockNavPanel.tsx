@@ -66,10 +66,13 @@ export const BlockNavPanel: React.FC = () => {
 
   useEffect(() => {
     if (state.hideBuiltInToc) {
-      applyCSSRule(`
+      applyCSSRule(
+        `
         .orca-toc { display: none !important; }
         .orca-block-editor-sidetools-btn:has(.ti-align-justified) { display: none !important; }
-      `, { id: TOC_CSS_ID });
+      `,
+        { id: TOC_CSS_ID },
+      );
     }
 
     return () => {
@@ -131,7 +134,9 @@ export const BlockNavPanel: React.FC = () => {
     const block = orca.state.blocks[blockId];
     if (block?.children?.length) {
       await Promise.all(
-        block.children.map((childId: string | number) => ensureBlockInState(Number(childId)))
+        block.children.map((childId: string | number) =>
+          ensureBlockInState(Number(childId)),
+        ),
       );
     }
   }, []);
@@ -146,19 +151,27 @@ export const BlockNavPanel: React.FC = () => {
     currentEditorPanelId = orcaState.activePanel;
   }
 
-  const activeBlockId = getFocusedBlock(orcaState.panels, currentEditorPanelId, state.resolvedJournalBlockIds);
+  const activeBlockId = getFocusedBlock(
+    orcaState.panels,
+    currentEditorPanelId,
+    state.resolvedJournalBlockIds,
+  );
 
   useEffect(() => {
-    const findUnresolvedJournals = (panel: any, unresolved: { key: string, date: any }[]) => {
+    const findUnresolvedJournals = (
+      panel: any,
+      unresolved: { key: string; date: any }[],
+    ) => {
       if (!panel) return;
-      if (panel.view === 'journal' && panel.viewArgs?.date) {
+      if (panel.view === "journal" && panel.viewArgs?.date) {
         const date = panel.viewArgs.date;
-        const key = typeof date === 'object' && date.getTime 
-          ? date.getTime().toString() 
-          : String(date);
-        
+        const key =
+          typeof date === "object" && date.getTime
+            ? date.getTime().toString()
+            : String(date);
+
         if (!state.resolvedJournalBlockIds[key]) {
-          if (!unresolved.find(u => u.key === key)) {
+          if (!unresolved.find((u) => u.key === key)) {
             unresolved.push({ key, date });
           }
         }
@@ -169,26 +182,31 @@ export const BlockNavPanel: React.FC = () => {
         }
       }
     };
-    
-    const unresolved: { key: string, date: any }[] = [];
+
+    const unresolved: { key: string; date: any }[] = [];
     findUnresolvedJournals(orcaState.panels, unresolved);
-    
+
     if (unresolved.length > 0) {
       unresolved.forEach(async ({ key, date }) => {
         try {
           // If date is a timestamp string, new Date(Number(date)) might be needed, but usually it's "YYYY-MM-DD" or Date object
-          const dateObj = typeof date === 'string' && !isNaN(Number(date)) 
-            ? new Date(Number(date)) 
-            : typeof date === 'string' 
-              ? new Date(date) 
-              : date;
-              
+          const dateObj =
+            typeof date === "string" && !isNaN(Number(date))
+              ? new Date(Number(date))
+              : typeof date === "string"
+                ? new Date(date)
+                : date;
+
           const block = await orca.invokeBackend("get-journal-block", dateObj);
           if (block && block.id) {
             blockNavState.resolvedJournalBlockIds[key] = block.id;
           }
         } catch (e) {
-          console.error("[BlockNav] Failed to resolve journal block for date:", date, e);
+          console.error(
+            "[BlockNav] Failed to resolve journal block for date:",
+            date,
+            e,
+          );
         }
       });
     }
@@ -207,11 +225,11 @@ export const BlockNavPanel: React.FC = () => {
         let isDescendant = false;
         let currentId: number | null = activeBlockId;
         const visited = new Set<number>();
-        
+
         while (currentId) {
           if (visited.has(currentId)) break; // Prevent infinite loop
           visited.add(currentId);
-          
+
           if (currentId === blockNavState.rootBlockId) {
             isDescendant = true;
             break;
@@ -267,13 +285,52 @@ export const BlockNavPanel: React.FC = () => {
     return state.rootBlockId
       ? orcaState.blocks[state.rootBlockId]?.children?.join(",")
       : undefined;
-  }, [state.rootBlockId, state.rootBlockId ? orcaState.blocks[state.rootBlockId as number]?.children : undefined]);
+  }, [
+    state.rootBlockId,
+    state.rootBlockId
+      ? orcaState.blocks[state.rootBlockId as number]?.children
+      : undefined,
+  ]);
 
   useEffect(() => {
     if (state.rootBlockId) {
       ensureRootChildrenLoaded(state.rootBlockId);
+
+      let canceled = false;
+      const fetchAndCalc = async () => {
+        let tree = searchCache.tree;
+        if (!tree || searchCache.rootId !== state.rootBlockId) {
+          try {
+            tree = await orca.invokeBackend(
+              "get-block-tree",
+              state.rootBlockId,
+            );
+            if (canceled) return;
+            if (tree && Array.isArray(tree)) {
+              searchCache.tree = tree;
+              searchCache.rootId = state.rootBlockId;
+              searchCache.map.clear();
+              for (const b of tree) {
+                searchCache.map.set(b.id, b);
+              }
+            }
+          } catch (e) {
+            console.error("Failed to fetch block tree for depth calc", e);
+            return;
+          }
+        }
+
+        if (canceled) return;
+      };
+      fetchAndCalc();
+
+      return () => {
+        canceled = true;
+      };
     }
   }, [state.rootBlockId, rootBlockChildrenHash, ensureRootChildrenLoaded]);
+
+
 
   const ensureEditorFocus = async (targetBlockId: number) => {
     let editorPanelId = state.lastActiveEditorPanelId;
@@ -377,7 +434,7 @@ export const BlockNavPanel: React.FC = () => {
                   curr = orca.state.blocks[Number(curr.parent)];
                 }
               } else {
-                isDescendant = true; 
+                isDescendant = true;
               }
 
               if (!isDescendant) {
@@ -427,7 +484,7 @@ export const BlockNavPanel: React.FC = () => {
   const handleSearch = useCallback(async (text: string) => {
     blockNavState.filterText = text;
     const parsed = parseSearchQuery(text);
-    
+
     // If no raw text and no filters, exit search mode
     if (!parsed.rawText && parsed.filters.length === 0) {
       blockNavState.isSearching = false;
@@ -453,9 +510,9 @@ export const BlockNavPanel: React.FC = () => {
           "get-block-tree",
           blockNavState.rootBlockId,
         );
-        
+
         if (!blockTree || !Array.isArray(blockTree)) return;
-        
+
         searchCache.tree = blockTree;
         searchCache.rootId = blockNavState.rootBlockId;
         searchCache.map.clear();
@@ -473,7 +530,7 @@ export const BlockNavPanel: React.FC = () => {
     const lowerText = parsed.rawText.toLowerCase();
 
     for (const cachedBlock of blockTree) {
-      // Use live block state if available, ensuring edits from the main editor 
+      // Use live block state if available, ensuring edits from the main editor
       // are accurately reflected during search without refetching the entire tree.
       const block = orca.state.blocks[cachedBlock.id] || cachedBlock;
 
@@ -498,17 +555,19 @@ export const BlockNavPanel: React.FC = () => {
         while (current && searchCache.map.has(Number(current))) {
           loopCount++;
           if (loopCount > 1000) {
-             console.error("[BlockNavSearch] FATAL: infinite loop detected during parent traversal!");
-             break;
+            console.error(
+              "[BlockNavSearch] FATAL: infinite loop detected during parent traversal!",
+            );
+            break;
           }
           const currentId = Number(current);
           if (expandedIds[currentId]) break; // Already expanded this path, or hit a circular reference!
-          
+
           expandedIds[currentId] = true;
           current = searchCache.map.get(currentId).parent;
-          
+
           // Absolute safeguard against node pointing to itself
-          if (current == currentId) break; 
+          if (current == currentId) break;
         }
       }
     }
@@ -542,64 +601,71 @@ export const BlockNavPanel: React.FC = () => {
 
   const parentId = rootBlock?.parent ? Number(rootBlock.parent) : null;
 
-  const handleSnapshotExpand = useCallback(async (targetDepth: number | "all") => {
-    if (!state.rootBlockId) return;
+  const handleSnapshotExpand = useCallback(
+    async (targetDepth: number | "all") => {
+      if (!state.rootBlockId) return;
 
-    let blockTree = searchCache.tree;
-    if (!blockTree || searchCache.rootId !== state.rootBlockId) {
-      try {
-        blockTree = await orca.invokeBackend("get-block-tree", state.rootBlockId);
-        if (!blockTree || !Array.isArray(blockTree)) return;
+      let blockTree = searchCache.tree;
+      if (!blockTree || searchCache.rootId !== state.rootBlockId) {
+        try {
+          blockTree = await orca.invokeBackend(
+            "get-block-tree",
+            state.rootBlockId,
+          );
+          if (!blockTree || !Array.isArray(blockTree)) return;
 
-        searchCache.tree = blockTree;
-        searchCache.rootId = state.rootBlockId;
-        searchCache.map.clear();
+          searchCache.tree = blockTree;
+          searchCache.rootId = state.rootBlockId;
+          searchCache.map.clear();
+          for (const b of blockTree) {
+            searchCache.map.set(b.id, b);
+          }
+        } catch (e) {
+          console.error("Failed to fetch block tree", e);
+          return;
+        }
+      }
+
+      const newExpandedIds: Record<number, boolean> = {};
+
+      if (targetDepth === "all") {
         for (const b of blockTree) {
-          searchCache.map.set(b.id, b);
+          if (b.children && b.children.length > 0) {
+            newExpandedIds[b.id] = true;
+          }
         }
-      } catch (e) {
-        console.error("Failed to fetch block tree", e);
-        return;
-      }
-    }
+      } else {
+        const depthMap = new Map<number, number>();
+        depthMap.set(state.rootBlockId, 0);
 
-    const newExpandedIds: Record<number, boolean> = {};
+        const queue = [state.rootBlockId];
+        let i = 0;
 
-    if (targetDepth === "all") {
-      for (const b of blockTree) {
-        if (b.children && b.children.length > 0) {
-          newExpandedIds[b.id] = true;
-        }
-      }
-    } else {
-      const depthMap = new Map<number, number>();
-      depthMap.set(state.rootBlockId, 0);
+        while (i < queue.length) {
+          const currentId = queue[i++];
+          const currentDepth = depthMap.get(currentId)!;
 
-      const queue = [state.rootBlockId];
-      let i = 0;
+          if (currentDepth >= targetDepth) {
+            continue;
+          }
 
-      while (i < queue.length) {
-        const currentId = queue[i++];
-        const currentDepth = depthMap.get(currentId)!;
-
-        if (currentDepth >= targetDepth) {
-          continue;
-        }
-
-        const node = searchCache.map.get(currentId) || orca.state.blocks[currentId];
-        if (node && node.children && node.children.length > 0) {
-          newExpandedIds[currentId] = true;
-          for (const childId of node.children) {
-            const cId = Number(childId);
-            depthMap.set(cId, currentDepth + 1);
-            queue.push(cId);
+          const node =
+            searchCache.map.get(currentId) || orca.state.blocks[currentId];
+          if (node && node.children && node.children.length > 0) {
+            newExpandedIds[currentId] = true;
+            for (const childId of node.children) {
+              const cId = Number(childId);
+              depthMap.set(cId, currentDepth + 1);
+              queue.push(cId);
+            }
           }
         }
       }
-    }
 
-    blockNavState.expandedIds = newExpandedIds;
-  }, [state.rootBlockId]);
+      blockNavState.expandedIds = newExpandedIds;
+    },
+    [state.rootBlockId],
+  );
 
   return (
     <div
@@ -709,7 +775,11 @@ export const BlockNavPanel: React.FC = () => {
                     e.stopPropagation();
                     handleSnapshotExpand(level);
                   }}
-                  title={level === "All" ? t("block-nav.expand-all") || "Expand All" : `${t("block-nav.expand-to") || "Expand to L"}${level}`}
+                  title={
+                    level === "All"
+                      ? t("block-nav.expand-all") || "Expand All"
+                      : `${t("block-nav.expand-to") || "Expand to L"}${level}`
+                  }
                 >
                   {level}
                 </div>
@@ -790,10 +860,7 @@ const FilterInput: React.FC<{
     } else {
       newFilters.push(filterKey);
     }
-    const newText = [
-      ...newFilters.map((f) => `is:${f}`),
-      parsed.rawText,
-    ]
+    const newText = [...newFilters.map((f) => `is:${f}`), parsed.rawText]
       .filter(Boolean)
       .join(" ");
     onSearch(newText);
@@ -928,7 +995,10 @@ const FilterInput: React.FC<{
               >
                 <i className={option.icon} style={{ fontSize: "10px" }} />
                 {option.label}
-                <i className="ti ti-x" style={{ fontSize: "10px", opacity: 0.6 }} />
+                <i
+                  className="ti ti-x"
+                  style={{ fontSize: "10px", opacity: 0.6 }}
+                />
               </div>
             );
           })}
@@ -949,7 +1019,6 @@ const FilterInput: React.FC<{
           )}
         </div>
       )}
-
     </div>
   );
 };
