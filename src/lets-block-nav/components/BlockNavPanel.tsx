@@ -331,8 +331,6 @@ export const BlockNavPanel: React.FC = () => {
     }
   }, [state.rootBlockId, rootBlockChildrenHash, ensureRootChildrenLoaded]);
 
-
-
   const ensureEditorFocus = async (targetBlockId: number) => {
     let editorPanelId = state.lastActiveEditorPanelId;
     if (!editorPanelId || !isEditorPanel(orca.state.panels, editorPanelId)) {
@@ -601,8 +599,6 @@ export const BlockNavPanel: React.FC = () => {
   const hasItems = childrenIds.length > 0;
 
   const parentId = rootBlock?.parent ? Number(rootBlock.parent) : null;
-
-
 
   return (
     <div

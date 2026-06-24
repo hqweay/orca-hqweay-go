@@ -31,17 +31,15 @@ export default class EditorFoldPlugin extends BasePlugin {
               title={t("Expand to this level")}
               onClick={async () => {
                 close();
-                // Calculate depth of target block relative to root
+                // Calculate depth relative to root (1 = direct child, 2 = grandchild, etc.)
                 let depth = 1;
-                let curr = orca.state.blocks[blockIds];
-                while (curr && curr.parent && curr.parent !== rootBlockId) {
-                  depth++;
-                  curr = orca.state.blocks[curr.parent];
+                if (blockIds !== rootBlockId) {
+                  let curr = orca.state.blocks[blockIds];
+                  while (curr && curr.parent && Number(curr.parent) !== rootBlockId) {
+                    depth++;
+                    curr = orca.state.blocks[Number(curr.parent)];
+                  }
                 }
-                
-                // If it's the root block itself, depth is 0, which means unfold everything or fold level 1
-                if (depth === 0) depth = 1;
-
                 await executeEditorExpand(depth, rootBlockId, this.logger);
               }}
             />
@@ -78,7 +76,6 @@ export default class EditorFoldPlugin extends BasePlugin {
     // Unregister editor commands
     for (const commandId of this.registeredEditorCommands) {
       try {
-        await orca.shortcuts.assign("", commandId);
         orca.commands.unregisterCommand(commandId);
       } catch (e) {
         this.logger.warn(`Failed to unregister ${commandId}`, e);
