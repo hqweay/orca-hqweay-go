@@ -705,8 +705,25 @@ export const BlockNavPanel: React.FC = () => {
                     cursor: "pointer",
                     userSelect: "none",
                   }}
-                  onClick={(e) => {
+                  onClick={async (e) => {
                     e.stopPropagation();
+                    
+                    if (e.altKey || e.shiftKey) {
+                      executeSnapshotExpand(level);
+                      
+                      if (state.rootBlockId) {
+                        await ensureEditorFocus(state.rootBlockId);
+                        setTimeout(async () => {
+                          if (typeof level === "string") {
+                            await orca.commands.invokeEditorCommand("core.editor.unfoldAll", null);
+                          } else {
+                            await executeEditorExpand(level, state.rootBlockId!);
+                          }
+                        }, 50);
+                      }
+                      return;
+                    }
+                    
                     executeSnapshotExpand(level);
                   }}
                   onContextMenu={async (e) => {
@@ -741,8 +758,8 @@ export const BlockNavPanel: React.FC = () => {
                   }}
                   title={
                     level === "All"
-                      ? t("block-nav.expand-all") || "Expand All"
-                      : `${t("block-nav.expand-to") || "Expand to L"}${level}\n(Right click to expand Editor)`
+                      ? `${t("block-nav.expand-all") || "Expand All"}\n(Right-Click: Editor, Alt-Click: Both)`
+                      : `${t("block-nav.expand-to") || "Expand to L"}${level}\n(Right-Click: Editor, Alt-Click: Both)`
                   }
                 >
                   {level}
