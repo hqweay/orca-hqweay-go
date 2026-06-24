@@ -12,6 +12,7 @@ import {
   getBlockColorForId,
 } from "../utils/blocks";
 import { executeSnapshotExpand } from "../utils/state";
+import { executeEditorExpand } from "../../lets-editor-fold/logic";
 import { useDragDrop } from "../utils/useDragDrop";
 import { BlockNodeItem } from "./BlockNodeItem";
 import { findMainPanelId, isEditorPanel, getFocusedBlock } from "../utils/nav";
@@ -708,10 +709,30 @@ export const BlockNavPanel: React.FC = () => {
                     e.stopPropagation();
                     executeSnapshotExpand(level);
                   }}
+                  onContextMenu={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (state.rootBlockId) {
+                      // 聚焦回主编辑器，否则侧边栏会吞掉编辑器命令的上下文
+                      await ensureEditorFocus(state.rootBlockId);
+                      
+                      setTimeout(async () => {
+                        if (level === "All") {
+                          await orca.commands.invokeEditorCommand("core.editor.unfoldAll", null);
+                        } else {
+                          await executeEditorExpand(
+                            level,
+                            state.rootBlockId!,
+                            console
+                          );
+                        }
+                      }, 50);
+                    }
+                  }}
                   title={
                     level === "All"
                       ? t("block-nav.expand-all") || "Expand All"
-                      : `${t("block-nav.expand-to") || "Expand to L"}${level}`
+                      : `${t("block-nav.expand-to") || "Expand to L"}${level}\n(Right click to expand Editor)`
                   }
                 >
                   {level}
