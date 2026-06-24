@@ -42,9 +42,12 @@ export function parseChangelog(markdown: string): ChangelogEntry[] {
       continue;
     }
 
-    const itemMatch = line.match(/^- (.+)/);
+    const itemMatch = line.match(/^\s*-\s+(.+)/);
     if (itemMatch && currentSection) {
-      currentSection.items.push(itemMatch[1]);
+      const cleanedItem = itemMatch[1]
+        .replace(/^[a-f0-9]{4,}:\s*/, "") // 移除 hash
+        .replace(/^-\s*/, "");           // 移除多余的 `- `
+      currentSection.items.push(cleanedItem);
     }
   }
 

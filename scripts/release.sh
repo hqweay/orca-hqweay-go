@@ -100,12 +100,21 @@ generate_from_commits() {
     
     while IFS= read -r line; do
         MSG=$(echo "$line" | cut -d' ' -f2-)
+        
+        # 忽略由发版脚本自动生成的 release commit
+        if echo "$MSG" | grep -qE "^release: v[0-9]+"; then
+            continue
+        fi
+        
         if echo "$MSG" | grep -qE "^feat(\(.+\))?!?: "; then
-            DESC=$(echo "$MSG" | sed 's/^feat(\(.*\))\?!: //')
+            DESC=$(echo "$MSG" | sed -E 's/^[a-z]+(\([^)]+\))?!?: //')
             MINOR_COMMITS="${MINOR_COMMITS}- ${DESC}\n"
-        elif echo "$MSG" | grep -qE "^(fix|perf)(\(.+\))?!?: "; then
-            DESC=$(echo "$MSG" | sed 's/^[a-z]*\(([^)]*)\)\?!: //')
+        elif echo "$MSG" | grep -qE "^(fix|perf|refactor|docs|style|revert)(\(.+\))?!?: "; then
+            DESC=$(echo "$MSG" | sed -E 's/^[a-z]+(\([^)]+\))?!?: //')
             PATCH_COMMITS="${PATCH_COMMITS}- ${DESC}\n"
+        else
+            # 没有前缀的不规范 commit 也保留下来作为 patch
+            PATCH_COMMITS="${PATCH_COMMITS}- ${MSG}\n"
         fi
     done <<< "$COMMITS"
     
