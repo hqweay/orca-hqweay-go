@@ -11,6 +11,7 @@ import {
   getBlockIconForId,
   getBlockColorForId,
 } from "../utils/blocks";
+import { executeSnapshotExpand } from "../utils/state";
 import { useDragDrop } from "../utils/useDragDrop";
 import { BlockNodeItem } from "./BlockNodeItem";
 import { findMainPanelId, isEditorPanel, getFocusedBlock } from "../utils/nav";
@@ -601,71 +602,7 @@ export const BlockNavPanel: React.FC = () => {
 
   const parentId = rootBlock?.parent ? Number(rootBlock.parent) : null;
 
-  const handleSnapshotExpand = useCallback(
-    async (targetDepth: number | "all") => {
-      if (!state.rootBlockId) return;
 
-      let blockTree = searchCache.tree;
-      if (!blockTree || searchCache.rootId !== state.rootBlockId) {
-        try {
-          blockTree = await orca.invokeBackend(
-            "get-block-tree",
-            state.rootBlockId,
-          );
-          if (!blockTree || !Array.isArray(blockTree)) return;
-
-          searchCache.tree = blockTree;
-          searchCache.rootId = state.rootBlockId;
-          searchCache.map.clear();
-          for (const b of blockTree) {
-            searchCache.map.set(b.id, b);
-          }
-        } catch (e) {
-          console.error("Failed to fetch block tree", e);
-          return;
-        }
-      }
-
-      const newExpandedIds: Record<number, boolean> = {};
-
-      if (targetDepth === "all") {
-        for (const b of blockTree) {
-          if (b.children && b.children.length > 0) {
-            newExpandedIds[b.id] = true;
-          }
-        }
-      } else {
-        const depthMap = new Map<number, number>();
-        depthMap.set(state.rootBlockId, 0);
-
-        const queue = [state.rootBlockId];
-        let i = 0;
-
-        while (i < queue.length) {
-          const currentId = queue[i++];
-          const currentDepth = depthMap.get(currentId)!;
-
-          if (currentDepth >= targetDepth) {
-            continue;
-          }
-
-          const node =
-            searchCache.map.get(currentId) || orca.state.blocks[currentId];
-          if (node && node.children && node.children.length > 0) {
-            newExpandedIds[currentId] = true;
-            for (const childId of node.children) {
-              const cId = Number(childId);
-              depthMap.set(cId, currentDepth + 1);
-              queue.push(cId);
-            }
-          }
-        }
-      }
-
-      blockNavState.expandedIds = newExpandedIds;
-    },
-    [state.rootBlockId],
-  );
 
   return (
     <div
@@ -773,7 +710,7 @@ export const BlockNavPanel: React.FC = () => {
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleSnapshotExpand(level);
+                    executeSnapshotExpand(level);
                   }}
                   title={
                     level === "All"

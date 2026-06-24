@@ -4,7 +4,7 @@ import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import { BlockNavPanel } from "./components/BlockNavPanel";
 import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
 import "./styles.css";
-import { blockNavState } from "./utils/state";
+import { blockNavState, executeSnapshotExpand } from "./utils/state";
 
 import { injectLeftHeadbarButton, removeLeftHeadbarButton } from "@/libs/utils";
 
@@ -107,6 +107,37 @@ export default class BlockNavPlugin extends BasePlugin {
       },
     );
 
+    orca.commands.registerCommand(
+      `${this.name}.expand-1`,
+      () => executeSnapshotExpand(1),
+      `${t("block-nav.expand-to") || "展开至层级 "}1`,
+    );
+    orca.commands.registerCommand(
+      `${this.name}.expand-2`,
+      () => executeSnapshotExpand(2),
+      `${t("block-nav.expand-to") || "展开至层级 "}2`,
+    );
+    orca.commands.registerCommand(
+      `${this.name}.expand-3`,
+      () => executeSnapshotExpand(3),
+      `${t("block-nav.expand-to") || "展开至层级 "}3`,
+    );
+    orca.commands.registerCommand(
+      `${this.name}.expand-4`,
+      () => executeSnapshotExpand(4),
+      `${t("block-nav.expand-to") || "展开至层级 "}4`,
+    );
+    orca.commands.registerCommand(
+      `${this.name}.expand-5`,
+      () => executeSnapshotExpand(5),
+      `${t("block-nav.expand-to") || "展开至层级 "}5`,
+    );
+    orca.commands.registerCommand(
+      `${this.name}.expand-all`,
+      () => executeSnapshotExpand("all"),
+      t("block-nav.expand-all") || "展开全部",
+    );
+
     this.logger.info(`${this.name} loaded.`);
   }
 
@@ -130,6 +161,12 @@ export default class BlockNavPlugin extends BasePlugin {
   async unload() {
     removeLeftHeadbarButton(this.name);
     orca.commands.unregisterCommand(`${this.name}.open`);
+    orca.commands.unregisterCommand(`${this.name}.expand-1`);
+    orca.commands.unregisterCommand(`${this.name}.expand-2`);
+    orca.commands.unregisterCommand(`${this.name}.expand-3`);
+    orca.commands.unregisterCommand(`${this.name}.expand-4`);
+    orca.commands.unregisterCommand(`${this.name}.expand-5`);
+    orca.commands.unregisterCommand(`${this.name}.expand-all`);
 
     orca.panels.unregisterPanel("blockNav");
     removeCSSRule(PLUGIN_NAME);
