@@ -542,6 +542,64 @@ export const BlockNavPanel: React.FC = () => {
 
   const parentId = rootBlock?.parent ? Number(rootBlock.parent) : null;
 
+  const handleSnapshotExpand = useCallback(async (targetDepth: number | "all") => {
+    if (!state.rootBlockId) return;
+
+    let blockTree = searchCache.tree;
+    if (!blockTree || searchCache.rootId !== state.rootBlockId) {
+      try {
+        blockTree = await orca.invokeBackend("get-block-tree", state.rootBlockId);
+        if (!blockTree || !Array.isArray(blockTree)) return;
+
+        searchCache.tree = blockTree;
+        searchCache.rootId = state.rootBlockId;
+        searchCache.map.clear();
+        for (const b of blockTree) {
+          searchCache.map.set(b.id, b);
+        }
+      } catch (e) {
+        console.error("Failed to fetch block tree", e);
+        return;
+      }
+    }
+
+    const newExpandedIds: Record<number, boolean> = {};
+
+    if (targetDepth === "all") {
+      for (const b of blockTree) {
+        if (b.children && b.children.length > 0) {
+          newExpandedIds[b.id] = true;
+        }
+      }
+    } else {
+      const depthMap = new Map<number, number>();
+      depthMap.set(state.rootBlockId, 0);
+
+      const queue = [state.rootBlockId];
+
+      while (queue.length > 0) {
+        const currentId = queue.shift()!;
+        const currentDepth = depthMap.get(currentId)!;
+
+        if (currentDepth >= targetDepth) {
+          continue;
+        }
+
+        const node = searchCache.map.get(currentId) || orca.state.blocks[currentId];
+        if (node && node.children && node.children.length > 0) {
+          newExpandedIds[currentId] = true;
+          for (const childId of node.children) {
+            const cId = Number(childId);
+            depthMap.set(cId, currentDepth + 1);
+            queue.push(cId);
+          }
+        }
+      }
+    }
+
+    blockNavState.expandedIds = newExpandedIds;
+  }, [state.rootBlockId]);
+
   return (
     <div
       ref={containerRef}
@@ -624,6 +682,39 @@ export const BlockNavPanel: React.FC = () => {
               t("block-nav.no-block")
             )}
           </div>
+
+          {state.rootBlockId && hasItems && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "2px",
+                marginLeft: "auto",
+                fontSize: "11px",
+                color: "var(--orca-color-text-3)",
+              }}
+            >
+              {([1, 2, 3, "All"] as const).map((level) => (
+                <div
+                  key={level}
+                  className="hover-bg"
+                  style={{
+                    padding: "2px 6px",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    userSelect: "none",
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSnapshotExpand(level);
+                  }}
+                  title={level === "All" ? t("block-nav.expand-all") || "Expand All" : `${t("block-nav.expand-to") || "Expand to L"}${level}`}
+                >
+                  {level}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {state.rootBlockId && (
