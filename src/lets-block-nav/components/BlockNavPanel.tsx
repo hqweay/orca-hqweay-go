@@ -576,9 +576,10 @@ export const BlockNavPanel: React.FC = () => {
       depthMap.set(state.rootBlockId, 0);
 
       const queue = [state.rootBlockId];
+      let i = 0;
 
-      while (queue.length > 0) {
-        const currentId = queue.shift()!;
+      while (i < queue.length) {
+        const currentId = queue[i++];
         const currentDepth = depthMap.get(currentId)!;
 
         if (currentDepth >= targetDepth) {

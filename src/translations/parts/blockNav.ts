@@ -5,6 +5,7 @@ export default {
   "block-nav.no-block": "暂无数据",
   "block-nav.no-children": "无子块",
   "block-nav.expand-all": "展开全部",
+  "block-nav.expand-to": "展开至层级 ",
   "block-nav.collapse-all": "折叠全部",
   "block-nav.clear-selection": "清除",
   "block-nav.delete-selected": "删除",
