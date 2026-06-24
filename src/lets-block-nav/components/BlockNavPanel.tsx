@@ -723,10 +723,14 @@ export const BlockNavPanel: React.FC = () => {
                       
                       setTimeout(async () => {
                         if (level === "All") {
-                          await orca.commands.invokeEditorCommand("core.editor.unfoldAll", null);
+                          await executeEditorExpand(
+                            999,
+                            state.rootBlockId!,
+                            console
+                          );
                         } else {
                           await executeEditorExpand(
-                            level,
+                            level as number,
                             state.rootBlockId!,
                             console
                           );
