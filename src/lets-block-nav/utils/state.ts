@@ -93,7 +93,7 @@ export const executeSnapshotExpand = async (targetDepth: number | "all") => {
       }
 
       const node =
-        searchCache.map.get(currentId) || orca.state.blocks[currentId];
+        orca.state.blocks[currentId] || searchCache.map.get(currentId);
       if (node && node.children && node.children.length > 0) {
         newExpandedIds[currentId] = true;
         for (const childId of node.children) {
