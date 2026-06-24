@@ -697,7 +697,7 @@ export const BlockNavPanel: React.FC = () => {
               {([1, 2, 3, "All"] as const).map((level) => (
                 <div
                   key={level}
-                  className="hover-bg"
+                  className="hover-bg block-nav-depth-btn"
                   style={{
                     padding: "2px 6px",
                     borderRadius: "4px",

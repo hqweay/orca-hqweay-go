@@ -224,3 +224,12 @@
 .block-nav-node-icon-container:hover .icon-hover {
   display: flex !important;
 }
+
+.block-nav-depth-btn {
+  transition: transform 0.1s ease, background-color 0.1s ease;
+}
+
+.block-nav-depth-btn:active {
+  background-color: var(--orca-color-primary-2) !important;
+  transform: scale(0.93);
+}
