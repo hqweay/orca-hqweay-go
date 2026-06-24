@@ -1,9 +1,23 @@
 import { t } from "@/libs/l10n";
 
+async function batchInvoke(
+  command: string,
+  ids: number[],
+  chunkSize = 20,
+) {
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    await Promise.all(
+      ids.slice(i, i + chunkSize).map((id) =>
+        orca.commands.invokeEditorCommand(command, null, id),
+      ),
+    );
+  }
+}
+
 export async function executeEditorExpand(
-  targetDepth: number,
+  targetDepth: number | "all",
   rootBlockId: number,
-  logger: any,
+  logger?: any,
 ) {
   if (!rootBlockId) return;
 
@@ -11,7 +25,6 @@ export async function executeEditorExpand(
     const tree = await orca.invokeBackend("get-block-tree", rootBlockId);
     if (!tree || !Array.isArray(tree)) return;
 
-    // Build parent→children adjacency map from the flat tree
     const childrenMap = new Map<number, number[]>();
     for (const b of tree) {
       const pid = Number(b.parent);
@@ -22,7 +35,8 @@ export async function executeEditorExpand(
     const blocksToUnfold: number[] = [];
     const blocksToFold: number[] = [];
 
-    // BFS using adjacency map
+    const maxDepth = targetDepth === "all" ? Number.MAX_SAFE_INTEGER : targetDepth;
+
     const queue: { id: number; depth: number }[] = [
       { id: rootBlockId, depth: 0 },
     ];
@@ -32,38 +46,25 @@ export async function executeEditorExpand(
       const children = childrenMap.get(id) || [];
       for (const childId of children) {
         const childDepth = depth + 1;
-        if (childDepth < targetDepth) {
+        if (childDepth < maxDepth) {
           blocksToUnfold.push(childId);
           queue.push({ id: childId, depth: childDepth });
-        } else if (childDepth === targetDepth) {
+        } else if (childDepth === maxDepth) {
           blocksToFold.push(childId);
         }
       }
     }
 
-    logger.info(
+    logger?.info(
       `[EditorFold] level=${targetDepth} unfold=${blocksToUnfold.length} fold=${blocksToFold.length}`,
     );
 
-    // Fold first (hide deeper), then unfold — sequential to avoid editor races
-    for (const id of blocksToFold) {
-      await orca.commands.invokeEditorCommand(
-        "core.editor.foldBlock",
-        null,
-        id,
-      );
-    }
-    for (const id of blocksToUnfold) {
-      await orca.commands.invokeEditorCommand(
-        "core.editor.unfoldBlock",
-        null,
-        id,
-      );
-    }
+    await batchInvoke("core.editor.foldBlock", blocksToFold);
+    await batchInvoke("core.editor.unfoldBlock", blocksToUnfold);
 
     orca.notify("success", t(`Expanded editor to level ${targetDepth}`));
   } catch (e) {
-    logger.error("Failed to execute editor expand", e);
+    logger?.error("Failed to execute editor expand", e);
     orca.notify("error", t("Failed to expand editor to level"));
   }
 }

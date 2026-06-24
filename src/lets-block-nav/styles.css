@@ -230,7 +230,7 @@
 }
 
 .block-nav-depth-btn:active,
-.block-nav-depth-btn.right-click-active {
+.block-nav-depth-btn.block-nav-right-click-active {
   background-color: var(--orca-color-primary-2) !important;
   transform: scale(0.93);
 }
