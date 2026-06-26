@@ -69,9 +69,15 @@ export const ArcSidebar: React.FC = () => {
   const [activeSpace, setActiveSpace] = useState<string | null>(null);
   const [showNewSpaceInput, setShowNewSpaceInput] = useState(false);
   const [newSpaceName, setNewSpaceName] = useState("");
-  const [isResizing, setIsResizing] = useState(false);
-  const [hoveringResizer, setHoveringResizer] = useState(false);
-  const sidebarPosition = arcTabsPluginInstance?.getSettings()?.sidebarPosition || "left";
+  
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  const { isResizing, hoveringResizer, setHoveringResizer, startDrag, sidebarPosition } = useSidebarResize({
+    pluginInstance: arcTabsPluginInstance,
+    containerRef,
+    wrapperClassName: "arc-tabs-panel-wrapper",
+  });
+
   const spaces = useMemo(
     () => getSpaces(),
     [localArcTabsState.pinnedBlocks, localArcTabsState.spaceChoices],
@@ -97,94 +103,6 @@ export const ArcSidebar: React.FC = () => {
   }, [spaces, activeSpace]);
 
 
-
-  const containerRef = React.useRef<HTMLDivElement>(null);
-
-  // Apply strict width constraint based on plugin settings (Extreme Performance Mode)
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const parent =
-      (containerRef.current.closest(".orca-panel") as HTMLElement) ||
-      containerRef.current.parentElement;
-    if (!parent) return;
-
-    const wrapper = (parent.closest(".SplitPane") as HTMLElement) || parent;
-
-    const enforceClass = () => {
-      if (wrapper && !wrapper.classList.contains("arc-tabs-panel-wrapper")) {
-        wrapper.classList.add("arc-tabs-panel-wrapper");
-      }
-      if (parent && !parent.classList.contains("arc-tabs-panel-wrapper")) {
-        parent.classList.add("arc-tabs-panel-wrapper");
-      }
-    };
-
-    enforceClass();
-
-    const observer = new MutationObserver(() => {
-      enforceClass();
-    });
-
-    observer.observe(wrapper, { attributes: true, attributeFilter: ["class"] });
-    if (parent !== wrapper) {
-      observer.observe(parent, {
-        attributes: true,
-        attributeFilter: ["class"],
-      });
-    }
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
-
-  const startDrag = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    setIsResizing(true);
-    const startX = e.clientX;
-    const startWidth = containerRef.current?.getBoundingClientRect().width || 250;
-
-    const parent = containerRef.current?.closest(".orca-panel") as HTMLElement;
-    const wrapper = parent?.closest(".SplitPane") as HTMLElement;
-
-    const onMouseMove = (moveEvent: MouseEvent) => {
-      const deltaX = moveEvent.clientX - startX;
-      let newWidth = sidebarPosition === "left" ? startWidth + deltaX : startWidth - deltaX;
-      newWidth = Math.max(100, Math.min(newWidth, 800));
-
-      const applyTo = (el: HTMLElement | null) => {
-        if (!el) return;
-        el.style.setProperty("flex", `0 0 ${newWidth}px`, "important");
-        el.style.setProperty("width", `${newWidth}px`, "important");
-        el.style.setProperty("min-width", `${newWidth}px`, "important");
-        el.style.setProperty("max-width", `${newWidth}px`, "important");
-      };
-      
-      applyTo(parent);
-      applyTo(wrapper);
-    };
-
-    const onMouseUp = (upEvent: MouseEvent) => {
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-      setIsResizing(false);
-
-      const deltaX = upEvent.clientX - startX;
-      let newWidth = sidebarPosition === "left" ? startWidth + deltaX : startWidth - deltaX;
-      newWidth = Math.max(100, Math.min(newWidth, 800));
-
-      const currentSettings = arcTabsPluginInstance?.getSettings();
-      if (currentSettings) {
-        arcTabsPluginInstance?.updateSettings({ ...currentSettings, sidebarWidth: Math.round(newWidth) });
-      }
-    };
-
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
-  };
 
   const openBlockIds = useMemo(() => getActiveBlocks(state.panels).map(Number), [state.panels]);
 
