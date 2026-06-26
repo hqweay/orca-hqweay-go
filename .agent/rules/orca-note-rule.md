@@ -28,7 +28,7 @@ description: 该 rule 指定了如何理解并开发该项目，每次进行开�
 *   **样式约定**: 禁止硬编码颜色。必须使用内置 CSS 变量 (如 `--orca-color-bg-1`, `--orca-color-primary-5`) 以适配深色模式。
 
 ## 3. 开发工作流与多语言 (Workflow & i18n)
-*   **i18n 强制包裹**: 所有用户可见的 UI 字符串，必须使用 `src/libs/l10n` 提供的 `t()` 函数包裹。
+*   **i18n 强制包裹**: 所有用户可见的 UI 字符串，必须使用子插件基类提供的 `this.t()` 函数包裹。禁止直接使用全局的 `t()` 以防命名空间污染。（如果是纯 UI 组件，请通过 props 将 plugin 实例传入并调用 `plugin.t()`）。
 *   **翻译自动加载**: 新模块的翻译写在 `src/translations/parts/[name].ts` 中，系统会自动扫描，无需手动修改 `zhCN.ts` 聚合文件。
 *   **配置项翻译基准**: 对子插件，必须在翻译中包含 `"[name]"` 和 `"[name].description"` 键。
 
@@ -44,5 +44,13 @@ description: 该 rule 指定了如何理解并开发该项目，每次进行开�
    - [你的变更描述]
    ```
 2. 或者，在回复中提醒用户手动运行 `pnpm changeset` 来生成。
+
+## 5. 遗留代码迁移原则 (Legacy Migration & Boy Scout Rule)
+当你在任何旧插件中工作时，请顺手应用最新的最佳实践（童子军军规）：
+1. **翻译 API 迁移**：将所有的全局 `t("...")` 替换为 `this.t("...")`。
+2. **事件与命令卸载机制**：如果旧代码在 `load()` 中使用闭包数组 `_cleanupFns` 来 push 清理方法，请尽量重构：
+   - 绝大部分可以通过直接把方法转为普通函数然后放到 `unload()` 中去执行。
+   - 命令和区块菜单清理请统一由 BasePlugin 提供的 `_registeredCommandIds` 机制自动完成。
+3. **搜索引擎解耦**：绝不允许在 UI 组件（`.tsx`）中直接读取或修改全局 `searchCache`。有关节点树快照的操作，必须通过调用 `src/lets-block-nav/utils/searchEngine.ts` 中封装的安全 API 实现。
 
 最后：如无必要，勿增实体。使用中文回复。
