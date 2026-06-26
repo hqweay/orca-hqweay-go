@@ -234,3 +234,11 @@
   background-color: var(--orca-color-primary-2) !important;
   transform: scale(0.93);
 }
+
+/* Force search/filter input wrappers and input to expand dynamically */
+.block-nav-search-container *:has(input),
+.block-nav-search-container input {
+  width: 100% !important;
+  max-width: none !important;
+}
+

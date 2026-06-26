@@ -473,6 +473,8 @@ export const BlockNavPanel: React.FC = () => {
           padding: "8px 12px",
           borderBottom: "1px solid var(--orca-border)",
           gap: "8px",
+          width: "100%",
+          boxSizing: "border-box",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", width: "100%" }}>
@@ -702,13 +704,15 @@ const FilterInput: React.FC<{
   };
 
   return (
-    <div style={{ position: "relative" }}>
+    <div className="block-nav-search-container" style={{ position: "relative", width: "100%" }}>
       {/* Search Input */}
-      <div>
+      <div style={{ width: "100%" }}>
         <CompositionSafeInput
           value={filterText}
           onChange={(e: any) => onSearch(e.target.value)}
           placeholder="Filter..."
+          width="100%"
+          style={{ width: "100%" }}
           pre={
             <orca.components.ContextMenu
               menu={(closeMenu) => (
