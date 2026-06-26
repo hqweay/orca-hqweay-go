@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { t } from "@/libs/l10n";
-import { parseChangelog, renderMarkdownItem } from "../libs/changelog-parser";
+import { parseChangelog } from "../libs/changelog-parser";
 import { SPONSOR_QR_BASE64 } from "../assets/sponsor-qr";
 import pkg from "../../package.json";
 import CHANGELOG_RAW from "../../CHANGELOG.md?raw";
@@ -316,7 +316,7 @@ function ChangelogContent() {
               >
                 {section.items.map((item, iIdx) => (
                   <li key={iIdx} style={{ marginBottom: "4px" }}>
-                    {renderMarkdownItem(item)}
+                    {item}
                   </li>
                 ))}
               </ul>

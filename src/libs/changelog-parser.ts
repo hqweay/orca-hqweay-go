@@ -1,5 +1,3 @@
-import React from "react";
-
 export interface ChangelogEntry {
   version: string;
   sections: {
@@ -48,8 +46,7 @@ export function parseChangelog(markdown: string): ChangelogEntry[] {
     if (itemMatch && currentSection) {
       const cleanedItem = itemMatch[1]
         .replace(/^[a-f0-9]{4,}:\s*/, "") // 移除 hash
-        .replace(/^-\s*/, "")           // 移除多余的 `- `
-        .replace(/^###\s*/, "");        // 移除嵌入的 ### 标题前缀
+        .replace(/^-\s*/, "");           // 移除多余的 `- `
       currentSection.items.push(cleanedItem);
     }
   }
@@ -62,41 +59,6 @@ export function parseChangelog(markdown: string): ChangelogEntry[] {
   }
 
   return entries;
-}
-
-type MarkdownAST = (string | { bold?: string; code?: string; link?: { text: string; url: string } })[];
-
-function parseInlineMarkdown(text: string): React.ReactNode[] {
-  const regex = /(\*\*(.+?)\*\*)|(`(.+?)`)|(\[(.+?)\]\((.+?)\))/g;
-  const nodes: React.ReactNode[] = [];
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-  let key = 0;
-
-  while ((match = regex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      nodes.push(text.slice(lastIndex, match.index));
-    }
-    if (match[1]) {
-      nodes.push(<strong key={key++}>{match[2]}</strong>);
-    } else if (match[3]) {
-      nodes.push(<code key={key++}>{match[4]}</code>);
-    } else if (match[5]) {
-      nodes.push(<a key={key++} href={match[7]}>{match[6]}</a>);
-    }
-    lastIndex = match.index + match[0].length;
-  }
-  if (lastIndex < text.length) {
-    nodes.push(text.slice(lastIndex));
-  }
-  return nodes;
-}
-
-export function renderMarkdownItem(text: string): React.ReactNode {
-  const cleanText = text.replace(/^###\s*/, "");
-  if (!cleanText) return null;
-  const nodes = parseInlineMarkdown(cleanText);
-  return nodes.length === 1 && typeof nodes[0] === "string" ? nodes[0] : nodes;
 }
 
 export function getChangesSinceVersion(
