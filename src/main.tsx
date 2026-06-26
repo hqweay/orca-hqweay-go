@@ -35,7 +35,10 @@ function showUpdateModal(entries: any[]) {
   }
 
   const handleClose = () => {
-    updateModalRoot?.render(null);
+    updateModalRoot?.unmount();
+    updateModalContainer?.remove();
+    updateModalContainer = null;
+    updateModalRoot = null;
   };
 
   updateModalRoot?.render(
@@ -59,7 +62,10 @@ function showAboutModal() {
   }
 
   const handleClose = () => {
-    aboutModalRoot?.render(null);
+    aboutModalRoot?.unmount();
+    aboutModalContainer?.remove();
+    aboutModalContainer = null;
+    aboutModalRoot = null;
   };
 
   aboutModalRoot?.render(
@@ -262,6 +268,20 @@ export async function unload() {
   const container = document.getElementById("sub-plugin-settings-container");
   if (container) {
     container.remove();
+  }
+
+  if (updateModalContainer) {
+    updateModalRoot?.unmount();
+    updateModalContainer.remove();
+    updateModalContainer = null;
+    updateModalRoot = null;
+  }
+
+  if (aboutModalContainer) {
+    aboutModalRoot?.unmount();
+    aboutModalContainer.remove();
+    aboutModalContainer = null;
+    aboutModalRoot = null;
   }
 }
 

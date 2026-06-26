@@ -13,6 +13,12 @@ export const getSearchCacheBlock = (blockId: number) => {
   return searchCache.map.get(blockId);
 };
 
+export const clearSearchCache = () => {
+  searchCache.tree = null;
+  searchCache.rootId = null;
+  searchCache.map.clear();
+};
+
 export const ensureSearchTree = async (rootId: number) => {
   if (!searchCache.tree || searchCache.rootId !== rootId) {
     try {

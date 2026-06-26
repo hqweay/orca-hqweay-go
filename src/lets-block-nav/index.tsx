@@ -5,7 +5,7 @@ import { BlockNavPanel } from "./components/BlockNavPanel";
 import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
 import "./styles.css";
 import { blockNavState } from "./utils/state";
-import { executeSnapshotExpand } from "./utils/searchEngine";
+import { executeSnapshotExpand, clearSearchCache } from "./utils/searchEngine";
 
 import { renderLeftHeadbarButton, removeLeftHeadbarButton } from "@/libs/utils";
 
@@ -145,6 +145,7 @@ export default class BlockNavPlugin extends BasePlugin {
   }
 
   async unload() {
+    clearSearchCache();
     removeLeftHeadbarButton(this.name);
     orca.commands.unregisterCommand(`${this.name}.open`);
     orca.commands.unregisterCommand(`${this.name}.expand-1`);
