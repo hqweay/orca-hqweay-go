@@ -153,6 +153,13 @@ export const getBlockIcon = (block: any) => {
     if (reprType === "epub") {
       return "ti ti-book";
     }
+    if (reprType === "image") {
+      return "ti ti-photo";
+    }
+  }
+
+  if (block.aliases && block.aliases.length > 0) {
+    return "ti ti-file";
   }
 
   return "ti ti-cube";
