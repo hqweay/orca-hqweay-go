@@ -127,7 +127,9 @@ export const getBlockTitle = (block: any, fallbackId: string | number, maxLength
 };
 
 export const getBlockIcon = (block: any) => {
-  if (!block) return "📄";
+  if (!block) return "ti ti-cube";
+
+
 
   const iconProp = block.properties?.find((p: any) => p.name === "_icon");
   if (iconProp && iconProp.value) {
@@ -135,11 +137,25 @@ export const getBlockIcon = (block: any) => {
   }
 
   const reprProp = block.properties?.find((p: any) => p.name === "_repr");
-  if (reprProp && reprProp.value?.type === "journal" && reprProp.value?.date) {
-    return `__journal__:${reprProp.value.date}`;
+  if (reprProp && reprProp.value) {
+    const reprType =
+      typeof reprProp.value === "string" ? reprProp.value : reprProp.value.type;
+
+    if (reprType === "journal" && reprProp.value.date) {
+      return `__journal__:${reprProp.value.date}`;
+    }
+    if (reprType === "table2") {
+      return "ti ti-table";
+    }
+    if (reprType === "query") {
+      return "ti ti-search";
+    }
+    if (reprType === "epub") {
+      return "ti ti-book";
+    }
   }
 
-  return "📄";
+  return "ti ti-cube";
 };
 
 export const getBlockColor = (block: any): string | undefined => {
