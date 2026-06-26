@@ -9,7 +9,6 @@ import {
   parseChangelog,
   getChangesSinceVersion,
 } from "./libs/changelog-parser";
-import cloneDeep from "lodash.clonedeep";
 import { Logger, LogLevel } from "./libs/logger";
 import pkg from "../package.json";
 import CHANGELOG_RAW from "../CHANGELOG.md?raw";
@@ -71,31 +70,8 @@ function showAboutModal() {
   );
 }
 
-async function fixData() {
-  // 修复脏数据 (Fix dirty data for block 27074)
-  const targetBlock = orca.state.blocks[27074];
-  if (targetBlock && targetBlock.properties) {
-    targetBlock.properties
-      .filter((item: any) => item.type === 6)
-      .forEach((item: any) => {
-        if (item.typeArgs && Array.isArray(item.typeArgs.choices)) {
-          item.typeArgs.choices = item.typeArgs.choices.map((choice: any) =>
-            typeof choice === "string" ? choice : choice.n,
-          );
-        }
-      });
-    await orca.commands.invokeEditorCommand(
-      "core.editor.setProperties",
-      null,
-      [27074],
-      cloneDeep(targetBlock.properties),
-    );
-  }
-}
-
 export async function load(_name: string) {
   setupL10N(orca.state.locale, { "zh-CN": zhCN });
-  // fixData();
 
   const currentVersion = pkg.version;
   const lastSeenVersion = await orca.plugins.getData(_name, "lastSeenVersion");
