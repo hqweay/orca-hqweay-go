@@ -174,13 +174,10 @@ export const getBlockColor = (block: any): string | undefined => {
   return undefined;
 };
 
-export const injectLeftHeadbarButton = (
-  id: string,
-  iconClass: string,
-  titleText: string,
-  onClick: (e: MouseEvent) => void,
-  onRightClick?: (e: MouseEvent) => void
-) => {
+let leftHeadbarRoots: Record<string, any> = {};
+
+export const renderLeftHeadbarButton = (id: string, element: React.ReactNode) => {
+  if (!element) return;
   const inject = () => {
     const toggleBtn = document.querySelector(".orca-headbar-sidebar-toggle");
     if (!toggleBtn || !toggleBtn.parentElement) {
@@ -199,54 +196,31 @@ export const injectLeftHeadbarButton = (
       toggleBtn.insertAdjacentElement("beforebegin", wrapper);
     }
 
-    let btn = document.getElementById(`left-btn-${id}`);
-    if (btn) btn.remove();
-
-    btn = document.createElement("button");
-    btn.id = `left-btn-${id}`;
-    btn.className = "orca-button plain";
-    btn.title = titleText;
-    btn.style.width = "28px";
-    btn.style.height = "28px";
-    btn.style.display = "flex";
-    btn.style.alignItems = "center";
-    btn.style.justifyContent = "center";
-    btn.style.cursor = "pointer";
-    btn.style.border = "none";
-    btn.style.background = "transparent";
-    btn.style.color = "var(--orca-text-secondary, inherit)";
-    
-    // Mimic the hover effect of other headbar buttons
-    btn.onmouseenter = () => {
-      btn!.style.background = "var(--orca-bg-hover, rgba(0, 0, 0, 0.05))";
-      btn!.style.color = "var(--orca-text-primary, inherit)";
-    };
-    btn.onmouseleave = () => {
-      btn!.style.background = "transparent";
-      btn!.style.color = "var(--orca-text-secondary, inherit)";
-    };
-
-    const icon = document.createElement("i");
-    icon.className = iconClass;
-    icon.style.fontSize = "16px";
-    btn.appendChild(icon);
-
-    btn.addEventListener("click", onClick as any);
-    if (onRightClick) {
-      btn.addEventListener("contextmenu", (e) => {
-        e.preventDefault();
-        onRightClick(e);
-      });
+    let container = document.getElementById(`left-btn-container-${id}`);
+    if (!container) {
+      container = document.createElement("div");
+      container.id = `left-btn-container-${id}`;
+      wrapper.appendChild(container);
     }
-    wrapper.appendChild(btn);
+
+    const { createRoot } = window as any;
+    if (!leftHeadbarRoots[id]) {
+      leftHeadbarRoots[id] = createRoot(container);
+    }
+    
+    leftHeadbarRoots[id].render(element);
   };
   
   inject();
 };
 
 export const removeLeftHeadbarButton = (id: string) => {
-  const btn = document.getElementById(`left-btn-${id}`);
-  if (btn) {
-    btn.remove();
+  if (leftHeadbarRoots[id]) {
+    leftHeadbarRoots[id].unmount();
+    delete leftHeadbarRoots[id];
+  }
+  const container = document.getElementById(`left-btn-container-${id}`);
+  if (container) {
+    container.remove();
   }
 };

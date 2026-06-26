@@ -4,7 +4,7 @@ import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import type { Block } from "../orca.d.ts";
 import { ArcSidebar } from "./components/ArcSidebar";
 import { arcTabsState, DEFAULT_SPACE } from "./utils/data";
-import { injectLeftHeadbarButton, removeLeftHeadbarButton } from "@/libs/utils";
+import { renderLeftHeadbarButton, removeLeftHeadbarButton } from "@/libs/utils";
 
 export let arcTabsPluginInstance: ArcTabsPlugin;
 
@@ -82,24 +82,9 @@ export default class ArcTabsPlugin extends BasePlugin {
       t("arc-tabs.description"),
     );
 
-    injectLeftHeadbarButton(
+    renderLeftHeadbarButton(
       this.name,
-      "ti ti-layout-sidebar",
-      t("arc-tabs.description"),
-      (e: MouseEvent) => {
-        const defaultSide = this.getSettings()?.sidebarPosition || "left";
-        const oppositeSide = defaultSide === "left" ? "right" : "left";
-        if (e.shiftKey) {
-          orca.commands.invokeCommand("arc-tabs.openSidebar", oppositeSide);
-        } else {
-          orca.commands.invokeCommand("arc-tabs.openSidebar");
-        }
-      },
-      (e: MouseEvent) => {
-        const defaultSide = this.getSettings()?.sidebarPosition || "left";
-        const oppositeSide = defaultSide === "left" ? "right" : "left";
-        orca.commands.invokeCommand("arc-tabs.openSidebar", oppositeSide);
-      },
+      this.renderHeadbarButton()
     );
 
     const settings = this.getSettings();
@@ -204,7 +189,21 @@ export default class ArcTabsPlugin extends BasePlugin {
       <Button
         variant="plain"
         title={t("arc-tabs.description")}
-        onClick={() => orca.commands.invokeCommand("arc-tabs.openSidebar")}
+        onClick={(e: any) => {
+          const defaultSide = this.getSettings()?.sidebarPosition || "left";
+          const oppositeSide = defaultSide === "left" ? "right" : "left";
+          if (e.shiftKey) {
+            orca.commands.invokeCommand("arc-tabs.openSidebar", oppositeSide);
+          } else {
+            orca.commands.invokeCommand("arc-tabs.openSidebar");
+          }
+        }}
+        onContextMenu={(e: any) => {
+          e.preventDefault();
+          const defaultSide = this.getSettings()?.sidebarPosition || "left";
+          const oppositeSide = defaultSide === "left" ? "right" : "left";
+          orca.commands.invokeCommand("arc-tabs.openSidebar", oppositeSide);
+        }}
       >
         <i className="ti ti-layout-sidebar" style={{ fontSize: "16px" }} />
       </Button>

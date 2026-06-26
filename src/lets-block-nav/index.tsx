@@ -7,7 +7,7 @@ import "./styles.css";
 import { blockNavState } from "./utils/state";
 import { executeSnapshotExpand } from "./utils/searchEngine";
 
-import { injectLeftHeadbarButton, removeLeftHeadbarButton } from "@/libs/utils";
+import { renderLeftHeadbarButton, removeLeftHeadbarButton } from "@/libs/utils";
 
 const PLUGIN_NAME = "lets-block-nav";
 export const TOC_CSS_ID = `${PLUGIN_NAME}-hide-toc`;
@@ -88,24 +88,9 @@ export default class BlockNavPlugin extends BasePlugin {
       t(`${this.name}.description`),
     );
 
-    injectLeftHeadbarButton(
+    renderLeftHeadbarButton(
       this.name,
-      "ti ti-list-details",
-      t(`${this.name}.description`),
-      (e: MouseEvent) => {
-        const defaultSide = this.getSettings()?.sidebarPosition || "left";
-        const oppositeSide = defaultSide === "left" ? "right" : "left";
-        if (e.shiftKey) {
-          orca.commands.invokeCommand(`${this.name}.open`, oppositeSide);
-        } else {
-          orca.commands.invokeCommand(`${this.name}.open`);
-        }
-      },
-      (e: MouseEvent) => {
-        const defaultSide = this.getSettings()?.sidebarPosition || "left";
-        const oppositeSide = defaultSide === "left" ? "right" : "left";
-        orca.commands.invokeCommand(`${this.name}.open`, oppositeSide);
-      },
+      this.renderHeadbarButton()
     );
 
     orca.commands.registerCommand(
@@ -180,7 +165,21 @@ export default class BlockNavPlugin extends BasePlugin {
       <Button
         variant="plain"
         title={t(`${this.name}.description`)}
-        onClick={() => orca.commands.invokeCommand(`${this.name}.open`)}
+        onClick={(e: any) => {
+          const defaultSide = this.getSettings()?.sidebarPosition || "left";
+          const oppositeSide = defaultSide === "left" ? "right" : "left";
+          if (e.shiftKey) {
+            orca.commands.invokeCommand(`${this.name}.open`, oppositeSide);
+          } else {
+            orca.commands.invokeCommand(`${this.name}.open`);
+          }
+        }}
+        onContextMenu={(e: any) => {
+          e.preventDefault();
+          const defaultSide = this.getSettings()?.sidebarPosition || "left";
+          const oppositeSide = defaultSide === "left" ? "right" : "left";
+          orca.commands.invokeCommand(`${this.name}.open`, oppositeSide);
+        }}
       >
         <i className="ti ti-list-details" style={{ fontSize: "16px" }} />
       </Button>
