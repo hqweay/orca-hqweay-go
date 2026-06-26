@@ -1,6 +1,6 @@
 import React from "react";
 import { t } from "@/libs/l10n";
-import { ChangelogEntry } from "../libs/changelog-parser";
+import { ChangelogEntry, renderMarkdownItem } from "../libs/changelog-parser";
 
 interface UpdateModalProps {
   visible: boolean;
@@ -120,7 +120,7 @@ export function UpdateModal({ visible, onClose, entries }: UpdateModalProps) {
                   >
                     {section.items.map((item, iIdx) => (
                       <li key={iIdx} style={{ marginBottom: "4px" }}>
-                        {item}
+                        {renderMarkdownItem(item)}
                       </li>
                     ))}
                   </ul>
