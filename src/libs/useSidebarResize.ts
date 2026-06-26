@@ -34,14 +34,11 @@ export function useSidebarResize({
   // Sync state across all panels in the same column
   useEffect(() => {
     const onHover = (e: any) => setHoveringLocal(e.detail);
-    const onResize = (e: any) => setIsResizingLocal(e.detail);
 
     window.addEventListener(`orca-sidebar-hover-${sidebarPosition}`, onHover);
-    window.addEventListener(`orca-sidebar-resize-${sidebarPosition}`, onResize);
 
     return () => {
       window.removeEventListener(`orca-sidebar-hover-${sidebarPosition}`, onHover);
-      window.removeEventListener(`orca-sidebar-resize-${sidebarPosition}`, onResize);
     };
   }, [sidebarPosition]);
 
@@ -52,7 +49,6 @@ export function useSidebarResize({
 
   const setIsResizing = (resizing: boolean) => {
     setIsResizingLocal(resizing);
-    window.dispatchEvent(new CustomEvent(`orca-sidebar-resize-${sidebarPosition}`, { detail: resizing }));
   };
 
 
@@ -65,26 +61,6 @@ export function useSidebarResize({
       const column = findHorizontalColumn(containerRef.current);
       if (column && !column.classList.contains("orca-sidebar-column")) {
         column.classList.add("orca-sidebar-column");
-      }
-
-      // Hide only horizontal native resizers
-      if (column) {
-        // Find all native resizers inside the column
-        const resizers = column.querySelectorAll(".resizer");
-        resizers.forEach((el) => {
-          const resizer = el as HTMLElement;
-          // If the resizer is a direct child of the horizontal column, it's the column's left/right resizer. Hide it.
-          // If it's deeper (e.g. inside a vertical split child panel), keep it!
-          if (resizer.parentElement === column) {
-            if (resizer.style.getPropertyValue("display") !== "none") {
-              resizer.style.setProperty("display", "none", "important");
-            }
-          } else {
-            if (resizer.style.getPropertyValue("display") === "none") {
-              resizer.style.removeProperty("display");
-            }
-          }
-        });
       }
     };
 
