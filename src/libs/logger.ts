@@ -8,6 +8,7 @@ export enum LogLevel {
 export class Logger {
   private namespace: string;
   private static globalLevel: LogLevel = Logger.getInitialLevel();
+  private static readonly noop = () => {};
 
   private static getInitialLevel(): LogLevel {
     if (typeof localStorage !== 'undefined') {
@@ -78,28 +79,28 @@ export class Logger {
     if (this.shouldLog(LogLevel.DEBUG)) {
       return console.debug.bind(console, ...this.getPrefixArgs("DEBUG"));
     }
-    return () => {};
+    return Logger.noop;
   }
 
   get info() {
     if (this.shouldLog(LogLevel.INFO)) {
       return console.info.bind(console, ...this.getPrefixArgs("INFO"));
     }
-    return () => {};
+    return Logger.noop;
   }
 
   get warn() {
     if (this.shouldLog(LogLevel.WARN)) {
       return console.warn.bind(console, ...this.getPrefixArgs("WARN"));
     }
-    return () => {};
+    return Logger.noop;
   }
 
   get error() {
     if (this.shouldLog(LogLevel.ERROR)) {
       return console.error.bind(console, ...this.getPrefixArgs("ERROR"));
     }
-    return () => {};
+    return Logger.noop;
   }
 }
 
