@@ -18,7 +18,7 @@ export default class __PLUGIN_CLASS_NAME__ extends BasePlugin {
     //     return (
     //       <MenuText
     //         preIcon="ti ti-star"
-    //         title={t("Do Something")}
+    //         title={this.t("Do Something")}
     //         onClick={() => {
     //           close();
     //           orca.commands.invokeCommand(`${this.name}.some-action`, blockId);
@@ -36,7 +36,7 @@ export default class __PLUGIN_CLASS_NAME__ extends BasePlugin {
     //     if (!block) return;
     //     await execute__PLUGIN_CLASS_NAME__Logic(block, this.logger);
     //   },
-    //   t("Execute __PLUGIN_CLASS_NAME__ Action")
+    //   this.t("Execute __PLUGIN_CLASS_NAME__ Action")
     // );
 
     this.logger.debug(`${this.name} loaded.`);

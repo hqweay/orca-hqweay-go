@@ -13,7 +13,13 @@ export function t(
   args?: { [key: string]: string },
   locale?: string
 ) {
-  const template = _translations[locale ?? _locale]?.[key] ?? key;
+  let template = _translations[locale ?? _locale]?.[key];
+  
+  if (template === undefined) {
+    // Fallback: If translation is missing, strip the prefix if there's a dot.
+    const firstDot = key.indexOf(".");
+    template = firstDot !== -1 ? key.slice(firstDot + 1) : key;
+  }
 
   if (args == null) return template;
 

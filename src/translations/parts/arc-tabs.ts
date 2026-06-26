@@ -27,6 +27,4 @@ export default {
   "arc-tabs.close": "关闭",
   "arc-tabs.sidebarPosition": "侧边栏位置",
   "arc-tabs.sidebarPositionDesc": "Arc 侧边栏默认打开的位置。右键点击按钮可以在另一侧打开。",
-  "cancel": "取消",
-  "create": "创建",
 }

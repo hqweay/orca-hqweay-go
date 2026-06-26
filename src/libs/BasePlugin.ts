@@ -28,6 +28,13 @@ export abstract class BasePlugin {
     return t(`${this.name}.description`);
   }
 
+  /**
+   * Translates a key, automatically prefixing it with the plugin name.
+   */
+  public t(key: string, args?: { [key: string]: string }): string {
+    return t(`${this.name}.${key}`, args);
+  }
+
   public abstract load(): Promise<void>;
 
   /**

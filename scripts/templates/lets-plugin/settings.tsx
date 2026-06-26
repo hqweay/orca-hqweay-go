@@ -16,10 +16,10 @@ export function __PLUGIN_CLASS_NAME__Settings({ plugin }: { plugin: any }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
-      <SettingsSection title={t("General")}>
+      <SettingsSection title={plugin.t("General")}>
         <SettingsItem
-          label={t("Example Setting")}
-          description={t("This is an example setting")}
+          label={plugin.t("Example Setting")}
+          description={plugin.t("This is an example setting")}
         >
           <Input
             value={config.exampleSetting || ""}
