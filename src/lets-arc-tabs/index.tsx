@@ -4,7 +4,11 @@ import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import type { Block } from "../orca.d.ts";
 import { ArcSidebar } from "./components/ArcSidebar";
 import { arcTabsState, DEFAULT_SPACE } from "./utils/data";
-import { renderLeftHeadbarButton, removeLeftHeadbarButton } from "@/libs/utils";
+import {
+  renderLeftHeadbarButton,
+  removeLeftHeadbarButton,
+  findPanelById,
+} from "@/libs/utils";
 import applyCSSRule from "@/libs/styleUtil.ts";
 
 export let arcTabsPluginInstance: ArcTabsPlugin;
@@ -15,15 +19,15 @@ export default class ArcTabsPlugin extends BasePlugin {
   private applySidebarWidthCSS(width: number) {
     applyCSSRule(
       `
-        .arc-tabs-panel-wrapper {
+        .orca-sidebar-column {
           flex: 0 0 ${width}px !important;
           width: ${width}px !important;
           min-width: ${width}px !important;
           max-width: ${width}px !important;
         }
-        /* 彻底移除面板内部自带的原生拖拽条 */
-        .arc-tabs-panel-wrapper > .resizer,
-        .arc-tabs-panel-wrapper .resizer {
+        /* Disable only the horizontal resizer adjacent to the sidebar column */
+        .orca-sidebar-column + .Resizer,
+        .Resizer:has(+ .orca-sidebar-column) {
           display: none !important;
         }
       `,
@@ -78,7 +82,19 @@ export default class ArcTabsPlugin extends BasePlugin {
             : orca.state.activePanel;
           if (!targetPanelId) return;
 
-          const newPanelId = orca.nav.addTo(targetPanelId, side, {
+          let appendSide: "left" | "right" | "bottom" | "top" = side;
+          const targetPanelNode = findPanelById(
+            orca.state.panels,
+            targetPanelId,
+          );
+          if (
+            targetPanelNode &&
+            ["blockNav", "arcTabs"].includes(targetPanelNode.view)
+          ) {
+            appendSide = "bottom";
+          }
+
+          const newPanelId = orca.nav.addTo(targetPanelId, appendSide, {
             view: "arcTabs",
             viewArgs: {},
             viewState: {},

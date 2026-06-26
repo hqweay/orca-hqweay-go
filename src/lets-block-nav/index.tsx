@@ -7,7 +7,11 @@ import "./styles.css";
 import { blockNavState } from "./utils/state";
 import { executeSnapshotExpand, clearSearchCache } from "./utils/searchEngine";
 
-import { renderLeftHeadbarButton, removeLeftHeadbarButton } from "@/libs/utils";
+import {
+  renderLeftHeadbarButton,
+  removeLeftHeadbarButton,
+  findPanelById,
+} from "@/libs/utils";
 
 const PLUGIN_NAME = "lets-block-nav";
 export const TOC_CSS_ID = `${PLUGIN_NAME}-hide-toc`;
@@ -25,19 +29,19 @@ export default class BlockNavPlugin extends BasePlugin {
   private applySidebarWidthCSS(width: number) {
     applyCSSRule(
       `
-        .block-nav-panel-wrapper {
+        .orca-sidebar-column {
           flex: 0 0 ${width}px !important;
           width: ${width}px !important;
           min-width: ${width}px !important;
           max-width: ${width}px !important;
         }
-        /* 彻底移除面板内部自带的原生拖拽条 */
-        .block-nav-panel-wrapper > .resizer,
-        .block-nav-panel-wrapper .resizer {
+        /* Disable only the horizontal resizer adjacent to the sidebar column */
+        .orca-sidebar-column + .Resizer,
+        .Resizer:has(+ .orca-sidebar-column) {
           display: none !important;
         }
       `,
-      { id: PLUGIN_NAME, replace: true },
+      { id: this.name, replace: true },
     );
   }
 
@@ -78,7 +82,16 @@ export default class BlockNavPlugin extends BasePlugin {
           : orca.state.activePanel;
         if (!targetPanelId) return;
 
-        const newPanelId = orca.nav.addTo(targetPanelId, side, {
+        let appendSide: "left" | "right" | "bottom" | "top" = side;
+        const targetPanelNode = findPanelById(orca.state.panels, targetPanelId);
+        if (
+          targetPanelNode &&
+          ["blockNav", "arcTabs"].includes(targetPanelNode.view)
+        ) {
+          appendSide = "bottom";
+        }
+
+        const newPanelId = orca.nav.addTo(targetPanelId, appendSide, {
           view: "blockNav",
           viewArgs: {},
           viewState: {},

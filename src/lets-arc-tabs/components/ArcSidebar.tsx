@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useSnapshot } from "valtio";
 import { t } from "@/libs/l10n";
+import { useSidebarResize } from "@/libs/useSidebarResize";
 
 import styles from "../styles.css?inline";
 import {
