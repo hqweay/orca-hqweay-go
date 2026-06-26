@@ -101,7 +101,7 @@ export default class ArcTabsPlugin extends BasePlugin {
             locked: true, // Prevent this panel from being replaced by other blocks
           } as any);
 
-          if (newPanelId) {
+          if (newPanelId && appendSide === side) {
             const width =
               arcTabsPluginInstance?.getSettings()?.sidebarWidth || 250;
             // Synchronously update layout state to avoid initial flash

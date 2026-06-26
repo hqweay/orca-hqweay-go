@@ -98,7 +98,7 @@ export default class BlockNavPlugin extends BasePlugin {
           locked: true,
         } as any);
 
-        if (newPanelId) {
+        if (newPanelId && appendSide === side) {
           const width = this.getSettings()?.sidebarWidth || 250;
           orca.nav.changeSizes(
             newPanelId,
