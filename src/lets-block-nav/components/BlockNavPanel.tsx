@@ -64,6 +64,10 @@ export const BlockNavPanel: React.FC = () => {
   const state = useSnapshot(blockNavState);
   const orcaState = useSnapshot(orca.state);
 
+  const [isResizing, setIsResizing] = useState(false);
+  const [hoveringResizer, setHoveringResizer] = useState(false);
+  const sidebarPosition = blockNavPluginInstance?.getSettings()?.sidebarPosition || "left";
+
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -92,43 +96,36 @@ export const BlockNavPanel: React.FC = () => {
 
     const wrapper = (parent.closest(".SplitPane") as HTMLElement) || parent;
 
-    const enforceWidth = () => {
-      const width = blockNavPluginInstance?.getSettings()?.sidebarWidth || 250;
-
-      const applyStyles = (el: HTMLElement) => {
-        const currentFlex = el.style.getPropertyValue("flex");
-        const expectedFlex = `0 0 ${width}px`;
-        const hasImportant =
-          el.style.getPropertyPriority("flex") === "important";
-
-        if (currentFlex !== expectedFlex || !hasImportant) {
-          el.style.setProperty("flex", expectedFlex, "important");
-          el.style.setProperty("width", `${width}px`, "important");
-          el.style.setProperty("min-width", `${width}px`, "important");
-          el.style.setProperty("max-width", `${width}px`, "important");
-        }
-      };
-
-      applyStyles(wrapper);
-      if (parent.style) applyStyles(parent);
+    const enforceClass = () => {
+      if (!wrapper.classList.contains("block-nav-panel-wrapper")) {
+        wrapper.classList.add("block-nav-panel-wrapper");
+      }
+      if (parent !== wrapper && !parent.classList.contains("block-nav-panel-wrapper")) {
+        parent.classList.add("block-nav-panel-wrapper");
+      }
     };
 
-    enforceWidth();
+    enforceClass();
 
+    // 仅监听 class 变化以防止 React 重新渲染时覆盖 class。不再监听 style，彻底消除拖拽时的性能损耗。
     const observer = new MutationObserver(() => {
-      enforceWidth();
+      enforceClass();
     });
 
-    observer.observe(wrapper, { attributes: true, attributeFilter: ["style"] });
+    observer.observe(wrapper, { attributes: true, attributeFilter: ["class"] });
     if (parent !== wrapper) {
       observer.observe(parent, {
         attributes: true,
-        attributeFilter: ["style"],
+        attributeFilter: ["class"],
       });
     }
 
     return () => {
       observer.disconnect();
+      wrapper.classList.remove("block-nav-panel-wrapper");
+      if (parent !== wrapper) {
+        parent.classList.remove("block-nav-panel-wrapper");
+      }
     };
   }, []);
 
@@ -481,12 +478,78 @@ export const BlockNavPanel: React.FC = () => {
 
   const parentId = rootBlock?.parent ? Number(rootBlock.parent) : null;
 
+  const startDrag = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setIsResizing(true);
+    const startX = e.clientX;
+    const startWidth = containerRef.current?.getBoundingClientRect().width || 250;
+
+    const parent = containerRef.current?.closest(".orca-panel") as HTMLElement;
+    const wrapper = parent?.closest(".SplitPane") as HTMLElement;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      let newWidth = sidebarPosition === "left" ? startWidth + deltaX : startWidth - deltaX;
+      newWidth = Math.max(100, Math.min(newWidth, 800));
+
+      const applyTo = (el: HTMLElement | null) => {
+        if (!el) return;
+        el.style.setProperty("flex", `0 0 ${newWidth}px`, "important");
+        el.style.setProperty("width", `${newWidth}px`, "important");
+        el.style.setProperty("min-width", `${newWidth}px`, "important");
+        el.style.setProperty("max-width", `${newWidth}px`, "important");
+      };
+      
+      applyTo(parent);
+      applyTo(wrapper);
+    };
+
+    const onMouseUp = (upEvent: MouseEvent) => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+      setIsResizing(false);
+
+      const deltaX = upEvent.clientX - startX;
+      let newWidth = sidebarPosition === "left" ? startWidth + deltaX : startWidth - deltaX;
+      newWidth = Math.max(100, Math.min(newWidth, 800));
+
+      const currentSettings = blockNavPluginInstance?.getSettings();
+      if (currentSettings) {
+        blockNavPluginInstance?.updateSettings({ ...currentSettings, sidebarWidth: Math.round(newWidth) });
+      }
+    };
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  };
+
   return (
     <div
       ref={containerRef}
       className={`block-nav-panel ${isDragOver ? "block-nav-panel-drag-over" : ""}`}
       {...dragHandlers}
+      style={{ position: "relative" }}
     >
+      <div
+        onMouseDown={startDrag}
+        onMouseEnter={() => setHoveringResizer(true)}
+        onMouseLeave={() => setHoveringResizer(false)}
+        style={{
+          position: "absolute",
+          top: 0,
+          bottom: 0,
+          [sidebarPosition === "left" ? "right" : "left"]: "-4px",
+          width: "8px",
+          cursor: "col-resize",
+          zIndex: 9999,
+          backgroundColor: isResizing || hoveringResizer ? "var(--orca-color-primary-5, #007aff)" : "transparent",
+          opacity: 0.5,
+          transition: "background-color 0.2s",
+        }}
+        title="Resize Sidebar"
+      />
       <style dangerouslySetInnerHTML={{ __html: styles }} />
 
       <div

@@ -22,19 +22,29 @@ export default class BlockNavPlugin extends BasePlugin {
 
   // protected headbarButtonId = `${this.name}.block-nav`;
 
-  async load() {
-    blockNavState.hideBuiltInToc = this.getSettings()?.hideBuiltInToc ?? false;
-    const initialWidth = this.getSettings()?.sidebarWidth || 250;
+  private applySidebarWidthCSS(width: number) {
     applyCSSRule(
       `
         .block-nav-panel-wrapper {
-          width: ${initialWidth}px !important;
-          min-width: ${initialWidth}px !important;
-          max-width: ${initialWidth}px !important;
+          flex: 0 0 ${width}px !important;
+          width: ${width}px !important;
+          min-width: ${width}px !important;
+          max-width: ${width}px !important;
+        }
+        /* 彻底移除面板内部自带的原生拖拽条 */
+        .block-nav-panel-wrapper > .resizer,
+        .block-nav-panel-wrapper .resizer {
+          display: none !important;
         }
       `,
-      { id: PLUGIN_NAME },
+      { id: PLUGIN_NAME, replace: true },
     );
+  }
+
+  async load() {
+    blockNavState.hideBuiltInToc = this.getSettings()?.hideBuiltInToc ?? false;
+    const initialWidth = this.getSettings()?.sidebarWidth || 250;
+    this.applySidebarWidthCSS(initialWidth);
 
     orca.panels.registerPanel("blockNav", BlockNavPanel);
 
@@ -142,6 +152,9 @@ export default class BlockNavPlugin extends BasePlugin {
   protected async onConfigChanged(newConfig: any) {
     await super.onConfigChanged(newConfig);
     blockNavState.hideBuiltInToc = newConfig.hideBuiltInToc ?? false;
+
+    const width = newConfig.sidebarWidth || 250;
+    this.applySidebarWidthCSS(width);
   }
 
   async unload() {
