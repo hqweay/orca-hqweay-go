@@ -7,7 +7,18 @@ export enum LogLevel {
 
 export class Logger {
   private namespace: string;
-  private static globalLevel: LogLevel = LogLevel.ERROR;
+  private static globalLevel: LogLevel = Logger.getInitialLevel();
+
+  private static getInitialLevel(): LogLevel {
+    if (typeof localStorage !== 'undefined') {
+      const stored = localStorage.getItem("ORCA_LOG_LEVEL");
+      if (stored) {
+        const level = LogLevel[stored as keyof typeof LogLevel];
+        if (level !== undefined) return level;
+      }
+    }
+    return LogLevel.ERROR;
+  }
 
   constructor(namespace: string) {
     this.namespace = namespace;
@@ -36,12 +47,11 @@ export class Logger {
     }
   }
 
-  private formatMessage(levelStr: string, message: any[]): any[] {
+  private getPrefixArgs(levelStr: string): any[] {
     const timestamp = new Date().toLocaleTimeString();
     return [
       `%c[${timestamp}] [${this.namespace}] [${levelStr}]`,
       this.getStyle(this.getLevelEnum(levelStr)),
-      ...message,
     ];
   }
 
@@ -60,27 +70,37 @@ export class Logger {
     }
   }
 
-  debug(...args: any[]) {
+  public child(subNamespace: string): Logger {
+    return new Logger(`${this.namespace}:${subNamespace}`);
+  }
+
+  get debug() {
     if (this.shouldLog(LogLevel.DEBUG)) {
-      console.debug(...this.formatMessage("DEBUG", args));
+      return console.debug.bind(console, ...this.getPrefixArgs("DEBUG"));
     }
+    return () => {};
   }
 
-  info(...args: any[]) {
+  get info() {
     if (this.shouldLog(LogLevel.INFO)) {
-      console.info(...this.formatMessage("INFO", args));
+      return console.info.bind(console, ...this.getPrefixArgs("INFO"));
     }
+    return () => {};
   }
 
-  warn(...args: any[]) {
+  get warn() {
     if (this.shouldLog(LogLevel.WARN)) {
-      console.warn(...this.formatMessage("WARN", args));
+      return console.warn.bind(console, ...this.getPrefixArgs("WARN"));
     }
+    return () => {};
   }
 
-  error(...args: any[]) {
+  get error() {
     if (this.shouldLog(LogLevel.ERROR)) {
-      console.error(...this.formatMessage("ERROR", args));
+      return console.error.bind(console, ...this.getPrefixArgs("ERROR"));
     }
+    return () => {};
   }
 }
+
+export const globalLogger = new Logger("global");
