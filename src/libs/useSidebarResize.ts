@@ -25,26 +25,51 @@ export function useSidebarResize({
   containerRef,
   wrapperClassName,
 }: SidebarResizeOptions) {
-  const sidebarPosition = pluginInstance?.getSettings()?.sidebarPosition || "left";
-
+  const [physicalSide, setPhysicalSide] = useState<"left" | "right">("left");
   const [isResizing, setIsResizingLocal] = useState(false);
   const [hoveringResizer, setHoveringLocal] = useState(false);
   const currentWidthRef = useRef<number>(250);
+
+  // Detect physical sidebar position relative to the viewport width dynamically
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const updateSide = () => {
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (rect) {
+        setPhysicalSide(rect.left < window.innerWidth / 2 ? "left" : "right");
+      }
+    };
+    updateSide();
+    
+    window.addEventListener("resize", updateSide);
+    
+    // Listen to parent DOM element mutations to catch position moves/relocations
+    const observer = new MutationObserver(updateSide);
+    const column = findHorizontalColumn(containerRef.current);
+    if (column) {
+      observer.observe(column, { attributes: true, attributeFilter: ["class"] });
+    }
+
+    return () => {
+      window.removeEventListener("resize", updateSide);
+      observer.disconnect();
+    };
+  }, [containerRef]);
 
   // Sync state across all panels in the same column
   useEffect(() => {
     const onHover = (e: any) => setHoveringLocal(e.detail);
 
-    window.addEventListener(`orca-sidebar-hover-${sidebarPosition}`, onHover);
+    window.addEventListener(`orca-sidebar-hover-${physicalSide}`, onHover);
 
     return () => {
-      window.removeEventListener(`orca-sidebar-hover-${sidebarPosition}`, onHover);
+      window.removeEventListener(`orca-sidebar-hover-${physicalSide}`, onHover);
     };
-  }, [sidebarPosition]);
+  }, [physicalSide]);
 
   const setHoveringResizer = (isHovering: boolean) => {
     setHoveringLocal(isHovering);
-    window.dispatchEvent(new CustomEvent(`orca-sidebar-hover-${sidebarPosition}`, { detail: isHovering }));
+    window.dispatchEvent(new CustomEvent(`orca-sidebar-hover-${physicalSide}`, { detail: isHovering }));
   };
 
   const setIsResizing = (resizing: boolean) => {
@@ -106,7 +131,7 @@ export function useSidebarResize({
 
     const onMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = moveEvent.clientX - startX;
-      let newWidth = sidebarPosition === "left" ? startWidth + deltaX : startWidth - deltaX;
+      let newWidth = physicalSide === "left" ? startWidth + deltaX : startWidth - deltaX;
       newWidth = Math.max(100, Math.min(newWidth, 800));
       currentWidthRef.current = newWidth;
 
@@ -148,6 +173,6 @@ export function useSidebarResize({
     hoveringResizer,
     setHoveringResizer,
     startDrag,
-    sidebarPosition,
+    sidebarPosition: physicalSide,
   };
 }

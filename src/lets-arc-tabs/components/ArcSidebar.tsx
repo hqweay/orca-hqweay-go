@@ -266,16 +266,24 @@ export const ArcSidebar: React.FC = () => {
           position: "absolute",
           top: 0,
           bottom: 0,
-          [sidebarPosition === "left" ? "right" : "left"]: "-4px",
+          [sidebarPosition === "left" ? "right" : "left"]: 0,
           width: "8px",
           cursor: "col-resize",
           zIndex: 9999,
-          backgroundColor: isResizing || hoveringResizer ? "var(--orca-color-primary-5, #007aff)" : "transparent",
-          opacity: 0.5,
-          transition: "background-color 0.2s",
+          display: "flex",
+          justifyContent: sidebarPosition === "left" ? "flex-end" : "flex-start",
         }}
         title="Resize Sidebar"
-      />
+      >
+        <div
+          style={{
+            width: "2px",
+            height: "100%",
+            backgroundColor: isResizing || hoveringResizer ? "var(--orca-color-primary-5, #007aff)" : "transparent",
+            transition: "background-color 0.2s",
+          }}
+        />
+      </div>
       <StyleInjector />
 
       {/* Pinned Tabs Section - Fixed */}
