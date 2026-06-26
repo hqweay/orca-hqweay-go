@@ -23,6 +23,9 @@ export async function getFileSha(
       cache: "no-store",
     });
     if (res.status === 404) return null;
+    if (res.status === 401 || res.status === 403) {
+      throw new Error(`GitHub API Auth Error: ${res.status} ${res.statusText}`);
+    }
     if (!res.ok) {
       console.warn(`getFileSha failed: ${res.status} ${res.statusText}`);
       return null;
@@ -60,19 +63,35 @@ export async function uploadFile(
   };
   if (sha) body.sha = sha;
 
-  const res = await fetch(url, {
-    method: "PUT",
-    headers: {
-      Authorization: `token ${token}`,
-      Accept: "application/vnd.github.v3+json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
+  const maxRetries = 2;
+  let attempt = 0;
 
-  if (!res.ok) {
-    throw new Error(`Upload failed: ${res.status} ${res.statusText}`);
+  while (attempt <= maxRetries) {
+    try {
+      const res = await fetch(url, {
+        method: "PUT",
+        headers: {
+          Authorization: `token ${token}`,
+          Accept: "application/vnd.github.v3+json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        if ((res.status === 502 || res.status === 503) && attempt < maxRetries) {
+          attempt++;
+          await new Promise((r) => setTimeout(r, 1000 * attempt));
+          continue;
+        }
+        throw new Error(`Upload failed: ${res.status} ${res.statusText}`);
+      }
+
+      return await res.json();
+    } catch (e) {
+      if (attempt >= maxRetries) throw e;
+      attempt++;
+      await new Promise((r) => setTimeout(r, 1000 * attempt));
+    }
   }
-
-  return await res.json();
 }

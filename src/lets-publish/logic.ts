@@ -5,7 +5,34 @@ import { format } from "date-fns";
 import { PublishSettings } from "./types";
 import { extract } from "./markdownExtractor";
 import { getFileSha, uploadFile } from "./githubAdapter";
-import { generateSlug, extractImageLinks, replaceImageUrl, arrayBufferToBase64 } from "./utils";
+import { generateSlug, extractImageLinks, replaceImageUrl, arrayBufferToBase64, toBase64 } from "./utils";
+
+async function ensureTagSchema(tagBlockId: number) {
+  const tagBlock = await orca.invokeBackend("get-block", tagBlockId);
+  if (!tagBlock) return;
+
+  const propsToAdd = [];
+  const existingProps = tagBlock.properties || [];
+
+  const githubProp = existingProps.find((p: any) => p.name === "github_url");
+  if (!githubProp || githubProp.typeArgs?.subType !== "link") {
+    propsToAdd.push({ name: "github_url", type: PropType.Text, typeArgs: { subType: "link" } });
+  }
+
+  const blogProp = existingProps.find((p: any) => p.name === "blog_url");
+  if (!blogProp || blogProp.typeArgs?.subType !== "link") {
+    propsToAdd.push({ name: "blog_url", type: PropType.Text, typeArgs: { subType: "link" } });
+  }
+
+  const publishDateProp = existingProps.find((p: any) => p.name === "publish_date");
+  if (!publishDateProp || publishDateProp.typeArgs?.subType !== "datetime") {
+    propsToAdd.push({ name: "publish_date", type: PropType.DateTime, typeArgs: { subType: "datetime" } });
+  }
+
+  if (propsToAdd.length > 0) {
+    await orca.commands.invokeEditorCommand("core.editor.setProperties", null, [tagBlockId], propsToAdd);
+  }
+}
 
 export async function publishWorkflow(
   block: Block,
@@ -31,11 +58,12 @@ export async function publishWorkflow(
   const committerName = settings.committer?.name || "orca-bot";
   const committerEmail = settings.committer?.email || "bot@orca.note";
 
-  if (!ibToken || !blogToken) {
-    throw new Error("Missing GitHub tokens in settings.");
+  if (!ibOwner || !ibRepo || !blogOwner || !blogRepo || !ibToken || !blogToken) {
+    throw new Error("Publish Settings are incomplete. Please check Owner, Repo, and Token in the plugin settings.");
   }
 
   // 1. Extract markdown and tags
+  orca.notify("info", "Extracting Markdown content...");
   const { markdown, title, tags } = await extract(block);
   let mdContent = markdown;
 
@@ -88,6 +116,7 @@ export async function publishWorkflow(
   }
 
   // 3. Assemble Frontmatter
+  // Note: permalink, comments, toc are standard Hexo fields
   const frontmatter = `---
 permalink: /${slug}/
 title: ${title}
@@ -104,6 +133,11 @@ toc: true
   // 4. Process Images
   const images = extractImageLinks(mdContent);
   const urlMap = new Map<string, string>();
+  let imageFailures = 0;
+
+  if (images.length > 0) {
+    orca.notify("info", `Processing ${images.length} image(s)...`);
+  }
 
   for (const img of images) {
     if (img.url.startsWith("http")) continue;
@@ -150,10 +184,13 @@ toc: true
       mdContent = replaceImageUrl(mdContent, img.fullMatch, img.alt, downloadUrl);
     } catch (e) {
       logger.error("Failed to upload image", img.url, e);
+      orca.notify("warn", `Image upload failed: ${img.alt}`);
+      imageFailures++;
     }
   }
 
   // 5. Upload Markdown File
+  orca.notify("info", "Uploading article to GitHub...");
   let filename = "";
   let isUpdate = false;
   let existingSha: string | undefined;
@@ -173,11 +210,15 @@ toc: true
 
   const res = await uploadFile(
     blogToken, blogOwner!, blogRepo!, filename, blogBranch,
-    window.btoa(unescape(encodeURIComponent(mdContent))), // base64 encode
+    toBase64(mdContent), // Using TextEncoder from utils
     `Post: ${title}`,
     existingSha, committerName, committerEmail
   );
   logger.debug("Published Article:", res);
+
+  if (imageFailures > 0) {
+    orca.notify("warn", `Published, but ${imageFailures} image(s) failed to upload.`);
+  }
 
   // 6. Update Block Properties
   const githubUrl = `https://github.com/${blogOwner}/${blogRepo}/blob/${blogBranch}/${filename}`;
@@ -215,59 +256,11 @@ toc: true
   if (existingRef) {
     logger.debug("Updating existing tag properties...", existingRef);
     await orca.commands.invokeEditorCommand("core.editor.setRefData", null, existingRef, tagProperties);
-    
-    const tagBlockId = existingRef.to;
-    const tagBlock = await orca.invokeBackend("get-block", tagBlockId);
-    if (tagBlock) {
-      const propsToAdd = [];
-      const existingProps = tagBlock.properties || [];
-
-      const githubProp = existingProps.find((p: any) => p.name === "github_url");
-      if (!githubProp || githubProp.typeArgs?.subType !== "link") {
-        propsToAdd.push({ name: "github_url", type: PropType.Text, typeArgs: { subType: "link" } });
-      }
-
-      const blogProp = existingProps.find((p: any) => p.name === "blog_url");
-      if (!blogProp || blogProp.typeArgs?.subType !== "link") {
-        propsToAdd.push({ name: "blog_url", type: PropType.Text, typeArgs: { subType: "link" } });
-      }
-
-      const publishDateProp = existingProps.find((p: any) => p.name === "publish_date");
-      if (!publishDateProp || publishDateProp.typeArgs?.subType !== "datetime") {
-        propsToAdd.push({ name: "publish_date", type: PropType.DateTime, typeArgs: { subType: "datetime" } });
-      }
-
-      if (propsToAdd.length > 0) {
-        await orca.commands.invokeEditorCommand("core.editor.setProperties", null, [tagBlockId], propsToAdd);
-      }
-    }
+    await ensureTagSchema(existingRef.to);
   } else {
     logger.debug("Inserting new tag...");
     const tagBlockId = await orca.commands.invokeEditorCommand("core.editor.insertTag", null, block.id, tagLabel, tagProperties);
-
-    const tagBlock = await orca.invokeBackend("get-block", tagBlockId);
-    if (tagBlock) {
-      const propsToAdd = [];
-      const existingProps = tagBlock.properties || [];
-
-      const githubProp = existingProps.find((p: any) => p.name === "github_url");
-      if (!githubProp || githubProp.typeArgs?.subType !== "link") {
-        propsToAdd.push({ name: "github_url", type: PropType.Text, typeArgs: { subType: "link" } });
-      }
-
-      const blogProp = existingProps.find((p: any) => p.name === "blog_url");
-      if (!blogProp || blogProp.typeArgs?.subType !== "link") {
-        propsToAdd.push({ name: "blog_url", type: PropType.Text, typeArgs: { subType: "link" } });
-      }
-
-      if (!existingProps.some((p: any) => p.name === "publish_date")) {
-        propsToAdd.push({ name: "publish_date", type: PropType.DateTime });
-      }
-
-      if (propsToAdd.length > 0) {
-        await orca.commands.invokeEditorCommand("core.editor.setProperties", null, [tagBlockId], propsToAdd);
-      }
-    }
+    await ensureTagSchema(tagBlockId);
   }
 
   logger.debug("Updated block tags/properties.");

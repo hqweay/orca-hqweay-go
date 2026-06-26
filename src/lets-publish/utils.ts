@@ -46,16 +46,20 @@ export function replaceImageUrl(
 }
 
 export function toBase64(str: string): string {
-  // Handle UTF-8 strings
-  return window.btoa(unescape(encodeURIComponent(str)));
+  // Modern UTF-8 to Base64
+  const bytes = new TextEncoder().encode(str);
+  return arrayBufferToBase64(bytes.buffer);
 }
 
 export function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  let binary = "";
   const bytes = new Uint8Array(buffer);
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  let binary = "";
+  // Chunking to prevent Maximum call stack size exceeded on large images
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    // @ts-ignore
+    binary += String.fromCharCode.apply(null, chunk);
   }
   return window.btoa(binary);
 }
