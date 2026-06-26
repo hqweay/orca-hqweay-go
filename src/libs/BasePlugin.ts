@@ -10,6 +10,10 @@ export abstract class BasePlugin {
   protected headbarButtonId: string | null = null;
   protected isLoaded: boolean = false;
 
+  protected _registeredCommandIds = new Set<string>();
+  protected _registeredBlockMenuIds = new Set<string>();
+  protected _cleanupFns: (() => void)[] = [];
+
   constructor(mainPluginName: string, name: string) {
     this.mainPluginName = mainPluginName;
     this.name = name;
@@ -26,7 +30,12 @@ export abstract class BasePlugin {
 
   public abstract load(): Promise<void>;
 
-  public abstract unload(): Promise<void>;
+  /**
+   * Called when the plugin is unloaded.
+   * Override if you need to perform manual cleanup (e.g. intervals, DOM elements).
+   * Note: Commands and Block Menus registered via helpers are cleaned up automatically.
+   */
+  public async unload(): Promise<void> {}
 
   /**
    * Render headbar button for this plugin.
@@ -55,8 +64,72 @@ export abstract class BasePlugin {
     // Auto unregister headbar
     this.unregisterHeadbar();
 
+    // Auto unregister commands
+    for (const fullId of this._registeredCommandIds) {
+      try {
+        orca.commands.unregisterCommand(fullId);
+      } catch (e) {
+        this.logger.error(`Error unregistering command ${fullId}`, e);
+      }
+    }
+    this._registeredCommandIds.clear();
+
+    // Auto unregister block menus
+    if (orca.blockMenuCommands && orca.blockMenuCommands.unregisterBlockMenuCommand) {
+      for (const fullId of this._registeredBlockMenuIds) {
+        try {
+          orca.blockMenuCommands.unregisterBlockMenuCommand(fullId);
+        } catch (e) {
+          this.logger.error(`Error unregistering block menu command ${fullId}`, e);
+        }
+      }
+    }
+    this._registeredBlockMenuIds.clear();
+
+    // Execute arbitrary cleanup closures
+    for (const fn of this._cleanupFns) {
+      try {
+        fn();
+      } catch (e) {
+        this.logger.error("Error during cleanup", e);
+      }
+    }
+    this._cleanupFns = [];
+
     this.logger.info("Sub-plugin unloaded");
   }
+
+  // --- Auto-Cleanup Registration Helpers ---
+
+  protected registerCommand(id: string, callback: any, title: string = "") {
+    const fullId = `${this.name}.${id}`;
+    orca.commands.registerCommand(fullId, callback, title);
+    this._registeredCommandIds.add(fullId);
+  }
+
+  protected unregisterCommand(id: string) {
+    const fullId = `${this.name}.${id}`;
+    orca.commands.unregisterCommand(fullId);
+    this._registeredCommandIds.delete(fullId);
+  }
+
+  protected registerBlockMenuCommand(id: string, options: any) {
+    const fullId = `${this.name}.${id}`;
+    if (orca.blockMenuCommands && orca.blockMenuCommands.registerBlockMenuCommand) {
+      orca.blockMenuCommands.registerBlockMenuCommand(fullId, options);
+      this._registeredBlockMenuIds.add(fullId);
+    }
+  }
+
+  protected unregisterBlockMenuCommand(id: string) {
+    const fullId = `${this.name}.${id}`;
+    if (orca.blockMenuCommands && orca.blockMenuCommands.unregisterBlockMenuCommand) {
+      orca.blockMenuCommands.unregisterBlockMenuCommand(fullId);
+      this._registeredBlockMenuIds.delete(fullId);
+    }
+  }
+
+  // ----------------------------------------
 
   protected syncHeadbar() {
     if (!this.headbarButtonId) return;

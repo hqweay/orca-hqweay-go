@@ -4,7 +4,7 @@ import { ensureBlockInState } from "@/libs/utils";
 import { format } from "date-fns";
 import { PublishSettings } from "./types";
 import { extract } from "./markdownExtractor";
-import { getFileSha, uploadFile } from "./githubAdapter";
+import { getFileSha, uploadFile } from "@/adapters/github";
 import { generateSlug, extractImageLinks, replaceImageUrl, arrayBufferToBase64, toBase64 } from "./utils";
 
 async function ensureTagSchema(tagBlockId: number) {

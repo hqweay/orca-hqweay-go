@@ -9,36 +9,28 @@ export default class PublishPlugin extends BasePlugin {
 
   public async load(): Promise<void> {
     // Register Block Menu Command
-    if (orca.blockMenuCommands.registerBlockMenuCommand) {
-      orca.blockMenuCommands.registerBlockMenuCommand(
-        `${this.name}.publish-block`,
-        {
-          worksOnMultipleBlocks: false,
-          render: (blockId: number, rootBlockId: number, close: any) => {
-            const MenuText = orca.components.MenuText;
-            if (!MenuText) return null;
+    this.registerBlockMenuCommand("publish-block", {
+      worksOnMultipleBlocks: false,
+      render: (blockId: number, rootBlockId: number, close: any) => {
+        const MenuText = orca.components.MenuText;
+        if (!MenuText) return null;
 
-            return (
-              <MenuText
-                preIcon="ti ti-book-upload"
-                title={t("Publish to GitHub")}
-                onClick={() => {
-                  close();
-                  orca.commands.invokeCommand(
-                    `${this.name}.publish-block`,
-                    blockId,
-                  );
-                }}
-              />
-            );
-          },
-        },
-      );
-    }
+        return (
+          <MenuText
+            preIcon="ti ti-book-upload"
+            title={t("Publish to GitHub")}
+            onClick={() => {
+              close();
+              orca.commands.invokeCommand(`${this.name}.publish-block`, blockId);
+            }}
+          />
+        );
+      },
+    });
 
     // Register Command
-    orca.commands.registerCommand(
-      `${this.name}.publish-block`,
+    this.registerCommand(
+      "publish-block",
       async (blockId: number) => {
         const block = (await orca.invokeBackend("get-block", blockId)) as Block;
         if (!block) {
@@ -61,13 +53,5 @@ export default class PublishPlugin extends BasePlugin {
     );
 
     this.logger.debug(`${this.name} loaded.`);
-  }
-
-  public async unload(): Promise<void> {
-    orca.blockMenuCommands.unregisterBlockMenuCommand(
-      `${this.name}.publish-block`,
-    );
-    orca.commands.unregisterCommand(`${this.name}.publish-block`);
-    this.logger.debug(`${this.name} unloaded.`);
   }
 }

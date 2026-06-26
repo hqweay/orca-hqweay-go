@@ -1,4 +1,7 @@
-import { GitHubFileResult } from "./types";
+export interface GitHubFileResult {
+  sha?: string;
+  download_url?: string;
+}
 
 /**
  * A thin wrapper over GitHub's contents API.
