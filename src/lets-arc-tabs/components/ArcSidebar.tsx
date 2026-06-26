@@ -69,6 +69,9 @@ export const ArcSidebar: React.FC = () => {
   const [activeSpace, setActiveSpace] = useState<string | null>(null);
   const [showNewSpaceInput, setShowNewSpaceInput] = useState(false);
   const [newSpaceName, setNewSpaceName] = useState("");
+  const [isResizing, setIsResizing] = useState(false);
+  const [hoveringResizer, setHoveringResizer] = useState(false);
+  const sidebarPosition = arcTabsPluginInstance?.getSettings()?.sidebarPosition || "left";
   const spaces = useMemo(
     () => getSpaces(),
     [localArcTabsState.pinnedBlocks, localArcTabsState.spaceChoices],
@@ -108,49 +111,80 @@ export const ArcSidebar: React.FC = () => {
 
     const wrapper = (parent.closest(".SplitPane") as HTMLElement) || parent;
 
-    // Helper function to enforce width
-    const enforceWidth = () => {
-      const width = arcTabsPluginInstance?.getSettings()?.sidebarWidth || 250;
-
-      const applyStyles = (el: HTMLElement) => {
-        const currentFlex = el.style.getPropertyValue("flex");
-        const expectedFlex = `0 0 ${width}px`;
-        const hasImportant =
-          el.style.getPropertyPriority("flex") === "important";
-
-        // Only update if it's actually different to avoid infinite observer loops
-        if (currentFlex !== expectedFlex || !hasImportant) {
-          el.style.setProperty("flex", expectedFlex, "important");
-          el.style.setProperty("width", `${width}px`, "important");
-          el.style.setProperty("min-width", `${width}px`, "important");
-          el.style.setProperty("max-width", `${width}px`, "important");
-        }
-      };
-
-      applyStyles(wrapper);
-      if (parent.style) applyStyles(parent);
+    const enforceClass = () => {
+      if (wrapper && !wrapper.classList.contains("arc-tabs-panel-wrapper")) {
+        wrapper.classList.add("arc-tabs-panel-wrapper");
+      }
+      if (parent && !parent.classList.contains("arc-tabs-panel-wrapper")) {
+        parent.classList.add("arc-tabs-panel-wrapper");
+      }
     };
 
-    // 1. Enforce immediately on mount
-    enforceWidth();
+    enforceClass();
 
-    // 2. Setup MutationObserver to fiercely guard the style against the layout engine
     const observer = new MutationObserver(() => {
-      enforceWidth();
+      enforceClass();
     });
 
-    observer.observe(wrapper, { attributes: true, attributeFilter: ["style"] });
+    observer.observe(wrapper, { attributes: true, attributeFilter: ["class"] });
     if (parent !== wrapper) {
       observer.observe(parent, {
         attributes: true,
-        attributeFilter: ["style"],
+        attributeFilter: ["class"],
       });
     }
 
     return () => {
       observer.disconnect();
     };
-  }, []); // <-- Empty dependency array! Only runs once on mount!
+  }, []);
+
+  const startDrag = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setIsResizing(true);
+    const startX = e.clientX;
+    const startWidth = containerRef.current?.getBoundingClientRect().width || 250;
+
+    const parent = containerRef.current?.closest(".orca-panel") as HTMLElement;
+    const wrapper = parent?.closest(".SplitPane") as HTMLElement;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      let newWidth = sidebarPosition === "left" ? startWidth + deltaX : startWidth - deltaX;
+      newWidth = Math.max(100, Math.min(newWidth, 800));
+
+      const applyTo = (el: HTMLElement | null) => {
+        if (!el) return;
+        el.style.setProperty("flex", `0 0 ${newWidth}px`, "important");
+        el.style.setProperty("width", `${newWidth}px`, "important");
+        el.style.setProperty("min-width", `${newWidth}px`, "important");
+        el.style.setProperty("max-width", `${newWidth}px`, "important");
+      };
+      
+      applyTo(parent);
+      applyTo(wrapper);
+    };
+
+    const onMouseUp = (upEvent: MouseEvent) => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+      setIsResizing(false);
+
+      const deltaX = upEvent.clientX - startX;
+      let newWidth = sidebarPosition === "left" ? startWidth + deltaX : startWidth - deltaX;
+      newWidth = Math.max(100, Math.min(newWidth, 800));
+
+      const currentSettings = arcTabsPluginInstance?.getSettings();
+      if (currentSettings) {
+        arcTabsPluginInstance?.updateSettings({ ...currentSettings, sidebarWidth: Math.round(newWidth) });
+      }
+    };
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  };
 
   const openBlockIds = useMemo(() => getActiveBlocks(state.panels).map(Number), [state.panels]);
 
@@ -304,7 +338,25 @@ export const ArcSidebar: React.FC = () => {
   };
 
   return (
-    <div className="arc-sidebar-container" ref={containerRef}>
+    <div className="arc-sidebar-container" ref={containerRef} style={{ position: "relative" }}>
+      <div
+        onMouseDown={startDrag}
+        onMouseEnter={() => setHoveringResizer(true)}
+        onMouseLeave={() => setHoveringResizer(false)}
+        style={{
+          position: "absolute",
+          top: 0,
+          bottom: 0,
+          [sidebarPosition === "left" ? "right" : "left"]: "-4px",
+          width: "8px",
+          cursor: "col-resize",
+          zIndex: 9999,
+          backgroundColor: isResizing || hoveringResizer ? "var(--orca-color-primary-5, #007aff)" : "transparent",
+          opacity: 0.5,
+          transition: "background-color 0.2s",
+        }}
+        title="Resize Sidebar"
+      />
       <StyleInjector />
 
       {/* Pinned Tabs Section - Fixed */}

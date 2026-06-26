@@ -5,11 +5,31 @@ import type { Block } from "../orca.d.ts";
 import { ArcSidebar } from "./components/ArcSidebar";
 import { arcTabsState, DEFAULT_SPACE } from "./utils/data";
 import { renderLeftHeadbarButton, removeLeftHeadbarButton } from "@/libs/utils";
+import applyCSSRule from "@/libs/styleUtil.ts";
 
 export let arcTabsPluginInstance: ArcTabsPlugin;
 
 export default class ArcTabsPlugin extends BasePlugin {
   // protected headbarButtonId = "arc-tabs.openSidebar";
+
+  private applySidebarWidthCSS(width: number) {
+    applyCSSRule(
+      `
+        .arc-tabs-panel-wrapper {
+          flex: 0 0 ${width}px !important;
+          width: ${width}px !important;
+          min-width: ${width}px !important;
+          max-width: ${width}px !important;
+        }
+        /* 彻底移除面板内部自带的原生拖拽条 */
+        .arc-tabs-panel-wrapper > .resizer,
+        .arc-tabs-panel-wrapper .resizer {
+          display: none !important;
+        }
+      `,
+      { id: this.name, replace: true },
+    );
+  }
 
   async load() {
     arcTabsPluginInstance = this;
@@ -91,6 +111,9 @@ export default class ArcTabsPlugin extends BasePlugin {
     arcTabsState.pinnedDisplayMode = settings.pinnedDisplayMode || "grid";
 
     this.ensurePinTagSchema();
+
+    const initialWidth = settings.sidebarWidth || 250;
+    this.applySidebarWidthCSS(initialWidth);
   }
 
   protected syncHeadbar() {
@@ -103,6 +126,9 @@ export default class ArcTabsPlugin extends BasePlugin {
     if (newConfig.pinnedDisplayMode) {
       arcTabsState.pinnedDisplayMode = newConfig.pinnedDisplayMode;
     }
+
+    const width = newConfig.sidebarWidth || 250;
+    this.applySidebarWidthCSS(width);
   }
 
   private async ensurePinTagSchema() {
