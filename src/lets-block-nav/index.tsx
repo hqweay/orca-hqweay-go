@@ -36,8 +36,10 @@ export default class BlockNavPlugin extends BasePlugin {
           max-width: ${width}px !important;
         }
         /* Disable only the horizontal resizer adjacent to the sidebar column */
-        .orca-sidebar-column + .Resizer,
-        .Resizer:has(+ .orca-sidebar-column) {
+        .orca-sidebar-column > .resizer,
+        .orca-sidebar-column + .resizer,
+        *:has(+ .orca-sidebar-column) > .resizer
+        {
           display: none !important;
         }
       `,
@@ -111,10 +113,7 @@ export default class BlockNavPlugin extends BasePlugin {
       t(`${this.name}.description`),
     );
 
-    renderLeftHeadbarButton(
-      this.name,
-      this.renderHeadbarButton()
-    );
+    renderLeftHeadbarButton(this.name, this.renderHeadbarButton());
 
     orca.commands.registerCommand(
       `${this.name}.expand-1`,

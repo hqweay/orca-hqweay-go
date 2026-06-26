@@ -26,8 +26,10 @@ export default class ArcTabsPlugin extends BasePlugin {
           max-width: ${width}px !important;
         }
         /* Disable only the horizontal resizer adjacent to the sidebar column */
-        .orca-sidebar-column + .Resizer,
-        .Resizer:has(+ .orca-sidebar-column) {
+        .orca-sidebar-column > .resizer,
+        .orca-sidebar-column + .resizer,
+        *:has(+ .orca-sidebar-column) > .resizer
+        {
           display: none !important;
         }
       `,
@@ -118,10 +120,7 @@ export default class ArcTabsPlugin extends BasePlugin {
       t("arc-tabs.description"),
     );
 
-    renderLeftHeadbarButton(
-      this.name,
-      this.renderHeadbarButton()
-    );
+    renderLeftHeadbarButton(this.name, this.renderHeadbarButton());
 
     const settings = this.getSettings();
     arcTabsState.pinnedDisplayMode = settings.pinnedDisplayMode || "grid";
