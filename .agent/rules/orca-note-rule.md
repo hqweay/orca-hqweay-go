@@ -32,18 +32,9 @@ description: 该 rule 指定了如何理解并开发该项目，每次进行开�
 *   **翻译自动加载**: 新模块的翻译写在 `src/translations/parts/[name].ts` 中，系统会自动扫描，无需手动修改 `zhCN.ts` 聚合文件。
 *   **配置项翻译基准**: 对子插件，必须在翻译中包含 `"[name]"` 和 `"[name].description"` 键。
 
-## 4. 更新日志维护红线 (CHANGELOG.md)
-**【AI 注意事项】**：AI **绝不能直接修改** `CHANGELOG.md` 文件！
-如果 AI 完成了功能需要记录更新日志，请通过以下方式之一：
-1. 直接在 `.changeset/` 目录下创建一个随机命名的 Markdown 文件（例如 `.changeset/ai-update-xxx.md`），格式如下：
-   ```markdown
-   ---
-   "orca-hqweay-go": patch  # 或者 minor, major
-   ---
-   
-   - [你的变更描述]
-   ```
-2. 或者，在回复中提醒用户手动运行 `pnpm changeset` 来生成。
+## 4. 更新日志维护 (CHANGELOG.md)
+AI 可以直接修改 `CHANGELOG.md`，但**必须遵守格式规则**：请阅读 `.agent/rules/orca-changelog-convention.md`。
+新条目追加在对应版本的 `###` section 下。如果还没有对应版本号，在 `##` 下新建 `###` section。
 
 ## 5. 遗留代码迁移原则 (Legacy Migration & Boy Scout Rule)
 当你在任何旧插件中工作时，请顺手应用最新的最佳实践（童子军军规）：
