@@ -2,6 +2,7 @@ import React from "react";
 import { Logger } from "./logger";
 import { t } from "./l10n";
 import { PluginSettings } from "@/components/PluginSettings";
+import { PluginSettingsAdapter } from "./PluginSettingsAdapter";
 
 export abstract class BasePlugin {
   protected mainPluginName: string;
@@ -13,11 +14,19 @@ export abstract class BasePlugin {
   protected _registeredCommandIds = new Set<string>();
   protected _registeredBlockMenuIds = new Set<string>();
   protected _cleanupFns: (() => void)[] = [];
+  protected settingsAdapter: PluginSettingsAdapter;
 
   constructor(mainPluginName: string, name: string) {
     this.mainPluginName = mainPluginName;
     this.name = name;
     this.logger = new Logger(name);
+    this.settingsAdapter = new PluginSettingsAdapter(
+      this.mainPluginName,
+      this.name,
+      () => this.getDefaultSettings(),
+      (config) => this.onConfigChanged(config),
+      this.logger
+    );
   }
 
   public getDisplayName(): string {
@@ -103,6 +112,8 @@ export abstract class BasePlugin {
     }
     this._cleanupFns = [];
 
+    this.settingsAdapter.dispose();
+
     this.logger.info("Sub-plugin unloaded");
   }
 
@@ -181,35 +192,18 @@ export abstract class BasePlugin {
     };
   }
 
-  protected _config: any = {};
-  private _saveTimer: any = null;
-
   /**
    * Loaded settings from persistent storage
    */
   public async initializeSettings(): Promise<void> {
-    const rawData = await orca.plugins.getData(this.mainPluginName, this.name);
-    let diskConfig = {};
-
-    if (rawData && typeof rawData === "string") {
-      try {
-        diskConfig = JSON.parse(rawData);
-      } catch (e) {
-        this.logger.error("Failed to parse settings", e);
-      }
-    } else if (rawData && typeof rawData === "object") {
-      diskConfig = rawData;
-    }
-
-    // Merge with defaults
-    this._config = { ...this.getDefaultSettings(), ...diskConfig };
+    await this.settingsAdapter.initializeSettings();
   }
 
   /**
    * Get the settings scoped to this sub-plugin
    */
   public getSettings(): any {
-    return this._config;
+    return this.settingsAdapter.getSettings();
   }
 
   /**
@@ -226,20 +220,7 @@ export abstract class BasePlugin {
    * Restore settings to their default values.
    */
   public async restoreDefaultSettings(): Promise<void> {
-    const defaults = this.getDefaultSettings();
-    // Replacing entirely, not merging
-    this._config = { ...defaults };
-
-    // Persist immediately
-    await orca.plugins.setData(
-      this.mainPluginName,
-      this.name,
-      JSON.stringify(this._config),
-    );
-
-    // Trigger effects
-    await this.onConfigChanged(this._config);
-    this.logger.info("Settings restored to defaults");
+    await this.settingsAdapter.restoreDefaultSettings();
   }
 
   /**
@@ -248,45 +229,7 @@ export abstract class BasePlugin {
    * This method uses debouncing (default 500ms) for persistence and hook triggering.
    */
   public async updateSettings(pathOrPartial: any, value?: any) {
-    let nextSubSettings;
-    if (typeof pathOrPartial === "string") {
-      nextSubSettings = this.setDeepProperty(
-        this._config,
-        pathOrPartial,
-        value,
-      );
-    } else {
-      nextSubSettings = { ...this._config, ...pathOrPartial };
-    }
-
-    // 1. Update in-memory state immediately for UI responsiveness
-    this._config = nextSubSettings;
-
-    // 2. Debounce persistence and side-effects
-    if (this._saveTimer) {
-      clearTimeout(this._saveTimer);
-    }
-
-    this._saveTimer = setTimeout(async () => {
-      this.logger.info(
-        "Persisting settings after debounce",
-        this.name,
-        this._config,
-      );
-
-      // Persistence
-      await orca.plugins.setData(
-        this.mainPluginName,
-        this.name,
-        JSON.stringify(this._config),
-      );
-
-      // Trigger real-time configuration change hook
-      await this.onConfigChanged(this._config);
-
-      this._saveTimer = null;
-      // 防抖时间长点，性能好些，没必要太快
-    }, 2000);
+    await this.settingsAdapter.updateSettings(pathOrPartial, value);
   }
 
   /**
@@ -344,18 +287,6 @@ export abstract class BasePlugin {
    */
   protected renderHeadbarMenuItems(_closeMenu: () => void): React.ReactNode[] {
     return [];
-  }
-
-  private setDeepProperty(obj: any, path: string, value: any): any {
-    const keys = path.split(".");
-    const newObj = { ...obj };
-    let current = newObj;
-    for (let i = 0; i < keys.length - 1; i++) {
-      current[keys[i]] = { ...current[keys[i]] };
-      current = current[keys[i]];
-    }
-    current[keys[keys.length - 1]] = value;
-    return newObj;
   }
 
   /**
