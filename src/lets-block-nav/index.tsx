@@ -4,7 +4,8 @@ import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import { BlockNavPanel } from "./components/BlockNavPanel";
 import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
 import "./styles.css";
-import { blockNavState, executeSnapshotExpand } from "./utils/state";
+import { blockNavState } from "./utils/state";
+import { executeSnapshotExpand } from "./utils/searchEngine";
 
 import { injectLeftHeadbarButton, removeLeftHeadbarButton } from "@/libs/utils";
 

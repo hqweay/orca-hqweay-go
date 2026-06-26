@@ -2,7 +2,8 @@ import React, { useEffect, useCallback, useState, useRef } from "react";
 import { useSnapshot } from "valtio";
 import { t } from "@/libs/l10n";
 import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
-import { blockNavState, setRootBlock, searchCache } from "../utils/state";
+import { blockNavState, setRootBlock } from "../utils/state";
+import { executeSnapshotExpand, executeSearch, ensureSearchTree } from "../utils/searchEngine";
 import {
   getCurrentBlockId,
   getChildBlocks,
@@ -11,7 +12,6 @@ import {
   getBlockIconForId,
   getBlockColorForId,
 } from "../utils/blocks";
-import { executeSnapshotExpand } from "../utils/state";
 import { executeEditorExpand } from "../../lets-editor-fold/logic";
 import { useDragDrop } from "../utils/useDragDrop";
 import { BlockNodeItem } from "./BlockNodeItem";
@@ -300,28 +300,7 @@ export const BlockNavPanel: React.FC = () => {
 
       let canceled = false;
       const fetchAndCalc = async () => {
-        let tree = searchCache.tree;
-        if (!tree || searchCache.rootId !== state.rootBlockId) {
-          try {
-            tree = await orca.invokeBackend(
-              "get-block-tree",
-              state.rootBlockId,
-            );
-            if (canceled) return;
-            if (tree && Array.isArray(tree)) {
-              searchCache.tree = tree;
-              searchCache.rootId = state.rootBlockId;
-              searchCache.map.clear();
-              for (const b of tree) {
-                searchCache.map.set(b.id, b);
-              }
-            }
-          } catch (e) {
-            console.error("Failed to fetch block tree for depth calc", e);
-            return;
-          }
-        }
-
+        await ensureSearchTree(state.rootBlockId!);
         if (canceled) return;
       };
       fetchAndCalc();
@@ -482,109 +461,10 @@ export const BlockNavPanel: React.FC = () => {
   );
 
   const handleSearch = useCallback(async (text: string) => {
-    blockNavState.filterText = text;
-    const parsed = parseSearchQuery(text);
-
-    // If no raw text and no filters, exit search mode
-    if (!parsed.rawText && parsed.filters.length === 0) {
-      blockNavState.isSearching = false;
-      blockNavState.searchMatchedIds = {};
-      blockNavState.searchExpandedIds = {};
-      return;
+    if (state.rootBlockId) {
+      await executeSearch(text, state.rootBlockId);
     }
-
-    if (!blockNavState.rootBlockId) {
-      return;
-    }
-    blockNavState.isSearching = true;
-
-    let blockTree = searchCache.tree;
-
-    if (
-      !blockTree ||
-      !Array.isArray(blockTree) ||
-      searchCache.rootId !== blockNavState.rootBlockId
-    ) {
-      try {
-        blockTree = await orca.invokeBackend(
-          "get-block-tree",
-          blockNavState.rootBlockId,
-        );
-
-        if (!blockTree || !Array.isArray(blockTree)) return;
-
-        searchCache.tree = blockTree;
-        searchCache.rootId = blockNavState.rootBlockId;
-        searchCache.map.clear();
-        for (const b of blockTree) {
-          searchCache.map.set(b.id, b);
-        }
-      } catch (e) {
-        console.error("Failed to fetch block tree", e);
-        return;
-      }
-    }
-
-    const matchedIds: Record<number, boolean> = {};
-    const expandedIds: Record<number, boolean> = {};
-    const lowerText = parsed.rawText.toLowerCase();
-
-    for (const cachedBlock of blockTree) {
-      // Use live block state if available, ensuring edits from the main editor
-      // are accurately reflected during search without refetching the entire tree.
-      const block = orca.state.blocks[cachedBlock.id] || cachedBlock;
-
-      let blockText = "";
-      try {
-        const title = getBlockTitleUtil(block, block.id, 0);
-        if (typeof title === "string") {
-          blockText = title.toLowerCase();
-        }
-      } catch (e) {
-        // Ignore extraction errors
-      }
-
-      const textMatched = !lowerText || blockText.includes(lowerText);
-      const filterMatched = matchFilters(block, parsed.filters, getRepr);
-
-      if (textMatched && filterMatched) {
-        matchedIds[block.id] = true;
-
-        let current = block.parent;
-        let loopCount = 0;
-        while (current && searchCache.map.has(Number(current))) {
-          loopCount++;
-          if (loopCount > 1000) {
-            console.error(
-              "[BlockNavSearch] FATAL: infinite loop detected during parent traversal!",
-            );
-            break;
-          }
-          const currentId = Number(current);
-          if (expandedIds[currentId]) break; // Already expanded this path, or hit a circular reference!
-
-          expandedIds[currentId] = true;
-          current = searchCache.map.get(currentId).parent;
-
-          // Absolute safeguard against node pointing to itself
-          if (current == currentId) break;
-        }
-      }
-    }
-
-    try {
-      blockNavState.searchMatchedIds = matchedIds;
-      blockNavState.searchExpandedIds = expandedIds;
-    } catch (e) {
-      console.error("[BlockNavSearch] CRASH while assigning proxy!", e);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (state.searchTrigger > 0) {
-      handleSearch(state.filterText);
-    }
-  }, [state.searchTrigger, state.filterText, handleSearch]);
+  }, [state.rootBlockId]);
 
   const { isDragOver, dragHandlers } = useDragDrop({ onDrop: handleDrop });
 

@@ -3,8 +3,8 @@ import { useSnapshot } from "valtio";
 import {
   blockNavState,
   toggleNodeExpansion,
-  searchCache,
 } from "../utils/state";
+import { getSearchCacheBlock, updateCacheAndRetrigger } from "../utils/searchEngine";
 import { findMainPanelId } from "../utils/nav";
 import { getConvertedRepr } from "../utils/blocks";
 import { findPanelById } from "../../libs/utils";
@@ -46,7 +46,7 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
   // searchCache is populated fully by executeSnapshotExpand or search
   const blocksSnap = useSnapshot(orca.state.blocks);
   const stateBlock = blocksSnap[blockId];
-  const block = stateBlock || searchCache.map.get(blockId);
+  const block = stateBlock || getSearchCacheBlock(blockId);
 
   const searchRegex = React.useMemo(() => {
     if (!state.filterText.trim()) return null;
@@ -121,13 +121,8 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
         else b.properties.push({ name: "_repr", value: newRep, type: 0 });
       };
 
-      updateBlockProps(searchCache.map.get(blockId));
       updateBlockProps(orca.state.blocks[blockId]);
-      
-      // 2. If user is currently searching, trigger a fast re-evaluation of the tree
-      if (state.filterText) {
-        blockNavState.searchTrigger++;
-      }
+      updateCacheAndRetrigger(blockId, updateBlockProps, state.filterText);
 
       await orca.commands.invokeEditorCommand(
         "core.editor.setProperties",
