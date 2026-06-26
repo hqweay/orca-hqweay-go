@@ -15,7 +15,6 @@ export default {
   "Extraction Script (JavaScript)": "提取脚本 (JavaScript)",
   "Available variables: doc, url, cleanUrl, PropType, baseMeta":
     "可用变量: doc, url, cleanUrl, PropType, baseMeta",
-  Cancel: "取消",
   "Save Rule": "保存规则",
   "Rule saved": "规则已保存",
   "Restored default rules": "已恢复默认规则",

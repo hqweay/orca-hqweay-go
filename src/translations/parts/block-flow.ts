@@ -27,7 +27,6 @@ export default {
   "Sent ${count} refs to Inbox": "已发送 ${count} 个引用至收件箱",
   "Failed to process block flow": "流转操作失败",
   "Inbox tag block not found or failed to create": "找不到或无法创建收件箱标签块",
-  "Loading...": "加载中...",
   "No blocks tagged with #${tag} found. Please tag a block first.": "未找到打上 #${tag} 标签的块。请先为某个普通块添加该标签。",
   "Cannot move or reference target block into itself": "无法将目标块移动或引用到其自身中",
   "Move to Inbox: ${name}": "移动至收件箱: ${name}",

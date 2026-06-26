@@ -11,7 +11,6 @@ export default {
   "Pinned Blocks": "置顶块",
   "No pinned blocks found. Add tag ": "未找到置顶块，请在块上添加标签 ",
   "Unnamed Block": "未命名块",
-  "Loading...": "加载中...",
   "Pinned Blocks (Click to reopen last, Right-click for list)":
     "置顶块（左键重新打开上次，右键查看列表）",
   "Pinned Blocks (Right-click for list)": "置顶块（右键查看列表）",

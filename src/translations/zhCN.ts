@@ -19,6 +19,9 @@ for (const path in modules) {
         zhCN[key] = value as string;
       } else {
         zhCN[`${filename}.${key}`] = value as string;
+        // Keep the original unprefixed key for backward compatibility
+        // until all plugins are migrated to use this.t()
+        zhCN[key] = value as string;
       }
     }
   }

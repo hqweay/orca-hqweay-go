@@ -2,6 +2,7 @@ export default {
   // 通用翻译
   "cancel": "取消",
   "create": "创建",
+  "Loading...": "加载中...",
   "common.back": "返回",
   "common.cancel": "取消",
   "common.confirm": "确认",
