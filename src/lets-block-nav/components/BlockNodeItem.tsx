@@ -43,10 +43,10 @@ export const BlockNodeItem: React.FC<BlockNodeItemProps> = ({
   const isSearching = state.isSearching;
 
   // Use stateBlock if available since it is reactive, fallback to searchCache
+  // searchCache is populated fully by executeSnapshotExpand or search
   const blocksSnap = useSnapshot(orca.state.blocks);
   const stateBlock = blocksSnap[blockId];
-  const block =
-    stateBlock || (isSearching ? searchCache.map.get(blockId) : undefined);
+  const block = stateBlock || searchCache.map.get(blockId);
 
   const searchRegex = React.useMemo(() => {
     if (!state.filterText.trim()) return null;

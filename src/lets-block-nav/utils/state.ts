@@ -47,7 +47,9 @@ export const toggleNodeExpansion = (blockId: number) => {
   }
 };
 
-export const executeSnapshotExpand = async (targetDepth: number | "all" | "All") => {
+export const executeSnapshotExpand = async (
+  targetDepth: number | "all" | "All",
+) => {
   const rootId = blockNavState.rootBlockId;
   if (!rootId) return;
 
