@@ -6,17 +6,14 @@ import {
 } from "../utils/state";
 import { getSearchCacheBlock, updateCacheAndRetrigger } from "../utils/searchEngine";
 import { findMainPanelId } from "@/libs/navUtils";
-import { getConvertedRepr } from "../utils/blocks";
-import { findPanelById } from "../../libs/utils";
+import { getConvertedRepr } from "@/libs/BlockFormatter";
+
 import { BlockIcon } from "../../libs/components/BlockIcon";
-import {
-  getBlockTitle as getBlockTitleUtil,
-  getBlockIcon,
-  getBlockColor,
-  ensureBlockInState,
-  getRepr,
-} from "../../libs/utils";
+
 import { t } from "../../libs/l10n";
+import { findPanelById } from "@/libs/navUtils";
+import { getBlockTitle as getBlockTitleUtil, getBlockIcon, getBlockColor, getRepr } from "@/libs/BlockFormatter";
+import { ensureBlockInState } from "@/libs/BlockCache";
 
 interface BlockNodeItemProps {
   blockId: number;

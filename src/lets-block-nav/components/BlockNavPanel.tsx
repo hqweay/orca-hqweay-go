@@ -15,33 +15,38 @@ import {
   setBlockNavScrollTop,
 } from "../utils/state";
 import {
-  executeSnapshotExpand,
-  executeSearch,
-  ensureSearchTree,
-} from "../utils/searchEngine";
-import {
-  getCurrentBlockId,
-  getChildBlocks,
-  moveBlockToParent,
-  getBlockTitle,
-  getBlockIconForId,
-  getBlockColorForId,
-} from "../utils/blocks";
-import { executeEditorExpand } from "../../lets-editor-fold/logic";
-import { useDragDrop } from "../utils/useDragDrop";
-import { BlockNodeItem } from "./BlockNodeItem";
-import {
   getFocusedBlock,
   getActiveBlocks,
   findMainPanelId,
   isEditorPanel,
+  getCurrentBlockId,
 } from "@/libs/navUtils";
 import { BlockIcon } from "../../libs/components/BlockIcon";
 import {
   ensureInbox,
+} from "@/libs/InboxUtils";
+import {
   findPanelById,
+} from "@/libs/navUtils";
+import {
   ensureBlockInState,
-} from "../../libs/utils";
+  getChildBlocks,
+  moveBlockToParent,
+} from "@/libs/BlockCache";
+import {
+  getBlockTitle,
+  getBlockIcon,
+  getBlockColor,
+} from "@/libs/BlockFormatter";
+import { executeEditorExpand } from "../../lets-editor-fold/logic";
+import { useDragDrop } from "../utils/useDragDrop";
+import { BlockNodeItem } from "./BlockNodeItem";
+
+import {
+  executeSnapshotExpand,
+  executeSearch,
+  ensureSearchTree,
+} from "../utils/searchEngine";
 import { blockNavPluginInstance, TOC_CSS_ID } from "../index";
 import { parseSearchQuery, matchFilters } from "../utils/searchParser";
 import styles from "../styles.css?inline";
@@ -536,7 +541,7 @@ export const BlockNavPanel: React.FC<{ panel?: any }> = ({ panel }) => {
               alignItems: "center",
               gap: "8px",
               color: state.rootBlockId
-                ? getBlockColorForId(state.rootBlockId)
+                ? getBlockColor(orcaState.blocks[state.rootBlockId])
                 : undefined,
               cursor: state.rootBlockId ? "pointer" : "default",
               flex: 1,
@@ -551,11 +556,11 @@ export const BlockNavPanel: React.FC<{ panel?: any }> = ({ panel }) => {
             {state.rootBlockId ? (
               <>
                 <BlockIcon
-                  iconValue={getBlockIconForId(state.rootBlockId)}
-                  color={getBlockColorForId(state.rootBlockId)}
+                  iconValue={getBlockIcon(orcaState.blocks[state.rootBlockId])}
+                  color={getBlockColor(orcaState.blocks[state.rootBlockId])}
                 />
                 <span
-                  title={getBlockTitle(state.rootBlockId, 0)}
+                  title={getBlockTitle(orcaState.blocks[state.rootBlockId!], state.rootBlockId!, 0)}
                   style={{
                     fontWeight: 600,
                     overflow: "hidden",
@@ -563,7 +568,7 @@ export const BlockNavPanel: React.FC<{ panel?: any }> = ({ panel }) => {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {getBlockTitle(state.rootBlockId, 0)}
+                  {getBlockTitle(orcaState.blocks[state.rootBlockId!], state.rootBlockId!, 0)}
                 </span>
               </>
             ) : (

@@ -1,5 +1,5 @@
 import type { Block, DbId } from "../orca.d.ts";
-import { ensureBlockInState } from "./utils.ts";
+import { ensureBlockInState } from "@/libs/BlockCache";
 
 // 统一处理镜像块，避免对镜像块写入或跳转时命中错误目标。
 export async function getMirrorId(id: DbId): Promise<DbId> {

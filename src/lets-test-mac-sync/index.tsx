@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { BasePlugin } from "@/libs/BasePlugin";
 import { setupL10N, t } from "@/libs/l10n";
-import { ensureInbox, ensureBlockInState } from "@/libs/utils";
+
 import { PropType } from "@/libs/consts";
 import { DataImporter } from "@/libs/DataImporter";
 import type { Block, DbId } from "../orca";
 import zhCN from "@/translations/zhCN";
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
+import { ensureInbox } from "@/libs/InboxUtils";
+import { ensureBlockInState } from "@/libs/BlockCache";
 
 const DEFAULT_SETTINGS = {
   syncReminders: true,

@@ -8,11 +8,12 @@ import {
 } from "./core/tagSchema";
 import { ReviewPanel } from "./ui/review-panel";
 import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
-import { ensureBlockInState } from "@/libs/utils";
+
 import React, { useEffect, useState, useRef } from "react";
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import cloneDeep from "lodash.clonedeep";
 import { getRelatedBlockIds } from "./core/query";
+import { ensureBlockInState } from "@/libs/BlockCache";
 
 /**
  * 虎鲸笔记 - 记忆卡片 (SRS) 插件

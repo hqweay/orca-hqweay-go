@@ -3,7 +3,7 @@ import { PropType } from "./consts";
 import type { Block } from "../orca.d.ts";
 import cloneDeep from "lodash.clonedeep";
 import { getMirrorId } from "./block-utils";
-import { ensureBlockInState } from "./utils";
+import { ensureBlockInState } from "@/libs/BlockCache";
 
 export interface PropertyData {
   name: string;

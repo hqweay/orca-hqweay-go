@@ -1,9 +1,11 @@
 import { BasePlugin } from "@/libs/BasePlugin";
 import { setupL10N, t } from "@/libs/l10n";
 import { Block, DbId } from "../orca";
-import { getRepr, getBlocks, ensureBlockInState } from "@/libs/utils";
+
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import React, { useState } from "react";
+import { getRepr } from "@/libs/BlockFormatter";
+import { getBlocks, ensureBlockInState } from "@/libs/BlockCache";
 
 export default class SortPlugin extends BasePlugin {
   protected settingsComponent = SortSettings;

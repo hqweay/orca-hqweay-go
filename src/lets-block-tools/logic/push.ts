@@ -1,8 +1,9 @@
 import { t } from "@/libs/l10n";
 import { MoveInfo, PushMode } from "../types";
 import { Logger } from "@/libs/logger";
-import { ensureBlockInState } from "@/libs/utils";
+
 import { makeBlockLink } from "./helpers";
+import { ensureBlockInState } from "@/libs/BlockCache";
 
 export async function executePush(
   moves: MoveInfo[],

@@ -5,8 +5,9 @@ import { DataImporter } from "@/libs/DataImporter";
 import { PropType } from "@/libs/consts";
 import React, { useState, useEffect } from "react";
 import type { DbId, QueryDescription2, Block } from "../orca.d.ts";
-import { ensureBlockInState } from "@/libs/utils";
+
 import { findMainPanelId, safeGoToBlock } from "@/libs/navUtils";
+import { ensureBlockInState } from "@/libs/BlockCache";
 
 export default class RandomWalkPlugin extends BasePlugin {
   protected settingsComponent = RandomWalkSettings;

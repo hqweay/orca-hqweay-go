@@ -5,7 +5,7 @@ import { PropType } from "@/libs/consts";
 import { DataImporter } from "@/libs/DataImporter";
 import React, { useState, useEffect } from "react";
 import type { Block } from "../orca.d.ts";
-import { ensureBlockInState } from "@/libs/utils.ts";
+import { ensureBlockInState } from "@/libs/BlockCache";
 
 export default class PinnedBlocksPlugin extends BasePlugin {
   protected settingsComponent = PinnedBlocksSettings;

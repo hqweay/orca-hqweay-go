@@ -1,10 +1,11 @@
 import { Block } from "../orca";
 import { PropType } from "@/libs/consts";
-import { ensureBlockInState } from "@/libs/utils";
+
 import { format } from "date-fns";
 import { PublishSettings } from "./types";
 import { extract } from "./markdownExtractor";
 import { getFileSha, uploadFile } from "@/adapters/github";
+import { ensureBlockInState } from "@/libs/BlockCache";
 import { generateSlug, extractImageLinks, replaceImageUrl, arrayBufferToBase64, toBase64 } from "./utils";
 
 async function ensureTagSchema(tagBlockId: number) {

@@ -1,6 +1,7 @@
 import { blockNavState } from "./state";
-import { getBlockTitle as getBlockTitleUtil, getRepr } from "../../libs/utils";
+
 import { parseSearchQuery, matchFilters } from "./searchParser";
+import { getBlockTitle as getBlockTitleUtil, getRepr } from "@/libs/BlockFormatter";
 
 // A plain object to hold the massive tree data, avoiding Valtio deep proxy crashes
 let searchCache = {

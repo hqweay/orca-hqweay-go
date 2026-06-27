@@ -2,7 +2,7 @@ import { DataImporter } from "@/libs/DataImporter";
 import { arcTabsPluginInstance } from "../index";
 import { arcTabsState } from "./data";
 import { findMainPanelId } from "@/libs/navUtils";
-import { ensureBlockInState } from "../../libs/utils";
+import { ensureBlockInState } from "@/libs/BlockCache";
 
 const getPinTagName = () => {
   const settings = arcTabsPluginInstance?.getSettings() || {};

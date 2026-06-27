@@ -5,7 +5,8 @@ import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import { PropType } from "@/libs/consts";
 import { DataImporter } from "@/libs/DataImporter";
 import type { Block } from "../orca.d.ts";
-import { getRepr, ensureBlockInState } from "@/libs/utils";
+import { getRepr } from "@/libs/BlockFormatter";
+import { ensureBlockInState } from "@/libs/BlockCache";
 
 export default class BlockFlowPlugin extends BasePlugin {
   protected settingsComponent = BlockFlowSettings;

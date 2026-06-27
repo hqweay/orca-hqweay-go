@@ -1,9 +1,10 @@
 import React, { useMemo } from "react";
 import { BasePlugin } from "@/libs/BasePlugin";
 import { t } from "@/libs/l10n";
-import { getRepr } from "@/libs/utils";
+
 import { useSnapshot } from "valtio";
 import { Block } from "@/orca";
+import { getRepr } from "@/libs/BlockFormatter";
 
 const { BlockShell, BlockChildren } = orca.components;
 

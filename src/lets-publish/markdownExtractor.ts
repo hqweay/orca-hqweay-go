@@ -1,6 +1,8 @@
 import { Block } from "../orca";
-import { ensureBlockInState, getRepr } from "../libs/utils";
+
 import { MarkdownResult } from "./types";
+import { ensureBlockInState } from "@/libs/BlockCache";
+import { getRepr } from "@/libs/BlockFormatter";
 
 /**
  * Pure domain logic module for converting a Block to Markdown.

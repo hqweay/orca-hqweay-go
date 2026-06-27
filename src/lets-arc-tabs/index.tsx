@@ -4,12 +4,10 @@ import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import type { Block } from "../orca.d.ts";
 import { ArcSidebar } from "./components/ArcSidebar";
 import { arcTabsState, DEFAULT_SPACE } from "./utils/data";
-import {
-  renderLeftHeadbarButton,
-  removeLeftHeadbarButton,
-  findPanelById,
-} from "@/libs/utils";
+
 import { findMainPanelId } from "@/libs/navUtils";
+import { renderLeftHeadbarButton, removeLeftHeadbarButton } from "@/libs/HeadbarUtils";
+import { findPanelById } from "@/libs/navUtils";
 
 export let arcTabsPluginInstance: ArcTabsPlugin;
 

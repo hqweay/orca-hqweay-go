@@ -1,8 +1,10 @@
 import { BasePlugin } from "@/libs/BasePlugin";
 import { t } from "@/libs/l10n";
 import { Block, DbId } from "../orca";
-import { getBlocks, getRepr, ensureBlockInState } from "@/libs/utils";
+
 import React from "react";
+import { getBlocks, ensureBlockInState } from "@/libs/BlockCache";
+import { getRepr } from "@/libs/BlockFormatter";
 
 interface BlockWithLevel {
   block: Block;

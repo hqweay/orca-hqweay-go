@@ -1,8 +1,10 @@
 import { setupL10N, t } from "@/libs/l10n";
 import { BasePlugin } from "@/libs/BasePlugin";
 import React from "react";
-import { ensureBlockInState, getRepr } from "@/libs/utils";
+
 import { SettingsSection, SettingsItem } from "@/components/SettingsItem";
+import { ensureBlockInState } from "@/libs/BlockCache";
+import { getRepr } from "@/libs/BlockFormatter";
 
 export default class FormatPlugin extends BasePlugin {
   protected headbarButtonId = `${this.name}.remove-style`;

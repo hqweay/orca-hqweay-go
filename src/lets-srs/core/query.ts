@@ -2,7 +2,7 @@ import { Logger } from "@/libs/logger.ts";
 import type { DbId, Block, QueryDescription2 } from "../../orca.d.ts";
 import { CARD_TAG_ALIAS } from "./tagSchema";
 import { getMirrorId } from "@/libs/block-utils";
-import { ensureBlockInState, isValidId } from "@/libs/utils.ts";
+import { ensureBlockInState, isValidId } from "@/libs/BlockCache";
 
 const logger = new Logger("lets-srs");
 

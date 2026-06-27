@@ -9,7 +9,7 @@ import {
   getFocusedBlock,
   isEditorPanel,
 } from "@/libs/navUtils";
-import { findPanelById } from "@/libs/utils";
+
 import { arcTabsState, DEFAULT_SPACE, __arcTabsScrollTop, setArcTabsScrollTop } from "../utils/data";
 import { pinBlock, loadPinnedBlocks } from "../utils/pin";
 import {
@@ -21,7 +21,8 @@ import {
 import { addRecentBlock } from "../utils/recent";
 import { TabItem } from "./TabItem";
 import { arcTabsPluginInstance } from "../index";
-import { getBlockIcon, getBlockColor, findPanelById } from "../../libs/utils";
+import { findPanelById } from "@/libs/navUtils";
+import { getBlockIcon, getBlockColor } from "@/libs/BlockFormatter";
 
 const getBlockTitle = (block: any, id: string | number, maxLength: number = 20) => {
   if (!block) return `Block ${String(id).substring(0, 8)}`;

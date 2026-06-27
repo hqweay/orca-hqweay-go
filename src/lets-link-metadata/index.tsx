@@ -7,9 +7,10 @@ import { PropType } from "@/libs/consts";
 import { DEFAULT_RULES } from "./defaultRules";
 import { DataImporter, BlockData } from "@/libs/DataImporter";
 import { BrowserModal } from "./components/BrowserModal";
-import { ensureBlockInState } from "@/libs/utils";
+
 import { injectContextMenu } from "./context-menu";
 import React from "react";
+import { ensureBlockInState } from "@/libs/BlockCache";
 
 const DEFAULT_QUICK_LINKS = [
   {

@@ -6,12 +6,9 @@ import "./styles.css";
 import { blockNavState } from "./utils/state";
 import { executeSnapshotExpand, clearSearchCache } from "./utils/searchEngine";
 
-import {
-  renderLeftHeadbarButton,
-  removeLeftHeadbarButton,
-  findPanelById,
-} from "@/libs/utils";
 import { findMainPanelId } from "@/libs/navUtils";
+import { renderLeftHeadbarButton, removeLeftHeadbarButton } from "@/libs/HeadbarUtils";
+import { findPanelById } from "@/libs/navUtils";
 
 const PLUGIN_NAME = "lets-block-nav";
 export const TOC_CSS_ID = `${PLUGIN_NAME}-hide-toc`;

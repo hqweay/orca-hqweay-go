@@ -1,6 +1,6 @@
 import { VoiceNotesApi } from "@/lets-voicenotes-sync/api/voicenotes";
 import { setupL10N, t } from "@/libs/l10n";
-import { ensureBlockInState, ensureInbox, getRepr } from "@/libs/utils";
+
 import { formatUtil } from "@/libs/format";
 // import { Block, DbId, QueryDescription } from "../orca.d.ts" // orca is global
 import type { Block, DbId, QueryDescription2 } from "../orca";
@@ -11,6 +11,9 @@ import { BasePlugin } from "@/libs/BasePlugin";
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import React, { useState } from "react";
 import { DataImporter } from "@/libs/DataImporter";
+import { ensureBlockInState } from "@/libs/BlockCache";
+import { ensureInbox } from "@/libs/InboxUtils";
+import { getRepr } from "@/libs/BlockFormatter";
 
 const DEFAULT_VN_SETTINGS = {
   inboxName: "VoiceNotes Inbox",

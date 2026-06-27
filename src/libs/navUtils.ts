@@ -119,3 +119,25 @@ export const safeGoToBlock = (blockId: number) => {
   }
   orca.nav.goTo("block", { blockId });
 };
+
+export function findPanelById(panel: any, id: string): any {
+  if (!panel) return null;
+  if (panel.id === id) return panel;
+  if (panel.children) {
+    for (const child of panel.children) {
+      const found = findPanelById(child, id);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+export const getCurrentBlockId = (): number | null => {
+  const activePanelId = orca.state.activePanel;
+  if (!activePanelId) return null;
+
+  const viewPanel = orca.nav.findViewPanel(activePanelId, orca.state.panels);
+  if (!viewPanel?.viewArgs) return null;
+
+  return viewPanel.viewArgs.blockId || null;
+};
