@@ -87,9 +87,11 @@ export function useSidebarResize({
       if (column) {
         const colRect = column.getBoundingClientRect();
         console.log(`[SIDEBAR-DEBUG] Column rect:`, JSON.stringify({ width: colRect.width, classList: column.className }));
+        console.log(`[SIDEBAR-DEBUG] Column inlineStyle:`, column.style.cssText);
         if (!column.classList.contains("orca-sidebar-column")) {
           column.classList.add("orca-sidebar-column");
           console.log(`[SIDEBAR-DEBUG] Added orca-sidebar-column class at ${performance.now().toFixed(2)}ms`);
+          console.log(`[SIDEBAR-DEBUG] Column rect AFTER class:`, JSON.stringify(column.getBoundingClientRect()));
         }
       }
     };

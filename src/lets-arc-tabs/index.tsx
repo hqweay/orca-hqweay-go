@@ -110,6 +110,50 @@ export default class ArcTabsPlugin extends BasePlugin {
           };
           const isSingleEditor = countLeafPanels(orca.state.panels) === 1;
 
+          // For multi-editor: Orca sets `flex-basis: 33.33%` inline on newly created panels.
+          // Start a MutationObserver BEFORE addTo to intercept the new panel the moment it's
+          // inserted and override its inline flex before the browser paints.
+          let observer: MutationObserver | null = null;
+          if (!isSingleEditor) {
+            const width = arcTabsPluginInstance?.getSettings()?.sidebarWidth || 250;
+            const existingLockedPanels = new Set(
+              [...document.querySelectorAll<HTMLElement>(".orca-panel.orca-locked")]
+            );
+
+            const applyWidthToPanel = (panel: HTMLElement) => {
+              panel.style.setProperty("flex", `0 0 ${width}px`, "important");
+              panel.style.setProperty("width", `${width}px`, "important");
+              panel.style.setProperty("min-width", `${width}px`, "important");
+              panel.style.setProperty("max-width", `${width}px`, "important");
+              panel.classList.add("orca-sidebar-column");
+              console.log(`[SIDEBAR-DEBUG] arc-tabs MO: overrode inline style at ${performance.now().toFixed(2)}ms, width=${panel.getBoundingClientRect().width}`);
+            };
+
+            observer = new MutationObserver((mutations) => {
+              for (const mutation of mutations) {
+                for (const node of mutation.addedNodes) {
+                  if (!(node instanceof HTMLElement)) continue;
+                  const candidates = node.classList?.contains("orca-panel")
+                    ? [node]
+                    : [...node.querySelectorAll<HTMLElement>(".orca-panel.orca-locked")];
+                  for (const panel of candidates) {
+                    if (
+                      panel.classList.contains("orca-locked") &&
+                      !existingLockedPanels.has(panel) &&
+                      !panel.classList.contains("orca-sidebar-column")
+                    ) {
+                      applyWidthToPanel(panel);
+                      observer!.disconnect();
+                      observer = null;
+                      return;
+                    }
+                  }
+                }
+              }
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+          }
+
           const newPanelId = orca.nav.addTo(targetPanelId, appendSide, {
             view: "arcTabs",
             viewArgs: {},
@@ -118,9 +162,6 @@ export default class ArcTabsPlugin extends BasePlugin {
           } as any);
 
           if (newPanelId && appendSide === side) {
-            // If there was only 1 editor before we added the sidebar,
-            // window.innerWidth is the correct total width — no nested panels to worry about.
-            // For multi-editor layouts, skip changeSizes to avoid the 10%/90% bug.
             if (isSingleEditor) {
               const width = arcTabsPluginInstance?.getSettings()?.sidebarWidth || 250;
               orca.nav.changeSizes(
