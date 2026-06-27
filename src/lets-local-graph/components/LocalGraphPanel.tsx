@@ -85,8 +85,11 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
         // Auto-center graph when data updates
         if (fgRef.current) {
            fgRef.current.d3ReheatSimulation();
+           // Instead of zoomToFit which can zoom in excessively on small graphs, 
+           // we gently reset zoom to a sensible default.
            setTimeout(() => {
-             fgRef.current?.zoomToFit(400, 20);
+             fgRef.current?.zoom(1.5, 400);
+             fgRef.current?.centerAt(0, 0, 400);
            }, 100);
         }
       }
@@ -137,17 +140,33 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
             graphData={graphData}
             nodeId="id"
             nodeLabel="label"
-            nodeColor={(node: any) =>
-              node.color || "var(--b3-theme-primary)"
-            }
-            nodeVal={(node: any) => node.val || 1}
+            nodeRelSize={4}
+            nodeCanvasObject={(node: any, ctx, globalScale) => {
+              const label = node.label;
+              const fontSize = 12 / globalScale;
+              ctx.font = `${fontSize}px Sans-Serif`;
+              
+              // Draw node circle
+              const nodeR = Math.sqrt(node.val || 1) * 4;
+              ctx.beginPath();
+              ctx.arc(node.x, node.y, nodeR, 0, 2 * Math.PI, false);
+              ctx.fillStyle = node.color || "var(--b3-theme-primary)";
+              ctx.fill();
+
+              // Draw text label
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillStyle = "var(--b3-theme-on-background)";
+              ctx.fillText(label, node.x, node.y + nodeR + fontSize);
+            }}
             onNodeClick={handleNodeClick}
             linkColor={() => "var(--b3-theme-surface-lighter)"}
             linkDirectionalArrowLength={3.5}
             linkDirectionalArrowRelPos={1}
             // Enhance visual appearance
             backgroundColor="transparent"
-            nodeRelSize={4}
+            d3AlphaDecay={0.05}
+            d3VelocityDecay={0.1}
           />
         )}
       </div>
