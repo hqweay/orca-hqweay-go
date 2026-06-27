@@ -14,8 +14,6 @@ import { findMainPanelId } from "./utils/nav";
 export let arcTabsPluginInstance: ArcTabsPlugin;
 
 export default class ArcTabsPlugin extends BasePlugin {
-
-
   async load() {
     arcTabsPluginInstance = this;
 
@@ -41,7 +39,10 @@ export default class ArcTabsPlugin extends BasePlugin {
         const existingPanel = findPanelWithView(orca.state.panels, "arcTabs");
         if (existingPanel) {
           orca.nav.close(existingPanel.id);
-          const editorPanel = findMainPanelId(orca.state.panels, orca.state.activePanel);
+          const editorPanel = findMainPanelId(
+            orca.state.panels,
+            orca.state.activePanel,
+          );
           if (editorPanel) orca.nav.switchFocusTo(editorPanel);
           return;
         }
@@ -68,10 +69,7 @@ export default class ArcTabsPlugin extends BasePlugin {
         if (!targetPanelId) return;
 
         let appendSide: "left" | "right" | "bottom" | "top" = side;
-        const targetPanelNode = findPanelById(
-          orca.state.panels,
-          targetPanelId,
-        );
+        const targetPanelNode = findPanelById(orca.state.panels, targetPanelId);
         if (
           targetPanelNode &&
           ["blockNav", "arcTabs"].includes(targetPanelNode.view)
@@ -219,7 +217,6 @@ export default class ArcTabsPlugin extends BasePlugin {
       ...super.getDefaultSettings(),
       pinTagName: "ArcTab",
       pinnedDisplayMode: "grid",
-      sidebarWidth: 250,
       todayLimit: 30,
     };
   }
@@ -273,20 +270,7 @@ export default class ArcTabsPlugin extends BasePlugin {
               width="100%"
             />
           </SettingsItem>
-          <SettingsItem
-            label={t("arc-tabs.sidebarWidth")}
-            description={t("arc-tabs.sidebarWidthDesc")}
-          >
-            <orca.components.Input
-              type="number"
-              value={settings.sidebarWidth ?? 250}
-              onChange={(e) => {
-                const val = parseInt(e.target.value);
-                if (!isNaN(val)) updateSettings({ sidebarWidth: val });
-              }}
-              style={{ width: "100px" }}
-            />
-          </SettingsItem>
+
           <SettingsItem
             label={t("arc-tabs.recentLimit")}
             description={t("arc-tabs.recentLimitDesc")}

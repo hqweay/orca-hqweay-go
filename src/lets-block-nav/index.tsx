@@ -6,7 +6,6 @@ import "./styles.css";
 import { blockNavState } from "./utils/state";
 import { executeSnapshotExpand, clearSearchCache } from "./utils/searchEngine";
 
-
 import {
   renderLeftHeadbarButton,
   removeLeftHeadbarButton,
@@ -25,8 +24,6 @@ export default class BlockNavPlugin extends BasePlugin {
     blockNavPluginInstance = this;
   }
 
-
-
   async load() {
     blockNavState.hideBuiltInToc = this.getSettings()?.hideBuiltInToc ?? false;
 
@@ -38,7 +35,10 @@ export default class BlockNavPlugin extends BasePlugin {
         const existingPanel = this.findNavPanel();
         if (existingPanel) {
           orca.nav.close(existingPanel.id);
-          const editorPanel = findMainPanelId(orca.state.panels, orca.state.activePanel);
+          const editorPanel = findMainPanelId(
+            orca.state.panels,
+            orca.state.activePanel,
+          );
           if (editorPanel) orca.nav.switchFocusTo(editorPanel);
           return;
         }
@@ -68,10 +68,7 @@ export default class BlockNavPlugin extends BasePlugin {
 
         let appendSide: "left" | "right" | "bottom" | "top" = side;
         const targetPanelNode = findPanelById(orca.state.panels, targetPanelId);
-        if (
-          targetPanelNode &&
-          SIDEBAR_VIEWS.includes(targetPanelNode.view)
-        ) {
+        if (targetPanelNode && SIDEBAR_VIEWS.includes(targetPanelNode.view)) {
           appendSide = "bottom";
         }
 
@@ -128,7 +125,6 @@ export default class BlockNavPlugin extends BasePlugin {
   getDefaultSettings() {
     return {
       sidebarPosition: "left",
-      sidebarWidth: 250,
       hideBuiltInToc: false,
     };
   }
@@ -205,21 +201,7 @@ export default class BlockNavPlugin extends BasePlugin {
               width="100%"
             />
           </SettingsItem>
-          <SettingsItem
-            label={t(`${this.name}.sidebarWidth`) || "Sidebar Width"}
-            description={
-              t(`${this.name}.sidebarWidthDesc`) ||
-              "Width of the Block Nav sidebar in pixels."
-            }
-          >
-            <orca.components.Input
-              type="number"
-              value={settings.sidebarWidth || 250}
-              onChange={(e: any) =>
-                updateSettings({ sidebarWidth: Number(e.target.value) })
-              }
-            />
-          </SettingsItem>
+
           <SettingsItem
             label={t(`${this.name}.hideBuiltInToc`) || "Hide Built-in TOC"}
             description={
