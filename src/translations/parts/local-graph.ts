@@ -24,4 +24,11 @@ export default {
   "local-graph.nodeHeader": "节点",
   "local-graph.edgeHeader": "连线",
   "local-graph.nodesCount": "${count} 个节点",
+  "local-graph.filterGraph": "过滤图谱",
+  "local-graph.filters": "显示类型",
+  "local-graph.filterTags": "标签引用",
+  "local-graph.filterStructure": "父子结构",
+  "local-graph.filterReferences": "显式引用",
+  "local-graph.dragToEditor": "拖拽到编辑器插入引用",
+  "local-graph.nodeExpanded": "手动展开",
 }

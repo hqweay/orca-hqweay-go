@@ -9,6 +9,7 @@ export interface GraphNode {
   isLatestNode?: boolean;
   isStartNode?: boolean;
   isFootprint?: boolean;
+  isExpanded?: boolean; // Highlight manually expanded nodes
 }
 
 export interface GraphLink {
@@ -29,6 +30,8 @@ export async function buildGraph(
   centerBlockId: number | null,
   footprints: number[],
   timeEdges: { source: number; target: number }[],
+  expandedNodes: number[],
+  filters: { showTags: boolean; showStructure: boolean; showReferences: boolean },
   settings: GraphEngineSettings,
 ): Promise<{ nodes: GraphNode[]; links: GraphLink[] }> {
   const nodes = new Map<number, GraphNode>();
@@ -50,14 +53,20 @@ export async function buildGraph(
       if (block) footprintBlocks.set(id, block);
     }
 
+    const shouldIncludeRef = (ref: any) => {
+      if (ref.alias && excludedSet.has(ref.alias.toLowerCase())) return false;
+      if (!filters.showTags && ref.type === 2) return false;
+      if (!filters.showReferences && ref.type !== 2) return false;
+      return true;
+    };
+
     // 3. Count Neighbor References
     const neighborCounts = new Map<number, number>();
     for (const [id, block] of footprintBlocks.entries()) {
       const uniqueNeighborsForThisBlock = new Set<number>();
       if (block.refs) {
         for (const ref of block.refs) {
-          if (ref.alias && excludedSet.has(ref.alias.toLowerCase())) continue;
-          if (ref.to) uniqueNeighborsForThisBlock.add(ref.to);
+          if (shouldIncludeRef(ref) && ref.to) uniqueNeighborsForThisBlock.add(ref.to);
         }
       }
       if (block.backRefs) {
@@ -65,7 +74,7 @@ export async function buildGraph(
           if (ref.from) uniqueNeighborsForThisBlock.add(ref.from);
         }
       }
-      if (block.parent) {
+      if (filters.showStructure && block.parent) {
         const parentId = Number(block.parent);
         if (!isNaN(parentId)) {
           uniqueNeighborsForThisBlock.add(parentId);
@@ -81,34 +90,45 @@ export async function buildGraph(
 
     // 4. Gather Final Node Pool
     const nodePool = new Set<number>(footprintSet);
+    expandedNodes.forEach(id => nodePool.add(id));
     
-    // 4a. Add Center Block's Immediate Neighbors (up to maxDegree)
-    const centerBlock = centerBlockId ? footprintBlocks.get(centerBlockId) : null;
-    if (centerBlock) {
-      let degreeCount = 0;
-      if (centerBlock.refs) {
-        for (const ref of centerBlock.refs) {
-          if (degreeCount >= settings.maxDegree) break;
-          if (ref.alias && excludedSet.has(ref.alias.toLowerCase())) continue;
-          if (ref.to && !nodePool.has(ref.to)) {
-            nodePool.add(ref.to);
-            degreeCount++;
+    // 4a. Add Center & Expanded Blocks' Immediate Neighbors (up to maxDegree)
+    const activeCenters = new Set<number>();
+    if (centerBlockId) activeCenters.add(centerBlockId);
+    expandedNodes.forEach(id => activeCenters.add(id));
+
+    for (const centerId of activeCenters) {
+      let centerBlock = footprintBlocks.get(centerId);
+      if (!centerBlock) {
+        centerBlock = (await orca.invokeBackend("get-block", centerId)) as Block;
+        if (centerBlock) footprintBlocks.set(centerId, centerBlock);
+      }
+      
+      if (centerBlock) {
+        let degreeCount = 0;
+        if (centerBlock.refs) {
+          for (const ref of centerBlock.refs) {
+            if (degreeCount >= settings.maxDegree) break;
+            if (shouldIncludeRef(ref) && ref.to && !nodePool.has(ref.to)) {
+              nodePool.add(ref.to);
+              degreeCount++;
+            }
           }
         }
-      }
-      if (centerBlock.backRefs) {
-        for (const ref of centerBlock.backRefs) {
-          if (degreeCount >= settings.maxDegree) break;
-          if (ref.from && !nodePool.has(ref.from)) {
-            nodePool.add(ref.from);
-            degreeCount++;
+        if (centerBlock.backRefs) {
+          for (const ref of centerBlock.backRefs) {
+            if (degreeCount >= settings.maxDegree) break;
+            if (ref.from && !nodePool.has(ref.from)) {
+              nodePool.add(ref.from);
+              degreeCount++;
+            }
           }
         }
-      }
-      if (centerBlock.parent) {
-        const parentId = Number(centerBlock.parent);
-        if (!isNaN(parentId) && !nodePool.has(parentId)) {
-          nodePool.add(parentId);
+        if (filters.showStructure && centerBlock.parent) {
+          const parentId = Number(centerBlock.parent);
+          if (!isNaN(parentId) && !nodePool.has(parentId)) {
+            nodePool.add(parentId);
+          }
         }
       }
     }
@@ -169,6 +189,7 @@ export async function buildGraph(
         isLatestNode,
         isStartNode,
         isFootprint: historySet.has(id),
+        isExpanded: expandedNodes.includes(id),
       });
     }
 
@@ -178,7 +199,7 @@ export async function buildGraph(
     for (const [id, block] of blockCache.entries()) {
       if (block.refs) {
         for (const ref of block.refs) {
-          if (ref.alias && excludedSet.has(ref.alias.toLowerCase())) continue;
+          if (!shouldIncludeRef(ref)) continue;
           
           // Edge exists purely within our pool!
           if (poolSet.has(ref.to) && blockCache.has(ref.to)) {
@@ -194,7 +215,7 @@ export async function buildGraph(
       }
 
       // Add Structural Edges (Parent/Child)
-      if (block.parent) {
+      if (filters.showStructure && block.parent) {
         const parentId = Number(block.parent);
         if (!isNaN(parentId) && poolSet.has(parentId) && blockCache.has(parentId)) {
           links.push({

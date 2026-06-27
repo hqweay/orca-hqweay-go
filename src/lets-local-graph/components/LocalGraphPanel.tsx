@@ -33,6 +33,14 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
   const activeBlockId = getFocusedBlock(orcaState.panels, activePanelId);
   
   const session = useSnapshot(sessionState);
+  
+  // Extract primitives from snapshot to trigger React re-renders on Valtio changes
+  const footprintsLength = session.footprints.length;
+  const timeEdgesLength = session.timeEdges.length;
+  const expandedNodesLength = session.expandedNodes.length;
+  const showTags = session.filters.showTags;
+  const showStructure = session.filters.showStructure;
+  const showReferences = session.filters.showReferences;
 
   const [graphData, setGraphData] = useState<{
     nodes: GraphNode[];
@@ -53,7 +61,7 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
 
   // Freeze Graph Logic: Only track active block if we are recording
   useEffect(() => {
-    if (session.isRecording) {
+    if (session.isRecording && activeBlockId !== null) {
       setFrozenBlockId(activeBlockId);
     }
   }, [activeBlockId, session.isRecording]);
@@ -90,18 +98,20 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
     return () => resizeObserver.disconnect();
   }, []);
 
-  // Fetch Graph Data safely with race condition prevention
-  useEffect(() => {
-    if (!frozenBlockId) return;
-
-    const blockId = frozenBlockId;
+  // Pure, parametric rebuild logic
+  const doRebuild = useCallback((
+    blockId: number,
+    footprints: number[],
+    timeEdges: { source: number; target: number }[],
+    expandedNodes: number[],
+    filters: { showTags: boolean; showStructure: boolean; showReferences: boolean }
+  ) => {
     const gen = ++fetchGenRef.current;
 
-    // Get settings safely
     let settings: GraphEngineSettings = {
       maxDegree: 40,
       maxNodes: 300,
-      excludedTags: ["#Journal", "#TODO"], // Safe defaults
+      excludedTags: ["#Journal", "#TODO"],
     };
 
     const actualPlugin = localGraphPluginInstance;
@@ -116,23 +126,13 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
       };
     }
 
-    // Add current block to session if recording
-    if (sessionState.isRecording) {
-      addFootprint(blockId);
-    }
-
-    // Pass the actual footprints (non-proxy array)
-    const footprints = Array.from(sessionState.footprints);
-    const timeEdges = Array.from(sessionState.timeEdges);
-
-    buildGraph(blockId, footprints, timeEdges, settings).then((result) => {
+    buildGraph(blockId, footprints, timeEdges, expandedNodes, filters, settings).then((result) => {
       if (gen === fetchGenRef.current) {
         setGraphData(prev => {
           const oldNodesMap = new Map(prev.nodes.map(n => [n.id, n]));
           const isResetting = forceResetRef.current;
           
           const newNodes = result.nodes.map(n => {
-            // Anti-shake: preserve physics coords unless we are doing a hard reset
             if (!isResetting && oldNodesMap.has(n.id)) {
               const old = oldNodesMap.get(n.id)!;
               Object.assign(old, n);
@@ -145,27 +145,68 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
           return { nodes: newNodes, links: result.links };
         });
         
-        // Configure Physics to spread nodes out further
         if (fgRef.current) {
            const fg = fgRef.current;
-           // Gentle center force to keep things on screen
            fg.d3Force('center')?.strength(0.02);
            fg.d3Force('charge')?.strength(-100);
            fg.d3Force('link')?.distance(90);
-           
-           // DO NOT call d3ReheatSimulation()! 
-           // That causes the existing nodes to scramble. 
-           // We just let the new nodes gently fall into place.
         }
       }
     });
-  }, [frozenBlockId, pluginId, session.isRecording, session.footprints.length]);
+  }, [pluginId]);
+
+  // 1. Footprint recording on navigation (Isolated mutation)
+  useEffect(() => {
+    if (!frozenBlockId) return;
+    if (sessionState.isRecording) {
+      addFootprint(frozenBlockId);
+    }
+  }, [frozenBlockId]);
+
+  // 2. Pure React Effect to rebuild the graph whenever primitive dependencies change
+  useEffect(() => {
+    if (!frozenBlockId) return;
+    
+    const footprints = Array.from(session.footprints);
+    const timeEdges = Array.from(session.timeEdges);
+    const expandedNodes = Array.from(session.expandedNodes);
+    const filters = {
+      showTags,
+      showStructure,
+      showReferences,
+    };
+
+    doRebuild(frozenBlockId, footprints, timeEdges, expandedNodes, filters);
+  }, [
+    frozenBlockId,
+    footprintsLength,
+    timeEdgesLength,
+    expandedNodesLength,
+    showTags,
+    showStructure,
+    showReferences,
+    doRebuild
+  ]);
 
   const handleNodeClick = useCallback((node: any) => {
     const blockId = (node as GraphNode).id;
-    // Wandering: sync editor focus to this block
     orca.nav.goTo("block", { blockId });
   }, []);
+
+  const handleNodeRightClick = useCallback((node: any) => {
+    const blockId = (node as GraphNode).id;
+    if (!sessionState.expandedNodes.includes(blockId)) {
+      sessionState.expandedNodes.push(blockId);
+      orca.notify("success", `Expanded: ${node.label}`);
+    } else {
+      sessionState.expandedNodes = sessionState.expandedNodes.filter(id => id !== blockId);
+    }
+  }, []);
+
+  const ContextMenu = orca.components.ContextMenu;
+  const Menu = orca.components.Menu;
+  const MenuTitle = orca.components.MenuTitle;
+  const MenuText = orca.components.MenuText;
 
   return (
     <div
@@ -194,6 +235,48 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           <span>{t("graphTitle")}</span>
           <div style={{ display: "flex", gap: "4px", position: "relative" }}>
+            <ContextMenu
+              placement="vertical"
+              alignment="right"
+              defaultPlacement="bottom"
+              menu={(closeMenu) => (
+                <Menu>
+                  <MenuTitle title={t("filters")} />
+                  <MenuText
+                    title={t("filterTags")}
+                    preIcon={session.filters.showTags ? "ti ti-checkbox" : "ti ti-square"}
+                    onClick={() => {
+                      sessionState.filters.showTags = !sessionState.filters.showTags;
+                    }}
+                  />
+                  <MenuText
+                    title={t("filterStructure")}
+                    preIcon={session.filters.showStructure ? "ti ti-checkbox" : "ti ti-square"}
+                    onClick={() => {
+                      sessionState.filters.showStructure = !sessionState.filters.showStructure;
+                    }}
+                  />
+                  <MenuText
+                    title={t("filterReferences")}
+                    preIcon={session.filters.showReferences ? "ti ti-checkbox" : "ti ti-square"}
+                    onClick={() => {
+                      sessionState.filters.showReferences = !sessionState.filters.showReferences;
+                    }}
+                  />
+                </Menu>
+              )}
+            >
+              {(open) => (
+                <span
+                  className="block__icon b3-tooltips b3-tooltips__w"
+                  aria-label={t("filterGraph")}
+                  onClick={open}
+                  style={{ cursor: "pointer", display: "inline-flex", padding: "4px", borderRadius: "4px" }}
+                >
+                  <i className="ti ti-filter" style={{ fontSize: "14px" }} />
+                </span>
+              )}
+            </ContextMenu>
             <span
               className="block__icon"
               onMouseEnter={() => setShowHelper(true)}
@@ -230,6 +313,7 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
                  <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}><span style={{color: '#10b981', fontSize: "10px"}}>🟢</span> {t("nodeStart")}</div>
                  <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}><span style={{color: themeColors.primary, fontSize: "10px"}}>🔵</span> {t("nodeVisited")}</div>
                  <div style={{display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px'}}><span style={{fontSize: "10px"}}>⚪</span> {t("nodeNeighbor")}</div>
+                 <div style={{display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px'}}><span style={{color: '#06b6d4', fontSize: "10px"}}>🔵</span> {t("nodeExpanded")}</div>
                  
                  <div style={{fontWeight: 600, marginBottom: '2px', color: 'var(--b3-theme-on-background)'}}>{t("edgeHeader")}</div>
                  <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}><span style={{color: themeColors.primary, fontWeight: 'bold'}}>--&gt;</span> {t("edgeTraversal")}</div>
@@ -246,7 +330,6 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
                 clearFootprints();
                 if (!session.isRecording) toggleRecording(activeBlockId);
                 else if (activeBlockId != null) addFootprint(activeBlockId);
-                
                 orca.notify("success", t("resetNotify"));
               }}
               style={{ cursor: "pointer", display: "inline-flex", padding: "4px", borderRadius: "4px" }}
@@ -278,6 +361,12 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
             nodeId="id"
             nodeLabel="label"
             nodeRelSize={4}
+            onNodeClick={handleNodeClick}
+            onNodeRightClick={handleNodeRightClick}
+            onNodeDragEnd={(node) => {
+              node.fx = node.x;
+              node.fy = node.y;
+            }}
             nodeCanvasObject={(node: any, ctx, globalScale) => {
               const nodeR = Math.sqrt(node.val || 1) * 3.5;
 
@@ -287,21 +376,35 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
               else if (node.isStartNode) color = "#10b981"; // Green
               else if (node.isFootprint) color = themeColors.primary; // Blue
 
-              // Draw Main Node Circle
+              if ((node as GraphNode).isLatestNode) {
+                ctx.beginPath();
+                ctx.arc(node.x!, node.y!, nodeR + 4 / globalScale, 0, 2 * Math.PI, false);
+                ctx.fillStyle = themeColors.error;
+                ctx.globalAlpha = 0.2;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+              } else if ((node as GraphNode).isStartNode) {
+                ctx.beginPath();
+                ctx.arc(node.x!, node.y!, nodeR + 4 / globalScale, 0, 2 * Math.PI, false);
+                ctx.fillStyle = '#10b981';
+                ctx.globalAlpha = 0.2;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+              }
+
+              // Outline for manually expanded nodes
+              if ((node as GraphNode).isExpanded) {
+                ctx.beginPath();
+                ctx.arc(node.x!, node.y!, nodeR + 1.5 / globalScale, 0, 2 * Math.PI, false);
+                ctx.strokeStyle = '#06b6d4'; // Cyan
+                ctx.lineWidth = 1.5 / globalScale;
+                ctx.stroke();
+              }
+
               ctx.beginPath();
-              ctx.arc(node.x, node.y, nodeR, 0, 2 * Math.PI, false);
+              ctx.arc(node.x!, node.y!, nodeR, 0, 2 * Math.PI, false);
               ctx.fillStyle = color;
               ctx.fill();
-
-              // For Latest and Start nodes, draw a subtle outer glowing ring
-              if (node.isLatestNode || node.isStartNode) {
-                ctx.beginPath();
-                ctx.arc(node.x, node.y, nodeR + 2.5, 0, 2 * Math.PI, false);
-                ctx.fillStyle = color;
-                ctx.globalAlpha = 0.3;
-                ctx.fill();
-                ctx.globalAlpha = 1.0;
-              }
 
               // Smart Label Visibility (Roam Research style)
               // 1. Always show if zoomed in close enough
@@ -326,7 +429,6 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
                 containerRef.current.style.cursor = node ? 'pointer' : 'default';
               }
             }}
-            onNodeClick={handleNodeClick}
             linkCanvasObject={(link: any, ctx, globalScale) => {
               const start = link.source;
               const end = link.target;

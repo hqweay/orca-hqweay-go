@@ -4,6 +4,12 @@ export const sessionState = proxy({
   isRecording: true, // Auto-record by default
   footprints: [] as number[],
   timeEdges: [] as { source: number; target: number }[],
+  expandedNodes: [] as number[], // For local manual expansion
+  filters: {
+    showTags: true,
+    showStructure: true,
+    showReferences: true,
+  },
 });
 
 export const toggleRecording = (currentBlockId?: number | null) => {
@@ -16,6 +22,7 @@ export const toggleRecording = (currentBlockId?: number | null) => {
 export const clearFootprints = () => {
   sessionState.footprints = [];
   sessionState.timeEdges = [];
+  sessionState.expandedNodes = [];
 };
 
 export const addFootprint = (blockId: number) => {
