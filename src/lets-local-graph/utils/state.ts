@@ -6,8 +6,11 @@ export const sessionState = proxy({
   timeEdges: [] as { source: number; target: number }[],
 });
 
-export const toggleRecording = () => {
+export const toggleRecording = (currentBlockId?: number | null) => {
   sessionState.isRecording = !sessionState.isRecording;
+  if (sessionState.isRecording && currentBlockId != null) {
+    addFootprint(currentBlockId);
+  }
 };
 
 export const clearFootprints = () => {

@@ -1,11 +1,15 @@
-import { getBlockTitle } from "@/libs/BlockFormatter";
+import { getBlockTitle, getBlockIcon } from "@/libs/BlockFormatter";
 import type { Block } from "../orca";
 
 export interface GraphNode {
   id: number;
   label: string;
   val?: number; // node size
-  color?: string;
+  color?: string; // fallback color
+  icon?: string;
+  isLatestNode?: boolean;
+  isStartNode?: boolean;
+  isFootprint?: boolean;
 }
 
 export interface GraphLink {
@@ -35,56 +39,96 @@ export async function buildGraph(
       settings.excludedTags.map((t) => t.trim().toLowerCase()).filter(Boolean),
     );
 
-    // 1. Gather Node Pool
-    const nodePool = new Set<number>();
-    
-    // Add history footprint nodes
-    for (const id of footprints) {
-      nodePool.add(id);
+    // 1. Gather Footprints & Center Block
+    const footprintSet = new Set<number>(footprints);
+    if (centerBlockId) footprintSet.add(centerBlockId);
+
+    // 2. Fetch all Footprint Blocks to scan their neighbors
+    const footprintBlocks = new Map<number, Block>();
+    for (const id of footprintSet) {
+      const block = (await orca.invokeBackend("get-block", id)) as Block;
+      if (block) footprintBlocks.set(id, block);
     }
 
-    // Add active center block
-    if (centerBlockId) {
-      nodePool.add(centerBlockId);
+    // 3. Count Neighbor References
+    const neighborCounts = new Map<number, number>();
+    for (const [id, block] of footprintBlocks.entries()) {
+      const uniqueNeighborsForThisBlock = new Set<number>();
+      if (block.refs) {
+        for (const ref of block.refs) {
+          if (ref.alias && excludedSet.has(ref.alias.toLowerCase())) continue;
+          if (ref.to) uniqueNeighborsForThisBlock.add(ref.to);
+        }
+      }
+      if (block.backRefs) {
+        for (const ref of block.backRefs) {
+          if (ref.from) uniqueNeighborsForThisBlock.add(ref.from);
+        }
+      }
 
-      // Fetch center block to get its 1st-degree neighbors
-      const centerBlock = (await orca.invokeBackend("get-block", centerBlockId)) as Block;
-      if (centerBlock) {
-        let degreeCount = 0;
-        if (centerBlock.refs) {
-          for (const ref of centerBlock.refs) {
-            if (degreeCount >= settings.maxDegree) break;
-            if (ref.alias && excludedSet.has(ref.alias.toLowerCase())) continue;
-            if (ref.to) {
-              nodePool.add(ref.to);
-              degreeCount++;
-            }
+      for (const neighborId of uniqueNeighborsForThisBlock) {
+        if (!footprintSet.has(neighborId)) {
+          neighborCounts.set(neighborId, (neighborCounts.get(neighborId) || 0) + 1);
+        }
+      }
+    }
+
+    // 4. Gather Final Node Pool
+    const nodePool = new Set<number>(footprintSet);
+    
+    // 4a. Add Center Block's Immediate Neighbors (up to maxDegree)
+    const centerBlock = centerBlockId ? footprintBlocks.get(centerBlockId) : null;
+    if (centerBlock) {
+      let degreeCount = 0;
+      if (centerBlock.refs) {
+        for (const ref of centerBlock.refs) {
+          if (degreeCount >= settings.maxDegree) break;
+          if (ref.alias && excludedSet.has(ref.alias.toLowerCase())) continue;
+          if (ref.to && !nodePool.has(ref.to)) {
+            nodePool.add(ref.to);
+            degreeCount++;
           }
         }
-        if (centerBlock.backRefs) {
-          for (const ref of centerBlock.backRefs) {
-            if (degreeCount >= settings.maxDegree) break;
-            if (ref.from) {
-              nodePool.add(ref.from);
-              degreeCount++;
-            }
+      }
+      if (centerBlock.backRefs) {
+        for (const ref of centerBlock.backRefs) {
+          if (degreeCount >= settings.maxDegree) break;
+          if (ref.from && !nodePool.has(ref.from)) {
+            nodePool.add(ref.from);
+            degreeCount++;
           }
         }
       }
     }
 
+    // 4b. Add Gravity Intersection Neighbors (count >= 2, max 50 to prevent bloat)
+    let intersectionCount = 0;
+    const sortedIntersections = Array.from(neighborCounts.entries())
+      .filter(([id, count]) => count >= 2)
+      .sort((a, b) => b[1] - a[1]);
+      
+    for (const [neighborId, count] of sortedIntersections) {
+      if (intersectionCount >= 50) break;
+      if (!nodePool.has(neighborId)) {
+        nodePool.add(neighborId);
+        intersectionCount++;
+      }
+    }
+
     if (nodePool.size === 0) return { nodes: [], links: [] };
 
-    // Limit node pool size just in case (though it should be small)
+    // Limit node pool size just in case
     const limitedPool = Array.from(nodePool).slice(0, settings.maxNodes);
     const poolSet = new Set(limitedPool);
 
-    // 2. Fetch all blocks in the pool
+    // 5. Fetch all blocks in the final pool
     const blockCache = new Map<number, Block>();
     for (const id of limitedPool) {
-      const block = (await orca.invokeBackend("get-block", id)) as Block;
-      if (block) {
-        blockCache.set(id, block);
+      if (footprintBlocks.has(id)) {
+        blockCache.set(id, footprintBlocks.get(id)!);
+      } else {
+        const block = (await orca.invokeBackend("get-block", id)) as Block;
+        if (block) blockCache.set(id, block);
       }
     }
 
@@ -95,19 +139,46 @@ export async function buildGraph(
       let color = "var(--b3-theme-surface-lighter)"; // default: neighbor
       let val = 1;
       
-      if (id === centerBlockId) {
-        color = "var(--b3-theme-error)"; // Active Block (prominent)
+      const isStartNode = footprints.length > 0 && footprints[0] === id;
+      const isLatestNode = id === centerBlockId;
+
+      if (isLatestNode) {
         val = 3;
+      } else if (isStartNode) {
+        val = 2.5;
       } else if (historySet.has(id)) {
-        color = "var(--b3-theme-primary)"; // Footprint
         val = 2;
+      }
+
+      // Quick map for common tabler icons to emojis for canvas rendering
+      let rawIcon = getBlockIcon(block);
+      let emojiIcon = "";
+      if (!rawIcon.startsWith("ti ti-")) {
+        emojiIcon = rawIcon; // Might be a native emoji
+      } else if (rawIcon === "ti ti-file") {
+        emojiIcon = "📄";
+      } else if (rawIcon.includes("journal")) {
+        emojiIcon = "📅";
+      } else if (rawIcon === "ti ti-table") {
+        emojiIcon = "📊";
+      } else if (rawIcon === "ti ti-search") {
+        emojiIcon = "🔍";
+      } else if (rawIcon === "ti ti-book") {
+        emojiIcon = "📖";
+      } else if (rawIcon === "ti ti-photo") {
+        emojiIcon = "🖼️";
+      } else {
+        emojiIcon = "🧊";
       }
 
       nodes.set(id, {
         id,
         label: await getBlockTitle(block, id, 10),
         val,
-        color,
+        icon: emojiIcon,
+        isLatestNode,
+        isStartNode,
+        isFootprint: historySet.has(id),
       });
     }
 

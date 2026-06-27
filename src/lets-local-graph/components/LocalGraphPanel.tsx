@@ -32,6 +32,25 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
     links: GraphLink[];
   }>({ nodes: [], links: [] });
 
+  const [themeColors, setThemeColors] = useState({
+    primary: "#3b82f6",
+    error: "#ef4444",
+    surfaceLighter: "#374151",
+    onBackground: "#ffffff"
+  });
+
+  useEffect(() => {
+    // Resolve CSS variables for Canvas compatibility
+    const target = containerRef.current || document.body;
+    const style = getComputedStyle(target);
+    setThemeColors({
+      primary: style.getPropertyValue('--b3-theme-primary').trim() || "#3b82f6",
+      error: style.getPropertyValue('--b3-theme-error').trim() || "#ef4444",
+      surfaceLighter: style.getPropertyValue('--b3-theme-surface-lighter').trim() || "#374151",
+      onBackground: style.color || style.getPropertyValue('--b3-theme-on-background').trim() || "#d1d5db"
+    });
+  }, []);
+
   const fetchGenRef = useRef(0);
   const fgRef = useRef<ForceGraphMethods>();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -89,15 +108,27 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
 
     buildGraph(blockId, footprints, timeEdges, settings).then((result) => {
       if (gen === fetchGenRef.current) {
-        setGraphData(result);
+        setGraphData(prev => {
+          const oldNodesMap = new Map(prev.nodes.map(n => [n.id, n]));
+          const newNodes = result.nodes.map(n => {
+            if (oldNodesMap.has(n.id)) {
+              const old = oldNodesMap.get(n.id)!;
+              // Mutate the old object to preserve physics coords (x,y,vx,vy)
+              Object.assign(old, n);
+              return old;
+            }
+            return n;
+          });
+          return { nodes: newNodes, links: result.links };
+        });
         
         // Configure Physics to spread nodes out further
         if (fgRef.current) {
            const fg = fgRef.current;
            // Gentle center force to keep things on screen
-           fg.d3Force('center')?.strength(0.05);
-           fg.d3Force('charge')?.strength(-120);
-           fg.d3Force('link')?.distance(80);
+           fg.d3Force('center')?.strength(0.02);
+           fg.d3Force('charge')?.strength(-100);
+           fg.d3Force('link')?.distance(90);
            
            // DO NOT call d3ReheatSimulation()! 
            // That causes the existing nodes to scramble. 
@@ -140,7 +171,7 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           <span>Footprint Graph</span>
           <button 
-            onClick={toggleRecording}
+            onClick={() => toggleRecording(activeBlockId)}
             style={{
               background: session.isRecording ? "var(--b3-theme-error)" : "var(--b3-theme-surface)",
               color: session.isRecording ? "#fff" : "var(--b3-theme-on-surface)",
@@ -184,22 +215,39 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
             nodeLabel="label"
             nodeRelSize={4}
             nodeCanvasObject={(node: any, ctx, globalScale) => {
-              const label = node.label;
-              const fontSize = 12 / globalScale;
-              ctx.font = `${fontSize}px Sans-Serif`;
-              
-              // Draw node circle
-              const nodeR = Math.sqrt(node.val || 1) * 4;
-              ctx.beginPath();
-              ctx.arc(node.x, node.y, nodeR, 0, 2 * Math.PI, false);
-              ctx.fillStyle = node.color || "var(--b3-theme-primary)";
-              ctx.fill();
+              const nodeR = Math.sqrt(node.val || 1) * 6;
 
-              // Draw text label
+              // Draw Halo/Ring for Footprints
+              if (node.isFootprint || node.isStartNode || node.isLatestNode) {
+                let ringColor = themeColors.primary;
+                if (node.isLatestNode) ringColor = themeColors.error;
+                else if (node.isStartNode) ringColor = "#10b981";
+
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, nodeR + 2, 0, 2 * Math.PI, false);
+                ctx.fillStyle = ringColor;
+                ctx.globalAlpha = 0.2;
+                ctx.fill();
+                
+                ctx.lineWidth = 1.5 / globalScale;
+                ctx.strokeStyle = ringColor;
+                ctx.globalAlpha = 1.0;
+                ctx.stroke();
+              }
+
+              // Draw Emoji at center
               ctx.textAlign = 'center';
               ctx.textBaseline = 'middle';
-              ctx.fillStyle = "var(--b3-theme-on-background)";
-              ctx.fillText(label, node.x, node.y + nodeR + fontSize);
+              const iconSize = Math.max(10, nodeR * 1.5) / (globalScale > 1 ? 1 : globalScale);
+              ctx.font = `${iconSize}px Sans-Serif`;
+              ctx.fillText(node.icon || "🧊", node.x, node.y);
+
+              // Draw Text Label below emoji
+              const label = node.label;
+              const fontSize = 11 / globalScale;
+              ctx.font = `${fontSize}px Sans-Serif`;
+              ctx.fillStyle = themeColors.onBackground;
+              ctx.fillText(label, node.x, node.y + nodeR + 6 + fontSize);
             }}
             onNodeClick={handleNodeClick}
             linkCanvasObject={(link: any, ctx, globalScale) => {
@@ -213,11 +261,11 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
               ctx.lineTo(end.x, end.y);
 
               if (link.isTimeEdge) {
-                ctx.strokeStyle = "var(--b3-theme-primary)";
+                ctx.strokeStyle = themeColors.primary;
                 ctx.setLineDash([4, 4]); // Dashed line
                 ctx.lineWidth = 1.5 / globalScale;
               } else {
-                ctx.strokeStyle = "var(--b3-theme-surface-lighter)";
+                ctx.strokeStyle = themeColors.surfaceLighter;
                 ctx.setLineDash([]); // Solid line
                 ctx.lineWidth = 1 / globalScale;
               }
@@ -226,7 +274,7 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
               // Reset dash
               ctx.setLineDash([]);
             }}
-            linkDirectionalArrowLength={3.5}
+            linkDirectionalArrowLength={(link: any) => link.isTimeEdge ? 4 : 0}
             linkDirectionalArrowRelPos={1}
             // Enhance visual appearance
             backgroundColor="transparent"
