@@ -16,6 +16,7 @@ export interface GraphLink {
   target: number;
   label?: string; // alias
   isTimeEdge?: boolean;
+  isStructural?: boolean;
 }
 
 export interface GraphEngineSettings {
@@ -64,6 +65,12 @@ export async function buildGraph(
           if (ref.from) uniqueNeighborsForThisBlock.add(ref.from);
         }
       }
+      if (block.parent) {
+        const parentId = Number(block.parent);
+        if (!isNaN(parentId)) {
+          uniqueNeighborsForThisBlock.add(parentId);
+        }
+      }
 
       for (const neighborId of uniqueNeighborsForThisBlock) {
         if (!footprintSet.has(neighborId)) {
@@ -96,6 +103,12 @@ export async function buildGraph(
             nodePool.add(ref.from);
             degreeCount++;
           }
+        }
+      }
+      if (centerBlock.parent) {
+        const parentId = Number(centerBlock.parent);
+        if (!isNaN(parentId) && !nodePool.has(parentId)) {
+          nodePool.add(parentId);
         }
       }
     }
@@ -163,21 +176,32 @@ export async function buildGraph(
     // We only iterate through the outbound refs of blocks in our pool
     // and see if the target is ALSO in our pool.
     for (const [id, block] of blockCache.entries()) {
-      if (!block.refs) continue;
-      
-      for (const ref of block.refs) {
-        if (!ref.to) continue;
-        
-        // Check blacklist
-        if (ref.alias && excludedSet.has(ref.alias.toLowerCase())) continue;
-        
-        // Edge exists purely within our pool!
-        if (poolSet.has(ref.to) && blockCache.has(ref.to)) {
+      if (block.refs) {
+        for (const ref of block.refs) {
+          if (ref.alias && excludedSet.has(ref.alias.toLowerCase())) continue;
+          
+          // Edge exists purely within our pool!
+          if (poolSet.has(ref.to) && blockCache.has(ref.to)) {
+            links.push({
+              source: id,
+              target: ref.to,
+              label: ref.alias,
+              isTimeEdge: false,
+              isStructural: false,
+            });
+          }
+        }
+      }
+
+      // Add Structural Edges (Parent/Child)
+      if (block.parent) {
+        const parentId = Number(block.parent);
+        if (!isNaN(parentId) && poolSet.has(parentId) && blockCache.has(parentId)) {
           links.push({
             source: id,
-            target: ref.to,
-            label: ref.alias,
+            target: parentId,
             isTimeEdge: false,
+            isStructural: true,
           });
         }
       }

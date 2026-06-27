@@ -279,15 +279,21 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
                 ctx.strokeStyle = themeColors.primary;
                 ctx.setLineDash([4, 4]); // Dashed line
                 ctx.lineWidth = 1.5 / globalScale;
+              } else if (link.isStructural) {
+                ctx.strokeStyle = themeColors.surfaceLighter;
+                ctx.setLineDash([2, 4]); // Dotted line for structural hierarchy
+                ctx.lineWidth = 1 / globalScale;
+                ctx.globalAlpha = 0.5; // Make them slightly fainter than explicit refs
               } else {
                 ctx.strokeStyle = themeColors.surfaceLighter;
-                ctx.setLineDash([]); // Solid line
+                ctx.setLineDash([]); // Solid line for explicit refs
                 ctx.lineWidth = 1 / globalScale;
               }
               
               ctx.stroke();
-              // Reset dash
+              // Reset context
               ctx.setLineDash([]);
+              ctx.globalAlpha = 1.0;
             }}
             linkDirectionalArrowLength={(link: any) => link.isTimeEdge ? 4 : 0}
             linkDirectionalArrowRelPos={1}
