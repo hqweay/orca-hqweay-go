@@ -93,7 +93,6 @@
   border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-  animation: navNodeSlideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .block-nav-node:hover {

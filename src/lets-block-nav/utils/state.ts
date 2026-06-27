@@ -13,6 +13,9 @@ export interface BlockNavState {
   hideBuiltInToc: boolean;
 }
 
+export let __blockNavScrollTop = 0;
+export const setBlockNavScrollTop = (v: number) => { __blockNavScrollTop = v; };
+
 export const blockNavState = proxy<BlockNavState>({
   rootBlockId: null,
   expandedIds: {},

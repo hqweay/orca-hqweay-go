@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
 import { useSnapshot } from "valtio";
 import { t } from "@/libs/l10n";
 
@@ -9,7 +9,7 @@ import {
   getFocusedBlock,
   isEditorPanel,
 } from "@/libs/navUtils";
-import { arcTabsState, DEFAULT_SPACE } from "../utils/data";
+import { arcTabsState, DEFAULT_SPACE, __arcTabsScrollTop, setArcTabsScrollTop } from "../utils/data";
 import { pinBlock, loadPinnedBlocks } from "../utils/pin";
 import {
   getSpaces,
@@ -70,8 +70,29 @@ export const ArcSidebar: React.FC = () => {
   const [showNewSpaceInput, setShowNewSpaceInput] = useState(false);
   const [newSpaceName, setNewSpaceName] = useState("");
   
-  const containerRef = React.useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isMounting = useRef(true);
 
+  useLayoutEffect(() => {
+    const targetScroll = __arcTabsScrollTop;
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = targetScroll;
+    }
+    const timer = setTimeout(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = targetScroll;
+      }
+      isMounting.current = false;
+    }, 50);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    if (!isMounting.current) {
+      setArcTabsScrollTop(e.currentTarget.scrollTop);
+    }
+  }, []);
 
 
   const spaces = useMemo(
@@ -312,7 +333,7 @@ export const ArcSidebar: React.FC = () => {
       </div>
 
       {/* Today Tabs Section - Scrollable */}
-      <div className="arc-sidebar-today">
+      <div className="arc-sidebar-today" ref={scrollRef} onScroll={handleScroll}>
         <div className="arc-sidebar-section-title">{t("arc-tabs.recent")}</div>
         {todayTabs.map((tab) => {
           const block = state.blocks[tab.id];

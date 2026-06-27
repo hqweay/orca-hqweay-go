@@ -3,6 +3,9 @@ import { proxy } from "valtio";
 export const getLocalStorageKey = () => `orca-arc-tabs-recent-${orca.state.repo || 'default'}`;
 export const DEFAULT_SPACE = "🪐";
 
+export let __arcTabsScrollTop = 0;
+export const setArcTabsScrollTop = (v: number) => { __arcTabsScrollTop = v; };
+
 export interface RecentTab {
   id: number;
   title: string;

@@ -1,8 +1,8 @@
-import React, { useEffect, useCallback, useState, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useCallback, useState, useRef } from "react";
 import { useSnapshot } from "valtio";
 import { t } from "@/libs/l10n";
 import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
-import { blockNavState, setRootBlock } from "../utils/state";
+import { blockNavState, setRootBlock, __blockNavScrollTop, setBlockNavScrollTop } from "../utils/state";
 import { executeSnapshotExpand, executeSearch, ensureSearchTree } from "../utils/searchEngine";
 import {
   getCurrentBlockId,
@@ -419,6 +419,28 @@ export const BlockNavPanel: React.FC = () => {
   }, [state.rootBlockId]);
 
   const { isDragOver, dragHandlers } = useDragDrop({ onDrop: handleDrop });
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isMounting = useRef(true);
+
+  useLayoutEffect(() => {
+    const targetScroll = __blockNavScrollTop;
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = targetScroll;
+    }
+    const timer = setTimeout(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = targetScroll;
+      }
+      isMounting.current = false;
+    }, 50);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    if (!isMounting.current) {
+      setBlockNavScrollTop(e.currentTarget.scrollTop);
+    }
+  }, []);
 
   const focusedBlockId = getFocusedBlock(
     orcaState.panels,
@@ -608,7 +630,7 @@ export const BlockNavPanel: React.FC = () => {
         )}
       </div>
 
-      <div className="block-nav-content">
+      <div className="block-nav-content" ref={scrollRef} onScroll={handleScroll}>
         {!hasItems ? (
           <div className="block-nav-empty">
             {isDragOver ? (
