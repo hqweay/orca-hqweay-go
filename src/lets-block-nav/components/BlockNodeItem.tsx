@@ -5,7 +5,7 @@ import {
   toggleNodeExpansion,
 } from "../utils/state";
 import { getSearchCacheBlock, updateCacheAndRetrigger } from "../utils/searchEngine";
-import { findMainPanelId } from "../utils/nav";
+import { findMainPanelId } from "@/libs/navUtils";
 import { getConvertedRepr } from "../utils/blocks";
 import { findPanelById } from "../../libs/utils";
 import { BlockIcon } from "../../libs/components/BlockIcon";

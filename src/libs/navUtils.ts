@@ -53,7 +53,7 @@ export const isEditorPanel = (panel: any, panelId: string): boolean => {
 };
 
 export const getActiveBlocks = (panel: any): string[] => {
-  if (panel.locked) return [];
+  if (!panel || panel.locked) return [];
   if ('children' in panel && Array.isArray(panel.children)) {
     return panel.children.flatMap(getActiveBlocks);
   } else if (panel.view === 'block' && panel.viewArgs?.blockId) {

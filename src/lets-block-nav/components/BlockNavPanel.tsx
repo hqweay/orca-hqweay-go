@@ -15,7 +15,7 @@ import {
 import { executeEditorExpand } from "../../lets-editor-fold/logic";
 import { useDragDrop } from "../utils/useDragDrop";
 import { BlockNodeItem } from "./BlockNodeItem";
-import { findMainPanelId, isEditorPanel, getFocusedBlock } from "../utils/nav";
+import { getFocusedBlock, getActiveBlocks, findMainPanelId, isEditorPanel } from "@/libs/navUtils";
 import { BlockIcon } from "../../libs/components/BlockIcon";
 import {
   ensureBlockInState,

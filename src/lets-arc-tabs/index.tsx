@@ -9,7 +9,7 @@ import {
   removeLeftHeadbarButton,
   findPanelById,
 } from "@/libs/utils";
-import { findMainPanelId } from "./utils/nav";
+import { findMainPanelId } from "@/libs/navUtils";
 
 export let arcTabsPluginInstance: ArcTabsPlugin;
 

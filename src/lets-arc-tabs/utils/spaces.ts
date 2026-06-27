@@ -1,6 +1,6 @@
 import { arcTabsPluginInstance } from "../index";
 import { arcTabsState } from "./data";
-import { findMainPanelId } from "./nav";
+import { findMainPanelId } from "@/libs/navUtils";
 
 const getSpaceProperty = (block: any): string[] => {
   const pinTagName = arcTabsPluginInstance?.getSettings()?.pinTagName || "ArcTab";

@@ -11,7 +11,7 @@ import {
   removeLeftHeadbarButton,
   findPanelById,
 } from "@/libs/utils";
-import { findMainPanelId } from "./utils/nav";
+import { findMainPanelId } from "@/libs/navUtils";
 
 const PLUGIN_NAME = "lets-block-nav";
 export const TOC_CSS_ID = `${PLUGIN_NAME}-hide-toc`;

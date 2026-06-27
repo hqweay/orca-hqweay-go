@@ -8,7 +8,7 @@ import {
   findMainPanelId,
   getFocusedBlock,
   isEditorPanel,
-} from "../utils/nav";
+} from "@/libs/navUtils";
 import { arcTabsState, DEFAULT_SPACE } from "../utils/data";
 import { pinBlock, loadPinnedBlocks } from "../utils/pin";
 import {

@@ -1,7 +1,7 @@
 import { DataImporter } from "@/libs/DataImporter";
 import { arcTabsPluginInstance } from "../index";
 import { arcTabsState } from "./data";
-import { findMainPanelId } from "./nav";
+import { findMainPanelId } from "@/libs/navUtils";
 import { ensureBlockInState } from "../../libs/utils";
 
 const getPinTagName = () => {
