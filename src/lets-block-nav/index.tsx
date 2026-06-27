@@ -2,15 +2,10 @@ import { BasePlugin } from "@/libs/BasePlugin";
 import { t } from "@/libs/l10n";
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
 import { BlockNavPanel } from "./components/BlockNavPanel";
-import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
 import "./styles.css";
 import { blockNavState } from "./utils/state";
 import { executeSnapshotExpand, clearSearchCache } from "./utils/searchEngine";
-import {
-  createOpenObserver,
-  createCloseObserver,
-  autoDisconnect,
-} from "@/libs/sidebarObserver";
+
 
 import {
   renderLeftHeadbarButton,
@@ -30,33 +25,10 @@ export default class BlockNavPlugin extends BasePlugin {
     blockNavPluginInstance = this;
   }
 
-  // protected headbarButtonId = `${this.name}.block-nav`;
 
-  private applySidebarWidthCSS(width: number) {
-    applyCSSRule(
-      `
-        .orca-sidebar-column {
-          flex: 0 0 ${width}px !important;
-          width: ${width}px !important;
-          min-width: ${width}px !important;
-          max-width: ${width}px !important;
-        }
-        /* Disable only the horizontal resizer adjacent to the sidebar column */
-        .orca-sidebar-column > .resizer,
-        .orca-sidebar-column + .resizer,
-        *:has(+ .orca-sidebar-column) > .resizer
-        {
-          display: none !important;
-        }
-      `,
-      { id: this.name, replace: true },
-    );
-  }
 
   async load() {
     blockNavState.hideBuiltInToc = this.getSettings()?.hideBuiltInToc ?? false;
-    const initialWidth = this.getSettings()?.sidebarWidth || 250;
-    this.applySidebarWidthCSS(initialWidth);
 
     orca.panels.registerPanel("blockNav", BlockNavPanel);
 
@@ -65,10 +37,6 @@ export default class BlockNavPlugin extends BasePlugin {
       (overrideSide?: "left" | "right") => {
         const existingPanel = this.findNavPanel();
         if (existingPanel) {
-          const width = this.getSettings()?.sidebarWidth || 250;
-          const defaultSide = this.getSettings()?.sidebarPosition || "left";
-          const closeSide = overrideSide || defaultSide;
-          autoDisconnect(createCloseObserver(width, closeSide));
           orca.nav.close(existingPanel.id);
           const editorPanel = findMainPanelId(orca.state.panels, orca.state.activePanel);
           if (editorPanel) orca.nav.switchFocusTo(editorPanel);
@@ -107,48 +75,12 @@ export default class BlockNavPlugin extends BasePlugin {
           appendSide = "bottom";
         }
 
-        const countLeafPanels = (panel: any): number => {
-          if (!panel) return 0;
-          if (panel.view) return 1;
-          if (panel.children) {
-            return panel.children.reduce((acc: number, child: any) => acc + countLeafPanels(child), 0);
-          }
-          return 0;
-        };
-        const leafCount = countLeafPanels(orca.state.panels);
-        const isSingleEditor = leafCount === 1;
-        const isVertical = appendSide === "bottom" || appendSide === "top";
-        console.log(`[SIDEBAR-DEBUG] leafCount=${leafCount}, isSingleEditor=${isSingleEditor}, appendSide=${appendSide}`);
-
-        const width = this.getSettings()?.sidebarWidth || 250;
-        autoDisconnect(createOpenObserver(width, isVertical));
-
-        const t0 = performance.now();
-        const newPanelId = orca.nav.addTo(targetPanelId, appendSide, {
+        orca.nav.addTo(targetPanelId, appendSide, {
           view: "blockNav",
           viewArgs: {},
           viewState: {},
           locked: true,
         } as any);
-        console.log(`[SIDEBAR-DEBUG] addTo returned at ${performance.now().toFixed(2)}ms (+${(performance.now()-t0).toFixed(2)}ms), newPanelId=${newPanelId}`);
-
-        if (newPanelId && appendSide === side && isSingleEditor) {
-          console.log(`[SIDEBAR-DEBUG] Single-editor changeSizes: [${width}, ${window.innerWidth - width}]`);
-          orca.nav.changeSizes(
-            newPanelId,
-            side === "left"
-              ? [width, window.innerWidth - width]
-              : [window.innerWidth - width, width]
-          );
-        }
-
-        if (newPanelId && isVertical) {
-          const sidebarCol = document.querySelector<HTMLElement>(".orca-sidebar-column");
-          const totalHeight = sidebarCol?.getBoundingClientRect().height || window.innerHeight;
-          const half = Math.floor(totalHeight / 2);
-          console.log(`[SIDEBAR-DEBUG] Vertical changeSizes: [${half}, ${half}]`);
-          orca.nav.changeSizes(newPanelId, [half, half]);
-        }
       },
       t(`${this.name}.description`),
     );
@@ -204,9 +136,6 @@ export default class BlockNavPlugin extends BasePlugin {
   protected async onConfigChanged(newConfig: any) {
     await super.onConfigChanged(newConfig);
     blockNavState.hideBuiltInToc = newConfig.hideBuiltInToc ?? false;
-
-    const width = newConfig.sidebarWidth || 250;
-    this.applySidebarWidthCSS(width);
   }
 
   async unload() {
@@ -221,7 +150,6 @@ export default class BlockNavPlugin extends BasePlugin {
     orca.commands.unregisterCommand(`${this.name}.expand-all`);
 
     orca.panels.unregisterPanel("blockNav");
-    removeCSSRule(PLUGIN_NAME);
     this.logger.info(`${this.name} unloaded.`);
   }
 

@@ -1,7 +1,6 @@
 import React, { useEffect, useCallback, useState, useRef } from "react";
 import { useSnapshot } from "valtio";
 import { t } from "@/libs/l10n";
-import { useSidebarResize } from "@/libs/useSidebarResize";
 import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
 import { blockNavState, setRootBlock } from "../utils/state";
 import { executeSnapshotExpand, executeSearch, ensureSearchTree } from "../utils/searchEngine";
@@ -67,14 +66,7 @@ export const BlockNavPanel: React.FC = () => {
 
   const containerRef = useRef<HTMLDivElement>(null);
   // Debug: log initial render time
-  const _renderTime = performance.now();
-  console.log(`[SIDEBAR-DEBUG] BlockNavPanel first render at ${_renderTime.toFixed(2)}ms`);
 
-  const { isResizing, hoveringResizer, setHoveringResizer, startDrag, sidebarPosition, sidebarWidth } = useSidebarResize({
-    pluginInstance: blockNavPluginInstance,
-    containerRef,
-    wrapperClassName: "block-nav-panel-wrapper",
-  });
 
   useEffect(() => {
     if (state.hideBuiltInToc) {
@@ -446,40 +438,8 @@ export const BlockNavPanel: React.FC = () => {
       ref={containerRef}
       className={`block-nav-panel ${isDragOver ? "block-nav-panel-drag-over" : ""}`}
       {...dragHandlers}
-      style={{
-        position: "relative",
-        flex: `0 0 ${sidebarWidth}px`,
-        width: `${sidebarWidth}px`,
-        minWidth: `${sidebarWidth}px`,
-        maxWidth: `${sidebarWidth}px`,
-      }}
+      style={{ position: "relative" }}
     >
-      <div
-        onMouseDown={startDrag}
-        onMouseEnter={() => setHoveringResizer(true)}
-        onMouseLeave={() => setHoveringResizer(false)}
-        style={{
-          position: "absolute",
-          top: 0,
-          bottom: 0,
-          [sidebarPosition === "left" ? "right" : "left"]: 0,
-          width: "8px",
-          cursor: "col-resize",
-          zIndex: 9999,
-          display: "flex",
-          justifyContent: sidebarPosition === "left" ? "flex-end" : "flex-start",
-        }}
-        title="Resize Sidebar"
-      >
-        <div
-          style={{
-            width: "2px",
-            height: "100%",
-            backgroundColor: isResizing || hoveringResizer ? "var(--orca-color-primary-5, #007aff)" : "transparent",
-            transition: "background-color 0.2s",
-          }}
-        />
-      </div>
       <style dangerouslySetInnerHTML={{ __html: styles }} />
 
       <div

@@ -1,7 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useSnapshot } from "valtio";
 import { t } from "@/libs/l10n";
-import { useSidebarResize } from "@/libs/useSidebarResize";
 
 import styles from "../styles.css?inline";
 import {
@@ -73,11 +72,7 @@ export const ArcSidebar: React.FC = () => {
   
   const containerRef = React.useRef<HTMLDivElement>(null);
 
-  const { isResizing, hoveringResizer, setHoveringResizer, startDrag, sidebarPosition, sidebarWidth } = useSidebarResize({
-    pluginInstance: arcTabsPluginInstance,
-    containerRef,
-    wrapperClassName: "arc-tabs-panel-wrapper",
-  });
+
 
   const spaces = useMemo(
     () => getSpaces(),
@@ -257,39 +252,7 @@ export const ArcSidebar: React.FC = () => {
   };
 
   return (
-    <div className="arc-sidebar-container" ref={containerRef} style={{
-      position: "relative",
-      flex: `0 0 ${sidebarWidth}px`,
-      width: `${sidebarWidth}px`,
-      minWidth: `${sidebarWidth}px`,
-      maxWidth: `${sidebarWidth}px`,
-    }}>
-      <div
-        onMouseDown={startDrag}
-        onMouseEnter={() => setHoveringResizer(true)}
-        onMouseLeave={() => setHoveringResizer(false)}
-        style={{
-          position: "absolute",
-          top: 0,
-          bottom: 0,
-          [sidebarPosition === "left" ? "right" : "left"]: 0,
-          width: "8px",
-          cursor: "col-resize",
-          zIndex: 9999,
-          display: "flex",
-          justifyContent: sidebarPosition === "left" ? "flex-end" : "flex-start",
-        }}
-        title="Resize Sidebar"
-      >
-        <div
-          style={{
-            width: "2px",
-            height: "100%",
-            backgroundColor: isResizing || hoveringResizer ? "var(--orca-color-primary-5, #007aff)" : "transparent",
-            transition: "background-color 0.2s",
-          }}
-        />
-      </div>
+    <div className="arc-sidebar-container" ref={containerRef} style={{ position: "relative" }}>
       <StyleInjector />
 
       {/* Pinned Tabs Section - Fixed */}
