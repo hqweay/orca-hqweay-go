@@ -463,8 +463,8 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
             linkDirectionalArrowRelPos={1}
             // Enhance visual appearance
             backgroundColor="transparent"
-            d3AlphaDecay={0.05}
-            d3VelocityDecay={0.1}
+            d3AlphaDecay={0.08}
+            d3VelocityDecay={0.38}
           />
         )}
       </div>
