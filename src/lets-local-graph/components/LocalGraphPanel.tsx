@@ -19,11 +19,13 @@ import { getFocusedBlock } from "@/libs/navUtils";
 interface LocalGraphPanelProps {
   panel?: any;
   pluginId: string;
+  t: (key: string, args?: { [key: string]: string }) => string;
 }
 
 export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
   panel,
   pluginId,
+  t,
 }) => {
   const orcaState = useSnapshot(orca.state);
   const activePanelId = orcaState.activePanel;
@@ -190,7 +192,7 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
         }}
       >
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <span>Footprint Graph</span>
+          <span>{t("graphTitle")}</span>
           <div style={{ display: "flex", gap: "4px", position: "relative" }}>
             <span
               className="block__icon"
@@ -223,30 +225,29 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
                   fontWeight: "normal",
                 }}
               >
-                 <div style={{fontWeight: 600, marginBottom: '2px', color: 'var(--b3-theme-on-background)'}}>Nodes</div>
-                 <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}><span style={{color: themeColors.error, fontSize: "10px"}}>🔴</span> Current Block</div>
-                 <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}><span style={{color: '#10b981', fontSize: "10px"}}>🟢</span> Start Block</div>
-                 <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}><span style={{color: themeColors.primary, fontSize: "10px"}}>🔵</span> Visited Path</div>
-                 <div style={{display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px'}}><span style={{fontSize: "10px"}}>⚪</span> Unvisited Neighbor</div>
+                 <div style={{fontWeight: 600, marginBottom: '2px', color: 'var(--b3-theme-on-background)'}}>{t("nodeHeader")}</div>
+                 <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}><span style={{color: themeColors.error, fontSize: "10px"}}>🔴</span> {t("nodeCurrent")}</div>
+                 <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}><span style={{color: '#10b981', fontSize: "10px"}}>🟢</span> {t("nodeStart")}</div>
+                 <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}><span style={{color: themeColors.primary, fontSize: "10px"}}>🔵</span> {t("nodeVisited")}</div>
+                 <div style={{display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px'}}><span style={{fontSize: "10px"}}>⚪</span> {t("nodeNeighbor")}</div>
                  
-                 <div style={{fontWeight: 600, marginBottom: '2px', color: 'var(--b3-theme-on-background)'}}>Edges</div>
-                 <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}><span style={{color: themeColors.primary, fontWeight: 'bold'}}>--&gt;</span> Traversal Path</div>
-                 <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}><span>───</span> Explicit Reference</div>
-                 <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}><span style={{letterSpacing: "1px"}}>···</span> Parent Structure</div>
+                 <div style={{fontWeight: 600, marginBottom: '2px', color: 'var(--b3-theme-on-background)'}}>{t("edgeHeader")}</div>
+                 <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}><span style={{color: themeColors.primary, fontWeight: 'bold'}}>--&gt;</span> {t("edgeTraversal")}</div>
+                 <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}><span>───</span> {t("edgeReference")}</div>
+                 <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}><span style={{letterSpacing: "1px"}}>···</span> {t("edgeStructure")}</div>
               </div>
             )}
             
             <span 
               className="block__icon b3-tooltips b3-tooltips__w"
-              aria-label="Restart Session"
+              aria-label={t("restartSession")}
               onClick={() => {
                 forceResetRef.current = true;
                 clearFootprints();
                 if (!session.isRecording) toggleRecording(activeBlockId);
                 else if (activeBlockId != null) addFootprint(activeBlockId);
                 
-                // Provide visual feedback for reset
-                orca.notify("success", "Footprint Graph Reset");
+                orca.notify("success", t("resetNotify"));
               }}
               style={{ cursor: "pointer", display: "inline-flex", padding: "4px", borderRadius: "4px" }}
             >
@@ -254,7 +255,7 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
             </span>
             <span 
               className="block__icon b3-tooltips b3-tooltips__w"
-              aria-label={session.isRecording ? "Stop Recording" : "Resume Recording"}
+              aria-label={session.isRecording ? t("stopRecording") : t("resumeRecording")}
               onClick={() => toggleRecording(activeBlockId)}
               style={{ cursor: "pointer", display: "inline-flex", padding: "4px", borderRadius: "4px" }}
             >
@@ -263,7 +264,7 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
           </div>
         </div>
         <span style={{ color: "var(--b3-theme-on-surface-light)" }}>
-          {graphData.nodes.length} nodes
+          {t("nodesCount", { count: String(graphData.nodes.length) })}
         </span>
       </div>
 

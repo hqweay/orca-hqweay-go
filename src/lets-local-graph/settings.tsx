@@ -1,26 +1,25 @@
 import React from "react";
 import { SettingsItem, SettingsSection } from "@/components/SettingsItem";
-import { t } from "@/libs/l10n";
 
 interface LocalGraphSettingsProps {
   settings: any;
   updateSettings: (key: string, value: any) => void;
+  t: (key: string, args?: { [key: string]: string }) => string;
 }
 
 export const LocalGraphSettings: React.FC<LocalGraphSettingsProps> = ({
   settings,
   updateSettings,
+  t,
 }) => {
   const Input = orca.components.Input;
 
   return (
     <div>
-      <SettingsSection title={t("Local Graph Options")}>
+      <SettingsSection title={t("settings")}>
         <SettingsItem
-          label={t("Max Degree per Node")}
-          description={t(
-            "Maximum number of references to explore per node. Protects against tag blackholes.",
-          )}
+          label={t("maxDegree")}
+          description={t("maxDegreeDesc")}
         >
           <Input
             value={settings.maxDegree}
@@ -34,10 +33,8 @@ export const LocalGraphSettings: React.FC<LocalGraphSettingsProps> = ({
         </SettingsItem>
 
         <SettingsItem
-          label={t("Global Node Limit")}
-          description={t(
-            "Maximum number of total nodes in the graph to prevent lag.",
-          )}
+          label={t("maxNodes")}
+          description={t("maxNodesDesc")}
         >
           <Input
             value={settings.maxNodes}
@@ -51,10 +48,8 @@ export const LocalGraphSettings: React.FC<LocalGraphSettingsProps> = ({
         </SettingsItem>
 
         <SettingsItem
-          label={t("Excluded Tags")}
-          description={t(
-            "Comma-separated tags to treat as blackhole leaves (e.g. #Journal, #TODO).",
-          )}
+          label={t("excludedTags")}
+          description={t("excludedTagsDesc")}
         >
           <Input
             value={settings.excludedTags}
