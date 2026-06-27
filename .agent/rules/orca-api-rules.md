@@ -28,3 +28,17 @@ trigger: always_on
     *   `logic.ts`: 纯业务逻辑（数据处理、API 调用）。
     *   `settings.tsx`: 配置 UI 组件。
     *   `types.ts`: 共享类型定义。
+
+## 4. 状态管理与异步交互规范 (Valtio & React)
+*   **状态隔离原则 (Encapsulated State Hook)**:
+    禁止 UI 组件直接写入或修改 Valtio Proxy 状态。插件的所有全局或共享状态必须在 `state.ts`/`logic.ts` 中通过自定义 Hook (例如 `useFootprintSession`) 封装，UI 仅读取导出的只读 Snapshot 字段并调用封装好的 Action 命令。
+*   **Ref 缓存防闭包过期 (Mutable Ref Pattern)**:
+    在含有 `await` 后端调用的异步事件处理器（如 `handleNodeRightClick`）中，**禁止直接读取** React State 或 Valtio Snapshot 快照字段。必须在渲染期间通过 `useRef` 同步最新状态/配置，并在异步逻辑中通过 `xxxRef.current` 实时获取，以保证在 Promise 决议后状态始终最新：
+    ```typescript
+    const latestFiltersRef = useRef(session.filters);
+    latestFiltersRef.current = session.filters; // 每轮渲染同步最新值
+    ```
+*   **稳定回调缓存优化**:
+    若 Custom Hook 在每次渲染时都返回全新的对象字面量，应使用 `sessionRef` 缓存整个 Hook 实例，并确保 `useCallback` 的依赖数组中仅保留静态依赖项（如 `[t]` 或空 `[]`），从而彻底避免回调函数的频繁重建。
+*   **焦点切换缓存保护**:
+    当用户聚焦图谱或侧边栏面板时，`activePanel` 切换会导致编辑器块焦点 `getFocusedBlock` 返回 `null`。必须在组件中维护一个 `frozenBlockId` 并通过 `useEffect` 仅在 `isRecording && activeBlockId !== null` 时更新，以在焦点漂移时仍能缓存并锁定最后的活动 Block 状态。
