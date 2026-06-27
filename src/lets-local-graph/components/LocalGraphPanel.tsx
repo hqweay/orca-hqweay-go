@@ -46,6 +46,15 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
 
   const [hoverNode, setHoverNode] = useState<any>(null);
   const [showHelper, setShowHelper] = useState(false);
+  const [frozenBlockId, setFrozenBlockId] = useState<number | null>(null);
+  const forceResetRef = useRef(false);
+
+  // Freeze Graph Logic: Only track active block if we are recording
+  useEffect(() => {
+    if (session.isRecording) {
+      setFrozenBlockId(activeBlockId);
+    }
+  }, [activeBlockId, session.isRecording]);
 
   useEffect(() => {
     // Resolve CSS variables for Canvas compatibility
@@ -81,9 +90,9 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
 
   // Fetch Graph Data safely with race condition prevention
   useEffect(() => {
-    if (!activeBlockId) return;
+    if (!frozenBlockId) return;
 
-    const blockId = activeBlockId;
+    const blockId = frozenBlockId;
     const gen = ++fetchGenRef.current;
 
     // Get settings safely
@@ -118,15 +127,19 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
       if (gen === fetchGenRef.current) {
         setGraphData(prev => {
           const oldNodesMap = new Map(prev.nodes.map(n => [n.id, n]));
+          const isResetting = forceResetRef.current;
+          
           const newNodes = result.nodes.map(n => {
-            if (oldNodesMap.has(n.id)) {
+            // Anti-shake: preserve physics coords unless we are doing a hard reset
+            if (!isResetting && oldNodesMap.has(n.id)) {
               const old = oldNodesMap.get(n.id)!;
-              // Mutate the old object to preserve physics coords (x,y,vx,vy)
               Object.assign(old, n);
               return old;
             }
             return n;
           });
+          
+          if (isResetting) forceResetRef.current = false;
           return { nodes: newNodes, links: result.links };
         });
         
@@ -144,7 +157,7 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
         }
       }
     });
-  }, [activeBlockId, pluginId, session.isRecording, session.footprints.length]);
+  }, [frozenBlockId, pluginId, session.isRecording, session.footprints.length]);
 
   const handleNodeClick = useCallback((node: any) => {
     const blockId = (node as GraphNode).id;
@@ -194,15 +207,15 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
                   left: "100%",
                   top: "0",
                   marginLeft: "8px",
-                  backgroundColor: "var(--b3-theme-surface)",
+                  backgroundColor: "var(--b3-theme-background, #ffffff)",
                   border: "1px solid var(--b3-theme-surface-lighter)",
                   borderRadius: "6px",
                   padding: "10px",
                   zIndex: 1000,
                   width: "max-content",
                   fontSize: "12px",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                  color: "var(--b3-theme-on-surface)",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+                  color: "var(--b3-theme-on-background)",
                   pointerEvents: "none",
                   display: "flex",
                   flexDirection: "column",
@@ -227,6 +240,7 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
               className="block__icon b3-tooltips b3-tooltips__w"
               aria-label="Restart Session"
               onClick={() => {
+                forceResetRef.current = true;
                 clearFootprints();
                 if (!session.isRecording) toggleRecording(activeBlockId);
                 else if (activeBlockId != null) addFootprint(activeBlockId);
