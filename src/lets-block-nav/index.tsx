@@ -6,6 +6,11 @@ import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
 import "./styles.css";
 import { blockNavState } from "./utils/state";
 import { executeSnapshotExpand, clearSearchCache } from "./utils/searchEngine";
+import {
+  createOpenObserver,
+  createCloseObserver,
+  autoDisconnect,
+} from "@/libs/sidebarObserver";
 
 import {
   renderLeftHeadbarButton,
@@ -60,6 +65,10 @@ export default class BlockNavPlugin extends BasePlugin {
       (overrideSide?: "left" | "right") => {
         const existingPanel = this.findNavPanel();
         if (existingPanel) {
+          const width = this.getSettings()?.sidebarWidth || 250;
+          const defaultSide = this.getSettings()?.sidebarPosition || "left";
+          const closeSide = overrideSide || defaultSide;
+          autoDisconnect(createCloseObserver(width, closeSide));
           orca.nav.close(existingPanel.id);
           const editorPanel = findMainPanelId(orca.state.panels, orca.state.activePanel);
           if (editorPanel) orca.nav.switchFocusTo(editorPanel);
@@ -98,7 +107,6 @@ export default class BlockNavPlugin extends BasePlugin {
           appendSide = "bottom";
         }
 
-        // Count BEFORE addTo — after addTo, orca.state.panels already includes the new panel
         const countLeafPanels = (panel: any): number => {
           if (!panel) return 0;
           if (panel.view) return 1;
@@ -109,56 +117,11 @@ export default class BlockNavPlugin extends BasePlugin {
         };
         const leafCount = countLeafPanels(orca.state.panels);
         const isSingleEditor = leafCount === 1;
-        console.log(`[SIDEBAR-DEBUG] leafCount BEFORE addTo=${leafCount}, isSingleEditor=${isSingleEditor}`);
+        const isVertical = appendSide === "bottom" || appendSide === "top";
+        console.log(`[SIDEBAR-DEBUG] leafCount=${leafCount}, isSingleEditor=${isSingleEditor}, appendSide=${appendSide}`);
 
-        // For multi-editor: Orca sets `flex-basis: 33.33%` as an inline style on newly created
-        // panel columns. CSS classes can't override inline styles without !important, and even
-        // with !important the class is applied too late (after useLayoutEffect). The solution:
-        // 1. Snapshot existing locked panels BEFORE addTo.
-        // 2. Start a MutationObserver BEFORE addTo.
-        // 3. When a NEW .orca-panel.orca-locked appears, immediately set its inline flex to 250px.
-        //    MutationObserver callbacks run as microtasks, BEFORE the browser paints.
-        let observer: MutationObserver | null = null;
-        if (!isSingleEditor) {
-          const width = this.getSettings()?.sidebarWidth || 250;
-          const existingLockedPanels = new Set(
-            [...document.querySelectorAll<HTMLElement>(".orca-panel.orca-locked")]
-          );
-
-          const applyWidthToPanel = (panel: HTMLElement) => {
-            panel.style.setProperty("flex", `0 0 ${width}px`, "important");
-            panel.style.setProperty("width", `${width}px`, "important");
-            panel.style.setProperty("min-width", `${width}px`, "important");
-            panel.style.setProperty("max-width", `${width}px`, "important");
-            panel.classList.add("orca-sidebar-column");
-            console.log(`[SIDEBAR-DEBUG] MO: overrode inline style on new panel at ${performance.now().toFixed(2)}ms, new width=${panel.getBoundingClientRect().width}`);
-          };
-
-          observer = new MutationObserver((mutations) => {
-            for (const mutation of mutations) {
-              for (const node of mutation.addedNodes) {
-                if (!(node instanceof HTMLElement)) continue;
-                // Check the node itself and any .orca-panel.orca-locked descendants
-                const candidates = node.classList?.contains("orca-panel")
-                  ? [node]
-                  : [...node.querySelectorAll<HTMLElement>(".orca-panel.orca-locked")];
-                for (const panel of candidates) {
-                  if (
-                    panel.classList.contains("orca-locked") &&
-                    !existingLockedPanels.has(panel) &&
-                    !panel.classList.contains("orca-sidebar-column")
-                  ) {
-                    applyWidthToPanel(panel);
-                    observer!.disconnect();
-                    observer = null;
-                    return;
-                  }
-                }
-              }
-            }
-          });
-          observer.observe(document.body, { childList: true, subtree: true });
-        }
+        const width = this.getSettings()?.sidebarWidth || 250;
+        autoDisconnect(createOpenObserver(width, isVertical));
 
         const t0 = performance.now();
         const newPanelId = orca.nav.addTo(targetPanelId, appendSide, {
@@ -169,17 +132,22 @@ export default class BlockNavPlugin extends BasePlugin {
         } as any);
         console.log(`[SIDEBAR-DEBUG] addTo returned at ${performance.now().toFixed(2)}ms (+${(performance.now()-t0).toFixed(2)}ms), newPanelId=${newPanelId}`);
 
-        if (newPanelId && appendSide === side) {
-          if (isSingleEditor) {
-            const width = this.getSettings()?.sidebarWidth || 250;
-            console.log(`[SIDEBAR-DEBUG] Calling changeSizes: [${width}, ${window.innerWidth - width}]`);
-            orca.nav.changeSizes(
-              newPanelId,
-              side === "left"
-                ? [width, window.innerWidth - width]
-                : [window.innerWidth - width, width]
-            );
-          }
+        if (newPanelId && appendSide === side && isSingleEditor) {
+          console.log(`[SIDEBAR-DEBUG] Single-editor changeSizes: [${width}, ${window.innerWidth - width}]`);
+          orca.nav.changeSizes(
+            newPanelId,
+            side === "left"
+              ? [width, window.innerWidth - width]
+              : [window.innerWidth - width, width]
+          );
+        }
+
+        if (newPanelId && isVertical) {
+          const sidebarCol = document.querySelector<HTMLElement>(".orca-sidebar-column");
+          const totalHeight = sidebarCol?.getBoundingClientRect().height || window.innerHeight;
+          const half = Math.floor(totalHeight / 2);
+          console.log(`[SIDEBAR-DEBUG] Vertical changeSizes: [${half}, ${half}]`);
+          orca.nav.changeSizes(newPanelId, [half, half]);
         }
       },
       t(`${this.name}.description`),

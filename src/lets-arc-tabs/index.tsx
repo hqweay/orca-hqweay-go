@@ -11,6 +11,11 @@ import {
 } from "@/libs/utils";
 import { findMainPanelId } from "./utils/nav";
 import applyCSSRule from "@/libs/styleUtil.ts";
+import {
+  createOpenObserver,
+  createCloseObserver,
+  autoDisconnect,
+} from "@/libs/sidebarObserver";
 
 export let arcTabsPluginInstance: ArcTabsPlugin;
 
@@ -62,116 +67,90 @@ export default class ArcTabsPlugin extends BasePlugin {
 
         const existingPanel = findPanelWithView(orca.state.panels, "arcTabs");
         if (existingPanel) {
+          const width = this.getSettings()?.sidebarWidth || 250;
+          const defaultSide = this.getSettings()?.sidebarPosition || "left";
+          const closeSide = overrideSide || defaultSide;
+          autoDisconnect(createCloseObserver(width, closeSide));
           orca.nav.close(existingPanel.id);
           const editorPanel = findMainPanelId(orca.state.panels, orca.state.activePanel);
           if (editorPanel) orca.nav.switchFocusTo(editorPanel);
-        } else {
-          const defaultSide = this.getSettings()?.sidebarPosition || "left";
-          const side = overrideSide || defaultSide;
+          return;
+        }
 
-          const getTargetPanelId = (
-            panel: any,
-            targetSide: "left" | "right",
-          ): string => {
-            if (panel.view) return panel.id;
-            if (panel.children && panel.children.length > 0) {
-              const childIndex =
-                targetSide === "left" ? 0 : panel.children.length - 1;
-              return getTargetPanelId(panel.children[childIndex], targetSide);
-            }
-            return panel.id;
-          };
+        const defaultSide = this.getSettings()?.sidebarPosition || "left";
+        const side = overrideSide || defaultSide;
 
-          const targetPanelId = orca.state.panels
-            ? getTargetPanelId(orca.state.panels, side)
-            : orca.state.activePanel;
-          if (!targetPanelId) return;
+        const getTargetPanelId = (
+          panel: any,
+          targetSide: "left" | "right",
+        ): string => {
+          if (panel.view) return panel.id;
+          if (panel.children && panel.children.length > 0) {
+            const childIndex =
+              targetSide === "left" ? 0 : panel.children.length - 1;
+            return getTargetPanelId(panel.children[childIndex], targetSide);
+          }
+          return panel.id;
+        };
 
-          let appendSide: "left" | "right" | "bottom" | "top" = side;
-          const targetPanelNode = findPanelById(
-            orca.state.panels,
-            targetPanelId,
+        const targetPanelId = orca.state.panels
+          ? getTargetPanelId(orca.state.panels, side)
+          : orca.state.activePanel;
+        if (!targetPanelId) return;
+
+        let appendSide: "left" | "right" | "bottom" | "top" = side;
+        const targetPanelNode = findPanelById(
+          orca.state.panels,
+          targetPanelId,
+        );
+        if (
+          targetPanelNode &&
+          ["blockNav", "arcTabs"].includes(targetPanelNode.view)
+        ) {
+          appendSide = "bottom";
+        }
+
+        const countLeafPanels = (panel: any): number => {
+          if (!panel) return 0;
+          if (panel.view) return 1;
+          if (panel.children) {
+            return panel.children.reduce((acc: number, child: any) => acc + countLeafPanels(child), 0);
+          }
+          return 0;
+        };
+        const leafCount = countLeafPanels(orca.state.panels);
+        const isSingleEditor = leafCount === 1;
+        const isVertical = appendSide === "bottom" || appendSide === "top";
+        console.log(`[SIDEBAR-DEBUG] leafCount=${leafCount}, isSingleEditor=${isSingleEditor}, appendSide=${appendSide}`);
+
+        const width = this.getSettings()?.sidebarWidth || 250;
+        autoDisconnect(createOpenObserver(width, isVertical));
+
+        const t0 = performance.now();
+        const newPanelId = orca.nav.addTo(targetPanelId, appendSide, {
+          view: "arcTabs",
+          viewArgs: {},
+          viewState: {},
+          locked: true,
+        } as any);
+        console.log(`[SIDEBAR-DEBUG] addTo returned at ${performance.now().toFixed(2)}ms (+${(performance.now()-t0).toFixed(2)}ms), newPanelId=${newPanelId}`);
+
+        if (newPanelId && appendSide === side && isSingleEditor) {
+          console.log(`[SIDEBAR-DEBUG] Single-editor changeSizes: [${width}, ${window.innerWidth - width}]`);
+          orca.nav.changeSizes(
+            newPanelId,
+            side === "left"
+              ? [width, window.innerWidth - width]
+              : [window.innerWidth - width, width]
           );
-          if (
-            targetPanelNode &&
-            ["blockNav", "arcTabs"].includes(targetPanelNode.view)
-          ) {
-            appendSide = "bottom";
-          }
+        }
 
-          // Count BEFORE addTo — after addTo, orca.state.panels already includes the new panel
-          const countLeafPanels = (panel: any): number => {
-            if (!panel) return 0;
-            if (panel.view) return 1;
-            if (panel.children) {
-              return panel.children.reduce((acc: number, child: any) => acc + countLeafPanels(child), 0);
-            }
-            return 0;
-          };
-          const isSingleEditor = countLeafPanels(orca.state.panels) === 1;
-
-          // For multi-editor: Orca sets `flex-basis: 33.33%` inline on newly created panels.
-          // Start a MutationObserver BEFORE addTo to intercept the new panel the moment it's
-          // inserted and override its inline flex before the browser paints.
-          let observer: MutationObserver | null = null;
-          if (!isSingleEditor) {
-            const width = arcTabsPluginInstance?.getSettings()?.sidebarWidth || 250;
-            const existingLockedPanels = new Set(
-              [...document.querySelectorAll<HTMLElement>(".orca-panel.orca-locked")]
-            );
-
-            const applyWidthToPanel = (panel: HTMLElement) => {
-              panel.style.setProperty("flex", `0 0 ${width}px`, "important");
-              panel.style.setProperty("width", `${width}px`, "important");
-              panel.style.setProperty("min-width", `${width}px`, "important");
-              panel.style.setProperty("max-width", `${width}px`, "important");
-              panel.classList.add("orca-sidebar-column");
-              console.log(`[SIDEBAR-DEBUG] arc-tabs MO: overrode inline style at ${performance.now().toFixed(2)}ms, width=${panel.getBoundingClientRect().width}`);
-            };
-
-            observer = new MutationObserver((mutations) => {
-              for (const mutation of mutations) {
-                for (const node of mutation.addedNodes) {
-                  if (!(node instanceof HTMLElement)) continue;
-                  const candidates = node.classList?.contains("orca-panel")
-                    ? [node]
-                    : [...node.querySelectorAll<HTMLElement>(".orca-panel.orca-locked")];
-                  for (const panel of candidates) {
-                    if (
-                      panel.classList.contains("orca-locked") &&
-                      !existingLockedPanels.has(panel) &&
-                      !panel.classList.contains("orca-sidebar-column")
-                    ) {
-                      applyWidthToPanel(panel);
-                      observer!.disconnect();
-                      observer = null;
-                      return;
-                    }
-                  }
-                }
-              }
-            });
-            observer.observe(document.body, { childList: true, subtree: true });
-          }
-
-          const newPanelId = orca.nav.addTo(targetPanelId, appendSide, {
-            view: "arcTabs",
-            viewArgs: {},
-            viewState: {},
-            locked: true, // Prevent this panel from being replaced by other blocks
-          } as any);
-
-          if (newPanelId && appendSide === side) {
-            if (isSingleEditor) {
-              const width = arcTabsPluginInstance?.getSettings()?.sidebarWidth || 250;
-              orca.nav.changeSizes(
-                newPanelId,
-                side === "left"
-                  ? [width, window.innerWidth - width]
-                  : [window.innerWidth - width, width]
-              );
-            }
-          }
+        if (newPanelId && isVertical) {
+          const sidebarCol = document.querySelector<HTMLElement>(".orca-sidebar-column");
+          const totalHeight = sidebarCol?.getBoundingClientRect().height || window.innerHeight;
+          const half = Math.floor(totalHeight / 2);
+          console.log(`[SIDEBAR-DEBUG] arc-tabs vertical changeSizes: [${half}, ${half}]`);
+          orca.nav.changeSizes(newPanelId, [half, half]);
         }
       },
       t("arc-tabs.description"),
