@@ -5,7 +5,8 @@ import { DataImporter } from "@/libs/DataImporter";
 import { PropType } from "@/libs/consts";
 import React, { useState, useEffect } from "react";
 import type { DbId, QueryDescription2, Block } from "../orca.d.ts";
-import { ensureBlockInState } from "@/libs/utils.ts";
+import { ensureBlockInState } from "@/libs/utils";
+import { findMainPanelId, safeGoToBlock } from "@/libs/navUtils";
 
 export default class RandomWalkPlugin extends BasePlugin {
   protected settingsComponent = RandomWalkSettings;
@@ -193,7 +194,7 @@ export default class RandomWalkPlugin extends BasePlugin {
         if (resultIds && resultIds.length > 0) {
           const nextId = resultIds[0];
           state.page += 1;
-          orca.nav.goTo("block", { blockId: nextId });
+          safeGoToBlock(nextId);
         } else {
           // Empty result means we exhausted the pool. Reseed and restart.
           state.seed = Date.now();
@@ -215,7 +216,7 @@ export default class RandomWalkPlugin extends BasePlugin {
           if (retryResult && retryResult.length > 0) {
             const nextId = retryResult[0];
             state.page += 1;
-            orca.nav.goTo("block", { blockId: nextId });
+            safeGoToBlock(nextId);
           } else {
             orca.notify("warn", t("No items found in this query group."));
           }
@@ -248,8 +249,7 @@ export default class RandomWalkPlugin extends BasePlugin {
         state.indices.sort(() => Math.random() - 0.5);
         state.currentIndex = 0;
       }
-
-      orca.nav.goTo("block", { blockId: nextId });
+      safeGoToBlock(nextId);
     }
   }
 

@@ -106,3 +106,16 @@ export const getFocusedBlock = (panel: any, activePanelId: string | null, resolv
   
   return null;
 };
+
+/**
+ * Safely navigates to a block. 
+ * Prevents bugs where navigating from a focused sidebar replaces the entire sidebar's parent split pane.
+ * It forces focus back to the main editor panel before calling `orca.nav.goTo`.
+ */
+export const safeGoToBlock = (blockId: number) => {
+  const mainPanelId = findMainPanelId(orca.state.panels, orca.state.activePanel);
+  if (mainPanelId) {
+    orca.nav.switchFocusTo(mainPanelId);
+  }
+  orca.nav.goTo("block", { blockId });
+};

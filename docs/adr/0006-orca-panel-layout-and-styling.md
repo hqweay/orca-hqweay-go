@@ -23,6 +23,7 @@ When sidebars are vertically stacked, Orca's layout engine wraps the existing si
 ### 3. Centralize Nav Utilities
 All panel-tree traversal logic has been extracted from individual plugins into a single, shared library.
 - Use `@/libs/navUtils` for `findMainPanelId`, `isEditorPanel`, `getActiveBlocks`, and `getFocusedBlock`.
+- **CRITICAL**: Use `safeGoToBlock(blockId)` instead of `orca.nav.goTo("block", { blockId })` in global plugins or sidebars. This prevents a severe layout bug where navigating from a focused sidebar replaces the entire unlocked vertical split wrapper that contains multiple stacked sidebars.
 - Individual plugins should never write their own recursive panel tree traversal algorithms.
 
 ## Consequences
