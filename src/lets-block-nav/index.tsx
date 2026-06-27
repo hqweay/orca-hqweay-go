@@ -12,6 +12,7 @@ import {
   removeLeftHeadbarButton,
   findPanelById,
 } from "@/libs/utils";
+import { findMainPanelId } from "./utils/nav";
 
 const PLUGIN_NAME = "lets-block-nav";
 export const TOC_CSS_ID = `${PLUGIN_NAME}-hide-toc`;
@@ -60,11 +61,15 @@ export default class BlockNavPlugin extends BasePlugin {
         const existingPanel = this.findNavPanel();
         if (existingPanel) {
           orca.nav.close(existingPanel.id);
+          const editorPanel = findMainPanelId(orca.state.panels, orca.state.activePanel);
+          if (editorPanel) orca.nav.switchFocusTo(editorPanel);
           return;
         }
 
         const defaultSide = this.getSettings()?.sidebarPosition || "left";
         const side = overrideSide || defaultSide;
+
+        const SIDEBAR_VIEWS = ["blockNav", "arcTabs"];
 
         const getTargetPanelId = (
           panel: any,
@@ -88,26 +93,49 @@ export default class BlockNavPlugin extends BasePlugin {
         const targetPanelNode = findPanelById(orca.state.panels, targetPanelId);
         if (
           targetPanelNode &&
-          ["blockNav", "arcTabs"].includes(targetPanelNode.view)
+          SIDEBAR_VIEWS.includes(targetPanelNode.view)
         ) {
           appendSide = "bottom";
         }
 
+        // Count BEFORE addTo — after addTo, orca.state.panels already includes the new panel
+        const countLeafPanels = (panel: any): number => {
+          if (!panel) return 0;
+          if (panel.view) return 1;
+          if (panel.children) {
+            return panel.children.reduce((acc: number, child: any) => acc + countLeafPanels(child), 0);
+          }
+          return 0;
+        };
+        const leafCount = countLeafPanels(orca.state.panels);
+        const isSingleEditor = leafCount === 1;
+        console.log(`[SIDEBAR-DEBUG] leafCount BEFORE addTo=${leafCount}, isSingleEditor=${isSingleEditor}`);
+
+        const t0 = performance.now();
         const newPanelId = orca.nav.addTo(targetPanelId, appendSide, {
           view: "blockNav",
           viewArgs: {},
           viewState: {},
           locked: true,
         } as any);
+        console.log(`[SIDEBAR-DEBUG] addTo returned at ${performance.now().toFixed(2)}ms (+${(performance.now()-t0).toFixed(2)}ms), newPanelId=${newPanelId}`);
 
         if (newPanelId && appendSide === side) {
-          const width = this.getSettings()?.sidebarWidth || 250;
-          orca.nav.changeSizes(
-            newPanelId,
-            side === "left"
-              ? [width, window.innerWidth - width]
-              : [window.innerWidth - width, width],
-          );
+          // If there was only 1 editor before we added the sidebar,
+          // window.innerWidth is the correct total width — no nested panels to worry about.
+          // For multi-editor layouts, skip changeSizes to avoid the 10%/90% bug.
+          if (isSingleEditor) {
+            const width = this.getSettings()?.sidebarWidth || 250;
+            console.log(`[SIDEBAR-DEBUG] Calling changeSizes: [${width}, ${window.innerWidth - width}]`);
+            orca.nav.changeSizes(
+              newPanelId,
+              side === "left"
+                ? [width, window.innerWidth - width]
+                : [window.innerWidth - width, width]
+            );
+          } else {
+            console.log(`[SIDEBAR-DEBUG] Skipping changeSizes (multi-editor mode)`);
+          }
         }
       },
       t(`${this.name}.description`),

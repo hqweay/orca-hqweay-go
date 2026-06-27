@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useLayoutEffect, useState, useRef } from "react";
 
 export interface SidebarResizeOptions {
   pluginInstance: any;
@@ -12,10 +12,20 @@ const findHorizontalColumn = (startNode: HTMLElement): HTMLElement | null => {
   
   let el: HTMLElement | null = panel as HTMLElement;
   while (el && el.parentElement) {
-    if (el.parentElement.classList.contains("orca-panels-row") || el.parentElement.classList.contains("SplitPane")) {
+    const parent = el.parentElement;
+    // Stop at horizontal layout containers
+    if (parent.classList.contains("orca-panels-row")) {
       return el;
     }
-    el = el.parentElement;
+    if (parent.classList.contains("SplitPane")) {
+      // Check computed flex direction to see if it's horizontal
+      const style = window.getComputedStyle(parent);
+      if (style.flexDirection === "row") {
+        return el;
+      }
+      // If it's vertical (flex-direction: column), we keep going up!
+    }
+    el = parent;
   }
   return panel as HTMLElement;
 };
@@ -58,15 +68,29 @@ export function useSidebarResize({
   };
 
 
-  // 1. Guard the class against React re-renders
-  useEffect(() => {
+  // 1. Guard the class against React re-renders (useLayoutEffect prevents layout flash)
+  useLayoutEffect(() => {
     if (!containerRef.current) return;
+
+    const t = performance.now();
+    console.log(`[SIDEBAR-DEBUG] useLayoutEffect fired at ${t.toFixed(2)}ms since page load`);
+    
+    const containerRect = containerRef.current.getBoundingClientRect();
+    console.log(`[SIDEBAR-DEBUG] Container DOM rect on layout effect:`, JSON.stringify({ 
+      width: containerRect.width, 
+      left: containerRect.left 
+    }));
 
     const enforceClass = () => {
       if (!containerRef.current) return;
       const column = findHorizontalColumn(containerRef.current);
-      if (column && !column.classList.contains("orca-sidebar-column")) {
-        column.classList.add("orca-sidebar-column");
+      if (column) {
+        const colRect = column.getBoundingClientRect();
+        console.log(`[SIDEBAR-DEBUG] Column rect:`, JSON.stringify({ width: colRect.width, classList: column.className }));
+        if (!column.classList.contains("orca-sidebar-column")) {
+          column.classList.add("orca-sidebar-column");
+          console.log(`[SIDEBAR-DEBUG] Added orca-sidebar-column class at ${performance.now().toFixed(2)}ms`);
+        }
       }
     };
 
@@ -155,5 +179,6 @@ export function useSidebarResize({
     setHoveringResizer,
     startDrag,
     sidebarPosition: physicalSide,
+    sidebarWidth: pluginInstance?.getSettings()?.sidebarWidth || 250,
   };
 }

@@ -73,7 +73,7 @@ export const ArcSidebar: React.FC = () => {
   
   const containerRef = React.useRef<HTMLDivElement>(null);
 
-  const { isResizing, hoveringResizer, setHoveringResizer, startDrag, sidebarPosition } = useSidebarResize({
+  const { isResizing, hoveringResizer, setHoveringResizer, startDrag, sidebarPosition, sidebarWidth } = useSidebarResize({
     pluginInstance: arcTabsPluginInstance,
     containerRef,
     wrapperClassName: "arc-tabs-panel-wrapper",
@@ -257,7 +257,13 @@ export const ArcSidebar: React.FC = () => {
   };
 
   return (
-    <div className="arc-sidebar-container" ref={containerRef} style={{ position: "relative" }}>
+    <div className="arc-sidebar-container" ref={containerRef} style={{
+      position: "relative",
+      flex: `0 0 ${sidebarWidth}px`,
+      width: `${sidebarWidth}px`,
+      minWidth: `${sidebarWidth}px`,
+      maxWidth: `${sidebarWidth}px`,
+    }}>
       <div
         onMouseDown={startDrag}
         onMouseEnter={() => setHoveringResizer(true)}

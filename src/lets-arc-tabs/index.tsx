@@ -9,6 +9,7 @@ import {
   removeLeftHeadbarButton,
   findPanelById,
 } from "@/libs/utils";
+import { findMainPanelId } from "./utils/nav";
 import applyCSSRule from "@/libs/styleUtil.ts";
 
 export let arcTabsPluginInstance: ArcTabsPlugin;
@@ -62,6 +63,8 @@ export default class ArcTabsPlugin extends BasePlugin {
         const existingPanel = findPanelWithView(orca.state.panels, "arcTabs");
         if (existingPanel) {
           orca.nav.close(existingPanel.id);
+          const editorPanel = findMainPanelId(orca.state.panels, orca.state.activePanel);
+          if (editorPanel) orca.nav.switchFocusTo(editorPanel);
         } else {
           const defaultSide = this.getSettings()?.sidebarPosition || "left";
           const side = overrideSide || defaultSide;
@@ -96,6 +99,17 @@ export default class ArcTabsPlugin extends BasePlugin {
             appendSide = "bottom";
           }
 
+          // Count BEFORE addTo — after addTo, orca.state.panels already includes the new panel
+          const countLeafPanels = (panel: any): number => {
+            if (!panel) return 0;
+            if (panel.view) return 1;
+            if (panel.children) {
+              return panel.children.reduce((acc: number, child: any) => acc + countLeafPanels(child), 0);
+            }
+            return 0;
+          };
+          const isSingleEditor = countLeafPanels(orca.state.panels) === 1;
+
           const newPanelId = orca.nav.addTo(targetPanelId, appendSide, {
             view: "arcTabs",
             viewArgs: {},
@@ -104,16 +118,18 @@ export default class ArcTabsPlugin extends BasePlugin {
           } as any);
 
           if (newPanelId && appendSide === side) {
-            const width =
-              arcTabsPluginInstance?.getSettings()?.sidebarWidth || 250;
-            // Synchronously update layout state to avoid initial flash
-            // from default equal-split calculation
-            orca.nav.changeSizes(
-              newPanelId,
-              side === "left"
-                ? [width, window.innerWidth - width]
-                : [window.innerWidth - width, width],
-            );
+            // If there was only 1 editor before we added the sidebar,
+            // window.innerWidth is the correct total width — no nested panels to worry about.
+            // For multi-editor layouts, skip changeSizes to avoid the 10%/90% bug.
+            if (isSingleEditor) {
+              const width = arcTabsPluginInstance?.getSettings()?.sidebarWidth || 250;
+              orca.nav.changeSizes(
+                newPanelId,
+                side === "left"
+                  ? [width, window.innerWidth - width]
+                  : [window.innerWidth - width, width]
+              );
+            }
           }
         }
       },

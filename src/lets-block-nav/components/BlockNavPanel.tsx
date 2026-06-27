@@ -66,8 +66,11 @@ export const BlockNavPanel: React.FC = () => {
   const orcaState = useSnapshot(orca.state);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  // Debug: log initial render time
+  const _renderTime = performance.now();
+  console.log(`[SIDEBAR-DEBUG] BlockNavPanel first render at ${_renderTime.toFixed(2)}ms`);
 
-  const { isResizing, hoveringResizer, setHoveringResizer, startDrag, sidebarPosition } = useSidebarResize({
+  const { isResizing, hoveringResizer, setHoveringResizer, startDrag, sidebarPosition, sidebarWidth } = useSidebarResize({
     pluginInstance: blockNavPluginInstance,
     containerRef,
     wrapperClassName: "block-nav-panel-wrapper",
@@ -443,7 +446,13 @@ export const BlockNavPanel: React.FC = () => {
       ref={containerRef}
       className={`block-nav-panel ${isDragOver ? "block-nav-panel-drag-over" : ""}`}
       {...dragHandlers}
-      style={{ position: "relative" }}
+      style={{
+        position: "relative",
+        flex: `0 0 ${sidebarWidth}px`,
+        width: `${sidebarWidth}px`,
+        minWidth: `${sidebarWidth}px`,
+        maxWidth: `${sidebarWidth}px`,
+      }}
     >
       <div
         onMouseDown={startDrag}
