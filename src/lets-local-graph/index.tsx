@@ -17,8 +17,8 @@ export default class LocalGraphPlugin extends BasePlugin {
     localGraphPluginInstance = this;
     this.headbarButtonId = "localGraph-headbar-btn";
   }
-
   public renderHeadbarButton(): React.ReactNode {
+    const Button = orca.components.Button;
     const onClick = () => {
       const activePanelId = orca.state.activePanel;
       if (activePanelId) {
@@ -33,13 +33,13 @@ export default class LocalGraphPlugin extends BasePlugin {
       }
     };
     return (
-      <div
-        className="orca-headbar-button"
+      <Button
+        variant="plain"
         title="Local Graph"
         onClick={onClick}
       >
-        <i className="ti ti-network" />
-      </div>
+        <i className="ti ti-network" style={{ fontSize: "16px" }} />
+      </Button>
     );
   }
 

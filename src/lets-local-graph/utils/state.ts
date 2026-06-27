@@ -1,7 +1,7 @@
 import { proxy } from "valtio";
 
 export const sessionState = proxy({
-  isRecording: false,
+  isRecording: true, // Auto-record by default
   footprints: [] as number[],
   timeEdges: [] as { source: number; target: number }[],
 });

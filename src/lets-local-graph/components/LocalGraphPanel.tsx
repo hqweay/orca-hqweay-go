@@ -8,7 +8,12 @@ import {
   GraphEngineSettings,
 } from "../GraphEngine";
 import { localGraphPluginInstance } from "../index";
-import { sessionState, toggleRecording, clearFootprints, addFootprint } from "../utils/state";
+import {
+  sessionState,
+  toggleRecording,
+  addFootprint,
+  clearFootprints,
+} from "../utils/state";
 import { getFocusedBlock } from "@/libs/navUtils";
 
 interface LocalGraphPanelProps {
@@ -40,6 +45,7 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
   });
 
   const [hoverNode, setHoverNode] = useState<any>(null);
+  const [showHelper, setShowHelper] = useState(false);
 
   useEffect(() => {
     // Resolve CSS variables for Canvas compatibility
@@ -172,34 +178,75 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
       >
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           <span>Footprint Graph</span>
-          <button 
-            onClick={() => toggleRecording(activeBlockId)}
-            style={{
-              background: session.isRecording ? "var(--b3-theme-error)" : "var(--b3-theme-surface)",
-              color: session.isRecording ? "#fff" : "var(--b3-theme-on-surface)",
-              border: "none",
-              borderRadius: "4px",
-              padding: "2px 6px",
-              cursor: "pointer",
-              fontSize: "10px",
-            }}
-          >
-            {session.isRecording ? "■ Stop" : "▶ Start"}
-          </button>
-          <button 
-            onClick={clearFootprints}
-            style={{
-              background: "transparent",
-              color: "var(--b3-theme-on-surface)",
-              border: "1px solid var(--b3-theme-surface-lighter)",
-              borderRadius: "4px",
-              padding: "2px 6px",
-              cursor: "pointer",
-              fontSize: "10px",
-            }}
-          >
-            Reset
-          </button>
+          <div style={{ display: "flex", gap: "4px", position: "relative" }}>
+            <span
+              className="block__icon"
+              onMouseEnter={() => setShowHelper(true)}
+              onMouseLeave={() => setShowHelper(false)}
+              style={{ cursor: "help", display: "inline-flex", padding: "4px", borderRadius: "4px" }}
+            >
+              <i className="ti ti-help" style={{ fontSize: "14px" }} />
+            </span>
+            {showHelper && (
+              <div
+                style={{
+                  position: "absolute",
+                  left: "100%",
+                  top: "0",
+                  marginLeft: "8px",
+                  backgroundColor: "var(--b3-theme-surface)",
+                  border: "1px solid var(--b3-theme-surface-lighter)",
+                  borderRadius: "6px",
+                  padding: "10px",
+                  zIndex: 1000,
+                  width: "max-content",
+                  fontSize: "12px",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                  color: "var(--b3-theme-on-surface)",
+                  pointerEvents: "none",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                  fontWeight: "normal",
+                }}
+              >
+                 <div style={{fontWeight: 600, marginBottom: '2px', color: 'var(--b3-theme-on-background)'}}>Nodes</div>
+                 <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}><span style={{color: themeColors.error, fontSize: "10px"}}>🔴</span> Current Block</div>
+                 <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}><span style={{color: '#10b981', fontSize: "10px"}}>🟢</span> Start Block</div>
+                 <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}><span style={{color: themeColors.primary, fontSize: "10px"}}>🔵</span> Visited Path</div>
+                 <div style={{display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px'}}><span style={{fontSize: "10px"}}>⚪</span> Unvisited Neighbor</div>
+                 
+                 <div style={{fontWeight: 600, marginBottom: '2px', color: 'var(--b3-theme-on-background)'}}>Edges</div>
+                 <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}><span style={{color: themeColors.primary, fontWeight: 'bold'}}>--&gt;</span> Traversal Path</div>
+                 <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}><span>───</span> Explicit Reference</div>
+                 <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}><span style={{letterSpacing: "1px"}}>···</span> Parent Structure</div>
+              </div>
+            )}
+            
+            <span 
+              className="block__icon b3-tooltips b3-tooltips__w"
+              aria-label="Restart Session"
+              onClick={() => {
+                clearFootprints();
+                if (!session.isRecording) toggleRecording(activeBlockId);
+                else if (activeBlockId != null) addFootprint(activeBlockId);
+                
+                // Provide visual feedback for reset
+                orca.notify("success", "Footprint Graph Reset");
+              }}
+              style={{ cursor: "pointer", display: "inline-flex", padding: "4px", borderRadius: "4px" }}
+            >
+              <i className="ti ti-refresh" />
+            </span>
+            <span 
+              className="block__icon b3-tooltips b3-tooltips__w"
+              aria-label={session.isRecording ? "Stop Recording" : "Resume Recording"}
+              onClick={() => toggleRecording(activeBlockId)}
+              style={{ cursor: "pointer", display: "inline-flex", padding: "4px", borderRadius: "4px" }}
+            >
+              <i className={`ti ${session.isRecording ? "ti-player-pause" : "ti-player-play"}`} style={{ color: session.isRecording ? "var(--b3-theme-error)" : "inherit" }} />
+            </span>
+          </div>
         </div>
         <span style={{ color: "var(--b3-theme-on-surface-light)" }}>
           {graphData.nodes.length} nodes
