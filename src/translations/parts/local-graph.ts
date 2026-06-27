@@ -35,6 +35,7 @@ export default {
   "local-graph.expandedNotify": "已展开关联节点：${label}",
   "local-graph.collapsedNotify": "已收起关联节点：${label}",
   "local-graph.startPlayback": "回放轨迹",
+  "local-graph.stopPlayback": "停止回放",
   "local-graph.playbackProgress": "回放中：${current}/${total}",
   "local-graph.playbackFinished": "回放结束，已恢复完整视图",
   "local-graph.noHistory": "当前暂无轨迹，无法播放",
