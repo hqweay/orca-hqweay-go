@@ -1,9 +1,24 @@
-import React, { useEffect, useLayoutEffect, useCallback, useState, useRef } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  useState,
+  useRef,
+} from "react";
 import { useSnapshot } from "valtio";
 import { t } from "@/libs/l10n";
 import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
-import { blockNavState, setRootBlock, __blockNavScrollTop, setBlockNavScrollTop } from "../utils/state";
-import { executeSnapshotExpand, executeSearch, ensureSearchTree } from "../utils/searchEngine";
+import {
+  blockNavState,
+  setRootBlock,
+  __blockNavScrollTop,
+  setBlockNavScrollTop,
+} from "../utils/state";
+import {
+  executeSnapshotExpand,
+  executeSearch,
+  ensureSearchTree,
+} from "../utils/searchEngine";
 import {
   getCurrentBlockId,
   getChildBlocks,
@@ -15,13 +30,17 @@ import {
 import { executeEditorExpand } from "../../lets-editor-fold/logic";
 import { useDragDrop } from "../utils/useDragDrop";
 import { BlockNodeItem } from "./BlockNodeItem";
-import { getFocusedBlock, getActiveBlocks, findMainPanelId, isEditorPanel } from "@/libs/navUtils";
+import {
+  getFocusedBlock,
+  getActiveBlocks,
+  findMainPanelId,
+  isEditorPanel,
+} from "@/libs/navUtils";
 import { BlockIcon } from "../../libs/components/BlockIcon";
 import {
-  ensureBlockInState,
-  getBlockTitle as getBlockTitleUtil,
+  ensureInbox,
   findPanelById,
-  getRepr,
+  ensureBlockInState,
 } from "../../libs/utils";
 import { blockNavPluginInstance, TOC_CSS_ID } from "../index";
 import { parseSearchQuery, matchFilters } from "../utils/searchParser";
@@ -60,13 +79,21 @@ const CompositionSafeInput: React.FC<any> = (props) => {
   );
 };
 
-export const BlockNavPanel: React.FC = () => {
+export const BlockNavPanel: React.FC<{ panel?: any }> = ({ panel }) => {
   const state = useSnapshot(blockNavState);
   const orcaState = useSnapshot(orca.state);
 
   const containerRef = useRef<HTMLDivElement>(null);
   // Debug: log initial render time
 
+  useEffect(() => {
+    if (panel && panel.id && !panel.locked) {
+      const mutablePanel = findPanelById(orca.state.panels, panel.id);
+      if (mutablePanel && !mutablePanel.locked) {
+        mutablePanel.locked = true;
+      }
+    }
+  }, [panel]);
 
   useEffect(() => {
     if (state.hideBuiltInToc) {
@@ -412,11 +439,14 @@ export const BlockNavPanel: React.FC = () => {
     [executeNavigation],
   );
 
-  const handleSearch = useCallback(async (text: string) => {
-    if (state.rootBlockId) {
-      await executeSearch(text, state.rootBlockId);
-    }
-  }, [state.rootBlockId]);
+  const handleSearch = useCallback(
+    async (text: string) => {
+      if (state.rootBlockId) {
+        await executeSearch(text, state.rootBlockId);
+      }
+    },
+    [state.rootBlockId],
+  );
 
   const { isDragOver, dragHandlers } = useDragDrop({ onDrop: handleDrop });
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -564,16 +594,16 @@ export const BlockNavPanel: React.FC = () => {
                   }}
                   onClick={async (e) => {
                     e.stopPropagation();
-                    
+
                     if (e.altKey || e.shiftKey) {
                       executeSnapshotExpand(level);
-                      
+
                       if (state.rootBlockId) {
                         await ensureEditorFocus(state.rootBlockId);
                         try {
                           await executeEditorExpand(
                             level === "All" ? "all" : level,
-                            state.rootBlockId!
+                            state.rootBlockId!,
                           );
                         } catch (err) {
                           console.error("[BlockNav] editor expand failed", err);
@@ -581,7 +611,7 @@ export const BlockNavPanel: React.FC = () => {
                       }
                       return;
                     }
-                    
+
                     executeSnapshotExpand(level);
                   }}
                   onContextMenu={async (e) => {
@@ -600,7 +630,7 @@ export const BlockNavPanel: React.FC = () => {
                       try {
                         await executeEditorExpand(
                           level === "All" ? "all" : level,
-                          state.rootBlockId!
+                          state.rootBlockId!,
                         );
                       } catch (err) {
                         console.error("[BlockNav] editor expand failed", err);
@@ -630,7 +660,11 @@ export const BlockNavPanel: React.FC = () => {
         )}
       </div>
 
-      <div className="block-nav-content" ref={scrollRef} onScroll={handleScroll}>
+      <div
+        className="block-nav-content"
+        ref={scrollRef}
+        onScroll={handleScroll}
+      >
         {!hasItems ? (
           <div className="block-nav-empty">
             {isDragOver ? (
@@ -703,7 +737,10 @@ const FilterInput: React.FC<{
   };
 
   return (
-    <div className="block-nav-search-container" style={{ position: "relative", width: "100%" }}>
+    <div
+      className="block-nav-search-container"
+      style={{ position: "relative", width: "100%" }}
+    >
       {/* Search Input */}
       <div style={{ width: "100%" }}>
         <CompositionSafeInput

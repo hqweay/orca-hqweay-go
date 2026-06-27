@@ -9,6 +9,7 @@ import {
   getFocusedBlock,
   isEditorPanel,
 } from "@/libs/navUtils";
+import { findPanelById } from "@/libs/utils";
 import { arcTabsState, DEFAULT_SPACE, __arcTabsScrollTop, setArcTabsScrollTop } from "../utils/data";
 import { pinBlock, loadPinnedBlocks } from "../utils/pin";
 import {
@@ -62,7 +63,7 @@ const StyleInjector = () => (
   <style dangerouslySetInnerHTML={{ __html: styles }} />
 );
 
-export const ArcSidebar: React.FC = () => {
+export const ArcSidebar: React.FC<{ panel?: any }> = ({ panel }) => {
   const state = useSnapshot(orca.state);
   const localArcTabsState = useSnapshot(arcTabsState);
 
@@ -73,6 +74,16 @@ export const ArcSidebar: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const isMounting = useRef(true);
+
+  useEffect(() => {
+    if (panel && panel.id && !panel.locked) {
+      const mutablePanel = findPanelById(orca.state.panels, panel.id);
+      if (mutablePanel && !mutablePanel.locked) {
+        mutablePanel.locked = true;
+        console.log("[ArcSidebar] Restored locked state for panel:", panel.id);
+      }
+    }
+  }, [panel]);
 
   useLayoutEffect(() => {
     const targetScroll = __arcTabsScrollTop;
