@@ -31,4 +31,7 @@ export default {
   "local-graph.filterReferences": "显式引用",
   "local-graph.dragToEditor": "拖拽到编辑器插入引用",
   "local-graph.nodeExpanded": "手动展开",
+  "local-graph.noNewNeighbors": "该节点没有可扩展的新关联节点：${label}",
+  "local-graph.expandedNotify": "已展开关联节点：${label}",
+  "local-graph.collapsedNotify": "已收起关联节点：${label}",
 }

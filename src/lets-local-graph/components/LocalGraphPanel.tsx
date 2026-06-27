@@ -15,6 +15,7 @@ import {
   clearFootprints,
 } from "../utils/state";
 import { getFocusedBlock } from "@/libs/navUtils";
+import type { Block } from "../../orca";
 
 interface LocalGraphPanelProps {
   panel?: any;
@@ -46,6 +47,9 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
     nodes: GraphNode[];
     links: GraphLink[];
   }>({ nodes: [], links: [] });
+
+  const latestNodesRef = useRef(graphData.nodes);
+  latestNodesRef.current = graphData.nodes;
 
   const [themeColors, setThemeColors] = useState({
     primary: "#3b82f6",
@@ -193,15 +197,63 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
     orca.nav.goTo("block", { blockId });
   }, []);
 
-  const handleNodeRightClick = useCallback((node: any) => {
+  const handleNodeRightClick = useCallback(async (node: any) => {
     const blockId = (node as GraphNode).id;
-    if (!sessionState.expandedNodes.includes(blockId)) {
-      sessionState.expandedNodes.push(blockId);
-      orca.notify("success", `Expanded: ${node.label}`);
-    } else {
+    if (sessionState.expandedNodes.includes(blockId)) {
       sessionState.expandedNodes = sessionState.expandedNodes.filter(id => id !== blockId);
+      orca.notify("info", t("collapsedNotify", { label: node.label }));
+      return;
     }
-  }, []);
+
+    const block = await orca.invokeBackend("get-block", blockId) as Block;
+    if (!block) return;
+
+    const neighborIds = new Set<number>();
+    const currentSettings = localGraphPluginInstance?.getSettings();
+    const excludedTags = currentSettings?.excludedTags ? currentSettings.excludedTags.split(",") : ["#Journal", "#TODO"];
+    const excludedSet = new Set(excludedTags.map((t: string) => t.trim().toLowerCase()));
+
+    // Read directly from mutable sessionState instead of snapshot closure to avoid stale state after await
+    const shouldIncludeRef = (ref: any) => {
+      if (ref.alias && excludedSet.has(ref.alias.toLowerCase())) return false;
+      if (!sessionState.filters.showTags && ref.type === 2) return false;
+      if (!sessionState.filters.showReferences && ref.type !== 2) return false;
+      return true;
+    };
+
+    if (block.refs) {
+      for (const ref of block.refs) {
+        if (shouldIncludeRef(ref) && ref.to) neighborIds.add(ref.to);
+      }
+    }
+    if (block.backRefs) {
+      for (const ref of block.backRefs) {
+        if (shouldIncludeRef(ref) && ref.from) neighborIds.add(ref.from);
+      }
+    }
+    if (sessionState.filters.showStructure && block.parent) {
+      const parentId = Number(block.parent);
+      if (!isNaN(parentId)) neighborIds.add(parentId);
+    }
+
+    // Read from latest nodes ref to guarantee latest state after await
+    const currentIds = new Set(latestNodesRef.current.map(n => n.id));
+    let hasNewNeighbors = false;
+    for (const id of neighborIds) {
+      if (!currentIds.has(id)) {
+        hasNewNeighbors = true;
+        break;
+      }
+    }
+
+    if (!hasNewNeighbors) {
+      orca.notify("info", t("noNewNeighbors", { label: node.label }));
+      return;
+    }
+
+    sessionState.expandedNodes.push(blockId);
+    orca.notify("success", t("expandedNotify", { label: node.label }));
+  }, [t]);
 
   const ContextMenu = orca.components.ContextMenu;
   const Menu = orca.components.Menu;
