@@ -836,9 +836,12 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
               ctx.globalAlpha = 1.0;
             }}
             linkDirectionalArrowLength={(link: any) =>
-              link.isTimeEdge ? 4 : 0
+              link.isTimeEdge ? 10 : 0
             }
             linkDirectionalArrowRelPos={1}
+            linkColor={(link: any) =>
+              link.isTimeEdge ? themeColors.primary : themeColors.surfaceLighter
+            }
             // Enhance visual appearance
             backgroundColor="transparent"
             d3AlphaDecay={0.08}
