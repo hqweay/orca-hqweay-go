@@ -11,6 +11,10 @@ export interface GraphNode {
   isStartNode?: boolean;
   isFootprint?: boolean;
   isExpanded?: boolean; // Highlight manually expanded nodes
+  x?: number;
+  y?: number;
+  fx?: number;
+  fy?: number;
 }
 
 export interface GraphLink {

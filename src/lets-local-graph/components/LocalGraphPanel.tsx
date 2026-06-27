@@ -55,6 +55,15 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
   const sessionRef = useRef(session);
   sessionRef.current = session;
 
+  const [playbackIndex, setPlaybackIndex] = useState<number | null>(null);
+  
+  const playbackIndexRef = useRef(playbackIndex);
+  playbackIndexRef.current = playbackIndex;
+
+  const wasRecordingBeforePlaybackRef = useRef(session.isRecording);
+  const targetCenterNodeIdRef = useRef<number | null>(null);
+  const isTrackingSuspendedRef = useRef(false);
+
   const [themeColors, setThemeColors] = useState({
     primary: "#3b82f6",
     error: "#ef4444",
@@ -66,6 +75,47 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
   const [showHelper, setShowHelper] = useState(false);
   const [frozenBlockId, setFrozenBlockId] = useState<number | null>(null);
   const forceResetRef = useRef(false);
+
+  // Viewport tracking logic for playback centering
+  const handleEngineTick = useCallback(() => {
+    if (playbackIndexRef.current === null || isTrackingSuspendedRef.current) return;
+    const targetId = targetCenterNodeIdRef.current;
+    if (targetId === null) return;
+
+    const targetNode = latestNodesRef.current.find((n: any) => n.id === targetId);
+    if (targetNode && targetNode.x !== undefined && targetNode.y !== undefined) {
+      fgRef.current?.centerAt(targetNode.x, targetNode.y, 400);
+      targetCenterNodeIdRef.current = null;
+    }
+  }, []);
+
+  // Playback timer loop
+  useEffect(() => {
+    if (playbackIndex === null) return;
+
+    const timer = setInterval(() => {
+      setPlaybackIndex((prev) => {
+        if (prev === null) return null;
+        if (prev >= sessionRef.current.footprints.length - 1) {
+          clearInterval(timer);
+          orca.notify("success", t("playbackFinished"));
+          if (wasRecordingBeforePlaybackRef.current && !sessionRef.current.isRecording) {
+            sessionRef.current.toggleRecording(frozenBlockId);
+          }
+          return null;
+        }
+
+        const nextIndex = prev + 1;
+        const nextNodeId = sessionRef.current.footprints[nextIndex];
+        if (nextNodeId) {
+          targetCenterNodeIdRef.current = nextNodeId;
+        }
+        return nextIndex;
+      });
+    }, 900);
+
+    return () => clearInterval(timer);
+  }, [playbackIndex, frozenBlockId, t]);
 
   // Freeze Graph Logic: Only track active block if we are recording
   useEffect(() => {
@@ -171,22 +221,36 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
     }
   }, [frozenBlockId, session.isRecording]);
 
-  // 2. Pure React Effect to rebuild the graph whenever primitive dependencies change
+  // 2. Pure React Effect to rebuild the graph whenever primitive dependencies change or during playback
   useEffect(() => {
-    if (!frozenBlockId) return;
-    
-    const footprints = Array.from(session.footprints);
-    const timeEdges = Array.from(session.timeEdges);
-    const expandedNodes = Array.from(session.expandedNodes);
+    const targetBlockId = playbackIndex !== null && session.footprints.length > 0
+      ? session.footprints[Math.min(playbackIndex, session.footprints.length - 1)]
+      : frozenBlockId;
+
+    if (!targetBlockId) return;
+
+    const playbackActive = playbackIndex !== null;
+    const footprints = playbackActive
+      ? Array.from(session.footprints).slice(0, playbackIndex + 1)
+      : Array.from(session.footprints);
+
+    const footprintSet = new Set(footprints);
+    const timeEdges = Array.from(session.timeEdges).filter(
+      (edge) => footprintSet.has(edge.source) && footprintSet.has(edge.target)
+    );
+
+    const expandedNodes = playbackActive ? [] : Array.from(session.expandedNodes);
+
     const filters = {
       showTags,
       showStructure,
       showReferences,
     };
 
-    doRebuild(frozenBlockId, footprints, timeEdges, expandedNodes, filters);
+    doRebuild(targetBlockId, footprints, timeEdges, expandedNodes, filters);
   }, [
     frozenBlockId,
+    playbackIndex,
     footprintsLength,
     timeEdgesLength,
     expandedNodesLength,
@@ -289,7 +353,7 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
         }}
       >
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <span>{t("graphTitle")}</span>
+          <span>{playbackIndex !== null ? t("playbackProgress", { current: String(playbackIndex + 1), total: String(session.footprints.length) }) : t("graphTitle")}</span>
           <div style={{ display: "flex", gap: "4px", position: "relative" }}>
             <ContextMenu
               placement="vertical"
@@ -394,6 +458,34 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
             </span>
             <span 
               className="block__icon b3-tooltips b3-tooltips__w"
+              aria-label={playbackIndex !== null ? t("playbackFinished") : t("startPlayback")}
+              onClick={() => {
+                if (playbackIndex !== null) {
+                  setPlaybackIndex(null);
+                  if (wasRecordingBeforePlaybackRef.current && !session.isRecording) {
+                    session.toggleRecording(activeBlockId);
+                  }
+                  orca.notify("info", t("playbackFinished"));
+                } else {
+                  if (session.footprints.length === 0) {
+                    orca.notify("info", t("noHistory"));
+                    return;
+                  }
+                  wasRecordingBeforePlaybackRef.current = session.isRecording;
+                  if (session.isRecording) {
+                    session.toggleRecording(activeBlockId);
+                  }
+                  setPlaybackIndex(0);
+                  targetCenterNodeIdRef.current = session.footprints[0];
+                  isTrackingSuspendedRef.current = false;
+                }
+              }}
+              style={{ cursor: "pointer", display: "inline-flex", padding: "4px", borderRadius: "4px" }}
+            >
+              <i className={`ti ${playbackIndex !== null ? "ti-player-stop" : "ti-slideshow"}`} style={{ color: playbackIndex !== null ? "var(--b3-theme-primary)" : "inherit" }} />
+            </span>
+            <span 
+              className="block__icon b3-tooltips b3-tooltips__w"
               aria-label={session.isRecording ? t("stopRecording") : t("resumeRecording")}
               onClick={() => session.toggleRecording(activeBlockId)}
               style={{ cursor: "pointer", display: "inline-flex", padding: "4px", borderRadius: "4px" }}
@@ -422,6 +514,17 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
             onNodeDragEnd={(node) => {
               node.fx = node.x;
               node.fy = node.y;
+            }}
+            onEngineTick={handleEngineTick}
+            onZoom={() => {
+              if (playbackIndex !== null) {
+                isTrackingSuspendedRef.current = true;
+              }
+            }}
+            onNodeDrag={() => {
+              if (playbackIndex !== null) {
+                isTrackingSuspendedRef.current = true;
+              }
             }}
             nodeCanvasObject={(node: any, ctx, globalScale) => {
               const nodeR = Math.sqrt(node.val || 1) * 3.5;
