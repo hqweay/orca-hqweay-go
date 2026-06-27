@@ -41,6 +41,7 @@
     "markmap-common": "^0.18.9",
     "markmap-view": "^0.18.12",
     "pinyin-pro": "^3.28.0",
+    "react-force-graph-2d": "^1.29.1",
     "ts-fsrs": "^5.2.3",
     "vite-plugin-zip-pack": "^1.2.4"
   }
