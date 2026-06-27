@@ -158,7 +158,7 @@ export async function buildGraph(
       }
     }
 
-    // 3. Construct Graph Nodes
+    // 6. Construct Graph Nodes
     const historySet = new Set(footprints);
 
     for (const [id, block] of blockCache.entries()) {
@@ -187,7 +187,7 @@ export async function buildGraph(
       });
     }
 
-    // 4. Construct Edges (Intersection check)
+    // 7. Construct Edges (Intersection check)
     // We only iterate through the outbound refs of blocks in our pool
     // and see if the target is ALSO in our pool.
     for (const [id, block] of blockCache.entries()) {
@@ -222,7 +222,7 @@ export async function buildGraph(
       }
     }
 
-    // 5. Append Time Edges
+    // 8. Append Time Edges
     for (const edge of timeEdges) {
       if (poolSet.has(edge.source) && poolSet.has(edge.target)) {
         links.push({
