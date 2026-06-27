@@ -1,4 +1,4 @@
-import { proxy } from "valtio";
+import { proxy, useSnapshot } from "valtio";
 
 export const sessionState = proxy({
   isRecording: true, // Auto-record by default
@@ -47,3 +47,33 @@ export const addFootprint = (blockId: number) => {
     }
   }
 };
+
+export function useFootprintSession() {
+  const snap = useSnapshot(sessionState);
+
+  const toggleFilter = (type: "showTags" | "showStructure" | "showReferences") => {
+    sessionState.filters[type] = !sessionState.filters[type];
+  };
+
+  const toggleNodeExpanded = (blockId: number) => {
+    if (sessionState.expandedNodes.includes(blockId)) {
+      sessionState.expandedNodes = sessionState.expandedNodes.filter((id) => id !== blockId);
+    } else {
+      sessionState.expandedNodes.push(blockId);
+    }
+  };
+
+  return {
+    isRecording: snap.isRecording,
+    footprints: snap.footprints,
+    timeEdges: snap.timeEdges,
+    expandedNodes: snap.expandedNodes,
+    filters: snap.filters,
+
+    recordVisit: addFootprint,
+    clear: clearFootprints,
+    toggleRecording,
+    toggleFilter,
+    toggleNodeExpanded,
+  };
+}

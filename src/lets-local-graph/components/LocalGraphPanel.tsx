@@ -9,13 +9,11 @@ import {
 } from "../GraphEngine";
 import { localGraphPluginInstance } from "../index";
 import {
-  sessionState,
-  toggleRecording,
-  addFootprint,
-  clearFootprints,
+  useFootprintSession,
 } from "../utils/state";
 import { getFocusedBlock } from "@/libs/navUtils";
 import type { Block } from "../../orca";
+import { createLinkEvaluator } from "../utils/LinkEvaluator";
 
 interface LocalGraphPanelProps {
   panel?: any;
@@ -33,7 +31,7 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
   // Get the actual block ID from the panels state so it reacts to internal panel navigation
   const activeBlockId = getFocusedBlock(orcaState.panels, activePanelId);
   
-  const session = useSnapshot(sessionState);
+  const session = useFootprintSession();
   
   // Extract primitives from snapshot to trigger React re-renders on Valtio changes
   const footprintsLength = session.footprints.length;
@@ -50,6 +48,12 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
 
   const latestNodesRef = useRef(graphData.nodes);
   latestNodesRef.current = graphData.nodes;
+
+  const latestFiltersRef = useRef(session.filters);
+  latestFiltersRef.current = session.filters;
+
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
 
   const [themeColors, setThemeColors] = useState({
     primary: "#3b82f6",
@@ -162,10 +166,10 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
   // 1. Footprint recording on navigation (Isolated mutation)
   useEffect(() => {
     if (!frozenBlockId) return;
-    if (sessionState.isRecording) {
-      addFootprint(frozenBlockId);
+    if (session.isRecording) {
+      session.recordVisit(frozenBlockId);
     }
-  }, [frozenBlockId]);
+  }, [frozenBlockId, session.isRecording]);
 
   // 2. Pure React Effect to rebuild the graph whenever primitive dependencies change
   useEffect(() => {
@@ -199,8 +203,8 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
 
   const handleNodeRightClick = useCallback(async (node: any) => {
     const blockId = (node as GraphNode).id;
-    if (sessionState.expandedNodes.includes(blockId)) {
-      sessionState.expandedNodes = sessionState.expandedNodes.filter(id => id !== blockId);
+    if (sessionRef.current.expandedNodes.includes(blockId)) {
+      sessionRef.current.toggleNodeExpanded(blockId);
       orca.notify("info", t("collapsedNotify", { label: node.label }));
       return;
     }
@@ -208,19 +212,19 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
     const block = await orca.invokeBackend("get-block", blockId) as Block;
     if (!block) return;
 
-    const neighborIds = new Set<number>();
     const currentSettings = localGraphPluginInstance?.getSettings();
     const excludedTags = currentSettings?.excludedTags ? currentSettings.excludedTags.split(",") : ["#Journal", "#TODO"];
-    const excludedSet = new Set(excludedTags.map((t: string) => t.trim().toLowerCase()));
 
-    // Read directly from mutable sessionState instead of snapshot closure to avoid stale state after await
-    const shouldIncludeRef = (ref: any) => {
-      if (ref.alias && excludedSet.has(ref.alias.toLowerCase())) return false;
-      if (!sessionState.filters.showTags && ref.type === 2) return false;
-      if (!sessionState.filters.showReferences && ref.type !== 2) return false;
-      return true;
-    };
+    // Use latestFiltersRef to avoid async snapshot closure issues
+    const shouldIncludeRef = createLinkEvaluator(
+      {
+        showTags: latestFiltersRef.current.showTags,
+        showReferences: latestFiltersRef.current.showReferences,
+      },
+      excludedTags
+    );
 
+    const neighborIds = new Set<number>();
     if (block.refs) {
       for (const ref of block.refs) {
         if (shouldIncludeRef(ref) && ref.to) neighborIds.add(ref.to);
@@ -231,7 +235,7 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
         if (shouldIncludeRef(ref) && ref.from) neighborIds.add(ref.from);
       }
     }
-    if (sessionState.filters.showStructure && block.parent) {
+    if (latestFiltersRef.current.showStructure && block.parent) {
       const parentId = Number(block.parent);
       if (!isNaN(parentId)) neighborIds.add(parentId);
     }
@@ -251,7 +255,7 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
       return;
     }
 
-    sessionState.expandedNodes.push(blockId);
+    sessionRef.current.toggleNodeExpanded(blockId);
     orca.notify("success", t("expandedNotify", { label: node.label }));
   }, [t]);
 
@@ -298,21 +302,21 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
                     title={t("filterTags")}
                     preIcon={session.filters.showTags ? "ti ti-checkbox" : "ti ti-square"}
                     onClick={() => {
-                      sessionState.filters.showTags = !sessionState.filters.showTags;
+                      session.toggleFilter("showTags");
                     }}
                   />
                   <MenuText
                     title={t("filterStructure")}
                     preIcon={session.filters.showStructure ? "ti ti-checkbox" : "ti ti-square"}
                     onClick={() => {
-                      sessionState.filters.showStructure = !sessionState.filters.showStructure;
+                      session.toggleFilter("showStructure");
                     }}
                   />
                   <MenuText
                     title={t("filterReferences")}
                     preIcon={session.filters.showReferences ? "ti ti-checkbox" : "ti ti-square"}
                     onClick={() => {
-                      sessionState.filters.showReferences = !sessionState.filters.showReferences;
+                      session.toggleFilter("showReferences");
                     }}
                   />
                 </Menu>
@@ -379,9 +383,9 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
               aria-label={t("restartSession")}
               onClick={() => {
                 forceResetRef.current = true;
-                clearFootprints();
-                if (!session.isRecording) toggleRecording(activeBlockId);
-                else if (activeBlockId != null) addFootprint(activeBlockId);
+                session.clear();
+                if (!session.isRecording) session.toggleRecording(activeBlockId);
+                else if (activeBlockId != null) session.recordVisit(activeBlockId);
                 orca.notify("success", t("resetNotify"));
               }}
               style={{ cursor: "pointer", display: "inline-flex", padding: "4px", borderRadius: "4px" }}
@@ -391,7 +395,7 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
             <span 
               className="block__icon b3-tooltips b3-tooltips__w"
               aria-label={session.isRecording ? t("stopRecording") : t("resumeRecording")}
-              onClick={() => toggleRecording(activeBlockId)}
+              onClick={() => session.toggleRecording(activeBlockId)}
               style={{ cursor: "pointer", display: "inline-flex", padding: "4px", borderRadius: "4px" }}
             >
               <i className={`ti ${session.isRecording ? "ti-player-pause" : "ti-player-play"}`} style={{ color: session.isRecording ? "var(--b3-theme-error)" : "inherit" }} />

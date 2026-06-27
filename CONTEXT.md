@@ -21,6 +21,8 @@ When communicating about features, designing architecture, or writing code, **al
   - *Critical Constraint*: Proxy objects cannot always be passed directly to `invokeEditorCommand` or backend calls due to cloning errors ("Illegal invocation"). They must be scrubbed using `cloneDeep()`.
 - **Dual-track Search Sync**: The architectural pattern used in the frontend to achieve 0ms search feedback. It combines **Cache Hijack** (modifying the in-memory `searchCache.tree` proxy to trigger instant re-renders) with **Live Data Interception** (reading from `orca.state.blocks` instead of the cache during traversal to catch cross-panel edits).
 - **Workspace Cache Isolation**: Persistent UI states (like `localStorage`) must namespace their keys with `orca.state.repo` to prevent data bleed between different user vaults.
+- **LinkEvaluator**: A deep utility module in `lets-local-graph` that encapsulates references filtering logic (such as checking type parameters, blacklist exclusion lists, and user filter settings) behind a single functional evaluator seam.
+- **FootprintSession**: An encapsulated React Hook interface (`useFootprintSession`) in `lets-local-graph` that hides state management (Valtio Proxy) internals from UI components and exposes unified commands for updating footprints, toggling filters, and manual node expansion.
 
 ## FSRS (Spaced Repetition)
 

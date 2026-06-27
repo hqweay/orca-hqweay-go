@@ -1,5 +1,6 @@
 import { getBlockTitle } from "@/libs/BlockFormatter";
 import type { Block } from "../orca";
+import { createLinkEvaluator } from "./utils/LinkEvaluator";
 
 export interface GraphNode {
   id: number;
@@ -38,9 +39,7 @@ export async function buildGraph(
   const links: GraphLink[] = [];
 
   try {
-    const excludedSet = new Set(
-      settings.excludedTags.map((t) => t.trim().toLowerCase()).filter(Boolean),
-    );
+    const shouldIncludeRef = createLinkEvaluator(filters, settings.excludedTags);
 
     // 1. Gather Footprints & Center Block
     const footprintSet = new Set<number>(footprints);
@@ -53,12 +52,7 @@ export async function buildGraph(
       if (block) footprintBlocks.set(id, block);
     }
 
-    const shouldIncludeRef = (ref: any) => {
-      if (ref.alias && excludedSet.has(ref.alias.toLowerCase())) return false;
-      if (!filters.showTags && ref.type === 2) return false;
-      if (!filters.showReferences && ref.type !== 2) return false;
-      return true;
-    };
+
 
     // 3. Count Neighbor References
     const neighborCounts = new Map<number, number>();
