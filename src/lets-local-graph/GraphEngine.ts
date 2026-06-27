@@ -12,6 +12,7 @@ export interface GraphLink {
   source: number;
   target: number;
   label?: string; // alias
+  isTimeEdge?: boolean;
 }
 
 export interface GraphEngineSettings {
@@ -21,111 +22,127 @@ export interface GraphEngineSettings {
 }
 
 export async function buildGraph(
-  centerBlockId: number,
+  centerBlockId: number | null,
+  footprints: number[],
+  timeEdges: { source: number; target: number }[],
   settings: GraphEngineSettings,
 ): Promise<{ nodes: GraphNode[]; links: GraphLink[] }> {
   const nodes = new Map<number, GraphNode>();
   const links: GraphLink[] = [];
 
   try {
-    // 1. Fetch the center block reliably from the backend to ensure backRefs are populated
-    const centerBlock = (await orca.invokeBackend(
-      "get-block",
-      centerBlockId,
-    )) as Block;
-
-    if (!centerBlock) {
-      return { nodes: [], links: [] };
-    }
-
-    // Add center node
-    nodes.set(centerBlockId, {
-      id: centerBlockId,
-      label: await getBlockTitle(centerBlock, centerBlockId, 20),
-      val: 3, // Slightly larger center node
-      color: "#10b981", // Emerald 500
-    });
-
     const excludedSet = new Set(
       settings.excludedTags.map((t) => t.trim().toLowerCase()).filter(Boolean),
     );
 
-    let currentNodesCount = 1; // Center node
-    let outDegree = 0;
-    let inDegree = 0;
+    // 1. Gather Node Pool
+    const nodePool = new Set<number>();
+    
+    // Add history footprint nodes
+    for (const id of footprints) {
+      nodePool.add(id);
+    }
 
-    // 2. Process Outbound Refs
-    if (centerBlock.refs) {
-      for (const ref of centerBlock.refs) {
-        if (currentNodesCount >= settings.maxNodes) break;
-        if (outDegree >= settings.maxDegree) break;
+    // Add active center block
+    if (centerBlockId) {
+      nodePool.add(centerBlockId);
 
-        // Apply Blacklist
-        if (ref.alias && excludedSet.has(ref.alias.toLowerCase())) {
-          continue;
-        }
-
-        const targetId = ref.to;
-        if (!targetId) continue;
-
-        // Only add if not already processing
-        if (!nodes.has(targetId)) {
-          const targetBlock = (await orca.invokeBackend(
-            "get-block",
-            targetId,
-          )) as Block;
-          if (targetBlock) {
-            nodes.set(targetId, {
-              id: targetId,
-              label: await getBlockTitle(targetBlock, targetId, 20),
-              val: 1,
-              color: "#64748b", // Slate 500
-            });
-            currentNodesCount++;
+      // Fetch center block to get its 1st-degree neighbors
+      const centerBlock = (await orca.invokeBackend("get-block", centerBlockId)) as Block;
+      if (centerBlock) {
+        let degreeCount = 0;
+        if (centerBlock.refs) {
+          for (const ref of centerBlock.refs) {
+            if (degreeCount >= settings.maxDegree) break;
+            if (ref.alias && excludedSet.has(ref.alias.toLowerCase())) continue;
+            if (ref.to) {
+              nodePool.add(ref.to);
+              degreeCount++;
+            }
           }
         }
-
-        links.push({
-          source: centerBlockId,
-          target: targetId,
-          label: ref.alias,
-        });
-        outDegree++;
+        if (centerBlock.backRefs) {
+          for (const ref of centerBlock.backRefs) {
+            if (degreeCount >= settings.maxDegree) break;
+            if (ref.from) {
+              nodePool.add(ref.from);
+              degreeCount++;
+            }
+          }
+        }
       }
     }
 
-    // 3. Process Inbound BackRefs
-    if (centerBlock.backRefs) {
-      for (const backRef of centerBlock.backRefs) {
-        if (currentNodesCount >= settings.maxNodes) break;
-        if (inDegree >= settings.maxDegree) break;
+    if (nodePool.size === 0) return { nodes: [], links: [] };
 
-        // MVP: We do NOT deep-fetch source blocks to check excluded tags here to avoid N+1 queries.
-        const sourceId = backRef.from;
-        if (!sourceId) continue;
+    // Limit node pool size just in case (though it should be small)
+    const limitedPool = Array.from(nodePool).slice(0, settings.maxNodes);
+    const poolSet = new Set(limitedPool);
 
-        if (!nodes.has(sourceId)) {
-          const sourceBlock = (await orca.invokeBackend(
-            "get-block",
-            sourceId,
-          )) as Block;
-          if (sourceBlock) {
-            nodes.set(sourceId, {
-              id: sourceId,
-              label: await getBlockTitle(sourceBlock, sourceId, 20),
-              val: 1,
-              color: "#64748b",
-            });
-            currentNodesCount++;
-          }
+    // 2. Fetch all blocks in the pool
+    const blockCache = new Map<number, Block>();
+    for (const id of limitedPool) {
+      const block = (await orca.invokeBackend("get-block", id)) as Block;
+      if (block) {
+        blockCache.set(id, block);
+      }
+    }
+
+    // 3. Construct Graph Nodes
+    const historySet = new Set(footprints);
+
+    for (const [id, block] of blockCache.entries()) {
+      let color = "var(--b3-theme-surface-lighter)"; // default: neighbor
+      let val = 1;
+      
+      if (id === centerBlockId) {
+        color = "var(--b3-theme-error)"; // Active Block (prominent)
+        val = 3;
+      } else if (historySet.has(id)) {
+        color = "var(--b3-theme-primary)"; // Footprint
+        val = 2;
+      }
+
+      nodes.set(id, {
+        id,
+        label: await getBlockTitle(block, id, 10),
+        val,
+        color,
+      });
+    }
+
+    // 4. Construct Edges (Intersection check)
+    // We only iterate through the outbound refs of blocks in our pool
+    // and see if the target is ALSO in our pool.
+    for (const [id, block] of blockCache.entries()) {
+      if (!block.refs) continue;
+      
+      for (const ref of block.refs) {
+        if (!ref.to) continue;
+        
+        // Check blacklist
+        if (ref.alias && excludedSet.has(ref.alias.toLowerCase())) continue;
+        
+        // Edge exists purely within our pool!
+        if (poolSet.has(ref.to) && blockCache.has(ref.to)) {
+          links.push({
+            source: id,
+            target: ref.to,
+            label: ref.alias,
+            isTimeEdge: false,
+          });
         }
+      }
+    }
 
+    // 5. Append Time Edges
+    for (const edge of timeEdges) {
+      if (poolSet.has(edge.source) && poolSet.has(edge.target)) {
         links.push({
-          source: sourceId,
-          target: centerBlockId,
-          label: backRef.alias,
+          source: edge.source,
+          target: edge.target,
+          isTimeEdge: true,
         });
-        inDegree++;
       }
     }
   } catch (error) {

@@ -8,6 +8,8 @@ import {
   GraphEngineSettings,
 } from "../GraphEngine";
 import { localGraphPluginInstance } from "../index";
+import { sessionState, toggleRecording, clearFootprints, addFootprint } from "../utils/state";
+import { getFocusedBlock } from "@/libs/navUtils";
 
 interface LocalGraphPanelProps {
   panel?: any;
@@ -20,6 +22,10 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
 }) => {
   const orcaState = useSnapshot(orca.state);
   const activePanelId = orcaState.activePanel;
+  // Get the actual block ID from the panels state so it reacts to internal panel navigation
+  const activeBlockId = getFocusedBlock(orcaState.panels, activePanelId);
+  
+  const session = useSnapshot(sessionState);
 
   const [graphData, setGraphData] = useState<{
     nodes: GraphNode[];
@@ -48,15 +54,9 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
 
   // Fetch Graph Data safely with race condition prevention
   useEffect(() => {
-    const mainPanel = orca.nav.findViewPanel(activePanelId, orca.state.panels);
-    if (mainPanel?.view !== "block") {
-      // Not a block view, don't update graph.
-      return;
-    }
+    if (!activeBlockId) return;
 
-    const blockId = mainPanel.viewArgs?.blockId;
-    if (!blockId) return;
-
+    const blockId = activeBlockId;
     const gen = ++fetchGenRef.current;
 
     // Get settings safely
@@ -78,23 +78,34 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
       };
     }
 
-    buildGraph(blockId, settings).then((result) => {
+    // Add current block to session if recording
+    if (sessionState.isRecording) {
+      addFootprint(blockId);
+    }
+
+    // Pass the actual footprints (non-proxy array)
+    const footprints = Array.from(sessionState.footprints);
+    const timeEdges = Array.from(sessionState.timeEdges);
+
+    buildGraph(blockId, footprints, timeEdges, settings).then((result) => {
       if (gen === fetchGenRef.current) {
         setGraphData(result);
         
-        // Auto-center graph when data updates
+        // Configure Physics to spread nodes out further
         if (fgRef.current) {
-           fgRef.current.d3ReheatSimulation();
-           // Instead of zoomToFit which can zoom in excessively on small graphs, 
-           // we gently reset zoom to a sensible default.
-           setTimeout(() => {
-             fgRef.current?.zoom(1.5, 400);
-             fgRef.current?.centerAt(0, 0, 400);
-           }, 100);
+           const fg = fgRef.current;
+           // Gentle center force to keep things on screen
+           fg.d3Force('center')?.strength(0.05);
+           fg.d3Force('charge')?.strength(-120);
+           fg.d3Force('link')?.distance(80);
+           
+           // DO NOT call d3ReheatSimulation()! 
+           // That causes the existing nodes to scramble. 
+           // We just let the new nodes gently fall into place.
         }
       }
     });
-  }, [activePanelId, pluginId]);
+  }, [activeBlockId, pluginId, session.isRecording, session.footprints.length]);
 
   const handleNodeClick = useCallback((node: any) => {
     const blockId = (node as GraphNode).id;
@@ -123,9 +134,40 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
           color: "var(--b3-theme-on-background)",
           display: "flex",
           justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
-        <span>Local Graph</span>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <span>Footprint Graph</span>
+          <button 
+            onClick={toggleRecording}
+            style={{
+              background: session.isRecording ? "var(--b3-theme-error)" : "var(--b3-theme-surface)",
+              color: session.isRecording ? "#fff" : "var(--b3-theme-on-surface)",
+              border: "none",
+              borderRadius: "4px",
+              padding: "2px 6px",
+              cursor: "pointer",
+              fontSize: "10px",
+            }}
+          >
+            {session.isRecording ? "■ Stop" : "▶ Start"}
+          </button>
+          <button 
+            onClick={clearFootprints}
+            style={{
+              background: "transparent",
+              color: "var(--b3-theme-on-surface)",
+              border: "1px solid var(--b3-theme-surface-lighter)",
+              borderRadius: "4px",
+              padding: "2px 6px",
+              cursor: "pointer",
+              fontSize: "10px",
+            }}
+          >
+            Reset
+          </button>
+        </div>
         <span style={{ color: "var(--b3-theme-on-surface-light)" }}>
           {graphData.nodes.length} nodes
         </span>
@@ -160,7 +202,30 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
               ctx.fillText(label, node.x, node.y + nodeR + fontSize);
             }}
             onNodeClick={handleNodeClick}
-            linkColor={() => "var(--b3-theme-surface-lighter)"}
+            linkCanvasObject={(link: any, ctx, globalScale) => {
+              const start = link.source;
+              const end = link.target;
+
+              if (typeof start !== 'object' || typeof end !== 'object') return;
+
+              ctx.beginPath();
+              ctx.moveTo(start.x, start.y);
+              ctx.lineTo(end.x, end.y);
+
+              if (link.isTimeEdge) {
+                ctx.strokeStyle = "var(--b3-theme-primary)";
+                ctx.setLineDash([4, 4]); // Dashed line
+                ctx.lineWidth = 1.5 / globalScale;
+              } else {
+                ctx.strokeStyle = "var(--b3-theme-surface-lighter)";
+                ctx.setLineDash([]); // Solid line
+                ctx.lineWidth = 1 / globalScale;
+              }
+              
+              ctx.stroke();
+              // Reset dash
+              ctx.setLineDash([]);
+            }}
             linkDirectionalArrowLength={3.5}
             linkDirectionalArrowRelPos={1}
             // Enhance visual appearance
