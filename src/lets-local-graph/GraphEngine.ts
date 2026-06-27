@@ -1,4 +1,4 @@
-import { getBlockTitle, getBlockIcon } from "@/libs/BlockFormatter";
+import { getBlockTitle } from "@/libs/BlockFormatter";
 import type { Block } from "../orca";
 
 export interface GraphNode {
@@ -6,7 +6,6 @@ export interface GraphNode {
   label: string;
   val?: number; // node size
   color?: string; // fallback color
-  icon?: string;
   isLatestNode?: boolean;
   isStartNode?: boolean;
   isFootprint?: boolean;
@@ -150,32 +149,10 @@ export async function buildGraph(
         val = 2;
       }
 
-      // Quick map for common tabler icons to emojis for canvas rendering
-      let rawIcon = getBlockIcon(block);
-      let emojiIcon = "";
-      if (!rawIcon.startsWith("ti ti-")) {
-        emojiIcon = rawIcon; // Might be a native emoji
-      } else if (rawIcon === "ti ti-file") {
-        emojiIcon = "📄";
-      } else if (rawIcon.includes("journal")) {
-        emojiIcon = "📅";
-      } else if (rawIcon === "ti ti-table") {
-        emojiIcon = "📊";
-      } else if (rawIcon === "ti ti-search") {
-        emojiIcon = "🔍";
-      } else if (rawIcon === "ti ti-book") {
-        emojiIcon = "📖";
-      } else if (rawIcon === "ti ti-photo") {
-        emojiIcon = "🖼️";
-      } else {
-        emojiIcon = "🧊";
-      }
-
       nodes.set(id, {
         id,
         label: await getBlockTitle(block, id, 10),
         val,
-        icon: emojiIcon,
         isLatestNode,
         isStartNode,
         isFootprint: historySet.has(id),

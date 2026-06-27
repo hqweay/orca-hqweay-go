@@ -39,6 +39,8 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
     onBackground: "#ffffff"
   });
 
+  const [hoverNode, setHoverNode] = useState<any>(null);
+
   useEffect(() => {
     // Resolve CSS variables for Canvas compatibility
     const target = containerRef.current || document.body;
@@ -215,39 +217,52 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
             nodeLabel="label"
             nodeRelSize={4}
             nodeCanvasObject={(node: any, ctx, globalScale) => {
-              const nodeR = Math.sqrt(node.val || 1) * 6;
+              const nodeR = Math.sqrt(node.val || 1) * 3.5;
 
-              // Draw Halo/Ring for Footprints
-              if (node.isFootprint || node.isStartNode || node.isLatestNode) {
-                let ringColor = themeColors.primary;
-                if (node.isLatestNode) ringColor = themeColors.error;
-                else if (node.isStartNode) ringColor = "#10b981";
+              // Determine Color
+              let color = themeColors.surfaceLighter; // Gray (neighbor)
+              if (node.isLatestNode) color = themeColors.error; // Red
+              else if (node.isStartNode) color = "#10b981"; // Green
+              else if (node.isFootprint) color = themeColors.primary; // Blue
 
+              // Draw Main Node Circle
+              ctx.beginPath();
+              ctx.arc(node.x, node.y, nodeR, 0, 2 * Math.PI, false);
+              ctx.fillStyle = color;
+              ctx.fill();
+
+              // For Latest and Start nodes, draw a subtle outer glowing ring
+              if (node.isLatestNode || node.isStartNode) {
                 ctx.beginPath();
-                ctx.arc(node.x, node.y, nodeR + 2, 0, 2 * Math.PI, false);
-                ctx.fillStyle = ringColor;
-                ctx.globalAlpha = 0.2;
+                ctx.arc(node.x, node.y, nodeR + 2.5, 0, 2 * Math.PI, false);
+                ctx.fillStyle = color;
+                ctx.globalAlpha = 0.3;
                 ctx.fill();
-                
-                ctx.lineWidth = 1.5 / globalScale;
-                ctx.strokeStyle = ringColor;
                 ctx.globalAlpha = 1.0;
-                ctx.stroke();
               }
 
-              // Draw Emoji at center
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              const iconSize = Math.max(10, nodeR * 1.5) / (globalScale > 1 ? 1 : globalScale);
-              ctx.font = `${iconSize}px Sans-Serif`;
-              ctx.fillText(node.icon || "🧊", node.x, node.y);
+              // Smart Label Visibility (Roam Research style)
+              // 1. Always show if zoomed in close enough
+              // 2. Always show if it's an important node (Footprint / Start / Latest)
+              // 3. Always show if the mouse is hovering over it
+              const isHovered = hoverNode && hoverNode.id === node.id;
+              const showText = globalScale >= 1.2 || (node.val && node.val >= 2) || isHovered;
 
-              // Draw Text Label below emoji
-              const label = node.label;
-              const fontSize = 11 / globalScale;
-              ctx.font = `${fontSize}px Sans-Serif`;
-              ctx.fillStyle = themeColors.onBackground;
-              ctx.fillText(label, node.x, node.y + nodeR + 6 + fontSize);
+              if (showText) {
+                const label = node.label;
+                const fontSize = 11 / globalScale;
+                ctx.font = `${fontSize}px Sans-Serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = themeColors.onBackground;
+                ctx.fillText(label, node.x, node.y + nodeR + 4 + fontSize);
+              }
+            }}
+            onNodeHover={(node) => {
+              setHoverNode(node);
+              if (containerRef.current) {
+                containerRef.current.style.cursor = node ? 'pointer' : 'default';
+              }
             }}
             onNodeClick={handleNodeClick}
             linkCanvasObject={(link: any, ctx, globalScale) => {
