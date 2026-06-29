@@ -7,7 +7,8 @@ import { PluginSettingsAdapter } from "./PluginSettingsAdapter";
 export abstract class BasePlugin {
   protected mainPluginName: string;
   protected logger: Logger;
-  protected name: string;
+  protected _name: string;
+  get name(): string { return this._name; }
   protected headbarButtonId: string | null = null;
   protected isLoaded: boolean = false;
 
@@ -18,11 +19,11 @@ export abstract class BasePlugin {
 
   constructor(mainPluginName: string, name: string) {
     this.mainPluginName = mainPluginName;
-    this.name = name;
+    this._name = name;
     this.logger = new Logger(name);
     this.settingsAdapter = new PluginSettingsAdapter(
       this.mainPluginName,
-      this.name,
+      this._name,
       () => this.getDefaultSettings(),
       (config) => this.onConfigChanged(config),
       this.logger
@@ -30,18 +31,18 @@ export abstract class BasePlugin {
   }
 
   public getDisplayName(): string {
-    return t(this.name);
+    return t(this._name);
   }
 
   public getDescription(): string {
-    return t(`${this.name}.description`);
+    return t(`${this._name}.description`);
   }
 
   /**
    * Translates a key, automatically prefixing it with the plugin name.
    */
   public t(key: string, args?: { [key: string]: string }): string {
-    return t(`${this.name}.${key}`, args);
+    return t(`${this._name}.${key}`, args);
   }
 
   public abstract load(): Promise<void>;
@@ -120,19 +121,19 @@ export abstract class BasePlugin {
   // --- Auto-Cleanup Registration Helpers ---
 
   protected registerCommand(id: string, callback: any, title: string = "") {
-    const fullId = `${this.name}.${id}`;
+    const fullId = `${this._name}.${id}`;
     orca.commands.registerCommand(fullId, callback, title);
     this._registeredCommandIds.add(fullId);
   }
 
   protected unregisterCommand(id: string) {
-    const fullId = `${this.name}.${id}`;
+    const fullId = `${this._name}.${id}`;
     orca.commands.unregisterCommand(fullId);
     this._registeredCommandIds.delete(fullId);
   }
 
   protected registerBlockMenuCommand(id: string, options: any) {
-    const fullId = `${this.name}.${id}`;
+    const fullId = `${this._name}.${id}`;
     if (orca.blockMenuCommands && orca.blockMenuCommands.registerBlockMenuCommand) {
       orca.blockMenuCommands.registerBlockMenuCommand(fullId, options);
       this._registeredBlockMenuIds.add(fullId);
@@ -140,7 +141,7 @@ export abstract class BasePlugin {
   }
 
   protected unregisterBlockMenuCommand(id: string) {
-    const fullId = `${this.name}.${id}`;
+    const fullId = `${this._name}.${id}`;
     if (orca.blockMenuCommands && orca.blockMenuCommands.unregisterBlockMenuCommand) {
       orca.blockMenuCommands.unregisterBlockMenuCommand(fullId);
       this._registeredBlockMenuIds.delete(fullId);
@@ -180,10 +181,10 @@ export abstract class BasePlugin {
     const displayName = this.getDisplayName();
     const description = this.getDescription();
     return {
-      [this.name]: {
+      [this._name]: {
         label: t("Enable ${name}", { name: displayName }),
         description:
-          description !== `${this.name}.description`
+          description !== `${this._name}.description`
             ? description
             : t("Enable ${name}", { name: displayName }),
         type: "boolean",
@@ -247,7 +248,7 @@ export abstract class BasePlugin {
   public async setData(key: string, value: any): Promise<void> {
     await orca.plugins.setData(
       this.mainPluginName,
-      `${this.name}.${key}`,
+      `${this._name}.${key}`,
       value,
     );
   }
@@ -258,7 +259,7 @@ export abstract class BasePlugin {
   public async getData(key: string): Promise<any> {
     return await orca.plugins.getData(
       this.mainPluginName,
-      `${this.name}.${key}`,
+      `${this._name}.${key}`,
     );
   }
 
@@ -334,24 +335,24 @@ export abstract class BasePlugin {
     const content = this.settingsComponent
       ? React.createElement(this.settingsComponent, {
           plugin: this,
-          key: this.name,
+          key: this._name,
         })
       : React.createElement(PluginSettings, {
           plugin: this as any,
-          key: this.name,
+          key: this._name,
         });
 
     return React.createElement(SettingWrapper, {
       plugin: this,
       children: content,
-      key: this.name,
+      key: this._name,
     });
   }
 
   protected defineSetting(key: string, label: string, desc: string, def = "") {
     return {
-      [`${this.name}.${key}`]: {
-        label: t(`${this.name}.${label}`),
+      [`${this._name}.${key}`]: {
+        label: t(`${this._name}.${label}`),
         description: t(desc),
         type: "string",
         defaultValue: def,

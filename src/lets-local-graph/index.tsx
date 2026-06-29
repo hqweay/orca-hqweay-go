@@ -44,9 +44,8 @@ export default class LocalGraphPlugin extends BasePlugin {
     orca.panels.registerPanel("localGraph", (props: any) => {
       return (
         <LocalGraphPanel
-          pluginId={this.name}
+          plugin={this}
           panel={props.panel}
-          t={this.t.bind(this)}
         />
       );
     });

@@ -13,17 +13,19 @@ import { getFocusedBlock } from "@/libs/navUtils";
 import type { Block } from "../../orca";
 import { createLinkEvaluator } from "../utils/LinkEvaluator";
 
+import type { BasePlugin } from "@/libs/BasePlugin";
+
 interface LocalGraphPanelProps {
   panel?: any;
-  pluginId: string;
-  t: (key: string, args?: { [key: string]: string }) => string;
+  plugin: BasePlugin;
 }
 
 export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
   panel,
-  pluginId,
-  t,
+  plugin,
 }) => {
+  const pluginId = plugin.name;
+  const t = plugin.t.bind(plugin);
   const orcaState = useSnapshot(orca.state);
   const Tooltip = orca.components.Tooltip;
   const activePanelId = orcaState.activePanel;
@@ -591,7 +593,7 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
                 <div
                   style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "4px" }}
                 >
-                  <span style={{ fontSize: "12px" }}>🖱️</span> {t("nodeRightClickTip") || "右键节点：展开/折叠周围的引用"}
+                  <span style={{ fontSize: "12px" }}>🖱️</span> {t("nodeRightClickTip")}
                 </div>
               </div>
             )}
