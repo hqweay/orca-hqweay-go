@@ -25,6 +25,7 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
   t,
 }) => {
   const orcaState = useSnapshot(orca.state);
+  const Tooltip = orca.components.Tooltip;
   const activePanelId = orcaState.activePanel;
   // Get the actual block ID from the panels state so it reacts to internal panel navigation
   const activeBlockId = getFocusedBlock(orcaState.panels, activePanelId);
@@ -447,41 +448,44 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
               )}
             >
               {(open) => (
-                <span
-                  className="block__icon b3-tooltips b3-tooltips__w"
-                  aria-label={t("filterGraph")}
-                  onClick={open}
-                  style={{
-                    cursor: "pointer",
-                    display: "inline-flex",
-                    padding: "4px",
-                    borderRadius: "4px",
-                  }}
-                >
-                  <i className="ti ti-filter" style={{ fontSize: "14px" }} />
-                </span>
+                <Tooltip text={t("filterGraph")}>
+                  <span
+                    className="block__icon"
+                    onClick={open}
+                    style={{
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      padding: "4px",
+                      borderRadius: "4px",
+                    }}
+                  >
+                    <i className="ti ti-filter" style={{ fontSize: "14px" }} />
+                  </span>
+                </Tooltip>
               )}
             </ContextMenu>
-            <span
-              className="block__icon"
-              onMouseEnter={() => setShowHelper(true)}
-              onMouseLeave={() => setShowHelper(false)}
-              style={{
-                cursor: "help",
-                display: "inline-flex",
-                padding: "4px",
-                borderRadius: "4px",
-              }}
-            >
-              <i className="ti ti-help" style={{ fontSize: "14px" }} />
-            </span>
+            <Tooltip text={t("help")}>
+              <span
+                className="block__icon"
+                onMouseEnter={() => setShowHelper(true)}
+                onMouseLeave={() => setShowHelper(false)}
+                style={{
+                  cursor: "help",
+                  display: "inline-flex",
+                  padding: "4px",
+                  borderRadius: "4px",
+                }}
+              >
+                <i className="ti ti-help" style={{ fontSize: "14px" }} />
+              </span>
+            </Tooltip>
             {showHelper && (
               <div
                 style={{
                   position: "absolute",
-                  left: "100%",
-                  top: "0",
-                  marginLeft: "8px",
+                  left: "0",
+                  top: "100%",
+                  marginTop: "8px",
                   backgroundColor: "var(--b3-theme-background, #ffffff)",
                   border: "1px solid var(--b3-theme-surface-lighter)",
                   borderRadius: "6px",
@@ -584,13 +588,18 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
                   <span style={{ letterSpacing: "1px" }}>···</span>{" "}
                   {t("edgeStructure")}
                 </div>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "4px" }}
+                >
+                  <span style={{ fontSize: "12px" }}>🖱️</span> {t("nodeRightClickTip") || "右键节点：展开/折叠周围的引用"}
+                </div>
               </div>
             )}
 
-            <span
-              className="block__icon b3-tooltips b3-tooltips__w"
-              aria-label={t("restartSession")}
-              onClick={() => {
+            <Tooltip text={t("restartSession")}>
+              <span
+                className="block__icon"
+                onClick={() => {
                 forceResetRef.current = true;
                 session.clear();
                 if (!session.isRecording)
@@ -607,13 +616,12 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
               }}
             >
               <i className="ti ti-refresh" />
-            </span>
-            <span
-              className="block__icon b3-tooltips b3-tooltips__w"
-              aria-label={
-                playbackIndex !== null ? t("stopPlayback") : t("startPlayback")
-              }
-              onClick={() => {
+              </span>
+            </Tooltip>
+            <Tooltip text={playbackIndex !== null ? t("stopPlayback") : t("startPlayback")}>
+              <span
+                className="block__icon"
+                onClick={() => {
                 if (playbackIndex !== null) {
                   setPlaybackIndex(null);
                   if (
@@ -656,12 +664,11 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
                 }}
               />
             </span>
-            <span
-              className="block__icon b3-tooltips b3-tooltips__w"
-              aria-label={
-                session.isRecording ? t("stopRecording") : t("resumeRecording")
-              }
-              onClick={() => {
+            </Tooltip>
+            <Tooltip text={session.isRecording ? t("stopRecording") : t("resumeRecording")}>
+              <span
+                className="block__icon"
+                onClick={() => {
                 if (playbackIndex !== null) {
                   recordingManuallyStoppedDuringPlaybackRef.current = true;
                 }
@@ -683,6 +690,7 @@ export const LocalGraphPanel: React.FC<LocalGraphPanelProps> = ({
                 }}
               />
             </span>
+            </Tooltip>
           </div>
         </div>
         <span style={{ color: "var(--b3-theme-on-surface-light)" }}>

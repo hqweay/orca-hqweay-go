@@ -39,4 +39,6 @@ export default {
   "local-graph.playbackProgress": "回放中：${current}/${total}",
   "local-graph.playbackFinished": "回放结束，已恢复完整视图",
   "local-graph.noHistory": "当前暂无轨迹，无法播放",
+  "local-graph.help": "说明",
+  "local-graph.nodeRightClickTip": "右键节点：展开/折叠周围的引用",
 }
