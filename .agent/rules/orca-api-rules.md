@@ -15,6 +15,16 @@ trigger: always_on
     4.  `content`: 内容片段数组 `ContentFragment[]`。
     5.  `repr`: 块表现形式对象（如 `{ type: "text" }`）。
     *   **红线**: `content` 必须是扁平的片段数组，绝不能嵌套在 `{content: [...]}` 对象中。
+*   **块右键菜单 (Block Menu) 的子菜单实现**: 
+    在 `registerBlockMenuCommand` 的 `render` 中，如果要实现带有右侧箭头展开的子菜单（Submenu），**禁止使用** `HoverContextMenu`。正确的原生实现方式是利用 `MenuText` 的嵌套特性：
+    ```tsx
+    <MenuText preIcon="..." title="Parent Menu..." postIcon="ti ti-chevron-right">
+      <orca.components.Menu>
+        <MenuText title="Child 1" onClick={...} />
+        <MenuText title="Child 2" onClick={...} />
+      </orca.components.Menu>
+    </MenuText>
+    ```
 *   **批量插入引用优化**: 
     当需要插入大量引用块时，不要循环调用 `insertBlock`。应拼接 Markdown 样式的引用字符串 `[[id1]]\n[[id2]]`，然后调用 `core.editor.batchInsertText` 自动解析，以提升性能。
 *   **Slash Command 约束**: 

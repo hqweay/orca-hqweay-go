@@ -49,9 +49,10 @@ Quickly clean up note content formatting:
 
 Intelligently sort selected multiple blocks:
 
-- **Configurable Order**: Support custom sorting rules (Default: Empty -> Normal -> Completed -> Uncompleted).
+- **Multi-Profile Configuration**: Support creating unlimited custom sorting profiles in settings.
+- **Native Reordering UI**: Use intuitive Up/Down arrows to flexibly reorder the sorting priority of various block types (tasks, headings, media, empty blocks, etc.).
+- **Smart Context Menu**: If only one profile is active, right-clicking sorts instantly; if multiple profiles exist, the context menu automatically transforms into a sub-menu for selection.
 - **Dictionary Sort**: Sort items of the same type alphabetically by text content.
-- **Multi-select Trigger**: Context menu appears only when 2 or more blocks are selected.
 
 ### 6. 📤 Publish to GitHub
 
