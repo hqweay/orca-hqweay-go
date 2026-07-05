@@ -184,10 +184,18 @@ export default class SortPlugin extends BasePlugin {
           const typeA = getType(a);
           const typeB = getType(b);
 
-          const idxA = sortOrder.indexOf(typeA);
-          const idxB = sortOrder.indexOf(typeB);
+          let idxA = sortOrder.indexOf(typeA);
+          let idxB = sortOrder.indexOf(typeB);
 
-          // Use Infinity for unknown types to push them to end
+          // If type is not explicitly configured, fall back to "other" bucket if it exists
+          if (idxA === -1 && sortOrder.includes("other")) {
+            idxA = sortOrder.indexOf("other");
+          }
+          if (idxB === -1 && sortOrder.includes("other")) {
+            idxB = sortOrder.indexOf("other");
+          }
+
+          // Use Infinity for completely unconfigured types to push them to end
           const valA = idxA === -1 ? 999 : idxA;
           const valB = idxB === -1 ? 999 : idxB;
 
