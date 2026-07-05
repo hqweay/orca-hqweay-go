@@ -35,28 +35,7 @@ export default class GatherRefsPlugin extends BasePlugin {
       command: fullId
     });
 
-    // 注册块右键菜单命令
-    this.registerBlockMenuCommand("gather-refs-block-menu", {
-      worksOnMultipleBlocks: false,
-      render: (blockId: number, _rootBlockId: number, close: () => void) => {
-        const MenuText = orca.components.MenuText;
-        return (
-          <MenuText
-            preIcon="ti ti-link"
-            title={this.t("gather-refs")}
-            onClick={async () => {
-              close();
-              try {
-                await gatherAndInsertRefs((key, args) => this.t(key, args));
-              } catch (error) {
-                console.error("[lets-gather-refs] Error:", error);
-                orca.notify("error", this.t("gather-refs.error"));
-              }
-            }}
-          />
-        );
-      },
-    });
+
   }
 
   override async unload() {
