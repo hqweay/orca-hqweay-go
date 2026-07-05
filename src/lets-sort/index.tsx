@@ -7,17 +7,62 @@ import React, { useState } from "react";
 import { getRepr } from "@/libs/BlockFormatter";
 import { getBlocks, ensureBlockInState } from "@/libs/BlockCache";
 
+export interface SortProfile {
+  id: string;
+  name: string;
+  rules: string[];
+}
+
+const ALL_TYPES = [
+  "task_unchecked",
+  "task_checked",
+  "heading",
+  "query",
+  "image",
+  "table2",
+  "epub",
+  "mirror",
+  "journal",
+  "video",
+  "audio",
+  "empty",
+  "text",
+  "other",
+];
+
 export default class SortPlugin extends BasePlugin {
   protected settingsComponent = SortSettings;
 
   public getDefaultSettings(): any {
     return {
-      order: "empty, other, task_checked, task_unchecked",
+      profiles: [
+        {
+          id: "default",
+          name: "Default",
+          rules: ["empty", "other", "task_checked", "task_unchecked"],
+        },
+      ],
       headbarMode: "both",
     };
   }
 
   public async load(): Promise<void> {
+    const settings = this.getSettings();
+    if (typeof settings.order === "string") {
+      const legacyRules = settings.order
+        .split(/[,，]/)
+        .map((s: string) => s.trim());
+      settings.profiles = [
+        {
+          id: "default",
+          name: "Default",
+          rules: legacyRules,
+        },
+      ];
+      delete settings.order;
+      await this.updateSettings(settings);
+    }
+
     // Register Block Menu Command
     if (orca.blockMenuCommands.registerBlockMenuCommand) {
       orca.blockMenuCommands.registerBlockMenuCommand(
@@ -25,27 +70,57 @@ export default class SortPlugin extends BasePlugin {
         {
           worksOnMultipleBlocks: true,
           render: (blockIds, rootBlockId, close) => {
-            // We need to fetch the actual Button or MenuText component
-            // But since this is a render function returning a ReactNode, we can use JSX
             const MenuText = orca.components.MenuText;
             if (!MenuText) return null;
-
             if (!blockIds || blockIds.length <= 1) return null;
 
-            return (
-              <MenuText
-                preIcon="ti ti-sort-ascending-letters"
-                title={t("Sort Selected Blocks")}
-                onClick={() => {
-                  close();
-                  orca.commands.invokeCommand(
-                    `${this.name}.sort-selection`,
-                    blockIds,
-                    rootBlockId,
-                  );
-                }}
-              />
-            );
+            const profiles: SortProfile[] =
+              this.getSettings().profiles || [];
+
+            if (profiles.length === 1) {
+              return (
+                <MenuText
+                  preIcon="ti ti-sort-ascending-letters"
+                  title={t("Sort Selected Blocks...")}
+                  onClick={() => {
+                    close();
+                    orca.commands.invokeCommand(
+                      `${this.name}.sort-selection`,
+                      {
+                        blockIds,
+                        rootBlockId,
+                        profileId: profiles[0].id,
+                      },
+                    );
+                  }}
+                />
+              );
+            } else if (profiles.length > 1) {
+              return (
+                <MenuText
+                  preIcon="ti ti-sort-ascending-letters"
+                  title={t("Sort Selected Blocks...")}
+                  postIcon="ti ti-chevron-right"
+                >
+                  <orca.components.Menu>
+                    {profiles.map((p) => (
+                      <MenuText
+                        key={p.id}
+                        title={p.name}
+                        onClick={() => {
+                          close();
+                          orca.commands.invokeCommand(
+                            `${this.name}.sort-selection`,
+                            { blockIds, rootBlockId, profileId: p.id },
+                          );
+                        }}
+                      />
+                    ))}
+                  </orca.components.Menu>
+                </MenuText>
+              );
+            }
+            return null;
           },
         },
       );
@@ -54,8 +129,12 @@ export default class SortPlugin extends BasePlugin {
     // Register Editor Command
     orca.commands.registerCommand(
       `${this.name}.sort-selection`,
-      async (blockIds: number[], rootBlockId: number) => {
-        // ... (validation and fetching blocks) ...
+      async (args: {
+        blockIds: number[];
+        rootBlockId: number;
+        profileId: string;
+      }) => {
+        const { blockIds, profileId } = args;
         if (!blockIds || blockIds.length <= 1) {
           orca.notify("info", t("Select at least 2 blocks to sort."));
           return;
@@ -77,22 +156,20 @@ export default class SortPlugin extends BasePlugin {
 
         // Get sort order from settings
         const settings = this.getSettings();
-        const sortOrderStr = settings.order;
-        const sortOrder = sortOrderStr
-          .split(/[,，]/)
-          .map((s: string) => s.trim());
+        const profiles: SortProfile[] = settings.profiles || [];
+        const profile = profiles.find((p) => p.id === profileId) || profiles[0];
+        const sortOrder = profile ? profile.rules : [];
 
         const sortedBlocks = [...blocks].sort((a: any, b: any) => {
           const getType = (blk: any): string => {
-            // 1. Get _repr to check for Task
             const repr = getRepr(blk);
+            const type = repr?.type || "text";
 
-            if (repr?.type === "task") {
+            if (type === "task") {
               const isChecked = repr.state === 1;
               return isChecked ? "task_checked" : "task_unchecked";
             }
 
-            // 2. Check for Empty
             const text =
               typeof blk.text === "string"
                 ? blk.text
@@ -101,7 +178,7 @@ export default class SortPlugin extends BasePlugin {
               return "empty";
             }
 
-            return "other";
+            return type; // heading, query, image, table2, epub, mirror, journal, video, audio, text, other
           };
 
           const typeA = getType(a);
@@ -110,7 +187,7 @@ export default class SortPlugin extends BasePlugin {
           const idxA = sortOrder.indexOf(typeA);
           const idxB = sortOrder.indexOf(typeB);
 
-          // Use Infinity for unknown types to push them to end (or keep relative?)
+          // Use Infinity for unknown types to push them to end
           const valA = idxA === -1 ? 999 : idxA;
           const valB = idxB === -1 ? 999 : idxB;
 
@@ -132,47 +209,16 @@ export default class SortPlugin extends BasePlugin {
           return 0;
         });
 
-        // ... (movement logic) ...
         let firstBlock = blocks.find((b) => !blockIds.includes(b.left || 0));
-        // If all blocks have left in blockIds, it's a loop? Impossible in tree.
-        // Note: block.left might be undefined/null for first child?
-        // If multiple defined, non-contiguous. We pick the one that seems "first"? We can't tell easily.
-        // We'll just pick the first one we found.
 
         let anchorBlockId = firstBlock?.left;
-
-        // If firstBlock is undefined (weird), or if firstBlock IS the first child (left undefined), anchorBlockId is undefined.
-
-        // Now move sortedBlocks[0] to after anchorBlockId.
-        // If anchorBlockId is null/undefined, move to firstChild of parent.
-
-        // Current limitation: I don't know the exact command for "Move".
-        // I will attempt `core.editor.moveBlock`.
-        // Function signature guess: (cursor, blockId, referenceBlockId, position)
-        // position: "after" | "before" | "firstChild" | "lastChild"
-
-        // We will execute sequentially.
 
         const parentBlock = await ensureBlockInState(parentId!);
 
         let currentAnchor = anchorBlockId;
-        let position = currentAnchor ? "after" : "firstChild";
-        let reference = currentAnchor
-          ? orca.state.blocks[currentAnchor]
-          : parentBlock;
 
         for (let i = 0; i < sortedBlocks.length; i++) {
           const block = sortedBlocks[i];
-
-          // If the block is already in the right place?
-          // Checking logic is hard. Just move it.
-
-          // If we are moving to "after" currentAnchor:
-          // command: moveBlock(null, block.id, currentAnchor, "after")?
-          // Or moveBlock(null, block.id, referenceBlock, position)
-
-          // If position is firstChild, reference is parent.
-          // If position is after, reference is anchor.
 
           try {
             // Determine reference block
@@ -220,32 +266,205 @@ export default class SortPlugin extends BasePlugin {
 
 function SortSettings({ plugin }: { plugin: SortPlugin }) {
   const settings = plugin.getSettings();
-  const [order, setOrder] = useState(settings.order);
+  const [profiles, setProfiles] = useState<SortProfile[]>(
+    settings.profiles || [],
+  );
 
-  const updateOrder = async (value: string) => {
-    setOrder(value);
-    await plugin["updateSettings"]({ order: value });
+  const Button = orca.components.Button;
+  const Input = orca.components.CompositionInput;
+
+  const updateProfiles = async (newProfiles: SortProfile[]) => {
+    setProfiles(newProfiles);
+    await plugin["updateSettings"]({ profiles: newProfiles });
   };
 
-  const TextArea = orca.components.CompositionTextArea;
+  const handleAddProfile = () => {
+    const newProfiles = [
+      ...profiles,
+      {
+        id: Date.now().toString(),
+        name: "New Profile",
+        rules: ["task_unchecked", "task_checked", "empty", "other"],
+      },
+    ];
+    updateProfiles(newProfiles);
+  };
+
+  const handleDeleteProfile = (id: string) => {
+    updateProfiles(profiles.filter((p) => p.id !== id));
+  };
+
+  const handleUpdateName = (id: string, name: string) => {
+    updateProfiles(
+      profiles.map((p) => (p.id === id ? { ...p, name } : p)),
+    );
+  };
+
+  const handleMoveRule = (profileId: string, idx: number, direction: -1 | 1) => {
+    const newProfiles = profiles.map((p) => {
+      if (p.id !== profileId) return p;
+      const newRules = [...p.rules];
+      const targetIdx = idx + direction;
+      if (targetIdx >= 0 && targetIdx < newRules.length) {
+        const temp = newRules[idx];
+        newRules[idx] = newRules[targetIdx];
+        newRules[targetIdx] = temp;
+      }
+      return { ...p, rules: newRules };
+    });
+    updateProfiles(newProfiles);
+  };
+
+  const handleDeleteRule = (profileId: string, ruleIdx: number) => {
+    const newProfiles = profiles.map((p) => {
+      if (p.id !== profileId) return p;
+      const newRules = p.rules.filter((_, i) => i !== ruleIdx);
+      return { ...p, rules: newRules };
+    });
+    updateProfiles(newProfiles);
+  };
+
+  const handleAddRule = (profileId: string, rule: string) => {
+    if (!rule) return;
+    const newProfiles = profiles.map((p) => {
+      if (p.id !== profileId) return p;
+      if (!p.rules.includes(rule)) {
+        return { ...p, rules: [...p.rules, rule] };
+      }
+      return p;
+    });
+    updateProfiles(newProfiles);
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      <SettingsSection title={t("Sort Settings")}>
-        <SettingsItem
-          label={t("Sort Order")}
-          vertical
-          description={t(
-            "Separate types with commas. Types: 'empty', 'other', 'task_checked', 'task_unchecked'.",
-          )}
-        >
-          <TextArea
-            // @ts-ignore
-            value={order}
-            onChange={(e: any) => updateOrder(e.target.value)}
-            style={{ width: "100%", minHeight: "80px" }}
-          />
-        </SettingsItem>
+      <SettingsSection title={t("Sort Profiles")}>
+        {profiles.map((profile) => {
+          const availableTypes = ALL_TYPES.filter(
+            (type) => !profile.rules.includes(type),
+          );
+          return (
+            <div
+              key={profile.id}
+              style={{
+                marginBottom: "16px",
+                padding: "16px",
+                border: "1px solid var(--orca-border-color, rgba(128,128,128,0.2))",
+                borderRadius: "8px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  marginBottom: "16px",
+                }}
+              >
+                <div style={{ flex: 1 }}>
+                  <Input
+                    // @ts-ignore
+                    value={profile.name}
+                    onChange={(e: any) =>
+                      handleUpdateName(profile.id, e.target.value)
+                    }
+                    placeholder={t("Profile Name")}
+                    style={{ width: "100%" }}
+                  />
+                </div>
+                {profiles.length > 1 && (
+                  <Button
+                    variant="dangerous"
+                    onClick={() => handleDeleteProfile(profile.id)}
+                  >
+                    <i className="ti ti-trash" /> {t("Delete Profile")}
+                  </Button>
+                )}
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px",
+                  marginBottom: "16px",
+                }}
+              >
+                {profile.rules.map((rule, idx) => (
+                  <div
+                    key={rule}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "8px 12px",
+                      background: "var(--orca-bg-2, rgba(128,128,128,0.05))",
+                      borderRadius: "6px",
+                    }}
+                  >
+                    <span>{t(`Type.${rule}`) || rule}</span>
+                    <div style={{ display: "flex", gap: "4px" }}>
+                      <Button
+                        variant="plain"
+                        // @ts-ignore
+                        disabled={idx === 0}
+                        onClick={() => handleMoveRule(profile.id, idx, -1)}
+                      >
+                        <i className="ti ti-chevron-up" />
+                      </Button>
+                      <Button
+                        variant="plain"
+                        // @ts-ignore
+                        disabled={idx === profile.rules.length - 1}
+                        onClick={() => handleMoveRule(profile.id, idx, 1)}
+                      >
+                        <i className="ti ti-chevron-down" />
+                      </Button>
+                      <Button
+                        variant="plain"
+                        style={{ color: "var(--orca-danger-color, red)" }}
+                        onClick={() => handleDeleteRule(profile.id, idx)}
+                      >
+                        <i className="ti ti-trash" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                <select
+                  value=""
+                  onChange={(e) => handleAddRule(profile.id, e.target.value)}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "4px",
+                    border: "1px solid var(--orca-border-color, rgba(128,128,128,0.2))",
+                    background: "var(--orca-bg-1, transparent)",
+                    color: "var(--orca-text-1, inherit)",
+                  }}
+                >
+                  <option value="" disabled hidden>
+                    {t("Add Rule")}
+                  </option>
+                  {availableTypes.length === 0 ? (
+                    <option disabled>No more types available</option>
+                  ) : (
+                    availableTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {t(`Type.${type}`) || type}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+            </div>
+          );
+        })}
+        <Button variant="outline" onClick={handleAddProfile}>
+          <i className="ti ti-plus" style={{ marginRight: "8px" }} />{" "}
+          {t("Add Profile")}
+        </Button>
       </SettingsSection>
     </div>
   );

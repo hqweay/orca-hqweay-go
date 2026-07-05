@@ -1,12 +1,30 @@
 export default {
   // Sort Settings
   "Sort Settings": "排序设置",
-  "Sort Order": "排序规则",
-  "Separate types with commas. Types: 'empty', 'other', 'task_checked', 'task_unchecked'.":
-    "多种类型用逗号分隔。可用类型：'empty' (空白), 'other' (其他), 'task_checked' (已完成任务), 'task_unchecked' (未完成任务)。",
-  "Sort Selected Blocks": "排序选中的块",
+  "Sort Profiles": "排序预设",
+  "Sort Selected Blocks...": "排序选中的块...",
   "Select at least 2 blocks to sort.": "请至少选择 2 个块进行排序。",
   "Could not load all selected blocks.": "无法加载所有选中的块。",
   "Blocks must be siblings to sort.": "必须是同级块才能排序。",
   "Sort Selection": "排序选区",
+  "Add Profile": "添加预设",
+  "Profile Name": "预设名称",
+  "Add Rule": "添加类型规则",
+  "Delete Profile": "删除预设",
+  
+  // Block Types for Sorting
+  "Type.task_unchecked": "未完成任务",
+  "Type.task_checked": "已完成任务",
+  "Type.heading": "标题",
+  "Type.query": "查询",
+  "Type.image": "图片",
+  "Type.table2": "表格",
+  "Type.epub": "电子书",
+  "Type.mirror": "镜像块",
+  "Type.journal": "日记",
+  "Type.video": "视频",
+  "Type.audio": "音频",
+  "Type.empty": "空白块",
+  "Type.text": "普通文本",
+  "Type.other": "其他",
 };
