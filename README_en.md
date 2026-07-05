@@ -280,6 +280,15 @@ Introduces a modern, structured global sidebar outline tree for Orca Note, desig
   - Configure the outline tree to default to the **Left** or **Right** side via settings.
   - **Right-Click** or **Shift + Click** the top bar icon to instantly summon the outline on the opposite side of the screen!
 
+### 23. 🔗 Gather Refs
+
+Gathers all back-references of the current document into a clean Map of Content (MOC).
+
+- **Slash & Context Menu**: Triggered via `/gather` slash command or the block context menu.
+- **Smart Aggregation**: Automatically extracts all top-level root blocks (Pages/Cards) that reference the current document.
+- **Clean Markdown Output**: Uses Markdown syntax `[Page Title](orca-note://...)` and batch inserts them at the cursor position.
+- **Deduplication**: Eliminates redundant links and prevents polluting the native backlinks panel.
+
 ## Development
 
 This project uses a modular architecture:

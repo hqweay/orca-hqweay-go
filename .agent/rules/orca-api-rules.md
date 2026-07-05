@@ -17,6 +17,12 @@ trigger: always_on
     *   **红线**: `content` 必须是扁平的片段数组，绝不能嵌套在 `{content: [...]}` 对象中。
 *   **批量插入引用优化**: 
     当需要插入大量引用块时，不要循环调用 `insertBlock`。应拼接 Markdown 样式的引用字符串 `[[id1]]\n[[id2]]`，然后调用 `core.editor.batchInsertText` 自动解析，以提升性能。
+*   **Slash Command 约束**: 
+    通过 `orca.slashCommands.registerSlashCommand` 注册的命令，其传入的 `command` ID 必须是经由 `orca.commands.registerEditorCommand` 注册的编辑器命令，不能是普通的全局命令。EditorCommand 闭包会获得 `([panelId, rootBlockId, cursorData])` 作为上下文参数。
+*   **防止反链面板污染**: 
+    如果仅仅是为了在页面中引用某块而不希望其出现在目标块的反向链接面板（Backlinks）中，请插入外部超链接格式的 Markdown 文本：`[Title](orca-note://${orca.state.repo || ""}/block?blockId=${id})`，然后通过 `core.editor.batchInsertText` 插入。
+*   **获取根节点 (Page) 的原生做法**:
+    虎鲸底层的 `Block` 没有 `root_id`，最原生的获取文档顶层节点（Page）的方法是利用 `block.parent` 字段，结合带缓存的 `ensureBlockInState` 不断向上遍历直至 `parent` 为空。避免为了找根节点而过度设计查询逻辑。
 
 ## 2. 用户交互与 UX
 *   **交互式通知**:
