@@ -121,19 +121,13 @@ export default class FormatPlugin extends BasePlugin {
             false, // setBackCursor
           );
 
-          // Notify user
-          orca.broadcasts.broadcast("core.notify", {
-            type: "success",
-            message: `Formatted ${updates.length} blocks.`,
-          });
+          orca.notify(
+            "success",
+            t("format.Formatted ${count} blocks.", { count: updates.length.toString() })
+          );
         } else {
-          orca.broadcasts.broadcast("core.notify", {
-            type: "info",
-            message: "No blocks needed formatting.",
-          });
+          orca.notify("info", t("format.No blocks needed formatting."));
         }
-
-        orca.notify("info", t(`Formatted ${updates.length} blocks.`));
       },
       t("Format Block"),
     );

@@ -12,5 +12,7 @@ export default {
   "Enable deletion of empty lines/blocks.": "允许自动删除空白行/空块",
   "Enable converting text styled like headings to real heading blocks.": "允许将符合标题样式的文本转换为真正的标题块",
   "No styles selected to remove.": "没有启用或选择任何可清除的样式。",
+  "format.Formatted ${count} blocks.": "已排版 ${count} 个块",
+  "format.No blocks needed formatting.": "没有需要排版的块",
 };
 
