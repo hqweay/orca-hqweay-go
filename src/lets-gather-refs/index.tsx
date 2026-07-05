@@ -15,7 +15,7 @@ export default class GatherRefsPlugin extends BasePlugin {
       fullId,
       async ([_panelId, _rootBlockId, _cursor]) => {
         try {
-          await gatherAndInsertRefs((key, args) => this.t(key, args));
+          await gatherAndInsertRefs((key, args) => this.t(key, args), _cursor);
           return null;
         } catch (error) {
           console.error("[lets-gather-refs] Error:", error);

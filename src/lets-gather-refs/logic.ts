@@ -25,7 +25,7 @@ async function findRootBlock(blockId: number): Promise<Block | null> {
   return currentBlock;
 }
 
-export async function gatherAndInsertRefs(t: (key: string, args?: any) => string) {
+export async function gatherAndInsertRefs(t: (key: string, args?: any) => string, cursorData?: any) {
   // A: 当前面板打开的块 (Page)
   const pageBlockId = getCurrentBlockId();
   if (!pageBlockId) {
@@ -39,9 +39,7 @@ export async function gatherAndInsertRefs(t: (key: string, args?: any) => string
     return;
   }
 
-  // B: 光标聚焦的块 (作为插入点)
-  const selection = window.getSelection();
-  const cursorData = selection ? orca.utils.getCursorDataFromSelection(selection) : null;
+  // B: 确定插入目标
   const insertTargetId = cursorData?.focus?.blockId;
   const insertTargetBlock = insertTargetId 
     ? await ensureBlockInState(insertTargetId) 
@@ -93,9 +91,9 @@ export async function gatherAndInsertRefs(t: (key: string, args?: any) => string
 
   await orca.commands.invokeEditorCommand(
     "core.editor.batchInsertText",
-    null, // cursor
-    insertTargetBlock, // refBlock
-    "after", // position
+    cursorData || null, // 传递 cursor，保持语义完整
+    insertTargetBlock,  // 必填项，作为新块追加的锚点
+    "after",            // 必填项，追加在目标块的下方
     markdownContent
   );
 
