@@ -18,7 +18,9 @@ description: 该 rule 指定了如何理解并开发该项目，每次进行开�
 *   **全局状态红线 (`orca.state`)**:
     - 在 React 组件中 **必须** 使用 `useSnapshot(orca.state)` 读取数据以实现响应式更新。
     - 在逻辑/命令中直接读取 `orca.state` 时，**绝对禁止直接修改它**，修改数据必须通过 `invokeEditorCommand` 等命令触发。
-    - **克隆陷阱**: 在将 Valtio 代理对象（如块的 properties）传入核心命令前，必须使用 `cloneDeep(obj)`，否则会导致 `Illegal invocation` 报错。
+    - **克隆陷阱 (`cloneDeep`)**:
+      - **必须克隆**: 从 `orca.state` 状态树中读取的深层嵌套对象（如 `block.properties`、`viewArgs.query`、`repr.q.q` 等），在传入 `invokeEditorCommand`、`invokeBackend` 等跨通信边界的核心 API 前，必须使用 `cloneDeep(obj)` 剥离 Valtio Proxy，否则底层序列化会抛出 `Illegal invocation` / `DataCloneError`。
+      - **无需克隆**: `registerEditorCommand` 回调参数中的 `_cursor`、`_panelId`、`_rootBlockId` 等由命令分发器提供的上下文参数，它们是分发器在触发时生成的快照，不是 Valtio Proxy，可直接传递。
 
 ## 2. 子插件生命周期与 UI 规范
 *   **基类**: 所有子插件必须继承自 `src/libs/BasePlugin.ts`。
