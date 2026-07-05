@@ -2401,7 +2401,7 @@ export interface Orca {
      * ```
      */
     Button: (
-      props: React.HTMLAttributes<HTMLButtonElement> & {
+      props: React.ButtonHTMLAttributes<HTMLButtonElement> & {
         variant: "solid" | "soft" | "dangerous" | "outline" | "plain";
       },
     ) => JSX.Element | null;
@@ -2462,7 +2462,7 @@ export interface Orca {
      * ```
      */
     CompositionInput: (
-      props: React.HTMLAttributes<HTMLInputElement> & {
+      props: React.InputHTMLAttributes<HTMLInputElement> & {
         pre?: React.ReactElement;
         post?: React.ReactElement;
         error?: React.ReactNode;
@@ -2489,7 +2489,7 @@ export interface Orca {
      * ```
      */
     CompositionTextArea: (
-      props: React.HTMLAttributes<HTMLTextAreaElement>,
+      props: React.TextareaHTMLAttributes<HTMLTextAreaElement>,
     ) => JSX.Element | null;
     /**
      * Displays a confirmation dialog
@@ -2755,7 +2755,7 @@ export interface Orca {
      * ```
      */
     Image: (
-      props: React.HTMLAttributes<HTMLImageElement>,
+      props: React.ImgHTMLAttributes<HTMLImageElement>,
     ) => JSX.Element | null;
     /**
      * Standard text input component
@@ -2785,7 +2785,7 @@ export interface Orca {
      * ```
      */
     Input: (
-      props: React.HTMLAttributes<HTMLInputElement> & {
+      props: React.InputHTMLAttributes<HTMLInputElement> & {
         pre?: React.ReactElement;
         post?: React.ReactElement;
         error?: React.ReactNode;
@@ -3562,7 +3562,7 @@ export interface Orca {
         unset?: boolean;
         onChange?: (on: boolean) => void | Promise<void>;
         readonly?: boolean;
-      } & Omit<React.HTMLAttributes<HTMLButtonElement>, "onChange">,
+      } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onChange">,
     ) => JSX.Element | null;
     /**
      * Data table component
