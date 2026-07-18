@@ -58,7 +58,7 @@ export default class FormatPlugin extends BasePlugin {
 
         // Helper to process a block
         const processBlock = (block: any) => {
-          // 只格式化纯文本块，不格式化代码块
+          // Only format plain text blocks, do not format code blocks
           if (
             block.content &&
             (block.properties?.every(
@@ -68,17 +68,37 @@ export default class FormatPlugin extends BasePlugin {
               true)
           ) {
             let hasChanged = false;
-            const newContent = block.content.map((fragment: any) => {
-              // 行内元素代码块：'c'
+            const newContent = block.content.map((fragment: any, index: number) => {
+              // Inline element code block: 'c'
               if (
                 fragment.t === "t" &&
                 typeof fragment.v === "string" &&
                 fragment.f !== "c"
               ) {
-                const formattedText = formatUtil.formatContent(fragment.v);
-                if (formattedText !== fragment.v) {
+                const hasLeadingSpace = fragment.v.startsWith(" ");
+                const hasTrailingSpace = fragment.v.endsWith(" ");
+
+                const cleanedText = formatUtil.cleanSpacesBetweenChineseCharacters(fragment.v);
+                const formattedText = formatUtil.formatContent(cleanedText);
+                let finalFormattedText = formattedText;
+
+                // Keep leading space if the fragment originally had it and the previous fragment is not text (e.g. pin reference)
+                if (hasLeadingSpace && index > 0 && block.content[index - 1].t !== "t") {
+                  if (!finalFormattedText.startsWith(" ")) {
+                    finalFormattedText = " " + finalFormattedText;
+                  }
+                }
+
+                // Keep trailing space if the fragment originally had it and the next fragment is not text
+                if (hasTrailingSpace && index < block.content.length - 1 && block.content[index + 1].t !== "t") {
+                  if (!finalFormattedText.endsWith(" ")) {
+                    finalFormattedText = finalFormattedText + " ";
+                  }
+                }
+
+                if (finalFormattedText !== fragment.v) {
                   hasChanged = true;
-                  return { ...fragment, v: formattedText };
+                  return { ...fragment, v: finalFormattedText };
                 }
               }
               return fragment;
