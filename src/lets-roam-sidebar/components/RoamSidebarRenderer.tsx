@@ -18,6 +18,7 @@ import { TabBar } from "./TabBar";
 import { StackedBlockItem } from "./StackedBlockItem";
 import { EmptyState } from "./EmptyState";
 import { DropZoneFooter } from "./DropZoneFooter";
+import { NewTabModal } from "./NewTabModal";
 import React from "react";
 
 interface RendererProps {
@@ -41,6 +42,8 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
 
   const [draggedBlockId, setDraggedBlockId] = useState<number | null>(null);
   const [insertionIndex, setInsertionIndex] = useState<number | null>(null);
+
+  const [showNewTabModal, setShowNewTabModal] = useState(false);
 
   if (initializedBlockIdRef.current !== blockId) {
     isInitialized.current = false;
@@ -194,6 +197,10 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
     setInsertionIndex(insertAt);
   }, [draggedBlockId]);
 
+  const handleNewTabSubmit = useCallback((name: string) => {
+    createTab(name);
+  }, []);
+
   const currentTab = activeTab();
   const currentBlocks = currentTab?.stackedBlocks || [];
 
@@ -208,7 +215,13 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
     >
       <style dangerouslySetInnerHTML={{ __html: styles }} />
 
-      <TabBar />
+      <TabBar onRequestNewTab={() => setShowNewTabModal(true)} />
+
+      <NewTabModal
+        visible={showNewTabModal}
+        onClose={() => setShowNewTabModal(false)}
+        onSubmit={handleNewTabSubmit}
+      />
 
       {currentBlocks.length === 0 ? (
         <EmptyState isDragOver={isDragOver} />
@@ -227,7 +240,7 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
             }}
           >
             {state.tabs.length <= 1 && (
-              <div style={{ cursor: "pointer" }} onClick={() => createTab(t("roam-sidebar.new-tab"))}>
+              <div style={{ cursor: "pointer" }} onClick={() => setShowNewTabModal(true)}>
                 <i className="ti ti-plus" /> {t("roam-sidebar.new-tab")}
               </div>
             )}

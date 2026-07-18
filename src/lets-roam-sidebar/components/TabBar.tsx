@@ -3,7 +3,6 @@ import { useSnapshot } from "valtio";
 import { t } from "@/libs/l10n";
 import {
   roamSidebarState,
-  createTab,
   deleteTab,
   renameTab,
   duplicateTab,
@@ -12,7 +11,11 @@ import {
 } from "../utils/state";
 import React from "react";
 
-export const TabBar = () => {
+interface TabBarProps {
+  onRequestNewTab: () => void;
+}
+
+export const TabBar = ({ onRequestNewTab }: TabBarProps) => {
   const state = useSnapshot(roamSidebarState);
 
   const [contextMenu, setContextMenu] = useState<{
@@ -28,9 +31,6 @@ export const TabBar = () => {
   const [draggedTabIndex, setDraggedTabIndex] = useState<number | null>(null);
   const [tabInsertionIndex, setTabInsertionIndex] = useState<number | null>(null);
 
-  const [showNewTabModal, setShowNewTabModal] = useState(false);
-  const [newTabName, setNewTabName] = useState("");
-
   useEffect(() => {
     if (!contextMenu) return;
     const close = () => setContextMenu(null);
@@ -44,19 +44,6 @@ export const TabBar = () => {
       renameInputRef.current.select();
     }
   }, [renamingTabIndex]);
-
-  const handleNewTab = useCallback(() => {
-    setNewTabName("");
-    setShowNewTabModal(true);
-  }, []);
-
-  const handleNewTabSubmit = useCallback(() => {
-    if (newTabName.trim()) {
-      createTab(newTabName.trim());
-    }
-    setShowNewTabModal(false);
-    setNewTabName("");
-  }, [newTabName]);
 
   const handleContextRename = useCallback((index: number) => {
     setRenamingTabIndex(index);
@@ -151,6 +138,13 @@ export const TabBar = () => {
         {draggedTabIndex !== null && tabInsertionIndex === state.tabs.length && (
           <div className="roam-sidebar-tab-insertion-line" />
         )}
+        <div
+          className="roam-sidebar-tab roam-sidebar-tab-add"
+          onClick={onRequestNewTab}
+          title={t("roam-sidebar.new-tab")}
+        >
+          <i className="ti ti-plus" />
+        </div>
       </div>
 
       {contextMenu && (
@@ -185,84 +179,6 @@ export const TabBar = () => {
             <i className="ti ti-trash" /> {t("roam-sidebar.delete-tab")}
           </div>
         </div>
-      )}
-
-      {showNewTabModal && (
-        <orca.components.ModalOverlay
-          visible={showNewTabModal}
-          onClose={() => {
-            setShowNewTabModal(false);
-            setNewTabName("");
-          }}
-          blurred={true}
-          style={{
-            backgroundColor: "rgba(0, 0, 0, 0.3)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <div
-            style={{
-              background: "var(--orca-color-bg-1)",
-              color: "var(--orca-text-color)",
-              padding: "20px",
-              borderRadius: "12px",
-              width: "320px",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
-              border: "1px solid var(--orca-color-border-2)",
-            }}
-          >
-            <h3
-              style={{
-                margin: "0 0 16px 0",
-                fontSize: "15px",
-                fontWeight: 600,
-              }}
-            >
-              {t("roam-sidebar.tab-name-prompt")}
-            </h3>
-            <orca.components.Input
-              value={newTabName}
-              onChange={(e: any) => setNewTabName(e.target.value)}
-              onKeyDown={(e: any) => {
-                if (e.key === "Enter") handleNewTabSubmit();
-                if (e.key === "Escape") {
-                  setShowNewTabModal(false);
-                  setNewTabName("");
-                }
-              }}
-              placeholder={t("roam-sidebar.tab-name-placeholder") || "Tab name"}
-              autoFocus
-              width="100%"
-            />
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: "8px",
-                marginTop: "16px",
-              }}
-            >
-              <orca.components.Button
-                variant="plain"
-                onClick={() => {
-                  setShowNewTabModal(false);
-                  setNewTabName("");
-                }}
-              >
-                {t("common.cancel")}
-              </orca.components.Button>
-              <orca.components.Button
-                variant="solid"
-                onClick={handleNewTabSubmit}
-                disabled={!newTabName.trim()}
-              >
-                {t("common.confirm")}
-              </orca.components.Button>
-            </div>
-          </div>
-        </orca.components.ModalOverlay>
       )}
     </>
   );

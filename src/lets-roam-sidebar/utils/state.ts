@@ -24,10 +24,6 @@ export const activeTab = (): Tab | null => {
   return tabs[activeTabIndex] || null;
 };
 
-export const stackedBlocks = (): StackedBlock[] => {
-  return activeTab()?.stackedBlocks || [];
-};
-
 // --- Tab operations ---
 
 export const createTab = (name: string): Tab => {
@@ -40,7 +36,8 @@ export const createTab = (name: string): Tab => {
 export const deleteTab = (index: number) => {
   const { tabs } = roamSidebarState;
   if (tabs.length <= 1) {
-    tabs[0] = { id: nextTabId(), name: "Tab 1", stackedBlocks: [] };
+    createTab("Tab 1");
+    tabs.splice(0, 1);
     roamSidebarState.activeTabIndex = 0;
     return;
   }
@@ -75,9 +72,10 @@ export const setActiveTab = (index: number) => {
 export const moveTab = (fromIndex: number, toIndex: number) => {
   const { tabs } = roamSidebarState;
   if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return;
+  const clampedToIndex = Math.min(toIndex, tabs.length - 1);
   const [moved] = tabs.splice(fromIndex, 1);
-  tabs.splice(toIndex, 0, moved);
-  roamSidebarState.activeTabIndex = toIndex;
+  tabs.splice(clampedToIndex, 0, moved);
+  roamSidebarState.activeTabIndex = clampedToIndex;
 };
 
 // --- Block operations (operate on active tab) ---
