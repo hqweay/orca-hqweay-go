@@ -170,3 +170,41 @@
     transform: rotate(360deg);
   }
 }
+
+/* Drag handle in breadcrumb */
+.roam-sidebar-item-drag-handle {
+  cursor: grab;
+  padding: 2px 4px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  display: flex;
+  align-items: center;
+  color: var(--orca-text-muted);
+  font-size: 14px;
+  user-select: none;
+}
+
+.roam-sidebar-item:hover .roam-sidebar-item-drag-handle {
+  opacity: 0.6;
+}
+
+.roam-sidebar-item-drag-handle:hover {
+  opacity: 1 !important;
+  color: var(--orca-text-primary);
+}
+
+/* Insertion line */
+.roam-sidebar-insertion-line {
+  height: 2px;
+  background-color: var(--orca-brand-primary, #3b82f6);
+  border-radius: 1px;
+  margin: -1px 0;
+  pointer-events: none;
+  position: relative;
+  z-index: 10;
+}
+
+/* Dragging state */
+.roam-sidebar-item.roam-sidebar-item-dragging {
+  opacity: 0.4;
+}

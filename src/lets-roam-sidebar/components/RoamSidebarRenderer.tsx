@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSnapshot } from "valtio";
 import styles from "../styles.css?inline";
 import { t } from "@/libs/l10n";
@@ -6,6 +6,7 @@ import {
   roamSidebarState,
   addStackedBlock,
   removeStackedBlock,
+  moveStackedBlock,
   collapseAll,
   expandAll,
   toggleBlockCollapse,
@@ -31,6 +32,10 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
   const isInitialized = useRef(false);
   const initializedBlockIdRef = useRef<number | null>(null);
 
+  // Reorder drag state
+  const [draggedBlockId, setDraggedBlockId] = useState<number | null>(null);
+  const [insertionIndex, setInsertionIndex] = useState<number | null>(null);
+
   if (initializedBlockIdRef.current !== blockId) {
     isInitialized.current = false;
     initializedBlockIdRef.current = blockId;
@@ -46,7 +51,6 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
     if (block) {
       const reprProp = block.properties?.find((p: any) => p.name === "_repr");
       if (reprProp && reprProp.value?.stackedBlocks) {
-        // Hydrate from DB, cloning to prevent direct mutation of orca.state
         roamSidebarState.stackedBlocks = JSON.parse(
           JSON.stringify(reprProp.value.stackedBlocks)
         );
@@ -90,10 +94,10 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
     }
   }, [state.stackedBlocks, blockId]);
 
+  // Parse drag data from editor blocks
   const parseDragData = (e: React.DragEvent): number[] => {
     const types = Array.from(e.dataTransfer.types);
 
-    // Find orca/{repoId} type (exact match, not prefixed like orca/fav/ or orca/tag/)
     const orcaRepoType = types.find((t) => {
       const parts = t.split("/");
       return parts.length === 2 && parts[0] === "orca";
@@ -133,12 +137,22 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
 
   const dragCounter = React.useRef(0);
 
+  // Handle drop from editor (add to sidebar)
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     dragCounter.current = 0;
     setIsDragOver(false);
 
+    // If we have an insertion index, this is a reorder drop
+    if (draggedBlockId !== null && insertionIndex !== null) {
+      moveStackedBlock(draggedBlockId, insertionIndex);
+      setDraggedBlockId(null);
+      setInsertionIndex(null);
+      return;
+    }
+
+    // Otherwise, add new blocks from editor
     try {
       const ids = parseDragData(e);
       if (ids.length > 0) {
@@ -161,7 +175,7 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    e.dataTransfer.dropEffect = "copy";
+    e.dataTransfer.dropEffect = draggedBlockId !== null ? "move" : "copy";
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
@@ -172,6 +186,32 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
       setIsDragOver(false);
     }
   };
+
+  // Reorder drag handlers
+  const handleItemDragStart = useCallback((e: React.DragEvent, blockId: number) => {
+    e.stopPropagation();
+    setDraggedBlockId(blockId);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", String(blockId));
+  }, []);
+
+  const handleItemDragEnd = useCallback(() => {
+    setDraggedBlockId(null);
+    setInsertionIndex(null);
+  }, []);
+
+  const handleItemDragOver = useCallback((e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (draggedBlockId === null) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    const insertAt = e.clientY < midY ? index : index + 1;
+
+    setInsertionIndex(insertAt);
+  }, [draggedBlockId]);
 
   return (
     <div
@@ -229,85 +269,105 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
               {t("roam-sidebar.collapse-all")}
             </div>
           </div>
-          {state.stackedBlocks.map((b) => (
-            <div key={b.id} className="roam-sidebar-item">
+          {state.stackedBlocks.map((b, index) => (
+            <React.Fragment key={b.id}>
+              {draggedBlockId !== null && insertionIndex === index && (
+                <div className="roam-sidebar-insertion-line" />
+              )}
               <div
-                className="roam-sidebar-item-breadcrumb"
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: "4px 8px 4px 12px",
-                }}
+                className={`roam-sidebar-item ${draggedBlockId === b.id ? "roam-sidebar-item-dragging" : ""}`}
+                draggable={true}
+                onDragStart={(e) => handleItemDragStart(e, b.id)}
+                onDragEnd={handleItemDragEnd}
+                onDragOver={(e) => handleItemDragOver(e, index)}
               >
                 <div
+                  className="roam-sidebar-item-breadcrumb"
                   style={{
-                    cursor: "pointer",
-                    marginRight: "8px",
                     display: "flex",
+                    justifyContent: "space-between",
                     alignItems: "center",
+                    padding: "4px 8px 4px 12px",
                   }}
-                  onClick={() => toggleBlockCollapse(b.id)}
                 >
-                  <i
-                    className={
-                      b.collapsed ? "ti ti-caret-right" : "ti ti-caret-down"
-                    }
-                    style={{ fontSize: "14px" }}
+                  <div
+                    className="roam-sidebar-item-drag-handle"
+                    title={t("roam-sidebar.drag-to-reorder")}
+                  >
+                    <i className="ti ti-grip-vertical" />
+                  </div>
+                  <div
+                    style={{
+                      cursor: "pointer",
+                      marginRight: "8px",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    onClick={() => toggleBlockCollapse(b.id)}
+                  >
+                    <i
+                      className={
+                        b.collapsed ? "ti ti-caret-right" : "ti ti-caret-down"
+                      }
+                      style={{ fontSize: "14px" }}
+                    />
+                  </div>
+                  <div style={{ flex: 1, overflow: "hidden" }}>
+                    <BlockBreadcrumb blockId={b.id} />
+                  </div>
+                  <div
+                    className="roam-sidebar-item-close-action"
+                    title={t("roam-sidebar.close-card")}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeStackedBlock(b.id);
+                    }}
+                    style={{
+                      padding: "4px",
+                      cursor: "pointer",
+                      opacity: 0.6,
+                      fontSize: "14px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: "4px",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.opacity = "1";
+                      e.currentTarget.style.color =
+                        "var(--orca-color-danger-5, #ef4444)";
+                      e.currentTarget.style.backgroundColor =
+                        "var(--orca-color-danger-1, #fee2e2)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.opacity = "0.6";
+                      e.currentTarget.style.color = "";
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }}
+                  >
+                    <i className="ti ti-x" />
+                  </div>
+                </div>
+                <div
+                  className="roam-sidebar-item-content"
+                  data-orca-block-root="true"
+                >
+                  <Block
+                    key={`roam-block-${b.id}-${b.collapsed}`}
+                    panelId={panelId}
+                    blockId={b.id}
+                    blockLevel={0}
+                    indentLevel={0}
+                    renderingMode="normal"
+                    initiallyCollapsed={!!b.collapsed}
                   />
                 </div>
-                <div style={{ flex: 1, overflow: "hidden" }}>
-                  <BlockBreadcrumb blockId={b.id} />
-                </div>
-                <div
-                  className="roam-sidebar-item-close-action"
-                  title={t("roam-sidebar.close-card")}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeStackedBlock(b.id);
-                  }}
-                  style={{
-                    padding: "4px",
-                    cursor: "pointer",
-                    opacity: 0.6,
-                    fontSize: "14px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: "4px",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.opacity = "1";
-                    e.currentTarget.style.color =
-                      "var(--orca-color-danger-5, #ef4444)";
-                    e.currentTarget.style.backgroundColor =
-                      "var(--orca-color-danger-1, #fee2e2)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.opacity = "0.6";
-                    e.currentTarget.style.color = "";
-                    e.currentTarget.style.backgroundColor = "transparent";
-                  }}
-                >
-                  <i className="ti ti-x" />
-                </div>
               </div>
-              <div
-                className="roam-sidebar-item-content"
-                data-orca-block-root="true"
-              >
-                <Block
-                  key={`roam-block-${b.id}-${b.collapsed}`}
-                  panelId={panelId}
-                  blockId={b.id}
-                  blockLevel={0}
-                  indentLevel={0}
-                  renderingMode="normal"
-                  initiallyCollapsed={!!b.collapsed}
-                />
-              </div>
-            </div>
+            </React.Fragment>
           ))}
+          {draggedBlockId !== null && insertionIndex === state.stackedBlocks.length && (
+            <div className="roam-sidebar-insertion-line" />
+          )}
           <div
             className={`roam-sidebar-dropzone-footer ${isDragOver ? "roam-sidebar-dropzone-active" : ""}`}
             contentEditable={false}

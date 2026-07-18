@@ -12,4 +12,5 @@ export default {
   "roam-sidebar.split-view": "分屏查看内容",
   "roam-sidebar.drop-to-append": "释放以添加",
   "roam-sidebar.continue-adding": "继续添加块",
+  "roam-sidebar.drag-to-reorder": "拖拽以重新排序",
 };
