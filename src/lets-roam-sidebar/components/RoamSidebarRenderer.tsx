@@ -24,31 +24,47 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
   const { panelId, blockId } = props;
   const state = useSnapshot(roamSidebarState);
   const [isDragOver, setIsDragOver] = useState(false);
+
+  const blocksSnap = useSnapshot(orca.state.blocks);
+  const block = blocksSnap[blockId];
+
   const isInitialized = useRef(false);
+  const initializedBlockIdRef = useRef<number | null>(null);
+
+  if (initializedBlockIdRef.current !== blockId) {
+    isInitialized.current = false;
+    initializedBlockIdRef.current = blockId;
+  }
+
   const Block = orca.components.Block;
   const BlockBreadcrumb = orca.components.BlockBreadcrumb;
 
   // Initialize from block's _repr
   useEffect(() => {
-    const block = orca.state.blocks[blockId];
+    if (isInitialized.current) return;
+
     if (block) {
       const reprProp = block.properties?.find((p: any) => p.name === "_repr");
       if (reprProp && reprProp.value?.stackedBlocks) {
-        // Hydrate from DB
-        roamSidebarState.stackedBlocks = reprProp.value.stackedBlocks;
+        // Hydrate from DB, cloning to prevent direct mutation of orca.state
+        roamSidebarState.stackedBlocks = JSON.parse(
+          JSON.stringify(reprProp.value.stackedBlocks)
+        );
+      } else {
+        roamSidebarState.stackedBlocks = [];
       }
+      isInitialized.current = true;
     }
-    isInitialized.current = true;
-  }, [blockId]);
+  }, [blockId, block]);
 
   // Save to block's _repr when state changes
   useEffect(() => {
     if (!isInitialized.current) return;
 
-    const block = orca.state.blocks[blockId];
-    if (!block) return;
+    const directBlock = orca.state.blocks[blockId];
+    if (!directBlock) return;
 
-    const reprProp = block.properties?.find((p: any) => p.name === "_repr");
+    const reprProp = directBlock.properties?.find((p: any) => p.name === "_repr");
     const reprVal = reprProp?.value || { type: "roam-sidebar" };
 
     const currentJSON = JSON.stringify(reprVal.stackedBlocks || []);
