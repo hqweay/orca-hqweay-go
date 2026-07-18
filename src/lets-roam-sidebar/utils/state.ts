@@ -80,14 +80,18 @@ export const moveTab = (fromIndex: number, toIndex: number) => {
 
 // --- Block operations (operate on active tab) ---
 
-export const addStackedBlock = (blockId: number) => {
+export const addStackedBlock = (blockId: number, index?: number) => {
   const tab = activeTab();
   if (!tab) return;
   const existingIdx = tab.stackedBlocks.findIndex(b => b.id === blockId);
   if (existingIdx >= 0) {
     tab.stackedBlocks.splice(existingIdx, 1);
   }
-  tab.stackedBlocks.unshift({ id: blockId, collapsed: false });
+  if (index !== undefined) {
+    tab.stackedBlocks.splice(index, 0, { id: blockId, collapsed: false });
+  } else {
+    tab.stackedBlocks.push({ id: blockId, collapsed: false });
+  }
 };
 
 export const removeStackedBlock = (blockId: number) => {
@@ -97,6 +101,12 @@ export const removeStackedBlock = (blockId: number) => {
   if (existingIdx >= 0) {
     tab.stackedBlocks.splice(existingIdx, 1);
   }
+};
+
+export const clearActiveTab = () => {
+  const tab = activeTab();
+  if (!tab) return;
+  tab.stackedBlocks.splice(0, tab.stackedBlocks.length);
 };
 
 export const toggleBlockCollapse = (blockId: number) => {

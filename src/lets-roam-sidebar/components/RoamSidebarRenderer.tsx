@@ -13,12 +13,14 @@ import {
   collapseAll,
   expandAll,
   toggleBlockCollapse,
+  clearActiveTab,
 } from "../utils/state";
 import { TabBar } from "./TabBar";
 import { StackedBlockItem } from "./StackedBlockItem";
 import { EmptyState } from "./EmptyState";
 import { DropZoneFooter } from "./DropZoneFooter";
 import { NewTabModal } from "./NewTabModal";
+import { ConfirmModal } from "./ConfirmModal";
 import React from "react";
 
 interface RendererProps {
@@ -44,6 +46,7 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
   const [insertionIndex, setInsertionIndex] = useState<number | null>(null);
 
   const [showNewTabModal, setShowNewTabModal] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   if (initializedBlockIdRef.current !== blockId) {
     isInitialized.current = false;
@@ -144,11 +147,20 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
     try {
       const ids = parseBlockDragData(e);
       if (ids.length > 0) {
-        ids.forEach((id) => addStackedBlock(id));
+        if (insertionIndex !== null) {
+          let insertAt = insertionIndex;
+          ids.forEach((id) => {
+            addStackedBlock(id, insertAt);
+            insertAt++;
+          });
+        } else {
+          ids.forEach((id) => addStackedBlock(id));
+        }
       }
     } catch (err) {
       console.error("Failed to parse dragged block data:", err);
     }
+    setInsertionIndex(null);
   };
 
   const handleDragEnter = (e: React.DragEvent) => {
@@ -172,6 +184,7 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
     dragCounter.current -= 1;
     if (dragCounter.current === 0) {
       setIsDragOver(false);
+      setInsertionIndex(null);
     }
   };
 
@@ -190,18 +203,17 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
   const handleItemDragOver = useCallback((e: React.DragEvent, index: number) => {
     e.preventDefault();
     e.stopPropagation();
-    if (draggedBlockId === null) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const midY = rect.top + rect.height / 2;
     const insertAt = e.clientY < midY ? index : index + 1;
     setInsertionIndex(insertAt);
-  }, [draggedBlockId]);
+  }, []);
 
   const handleNewTabSubmit = useCallback((name: string) => {
     createTab(name);
   }, []);
 
-  const currentTab = activeTab();
+  const currentTab = state.tabs[state.activeTabIndex];
   const currentBlocks = currentTab?.stackedBlocks || [];
 
   return (
@@ -221,6 +233,18 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
         visible={showNewTabModal}
         onClose={() => setShowNewTabModal(false)}
         onSubmit={handleNewTabSubmit}
+      />
+
+      <ConfirmModal
+        visible={showClearConfirm}
+        onClose={() => setShowClearConfirm(false)}
+        onConfirm={() => {
+          clearActiveTab();
+          setShowClearConfirm(false);
+        }}
+        title={t("roam-sidebar.clear-all-confirm-title")}
+        description={t("roam-sidebar.clear-all-confirm-desc")}
+        danger
       />
 
       {currentBlocks.length === 0 ? (
@@ -251,6 +275,12 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
             <div style={{ cursor: "pointer" }} onClick={collapseAll}>
               <i className="ti ti-layout-topbar-collapse" />{" "}
               {t("roam-sidebar.collapse-all")}
+            </div>
+            <div
+              style={{ cursor: "pointer" }}
+              onClick={() => setShowClearConfirm(true)}
+            >
+              <i className="ti ti-trash" /> {t("roam-sidebar.clear-all")}
             </div>
           </div>
           {currentBlocks.map((b, index) => (

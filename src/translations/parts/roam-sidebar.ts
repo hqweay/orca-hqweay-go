@@ -19,4 +19,7 @@ export default {
   "roam-sidebar.delete-tab": "删除标签",
   "roam-sidebar.tab-name-prompt": "新建标签",
   "roam-sidebar.tab-name-placeholder": "输入标签名称",
+  "roam-sidebar.clear-all": "清空",
+  "roam-sidebar.clear-all-confirm-title": "清空当前标签？",
+  "roam-sidebar.clear-all-confirm-desc": "此操作将移除当前标签中的所有块，但不会删除原始块。",
 };
