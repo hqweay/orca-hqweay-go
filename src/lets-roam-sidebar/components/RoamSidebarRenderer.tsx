@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useSnapshot } from "valtio";
 import styles from "../styles.css?inline";
 import { t } from "@/libs/l10n";
+import { parseBlockDragData } from "@/libs/dragUtils";
 import {
   roamSidebarState,
   activeTab,
@@ -157,47 +158,6 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
     }
   }, [renamingTabIndex]);
 
-  // Parse drag data from editor blocks
-  const parseDragData = (e: React.DragEvent): number[] => {
-    const types = Array.from(e.dataTransfer.types);
-
-    const orcaRepoType = types.find((t) => {
-      const parts = t.split("/");
-      return parts.length === 2 && parts[0] === "orca";
-    });
-    const orcaRepoData = orcaRepoType
-      ? e.dataTransfer.getData(orcaRepoType)
-      : "";
-
-    const textData = e.dataTransfer.getData("text/plain");
-
-    const data = orcaRepoData || textData;
-    if (!data) return [];
-
-    let ids: number[] = [];
-
-    let parsed;
-    try {
-      parsed = JSON.parse(data);
-    } catch {
-      parsed = data;
-    }
-
-    if (typeof parsed === "object" && parsed !== null) {
-      if (parsed.id) ids.push(Number(parsed.id));
-      else if (Array.isArray(parsed.blockIds))
-        ids = parsed.blockIds.map(Number);
-      else if (Array.isArray(parsed.blocks)) ids = parsed.blocks.map(Number);
-      else if (Array.isArray(parsed) && parsed[0]?.id)
-        ids = parsed.map((b: any) => Number(b.id));
-    } else if (typeof parsed === "string") {
-      const numId = Number(parsed);
-      if (!isNaN(numId) && numId > 0) ids.push(numId);
-    }
-
-    return ids.filter((id) => !isNaN(id) && id > 0);
-  };
-
   const dragCounter = React.useRef(0);
 
   // Handle drop from editor (add to sidebar)
@@ -225,7 +185,7 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
 
     // Otherwise, add new blocks from editor
     try {
-      const ids = parseDragData(e);
+      const ids = parseBlockDragData(e);
       if (ids.length > 0) {
         ids.forEach((id) => addStackedBlock(id));
       }

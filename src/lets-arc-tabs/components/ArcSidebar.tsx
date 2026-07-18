@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
 import { useSnapshot } from "valtio";
 import { t } from "@/libs/l10n";
+import { parseBlockDragData } from "@/libs/dragUtils";
 
 import styles from "../styles.css?inline";
 import {
@@ -222,45 +223,9 @@ export const ArcSidebar: React.FC<{ panel?: any }> = ({ panel }) => {
     setIsDragOver(false);
 
     try {
-      const types = Array.from(e.dataTransfer.types);
-
-      // Find orca/{repoId} type (exact match)
-      const orcaRepoType = types.find((t) => {
-        const parts = t.split("/");
-        return parts.length === 2 && parts[0] === "orca";
-      });
-      const orcaRepoData = orcaRepoType
-        ? e.dataTransfer.getData(orcaRepoType)
-        : "";
-      const textData = e.dataTransfer.getData("text/plain");
-
-      // Try to extract block ID
-      let ids: string[] = [];
-
-      if (orcaRepoData) {
-        try {
-          const parsed = JSON.parse(orcaRepoData);
-          if (parsed && Array.isArray(parsed.blocks)) {
-            ids = parsed.blocks.map(String);
-          } else if (parsed && parsed.id) {
-            ids.push(String(parsed.id));
-          }
-        } catch (e) {
-          // ignore
-        }
-      }
-
-      // Fallback: try text/plain as block ID
-      if (ids.length === 0 && textData) {
-        const numId = Number(textData);
-        if (!isNaN(numId) && numId > 0) {
-          ids.push(String(numId));
-        }
-      }
-
-      if (ids.length === 0) {
-        return;
-      }
+      const blockIds = parseBlockDragData(e);
+      if (blockIds.length === 0) return;
+      const ids = blockIds.map(String);
 
       const targetSpace = activeSpace || spaces[0] || DEFAULT_SPACE;
       for (const id of ids) {
