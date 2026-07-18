@@ -7,6 +7,7 @@ interface StackedBlockItemProps {
   panelId: string;
   isDragging: boolean;
   showInsertionLine: boolean;
+  childCount?: number;
   onDragStart: (e: React.DragEvent, id: number) => void;
   onDragEnd: () => void;
   onDragOver: (e: React.DragEvent, index: number) => void;
@@ -20,6 +21,7 @@ export const StackedBlockItem = ({
   panelId,
   isDragging,
   showInsertionLine,
+  childCount = 0,
   onDragStart,
   onDragEnd,
   onDragOver,
@@ -56,6 +58,7 @@ export const StackedBlockItem = ({
             <i className="ti ti-grip-vertical" />
           </div>
           <div
+            contentEditable={false}
             style={{
               cursor: "pointer",
               marginRight: "8px",
@@ -66,14 +69,27 @@ export const StackedBlockItem = ({
           >
             <i
               className={
-                block.collapsed ? "ti ti-caret-right" : "ti ti-caret-down"
+                block.collapsed ? "ti ti-eye-off" : "ti ti-eye"
               }
               style={{ fontSize: "14px" }}
             />
           </div>
-          <div style={{ flex: 1, overflow: "hidden" }}>
+          <div style={{ flex: 1, overflow: "hidden" }} contentEditable={false}>
             <BlockBreadcrumb blockId={block.id} />
           </div>
+          {block.collapsed && childCount > 0 && (
+            <span
+              contentEditable={false}
+              style={{
+                fontSize: "11px",
+                opacity: 0.4,
+                marginRight: "4px",
+                flexShrink: 0,
+              }}
+            >
+              ({childCount})
+            </span>
+          )}
           <div
             className="roam-sidebar-item-close-action"
             title={t("roam-sidebar.close-card")}
@@ -107,20 +123,20 @@ export const StackedBlockItem = ({
             <i className="ti ti-x" />
           </div>
         </div>
-        <div
-          className="roam-sidebar-item-content"
-          data-orca-block-root="true"
-        >
-          <Block
-            key={`roam-block-${block.id}-${block.collapsed}`}
-            panelId={panelId}
-            blockId={block.id}
-            blockLevel={0}
-            indentLevel={0}
-            renderingMode="normal"
-            initiallyCollapsed={!!block.collapsed}
-          />
-        </div>
+        {!block.collapsed && (
+          <div
+            className="roam-sidebar-item-content"
+            data-orca-block-root="true"
+          >
+            <Block
+              panelId={panelId}
+              blockId={block.id}
+              blockLevel={0}
+              indentLevel={0}
+              renderingMode="normal"
+            />
+          </div>
+        )}
       </div>
     </>
   );

@@ -317,6 +317,7 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
                   block={b}
                   index={index}
                   panelId={panelId}
+                  childCount={blocksSnap[b.id]?.children?.length || 0}
                   isDragging={draggedBlockId === b.id}
                   showInsertionLine={draggedBlockId !== null && insertionIndex === index}
                   onDragStart={handleItemDragStart}
