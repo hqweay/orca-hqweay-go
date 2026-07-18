@@ -43,6 +43,7 @@ export const moveStackedBlock = (blockId: number, toIndex: number) => {
   const fromIndex = roamSidebarState.stackedBlocks.findIndex(b => b.id === blockId);
   if (fromIndex < 0 || fromIndex === toIndex) return;
 
+  const adjustedToIndex = toIndex > fromIndex ? toIndex - 1 : toIndex;
   const [moved] = roamSidebarState.stackedBlocks.splice(fromIndex, 1);
-  roamSidebarState.stackedBlocks.splice(toIndex, 0, moved);
+  roamSidebarState.stackedBlocks.splice(adjustedToIndex, 0, moved);
 };
