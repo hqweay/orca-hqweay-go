@@ -146,7 +146,12 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
 
     // If we have an insertion index, this is a reorder drop
     if (draggedBlockId !== null && insertionIndex !== null) {
-      moveStackedBlock(draggedBlockId, insertionIndex);
+      const fromIndex = roamSidebarState.stackedBlocks.findIndex(
+        (b) => b.id === draggedBlockId
+      );
+      if (fromIndex !== insertionIndex && fromIndex !== insertionIndex - 1) {
+        moveStackedBlock(draggedBlockId, insertionIndex);
+      }
       setDraggedBlockId(null);
       setInsertionIndex(null);
       return;
