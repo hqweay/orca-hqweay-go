@@ -120,6 +120,34 @@ export const safeGoToBlock = (blockId: number) => {
   orca.nav.goTo("block", { blockId });
 };
 
+export const findPanelByView = (panel: any, viewName: string): any => {
+  if (!panel) return null;
+  if (panel.view === viewName) return panel;
+  if (panel.children) {
+    for (const child of panel.children) {
+      const found = findPanelByView(child, viewName);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
+export const findPanelByViewArgs = (
+  panel: any,
+  viewName: string,
+  argsFilter: (args: any) => boolean,
+): any => {
+  if (!panel) return null;
+  if (panel.view === viewName && argsFilter(panel.viewArgs)) return panel;
+  if (panel.children) {
+    for (const child of panel.children) {
+      const found = findPanelByViewArgs(child, viewName, argsFilter);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
 export function findPanelById(panel: any, id: string): any {
   if (!panel) return null;
   if (panel.id === id) return panel;

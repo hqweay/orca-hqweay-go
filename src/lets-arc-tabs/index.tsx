@@ -5,9 +5,8 @@ import type { Block } from "../orca.d.ts";
 import { ArcSidebar } from "./components/ArcSidebar";
 import { arcTabsState, DEFAULT_SPACE } from "./utils/data";
 
-import { findMainPanelId } from "@/libs/navUtils";
+import { findMainPanelId, findPanelById, findPanelByView } from "@/libs/navUtils";
 import { renderLeftHeadbarButton, removeLeftHeadbarButton } from "@/libs/HeadbarUtils";
-import { findPanelById } from "@/libs/navUtils";
 
 export let arcTabsPluginInstance: ArcTabsPlugin;
 
@@ -22,19 +21,7 @@ export default class ArcTabsPlugin extends BasePlugin {
     orca.commands.registerCommand(
       "arc-tabs.openSidebar",
       (overrideSide?: "left" | "right") => {
-        // Find if it's already open
-        const findPanelWithView = (panel: any, viewName: string): any => {
-          if (panel.view === viewName) return panel;
-          if (panel.children) {
-            for (const child of panel.children) {
-              const found = findPanelWithView(child, viewName);
-              if (found) return found;
-            }
-          }
-          return null;
-        };
-
-        const existingPanel = findPanelWithView(orca.state.panels, "arcTabs");
+        const existingPanel = findPanelByView(orca.state.panels, "arcTabs");
         if (existingPanel) {
           orca.nav.close(existingPanel.id);
           const editorPanel = findMainPanelId(

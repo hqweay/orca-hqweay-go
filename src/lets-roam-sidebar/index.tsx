@@ -2,6 +2,7 @@ import { BasePlugin } from "../libs/BasePlugin";
 import { RoamSidebarRenderer } from "./components/RoamSidebarRenderer";
 import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
 import { t } from "@/libs/l10n";
+import { findPanelByViewArgs } from "@/libs/navUtils";
 import "./styles.css";
 
 const RENDERER_TYPE = "roam-sidebar";
@@ -48,27 +49,10 @@ export default class RoamSidebarPlugin extends BasePlugin {
     orca.commands.registerCommand(
       "roam-sidebar",
       async () => {
-        // Find existing roam-sidebar panel
-        const findPanelWithView = (
-          panel: any,
-          viewName: string,
-          reprName: string,
-        ): any => {
-          if (panel.view === viewName && panel.viewArgs?.repr === reprName)
-            return panel;
-          if (panel.children) {
-            for (const child of panel.children) {
-              const found = findPanelWithView(child, viewName, reprName);
-              if (found) return found;
-            }
-          }
-          return null;
-        };
-
-        const existingPanel = findPanelWithView(
+        const existingPanel = findPanelByViewArgs(
           orca.state.panels,
           "block",
-          RENDERER_TYPE,
+          (args) => args?.repr === RENDERER_TYPE,
         );
         if (existingPanel) {
           orca.nav.close(existingPanel.id);
