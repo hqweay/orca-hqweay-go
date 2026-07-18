@@ -13,4 +13,10 @@ export default {
   "roam-sidebar.drop-to-append": "释放以添加",
   "roam-sidebar.continue-adding": "继续添加块",
   "roam-sidebar.drag-to-reorder": "拖拽以重新排序",
+  "roam-sidebar.new-tab": "新建标签",
+  "roam-sidebar.rename-tab": "重命名",
+  "roam-sidebar.duplicate-tab": "复制标签",
+  "roam-sidebar.delete-tab": "删除标签",
+  "roam-sidebar.tab-name-prompt": "新建标签",
+  "roam-sidebar.tab-name-placeholder": "输入标签名称",
 };

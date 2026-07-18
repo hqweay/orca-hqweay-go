@@ -208,3 +208,117 @@
 .roam-sidebar-item.roam-sidebar-item-dragging {
   opacity: 0.4;
 }
+
+/* === Tab Bar === */
+.roam-sidebar-tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px 0;
+  border-bottom: 1px solid var(--orca-color-border-2, #e5e7eb);
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+
+.roam-sidebar-tab-bar::-webkit-scrollbar {
+  height: 0;
+}
+
+.roam-sidebar-tab {
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 6px 6px 0 0;
+  color: var(--orca-text-muted);
+  background: transparent;
+  transition: all 0.15s ease;
+  user-select: none;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.roam-sidebar-tab:hover {
+  background: var(--orca-color-bg-2, #f3f4f6);
+  color: var(--orca-text-primary);
+}
+
+.roam-sidebar-tab-active {
+  background: var(--orca-bg-primary);
+  color: var(--orca-text-primary);
+  font-weight: 500;
+  box-shadow: inset 0 2px 0 var(--orca-brand-primary, #3b82f6);
+}
+
+.roam-sidebar-tab-dragging {
+  opacity: 0.4;
+}
+
+.roam-sidebar-tab-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.roam-sidebar-tab-rename-input {
+  font-size: 12px;
+  padding: 1px 4px;
+  border: 1px solid var(--orca-brand-primary, #3b82f6);
+  border-radius: 3px;
+  outline: none;
+  background: var(--orca-bg-primary);
+  color: var(--orca-text-primary);
+  width: 100px;
+  max-width: 120px;
+}
+
+.roam-sidebar-tab-insertion-line {
+  width: 2px;
+  height: 20px;
+  background-color: var(--orca-brand-primary, #3b82f6);
+  border-radius: 1px;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+/* === Context Menu === */
+.roam-sidebar-context-menu {
+  position: fixed;
+  z-index: 1000;
+  background: var(--orca-bg-primary);
+  border: 1px solid var(--orca-color-border-2, #e5e7eb);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 4px;
+  min-width: 140px;
+  font-size: 13px;
+}
+
+.roam-sidebar-context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--orca-text-primary);
+}
+
+.roam-sidebar-context-menu-item:hover {
+  background: var(--orca-color-bg-2, #f3f4f6);
+}
+
+.roam-sidebar-context-menu-danger {
+  color: var(--orca-color-danger-5, #ef4444);
+}
+
+.roam-sidebar-context-menu-danger:hover {
+  background: var(--orca-color-danger-1, #fee2e2);
+}
+
+.roam-sidebar-context-menu-separator {
+  height: 1px;
+  background: var(--orca-color-border-2, #e5e7eb);
+  margin: 4px 0;
+}

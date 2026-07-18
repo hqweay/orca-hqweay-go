@@ -4,6 +4,13 @@ import styles from "../styles.css?inline";
 import { t } from "@/libs/l10n";
 import {
   roamSidebarState,
+  activeTab,
+  createTab,
+  deleteTab,
+  renameTab,
+  duplicateTab,
+  setActiveTab,
+  moveTab,
   addStackedBlock,
   removeStackedBlock,
   moveStackedBlock,
@@ -32,9 +39,29 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
   const isInitialized = useRef(false);
   const initializedBlockIdRef = useRef<number | null>(null);
 
-  // Reorder drag state
+  // Block reorder drag state
   const [draggedBlockId, setDraggedBlockId] = useState<number | null>(null);
   const [insertionIndex, setInsertionIndex] = useState<number | null>(null);
+
+  // Tab context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    tabIndex: number;
+  } | null>(null);
+
+  // Tab rename state
+  const [renamingTabIndex, setRenamingTabIndex] = useState<number | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const renameInputRef = useRef<HTMLInputElement>(null);
+
+  // Tab drag reorder state
+  const [draggedTabIndex, setDraggedTabIndex] = useState<number | null>(null);
+  const [tabInsertionIndex, setTabInsertionIndex] = useState<number | null>(null);
+
+  // New tab modal state
+  const [showNewTabModal, setShowNewTabModal] = useState(false);
+  const [newTabName, setNewTabName] = useState("");
 
   if (initializedBlockIdRef.current !== blockId) {
     isInitialized.current = false;
@@ -50,12 +77,25 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
 
     if (block) {
       const reprProp = block.properties?.find((p: any) => p.name === "_repr");
-      if (reprProp && reprProp.value?.stackedBlocks) {
-        roamSidebarState.stackedBlocks = JSON.parse(
-          JSON.stringify(reprProp.value.stackedBlocks)
-        );
+      const reprVal = reprProp?.value;
+
+      if (reprVal?.tabs) {
+        roamSidebarState.tabs = JSON.parse(JSON.stringify(reprVal.tabs));
+        roamSidebarState.activeTabIndex = reprVal.activeTabIndex ?? 0;
+      } else if (reprVal?.stackedBlocks) {
+        roamSidebarState.tabs = [
+          {
+            id: `tab-migrated-${Date.now()}`,
+            name: "Tab 1",
+            stackedBlocks: JSON.parse(JSON.stringify(reprVal.stackedBlocks)),
+          },
+        ];
+        roamSidebarState.activeTabIndex = 0;
       } else {
-        roamSidebarState.stackedBlocks = [];
+        roamSidebarState.tabs = [
+          { id: `tab-init-${Date.now()}`, name: "Tab 1", stackedBlocks: [] },
+        ];
+        roamSidebarState.activeTabIndex = 0;
       }
       isInitialized.current = true;
     }
@@ -71,11 +111,16 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
     const reprProp = directBlock.properties?.find((p: any) => p.name === "_repr");
     const reprVal = reprProp?.value || { type: "roam-sidebar" };
 
-    const currentJSON = JSON.stringify(reprVal.stackedBlocks || []);
-    const newStateJSON = JSON.stringify(roamSidebarState.stackedBlocks);
+    const newStateJSON = JSON.stringify({
+      tabs: roamSidebarState.tabs,
+      activeTabIndex: roamSidebarState.activeTabIndex,
+    });
+    const currentJSON = JSON.stringify({
+      tabs: reprVal.tabs,
+      activeTabIndex: reprVal.activeTabIndex,
+    });
 
     if (currentJSON !== newStateJSON) {
-      const plainStackedBlocks = JSON.parse(newStateJSON);
       orca.commands.invokeEditorCommand(
         "core.editor.setProperties",
         null,
@@ -86,13 +131,31 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
             type: 0,
             value: {
               ...reprVal,
-              stackedBlocks: plainStackedBlocks,
+              tabs: JSON.parse(newStateJSON).tabs,
+              activeTabIndex: roamSidebarState.activeTabIndex,
+              stackedBlocks: undefined,
             },
           },
         ],
       );
     }
-  }, [state.stackedBlocks, blockId]);
+  }, [state.tabs, state.activeTabIndex, blockId]);
+
+  // Close context menu on outside click
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [contextMenu]);
+
+  // Focus rename input when it appears
+  useEffect(() => {
+    if (renamingTabIndex !== null && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [renamingTabIndex]);
 
   // Parse drag data from editor blocks
   const parseDragData = (e: React.DragEvent): number[] => {
@@ -144,13 +207,16 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
     dragCounter.current = 0;
     setIsDragOver(false);
 
-    // If we have an insertion index, this is a reorder drop
+    // If we have an insertion index, this is a block reorder drop
     if (draggedBlockId !== null && insertionIndex !== null) {
-      const fromIndex = roamSidebarState.stackedBlocks.findIndex(
-        (b) => b.id === draggedBlockId
-      );
-      if (fromIndex !== insertionIndex && fromIndex !== insertionIndex - 1) {
-        moveStackedBlock(draggedBlockId, insertionIndex);
+      const tab = activeTab();
+      if (tab) {
+        const fromIndex = tab.stackedBlocks.findIndex(
+          (b) => b.id === draggedBlockId
+        );
+        if (fromIndex !== insertionIndex && fromIndex !== insertionIndex - 1) {
+          moveStackedBlock(draggedBlockId, insertionIndex);
+        }
       }
       setDraggedBlockId(null);
       setInsertionIndex(null);
@@ -192,12 +258,13 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
     }
   };
 
-  // Reorder drag handlers
-  const handleItemDragStart = useCallback((e: React.DragEvent, blockId: number) => {
+  // --- Block reorder drag handlers ---
+
+  const handleItemDragStart = useCallback((e: React.DragEvent, id: number) => {
     e.stopPropagation();
-    setDraggedBlockId(blockId);
+    setDraggedBlockId(id);
     e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", String(blockId));
+    e.dataTransfer.setData("text/plain", String(id));
   }, []);
 
   const handleItemDragEnd = useCallback(() => {
@@ -208,15 +275,83 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
   const handleItemDragOver = useCallback((e: React.DragEvent, index: number) => {
     e.preventDefault();
     e.stopPropagation();
-
     if (draggedBlockId === null) return;
-
     const rect = e.currentTarget.getBoundingClientRect();
     const midY = rect.top + rect.height / 2;
     const insertAt = e.clientY < midY ? index : index + 1;
-
     setInsertionIndex(insertAt);
   }, [draggedBlockId]);
+
+  // --- Tab drag reorder handlers ---
+
+  const handleTabDragStart = useCallback((e: React.DragEvent, index: number) => {
+    e.stopPropagation();
+    setDraggedTabIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", String(index));
+  }, []);
+
+  const handleTabDragEnd = useCallback(() => {
+    setDraggedTabIndex(null);
+    setTabInsertionIndex(null);
+  }, []);
+
+  const handleTabDragOver = useCallback((e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (draggedTabIndex === null) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const midX = rect.left + rect.width / 2;
+    const insertAt = e.clientX < midX ? index : index + 1;
+    setTabInsertionIndex(insertAt);
+  }, [draggedTabIndex]);
+
+  const handleTabDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (draggedTabIndex !== null && tabInsertionIndex !== null) {
+      moveTab(draggedTabIndex, tabInsertionIndex);
+    }
+    setDraggedTabIndex(null);
+    setTabInsertionIndex(null);
+  }, [draggedTabIndex, tabInsertionIndex]);
+
+  // --- Tab context menu ---
+
+  const handleTabContextMenu = useCallback((e: React.MouseEvent, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY, tabIndex: index });
+  }, []);
+
+  const handleNewTab = useCallback(() => {
+    setNewTabName("");
+    setShowNewTabModal(true);
+  }, []);
+
+  const handleNewTabSubmit = useCallback(() => {
+    if (newTabName.trim()) {
+      createTab(newTabName.trim());
+    }
+    setShowNewTabModal(false);
+    setNewTabName("");
+  }, [newTabName]);
+
+  const handleRenameTab = useCallback((index: number) => {
+    setRenamingTabIndex(index);
+    setRenameValue(state.tabs[index]?.name || "");
+    setContextMenu(null);
+  }, [state.tabs]);
+
+  const handleRenameSubmit = useCallback(() => {
+    if (renamingTabIndex !== null && renameValue.trim()) {
+      renameTab(renamingTabIndex, renameValue.trim());
+    }
+    setRenamingTabIndex(null);
+  }, [renamingTabIndex, renameValue]);
+
+  const currentTab = activeTab();
+  const currentBlocks = currentTab?.stackedBlocks || [];
 
   return (
     <div
@@ -228,7 +363,168 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
       style={{ minHeight: "100vh", paddingBottom: "100px" }}
     >
       <style dangerouslySetInnerHTML={{ __html: styles }} />
-      {state.stackedBlocks.length === 0 ? (
+
+      {/* Tab Bar */}
+      {state.tabs.length > 1 && (
+        <div className="roam-sidebar-tab-bar" contentEditable={false}>
+          {state.tabs.map((tab, index) => (
+            <React.Fragment key={tab.id}>
+              {draggedTabIndex !== null && tabInsertionIndex === index && (
+                <div className="roam-sidebar-tab-insertion-line" />
+              )}
+              <div
+                className={`roam-sidebar-tab ${state.activeTabIndex === index ? "roam-sidebar-tab-active" : ""} ${draggedTabIndex === index ? "roam-sidebar-tab-dragging" : ""}`}
+                draggable={true}
+                onDragStart={(e) => handleTabDragStart(e, index)}
+                onDragEnd={handleTabDragEnd}
+                onDragOver={(e) => handleTabDragOver(e, index)}
+                onDrop={handleTabDrop}
+                onClick={() => setActiveTab(index)}
+                onContextMenu={(e) => handleTabContextMenu(e, index)}
+              >
+                {renamingTabIndex === index ? (
+                  <input
+                    ref={renameInputRef}
+                    className="roam-sidebar-tab-rename-input"
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onBlur={handleRenameSubmit}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleRenameSubmit();
+                      if (e.key === "Escape") setRenamingTabIndex(null);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                ) : (
+                  <span className="roam-sidebar-tab-name">{tab.name}</span>
+                )}
+              </div>
+            </React.Fragment>
+          ))}
+          {draggedTabIndex !== null && tabInsertionIndex === state.tabs.length && (
+            <div className="roam-sidebar-tab-insertion-line" />
+          )}
+        </div>
+      )}
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          className="roam-sidebar-context-menu"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          contentEditable={false}
+        >
+          <div
+            className="roam-sidebar-context-menu-item"
+            onClick={() => {
+              handleRenameTab(contextMenu.tabIndex);
+            }}
+          >
+            <i className="ti ti-pencil" /> {t("roam-sidebar.rename-tab")}
+          </div>
+          <div
+            className="roam-sidebar-context-menu-item"
+            onClick={() => {
+              duplicateTab(contextMenu.tabIndex);
+              setContextMenu(null);
+            }}
+          >
+            <i className="ti ti-copy" /> {t("roam-sidebar.duplicate-tab")}
+          </div>
+          <div className="roam-sidebar-context-menu-separator" />
+          <div
+            className="roam-sidebar-context-menu-item roam-sidebar-context-menu-danger"
+            onClick={() => {
+              deleteTab(contextMenu.tabIndex);
+              setContextMenu(null);
+            }}
+          >
+            <i className="ti ti-trash" /> {t("roam-sidebar.delete-tab")}
+          </div>
+        </div>
+      )}
+
+      {/* New Tab Modal */}
+      {showNewTabModal && (
+        <orca.components.ModalOverlay
+          visible={showNewTabModal}
+          onClose={() => {
+            setShowNewTabModal(false);
+            setNewTabName("");
+          }}
+          blurred={true}
+          style={{
+            backgroundColor: "rgba(0, 0, 0, 0.3)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              background: "var(--orca-color-bg-1)",
+              color: "var(--orca-text-color)",
+              padding: "20px",
+              borderRadius: "12px",
+              width: "320px",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
+              border: "1px solid var(--orca-color-border-2)",
+            }}
+          >
+            <h3
+              style={{
+                margin: "0 0 16px 0",
+                fontSize: "15px",
+                fontWeight: 600,
+              }}
+            >
+              {t("roam-sidebar.tab-name-prompt")}
+            </h3>
+            <orca.components.Input
+              value={newTabName}
+              onChange={(e: any) => setNewTabName(e.target.value)}
+              onKeyDown={(e: any) => {
+                if (e.key === "Enter") handleNewTabSubmit();
+                if (e.key === "Escape") {
+                  setShowNewTabModal(false);
+                  setNewTabName("");
+                }
+              }}
+              placeholder={t("roam-sidebar.tab-name-placeholder") || "Tab name"}
+              autoFocus
+              width="100%"
+            />
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "8px",
+                marginTop: "16px",
+              }}
+            >
+              <orca.components.Button
+                variant="plain"
+                onClick={() => {
+                  setShowNewTabModal(false);
+                  setNewTabName("");
+                }}
+              >
+                {t("common.cancel")}
+              </orca.components.Button>
+              <orca.components.Button
+                variant="solid"
+                onClick={handleNewTabSubmit}
+                disabled={!newTabName.trim()}
+              >
+                {t("common.confirm")}
+              </orca.components.Button>
+            </div>
+          </div>
+        </orca.components.ModalOverlay>
+      )}
+
+      {/* Content */}
+      {currentBlocks.length === 0 ? (
         <div
           className={`roam-sidebar-empty ${isDragOver ? "roam-sidebar-empty-active" : ""}`}
           contentEditable={false}
@@ -265,6 +561,11 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
               fontSize: "13px",
             }}
           >
+            {state.tabs.length <= 1 && (
+              <div style={{ cursor: "pointer" }} onClick={handleNewTab}>
+                <i className="ti ti-plus" /> {t("roam-sidebar.new-tab")}
+              </div>
+            )}
             <div style={{ cursor: "pointer" }} onClick={expandAll}>
               <i className="ti ti-layout-bottombar-expand" />{" "}
               {t("roam-sidebar.expand-all")}
@@ -274,7 +575,7 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
               {t("roam-sidebar.collapse-all")}
             </div>
           </div>
-          {state.stackedBlocks.map((b, index) => (
+          {currentBlocks.map((b, index) => (
             <React.Fragment key={b.id}>
               {draggedBlockId !== null && insertionIndex === index && (
                 <div className="roam-sidebar-insertion-line" />
@@ -371,7 +672,7 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
               </div>
             </React.Fragment>
           ))}
-          {draggedBlockId !== null && insertionIndex === state.stackedBlocks.length && (
+          {draggedBlockId !== null && insertionIndex === currentBlocks.length && (
             <div className="roam-sidebar-insertion-line" />
           )}
           <div
