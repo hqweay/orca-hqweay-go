@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, useDeferredValue } from "react";
 import { useSnapshot } from "valtio";
 import styles from "../styles.css?inline";
 import { t } from "@/libs/l10n";
@@ -21,6 +21,7 @@ import { EmptyState } from "./EmptyState";
 import { DropZoneFooter } from "./DropZoneFooter";
 import { NewTabModal } from "./NewTabModal";
 import { ConfirmModal } from "./ConfirmModal";
+import { BlockSearch } from "./BlockSearch";
 import React from "react";
 
 interface RendererProps {
@@ -47,6 +48,10 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
 
   const [showNewTabModal, setShowNewTabModal] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const deferredQuery = useDeferredValue(searchQuery);
+  const searchQueryRef = useRef(searchQuery);
+  useEffect(() => { searchQueryRef.current = searchQuery; }, [searchQuery]);
 
   if (initializedBlockIdRef.current !== blockId) {
     isInitialized.current = false;
@@ -189,6 +194,7 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
   };
 
   const handleItemDragStart = useCallback((e: React.DragEvent, id: number) => {
+    if (searchQueryRef.current) return;
     e.stopPropagation();
     setDraggedBlockId(id);
     e.dataTransfer.effectAllowed = "move";
@@ -201,6 +207,7 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
   }, []);
 
   const handleItemDragOver = useCallback((e: React.DragEvent, index: number) => {
+    if (searchQueryRef.current) return;
     e.preventDefault();
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
@@ -215,6 +222,18 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
 
   const currentTab = state.tabs[state.activeTabIndex];
   const currentBlocks = currentTab?.stackedBlocks || [];
+
+  useEffect(() => { setSearchQuery(""); }, [state.activeTabIndex]);
+
+  const filteredBlocks = useMemo(() => {
+    if (!deferredQuery.trim()) return currentBlocks;
+    const q = deferredQuery.toLowerCase();
+    return currentBlocks.filter(b => {
+      const blockData = blocksSnap[b.id];
+      const text = blockData?.text || "";
+      return text.toLowerCase().includes(q);
+    });
+  }, [currentBlocks, deferredQuery, blocksSnap]);
 
   return (
     <div
@@ -256,50 +275,61 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
             contentEditable={false}
             style={{
               display: "flex",
-              justifyContent: "flex-end",
+              alignItems: "center",
               padding: "4px 12px",
               gap: "8px",
               opacity: 0.6,
               fontSize: "13px",
             }}
           >
-            {state.tabs.length <= 1 && (
-              <div style={{ cursor: "pointer" }} onClick={() => setShowNewTabModal(true)}>
-                <i className="ti ti-plus" /> {t("roam-sidebar.new-tab")}
+            <BlockSearch query={searchQuery} onSearch={setSearchQuery} />
+            <div style={{ display: "flex", gap: "8px", marginLeft: "auto" }}>
+              {state.tabs.length <= 1 && (
+                <div style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => setShowNewTabModal(true)}>
+                  <i className="ti ti-plus" /> {t("roam-sidebar.new-tab")}
+                </div>
+              )}
+              <div style={{ cursor: "pointer", flexShrink: 0 }} onClick={expandAll}>
+                <i className="ti ti-layout-bottombar-expand" />{" "}
+                {t("roam-sidebar.expand-all")}
               </div>
-            )}
-            <div style={{ cursor: "pointer" }} onClick={expandAll}>
-              <i className="ti ti-layout-bottombar-expand" />{" "}
-              {t("roam-sidebar.expand-all")}
-            </div>
-            <div style={{ cursor: "pointer" }} onClick={collapseAll}>
-              <i className="ti ti-layout-topbar-collapse" />{" "}
-              {t("roam-sidebar.collapse-all")}
-            </div>
-            <div
-              style={{ cursor: "pointer" }}
-              onClick={() => setShowClearConfirm(true)}
-            >
-              <i className="ti ti-trash" /> {t("roam-sidebar.clear-all")}
+              <div style={{ cursor: "pointer", flexShrink: 0 }} onClick={collapseAll}>
+                <i className="ti ti-layout-topbar-collapse" />{" "}
+                {t("roam-sidebar.collapse-all")}
+              </div>
+              <div
+                style={{ cursor: "pointer", flexShrink: 0 }}
+                onClick={() => setShowClearConfirm(true)}
+              >
+                <i className="ti ti-trash" /> {t("roam-sidebar.clear-all")}
+              </div>
             </div>
           </div>
-          {currentBlocks.map((b, index) => (
-            <StackedBlockItem
-              key={b.id}
-              block={b}
-              index={index}
-              panelId={panelId}
-              isDragging={draggedBlockId === b.id}
-              showInsertionLine={draggedBlockId !== null && insertionIndex === index}
-              onDragStart={handleItemDragStart}
-              onDragEnd={handleItemDragEnd}
-              onDragOver={handleItemDragOver}
-              onToggleCollapse={toggleBlockCollapse}
-              onRemove={removeStackedBlock}
-            />
-          ))}
-          {draggedBlockId !== null && insertionIndex === currentBlocks.length && (
-            <div className="roam-sidebar-insertion-line" />
+          {filteredBlocks.length === 0 ? (
+            <div style={{ padding: "16px 12px", textAlign: "center", opacity: 0.5, fontSize: "13px" }}>
+              {t("roam-sidebar.search-no-results")}
+            </div>
+          ) : (
+            <>
+              {filteredBlocks.map((b, index) => (
+                <StackedBlockItem
+                  key={b.id}
+                  block={b}
+                  index={index}
+                  panelId={panelId}
+                  isDragging={draggedBlockId === b.id}
+                  showInsertionLine={draggedBlockId !== null && insertionIndex === index}
+                  onDragStart={handleItemDragStart}
+                  onDragEnd={handleItemDragEnd}
+                  onDragOver={handleItemDragOver}
+                  onToggleCollapse={toggleBlockCollapse}
+                  onRemove={removeStackedBlock}
+                />
+              ))}
+              {draggedBlockId !== null && insertionIndex === filteredBlocks.length && (
+                <div className="roam-sidebar-insertion-line" />
+              )}
+            </>
           )}
           <DropZoneFooter isDragOver={isDragOver} />
         </div>

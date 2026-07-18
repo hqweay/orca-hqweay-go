@@ -22,4 +22,8 @@ export default {
   "roam-sidebar.clear-all": "清空",
   "roam-sidebar.clear-all-confirm-title": "清空当前标签？",
   "roam-sidebar.clear-all-confirm-desc": "此操作将移除当前标签中的所有块，但不会删除原始块。",
+  "roam-sidebar.search": "搜索",
+  "roam-sidebar.search-placeholder": "搜索块...",
+  "roam-sidebar.search-clear": "清除",
+  "roam-sidebar.search-no-results": "无匹配结果",
 };
