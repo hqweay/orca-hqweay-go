@@ -13,6 +13,9 @@ import {
   collapseAll,
   expandAll,
   toggleBlockCollapse,
+  toggleBlockExpanded,
+  expandAllContent,
+  collapseAllContent,
   clearActiveTab,
 } from "../utils/state";
 import { TabBar } from "./TabBar";
@@ -285,12 +288,20 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
             <BlockSearch query={searchQuery} onSearch={setSearchQuery} />
             <div style={{ display: "flex", gap: "8px", marginLeft: "auto" }}>
               <div style={{ cursor: "pointer", flexShrink: 0 }} onClick={expandAll}>
-                <i className="ti ti-layout-bottombar-expand" />{" "}
+                <i className="ti ti-eye" />{" "}
                 {t("roam-sidebar.expand-all")}
               </div>
               <div style={{ cursor: "pointer", flexShrink: 0 }} onClick={collapseAll}>
-                <i className="ti ti-layout-topbar-collapse" />{" "}
+                <i className="ti ti-eye-off" />{" "}
                 {t("roam-sidebar.collapse-all")}
+              </div>
+              <div style={{ cursor: "pointer", flexShrink: 0 }} onClick={expandAllContent}>
+                <i className="ti ti-chevrons-down" />{" "}
+                {t("roam-sidebar.expand-content")}
+              </div>
+              <div style={{ cursor: "pointer", flexShrink: 0 }} onClick={collapseAllContent}>
+                <i className="ti ti-chevrons-up" />{" "}
+                {t("roam-sidebar.collapse-content")}
               </div>
               <div
                 style={{ cursor: "pointer", flexShrink: 0 }}
@@ -319,6 +330,7 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
                   onDragEnd={handleItemDragEnd}
                   onDragOver={handleItemDragOver}
                   onToggleCollapse={toggleBlockCollapse}
+                  onToggleExpanded={toggleBlockExpanded}
                   onRemove={removeStackedBlock}
                 />
               ))}

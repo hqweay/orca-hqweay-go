@@ -3,8 +3,10 @@ export default {
   "roam-sidebar.description":
     "在右侧面板打开全局单例收集箱，通过拖拽存放块，类似 roam research sidebar.",
   "roam-sidebar.sidetool": "Roam Sidebar",
-  "roam-sidebar.expand-all": "展开全部",
-  "roam-sidebar.collapse-all": "折叠全部",
+  "roam-sidebar.expand-all": "全部显示",
+  "roam-sidebar.collapse-all": "全部隐藏",
+  "roam-sidebar.expand-content": "展开内容",
+  "roam-sidebar.collapse-content": "收起内容",
   "roam-sidebar.close-card": "关闭",
   "roam-sidebar.drop-to-add": "释放以添加块",
   "roam-sidebar.drag-here": "拖拽块到此处",

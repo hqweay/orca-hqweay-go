@@ -12,6 +12,7 @@ interface StackedBlockItemProps {
   onDragEnd: () => void;
   onDragOver: (e: React.DragEvent, index: number) => void;
   onToggleCollapse: (id: number) => void;
+  onToggleExpanded: (id: number) => void;
   onRemove: (id: number) => void;
 }
 
@@ -26,6 +27,7 @@ export const StackedBlockItem = ({
   onDragEnd,
   onDragOver,
   onToggleCollapse,
+  onToggleExpanded,
   onRemove,
 }: StackedBlockItemProps) => {
   const Block = orca.components.Block;
@@ -90,6 +92,24 @@ export const StackedBlockItem = ({
               ({childCount})
             </span>
           )}
+          {!block.collapsed && (
+            <div
+              contentEditable={false}
+              style={{
+                cursor: "pointer",
+                marginRight: "4px",
+                display: "flex",
+                alignItems: "center",
+              }}
+              onClick={() => onToggleExpanded(block.id)}
+              title={block.expanded ? t("roam-sidebar.collapse-content") : t("roam-sidebar.expand-content")}
+            >
+              <i
+                className={block.expanded ? "ti ti-chevrons-up" : "ti ti-chevrons-down"}
+                style={{ fontSize: "14px" }}
+              />
+            </div>
+          )}
           <div
             className="roam-sidebar-item-close-action"
             title={t("roam-sidebar.close-card")}
@@ -127,6 +147,7 @@ export const StackedBlockItem = ({
           <div
             className="roam-sidebar-item-content"
             data-orca-block-root="true"
+            style={!block.expanded ? { maxHeight: "80px", overflow: "auto" } : undefined}
           >
             <Block
               panelId={panelId}

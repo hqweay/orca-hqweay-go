@@ -3,6 +3,7 @@ import { proxy } from "valtio";
 export interface StackedBlock {
   id: number;
   collapsed?: boolean;
+  expanded?: boolean;
 }
 
 export interface Tab {
@@ -88,9 +89,9 @@ export const addStackedBlock = (blockId: number, index?: number) => {
     tab.stackedBlocks.splice(existingIdx, 1);
   }
   if (index !== undefined) {
-    tab.stackedBlocks.splice(index, 0, { id: blockId, collapsed: false });
+    tab.stackedBlocks.splice(index, 0, { id: blockId, collapsed: false, expanded: true });
   } else {
-    tab.stackedBlocks.push({ id: blockId, collapsed: false });
+    tab.stackedBlocks.push({ id: blockId, collapsed: false, expanded: true });
   }
 };
 
@@ -128,6 +129,27 @@ export const expandAll = () => {
   const tab = activeTab();
   if (!tab) return;
   tab.stackedBlocks.forEach(b => (b.collapsed = false));
+};
+
+export const toggleBlockExpanded = (blockId: number) => {
+  const tab = activeTab();
+  if (!tab) return;
+  const block = tab.stackedBlocks.find(b => b.id === blockId);
+  if (block) {
+    block.expanded = !block.expanded;
+  }
+};
+
+export const expandAllContent = () => {
+  const tab = activeTab();
+  if (!tab) return;
+  tab.stackedBlocks.forEach(b => (b.expanded = true));
+};
+
+export const collapseAllContent = () => {
+  const tab = activeTab();
+  if (!tab) return;
+  tab.stackedBlocks.forEach(b => (b.expanded = false));
 };
 
 export const moveStackedBlock = (blockId: number, toIndex: number) => {
