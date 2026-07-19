@@ -284,11 +284,6 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
           >
             <BlockSearch query={searchQuery} onSearch={setSearchQuery} />
             <div style={{ display: "flex", gap: "8px", marginLeft: "auto" }}>
-              {state.tabs.length <= 1 && (
-                <div style={{ cursor: "pointer", flexShrink: 0 }} onClick={() => setShowNewTabModal(true)}>
-                  <i className="ti ti-plus" /> {t("roam-sidebar.new-tab")}
-                </div>
-              )}
               <div style={{ cursor: "pointer", flexShrink: 0 }} onClick={expandAll}>
                 <i className="ti ti-layout-bottombar-expand" />{" "}
                 {t("roam-sidebar.expand-all")}

@@ -96,7 +96,8 @@ export const TabBar = ({ onRequestNewTab }: TabBarProps) => {
     setContextMenu({ x: e.clientX, y: e.clientY, tabIndex: index });
   }, []);
 
-  if (state.tabs.length <= 1) return null;
+  const hasContent = (state.tabs[state.activeTabIndex]?.stackedBlocks?.length || 0) > 0;
+  if (!hasContent && state.tabs.length <= 1) return null;
 
   return (
     <>
