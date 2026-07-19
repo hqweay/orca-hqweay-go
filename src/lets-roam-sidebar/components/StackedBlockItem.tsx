@@ -147,7 +147,10 @@ export const StackedBlockItem = ({
           <div
             className="roam-sidebar-item-content"
             data-orca-block-root="true"
-            style={!block.expanded ? { maxHeight: "80px", overflow: "auto" } : undefined}
+            style={{
+              paddingLeft: "20px",
+              ...(!block.expanded ? { maxHeight: "150px", overflowY: "auto" } : {}),
+            }}
           >
             <Block
               panelId={panelId}
