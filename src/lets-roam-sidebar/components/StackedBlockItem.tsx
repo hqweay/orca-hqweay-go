@@ -38,8 +38,6 @@ export const StackedBlockItem = ({
       {showInsertionLine && <div className="roam-sidebar-insertion-line" />}
       <div
         className={`roam-sidebar-item ${isDragging ? "roam-sidebar-item-dragging" : ""}`}
-        draggable={true}
-        onDragStart={(e) => onDragStart(e, block.id)}
         onDragEnd={onDragEnd}
         onDragOver={(e) => onDragOver(e, index)}
       >
@@ -54,8 +52,10 @@ export const StackedBlockItem = ({
         >
           <div
             className="roam-sidebar-item-drag-handle"
+            draggable={true}
             contentEditable={false}
             title={t("roam-sidebar.drag-to-reorder")}
+            onDragStart={(e) => onDragStart(e, block.id)}
           >
             <i className="ti ti-grip-vertical" />
           </div>
