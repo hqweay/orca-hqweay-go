@@ -2,6 +2,21 @@
 
 ## 3.5.0
 
+### Minor Changes
+
+- 侧边栏 (lets-roam-sidebar) 重大更新：
+
+  - 新增多标签页支持：创建、切换、删除、复制、重命名标签页，支持拖拽排序
+  - 新增块搜索功能：实时过滤当前标签中的块，匹配块文本内容
+  - 新增清空当前标签功能：工具栏清空按钮，带确认对话框
+  - 优化块折叠体验：面包屑 caret 改为显示/隐藏整个块，折叠后显示子块数量
+  - 优化拖拽交互：从编辑器拖入块时支持插入到指定位置
+  - 优化标签页可见性：有内容时自动显示标签栏，渐进式引入标签概念
+  - 重构：提取 DragUtils、NavUtils 等可复用工具函数
+  - 重构：组件模块化，提取 TabBar、StackedBlockItem、EmptyState、DropZoneFooter、ConfirmModal、BlockSearch 等独立组件
+
+## 3.5.0
+
 ### Features
 
 - 侧边栏 (lets-roam-sidebar)：新增多标签页支持
