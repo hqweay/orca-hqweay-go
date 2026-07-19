@@ -287,27 +287,24 @@ export const RoamSidebarRenderer = (props: RendererProps) => {
           >
             <BlockSearch query={searchQuery} onSearch={setSearchQuery} />
             <div style={{ display: "flex", gap: "8px", marginLeft: "auto" }}>
-              <div style={{ cursor: "pointer", flexShrink: 0 }} onClick={expandAll}>
-                <i className="ti ti-eye" />{" "}
-                {t("roam-sidebar.expand-all")}
+              <div style={{ cursor: "pointer", flexShrink: 0 }} onClick={expandAll} title={t("roam-sidebar.expand-all")}>
+                <i className="ti ti-eye" />
               </div>
-              <div style={{ cursor: "pointer", flexShrink: 0 }} onClick={collapseAll}>
-                <i className="ti ti-eye-off" />{" "}
-                {t("roam-sidebar.collapse-all")}
+              <div style={{ cursor: "pointer", flexShrink: 0 }} onClick={collapseAll} title={t("roam-sidebar.collapse-all")}>
+                <i className="ti ti-eye-off" />
               </div>
-              <div style={{ cursor: "pointer", flexShrink: 0 }} onClick={expandAllContent}>
-                <i className="ti ti-chevrons-down" />{" "}
-                {t("roam-sidebar.expand-content")}
+              <div style={{ cursor: "pointer", flexShrink: 0 }} onClick={expandAllContent} title={t("roam-sidebar.expand-content")}>
+                <i className="ti ti-chevrons-down" />
               </div>
-              <div style={{ cursor: "pointer", flexShrink: 0 }} onClick={collapseAllContent}>
-                <i className="ti ti-chevrons-up" />{" "}
-                {t("roam-sidebar.collapse-content")}
+              <div style={{ cursor: "pointer", flexShrink: 0 }} onClick={collapseAllContent} title={t("roam-sidebar.collapse-content")}>
+                <i className="ti ti-chevrons-up" />
               </div>
               <div
                 style={{ cursor: "pointer", flexShrink: 0 }}
                 onClick={() => setShowClearConfirm(true)}
+                title={t("roam-sidebar.clear-all")}
               >
-                <i className="ti ti-trash" /> {t("roam-sidebar.clear-all")}
+                <i className="ti ti-trash" />
               </div>
             </div>
           </div>
