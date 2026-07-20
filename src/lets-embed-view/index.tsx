@@ -1,6 +1,6 @@
 import { BasePlugin } from "../libs/BasePlugin";
 import { EmbedViewRenderer } from "./components/EmbedViewRenderer";
-import applyCSSRule, { removeCSSRule } from "@/libs/styleUtil";
+import { removeCSSRule } from "@/libs/styleUtil";
 import { t } from "@/libs/l10n";
 
 const RENDERER_TYPE = "embed-view";
@@ -11,29 +11,18 @@ export default class EmbedViewPlugin extends BasePlugin {
   }
 
   async load() {
-    // applyCSSRule(
-    //   `div[repr="embed-view"] .orca-block-editor-none-editable { display: none; }`,
-    //   { id: RENDERER_TYPE },
-    // );
-
+    console.log("[lets-embed-view] load() called");
     if (!orca.state.blockRenderers[RENDERER_TYPE]) {
-      orca.renderers.registerBlock(RENDERER_TYPE, false, EmbedViewRenderer);
+      orca.renderers.registerBlock(RENDERER_TYPE, true, EmbedViewRenderer);
     }
 
-    orca.converters.registerBlock("plain", RENDERER_TYPE, (block, repr) => {
-      if (repr?.mode === "url" && repr?.url) return repr.url;
-      if (repr?.mode === "html") return "[HTML Embed]";
-      return "[Embed]";
-    });
-
-    const fullId = `${this.mainPluginName}.embed-view-command`;
+    const fullId = `${this.name}.create-embed`;
 
     orca.commands.registerEditorCommand(
       fullId,
       async ([_panelId, _rootBlockId, cursor]) => {
         try {
           if (!cursor || !cursor.anchor) return null;
-
           const currentBlock = orca.state.blocks[cursor.anchor.blockId];
           if (!currentBlock) return null;
 
@@ -42,13 +31,7 @@ export default class EmbedViewPlugin extends BasePlugin {
             "core.editor.setProperties",
             null,
             [cursor.anchor.blockId],
-            [
-              {
-                name: "_repr",
-                type: 0,
-                value: { ...repr, type: RENDERER_TYPE, mode: "html", html: "" },
-              },
-            ],
+            [{ name: "_repr", type: 0, value: { ...repr, type: RENDERER_TYPE, mode: "html", html: "" } }],
           );
 
           return null;
@@ -70,7 +53,7 @@ export default class EmbedViewPlugin extends BasePlugin {
   }
 
   async unload() {
-    const fullId = `${this.mainPluginName}.embed-view-command`;
+    const fullId = `${this.name}.create-embed`;
     orca.commands.unregisterEditorCommand(fullId);
     orca.slashCommands.unregisterSlashCommand("embed-view-slash");
     if (orca.state.blockRenderers[RENDERER_TYPE]) {

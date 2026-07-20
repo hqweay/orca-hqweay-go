@@ -3,7 +3,7 @@ import { useSnapshot } from "valtio";
 import { t } from "@/libs/l10n";
 import React from "react";
 
-const { BlockShell, BlockChildren } = orca.components;
+const { BlockShell } = orca.components;
 
 interface EmbedData {
   mode: "url" | "html";
@@ -22,8 +22,7 @@ export const EmbedViewRenderer = (props: any) => {
     initiallyCollapsed,
     renderingMode,
   } = props;
-  const blocksSnap = useSnapshot(orca.state.blocks);
-  const block = blocksSnap[mirrorId ?? blockId];
+  const block = useSnapshot(orca.state.blocks[mirrorId ?? blockId]);
 
   const [isEditing, setIsEditing] = useState(true);
   const [embedData, setEmbedData] = useState<EmbedData>({
@@ -44,23 +43,28 @@ export const EmbedViewRenderer = (props: any) => {
     if (isInitialized.current) return;
 
     if (block) {
-      const reprProp = (block as any).properties?.find((p: any) => p.name === "_repr");
+      const reprProp = (block as any).properties?.find(
+        (p: any) => p.name === "_repr",
+      );
       const data = reprProp?.value || {};
       setEmbedData({
         mode: data.mode || "html",
         url: data.url || "",
         html: data.html || "",
       });
-      setInputValue(data.mode === "url" ? (data.url || "") : "");
+      setInputValue(data.mode === "url" ? data.url || "" : "");
       isInitialized.current = true;
     }
   }, [blockId, block]);
 
   const saveEmbedData = useCallback(
     (data: EmbedData) => {
-      orca.commands.invokeEditorCommand("core.editor.setProperties", null, [blockId], [
-        { name: "_repr", type: 0, value: { type: "embed-view", ...data } },
-      ]);
+      orca.commands.invokeEditorCommand(
+        "core.editor.setProperties",
+        null,
+        [blockId],
+        [{ name: "_repr", type: 0, value: { type: "embed-view", ...data } }],
+      );
     },
     [blockId],
   );
@@ -103,7 +107,7 @@ export const EmbedViewRenderer = (props: any) => {
       html: newMode === "html" ? embedData.html : "",
     };
     setEmbedData(newData);
-    setInputValue(newMode === "url" ? (embedData.url || "") : "");
+    setInputValue(newMode === "url" ? embedData.url || "" : "");
     saveEmbedData(newData);
   }, [embedData, saveEmbedData]);
 
@@ -303,7 +307,9 @@ export const EmbedViewRenderer = (props: any) => {
         }}
       >
         <span style={{ opacity: 0.6 }}>
-          {embedData.mode === "url" ? t("embed-view.mode-url") : t("embed-view.mode-html")}
+          {embedData.mode === "url"
+            ? t("embed-view.mode-url")
+            : t("embed-view.mode-html")}
         </span>
         <div style={{ display: "flex", gap: "4px" }}>
           <button
@@ -327,7 +333,9 @@ export const EmbedViewRenderer = (props: any) => {
               border: "none",
               borderRadius: "3px",
               cursor: "pointer",
-              background: isEditing ? "var(--orca-brand-primary)" : "transparent",
+              background: isEditing
+                ? "var(--orca-brand-primary)"
+                : "transparent",
               color: isEditing ? "white" : "inherit",
               fontSize: "11px",
             }}
@@ -342,17 +350,20 @@ export const EmbedViewRenderer = (props: any) => {
     </div>
   );
 
-  const childrenJsx = useMemo(
-    () => (
-      <BlockChildren
-        block={block as any}
+  const childrenJsx = useMemo(() => {
+    if (!block?.children?.length) return null;
+    return block.children.map((childId: number) => (
+      <orca.components.Block
+        key={childId}
         panelId={panelId}
-        blockLevel={blockLevel}
-        indentLevel={indentLevel}
+        blockId={childId}
+        blockLevel={blockLevel + 1}
+        indentLevel={indentLevel + 1}
       />
-    ),
-    [block, panelId, blockLevel, indentLevel],
-  );
+    ));
+  }, [block?.children, panelId, blockLevel, indentLevel]);
+
+  if (!block) return null;
 
   return (
     <BlockShell
