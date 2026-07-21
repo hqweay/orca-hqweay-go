@@ -3,7 +3,7 @@ import { EmbedViewRenderer } from "./components/EmbedViewRenderer";
 import { removeCSSRule } from "@/libs/styleUtil";
 import { t } from "@/libs/l10n";
 
-const RENDERER_TYPE = "embed-view";
+const RENDERER_TYPE = "lets.embed-view";
 
 export default class EmbedViewPlugin extends BasePlugin {
   constructor(mainPluginName: string, name: string) {
@@ -16,6 +16,18 @@ export default class EmbedViewPlugin extends BasePlugin {
       orca.renderers.registerBlock(RENDERER_TYPE, true, EmbedViewRenderer);
     }
 
+    orca.converters.registerBlock("plain", RENDERER_TYPE, (_blockContent: any, repr: any) => {
+      const mode = repr?.mode || "html";
+      if (mode === "url" && repr?.url) return `[Embed: ${repr.url}]`;
+      return "[Embed]";
+    });
+
+    orca.converters.registerBlock("markdown", RENDERER_TYPE, (_blockContent: any, repr: any) => {
+      const mode = repr?.mode || "html";
+      if (mode === "url" && repr?.url) return `[Embed](${repr.url})`;
+      return "```embed\n[Custom Content]\n```";
+    });
+
     const fullId = `${this.name}.create-embed`;
 
     orca.commands.registerEditorCommand(
@@ -26,12 +38,13 @@ export default class EmbedViewPlugin extends BasePlugin {
           const currentBlock = orca.state.blocks[cursor.anchor.blockId];
           if (!currentBlock) return null;
 
-          const repr = (currentBlock as any)._repr || {};
           await orca.commands.invokeEditorCommand(
-            "core.editor.setProperties",
-            null,
-            [cursor.anchor.blockId],
-            [{ name: "_repr", type: 0, value: { ...repr, type: RENDERER_TYPE, mode: "html", html: "" } }],
+            "core.editor.insertBlock",
+            cursor,
+            currentBlock,
+            "after",
+            [],
+            { type: RENDERER_TYPE, mode: "html", html: "" },
           );
 
           return null;
@@ -59,6 +72,8 @@ export default class EmbedViewPlugin extends BasePlugin {
     if (orca.state.blockRenderers[RENDERER_TYPE]) {
       orca.renderers.unregisterBlock(RENDERER_TYPE);
     }
+    orca.converters.unregisterBlock("plain", RENDERER_TYPE);
+    orca.converters.unregisterBlock("markdown", RENDERER_TYPE);
     removeCSSRule(RENDERER_TYPE);
   }
 }
