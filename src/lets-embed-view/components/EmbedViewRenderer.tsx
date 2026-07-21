@@ -1,33 +1,44 @@
-import { useMemo } from "react";
-import { useSnapshot } from "valtio";
-import { t } from "@/libs/l10n";
-import React from "react";
-
+const { useMemo } = window.React;
+const { useSnapshot } = window.Valtio;
 const { BlockShell, BlockChildren } = orca.components;
+const { useState } = window.React;
 
-interface EmbedData {
+type EmbedData = {
   mode: "url" | "html";
   url?: string;
   html?: string;
-}
+};
 
-export const EmbedViewRenderer = (props: any) => {
-  const {
-    panelId,
-    blockId,
-    rndId,
-    blockLevel,
-    indentLevel,
-    mirrorId,
-    initiallyCollapsed,
-    renderingMode,
-  } = props;
+type Props = {
+  panelId: string;
+  blockId: number;
+  rndId: string;
+  blockLevel: number;
+  indentLevel: number;
+  mirrorId?: number;
+  initiallyCollapsed?: boolean;
+  renderingMode?: "normal" | "simple" | "simple-children";
+};
+
+export const EmbedViewRenderer = ({
+  panelId,
+  blockId,
+  rndId,
+  blockLevel,
+  indentLevel,
+  mirrorId,
+  initiallyCollapsed,
+  renderingMode,
+}: Props) => {
   const { blocks } = useSnapshot(orca.state);
   const block = blocks[mirrorId ?? blockId];
+  const embedData: EmbedData = (block as any)?._repr || {
+    mode: "html",
+    html: "",
+  };
 
-  const embedData: EmbedData = (block as any)?._repr || { mode: "html", html: "" };
-  const [isEditing, setIsEditing] = React.useState(true);
-  const [inputValue, setInputValue] = React.useState("");
+  const [isEditing, setIsEditing] = useState(true);
+  const [inputValue, setInputValue] = useState("");
 
   const childrenBlocks = useMemo(
     () => (
@@ -42,7 +53,7 @@ export const EmbedViewRenderer = (props: any) => {
     [blockId, panelId, blockLevel, indentLevel, renderingMode],
   );
 
-  const saveEmbedData = (data: EmbedData) => {
+  const save = (data: EmbedData) => {
     orca.commands.invokeEditorCommand(
       "core.editor.setProperties",
       null,
@@ -54,99 +65,26 @@ export const EmbedViewRenderer = (props: any) => {
   const handleUrlSubmit = () => {
     const url = inputValue.trim();
     if (!url) return;
-    const newData: EmbedData = { mode: "url", url, html: undefined };
-    saveEmbedData(newData);
+    save({ mode: "url", url, html: undefined });
     setIsEditing(false);
   };
 
   const handleHtmlSubmit = (html: string) => {
-    const newData: EmbedData = { mode: "html", html, url: undefined };
-    saveEmbedData(newData);
+    save({ mode: "html", html, url: undefined });
     setIsEditing(false);
   };
 
   const handleSwitchMode = () => {
     const newMode = embedData.mode === "url" ? "html" : "url";
-    const newData: EmbedData = {
+    setIsEditing(true);
+    setInputValue(
+      newMode === "url" ? embedData.url || "" : embedData.html || "",
+    );
+    save({
       mode: newMode,
       url: newMode === "url" ? embedData.url : undefined,
       html: newMode === "html" ? embedData.html : "",
-    };
-    setIsEditing(true);
-    setInputValue(newMode === "url" ? embedData.url || "" : embedData.html || "");
-    saveEmbedData(newData);
-  };
-
-  const renderPreview = () => {
-    if (embedData.mode === "url" && embedData.url) {
-      const isTwitter = /twitter\.com|x\.com/.test(embedData.url);
-      if (isTwitter) {
-        return (
-          <iframe
-            src={`https://platform.twitter.com/embed/Tweet.html?url=${encodeURIComponent(embedData.url)}`}
-            style={{ border: "none", width: "100%", minHeight: "400px" }}
-            title="Twitter Embed"
-          />
-        );
-      }
-      return (
-        <iframe
-          src={embedData.url}
-          style={{ border: "none", width: "100%", height: "500px", borderRadius: "4px" }}
-          title="Web Embed"
-          sandbox="allow-scripts allow-same-origin"
-        />
-      );
-    }
-    if (embedData.mode === "html" && embedData.html) {
-      return (
-        <div
-          dangerouslySetInnerHTML={{ __html: embedData.html }}
-          style={{ padding: "8px" }}
-        />
-      );
-    }
-    return null;
-  };
-
-  const renderEditor = () => {
-    if (embedData.mode === "url") {
-      return (
-        <div style={{ padding: "8px" }}>
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") handleUrlSubmit(); if (e.key === "Escape") setIsEditing(false); }}
-            placeholder={t("embed-view.input-url")}
-            autoFocus
-            style={{ width: "100%", padding: "8px", border: "1px solid var(--orca-color-border-2)", borderRadius: "4px", fontSize: "13px", outline: "none" }}
-          />
-          <div style={{ display: "flex", gap: "8px", marginTop: "8px", justifyContent: "flex-end" }}>
-            <button onClick={() => setIsEditing(false)} style={{ padding: "4px 12px", border: "none", borderRadius: "4px", cursor: "pointer", background: "var(--orca-color-bg-2)" }}>{t("common.cancel")}</button>
-            <button onClick={handleUrlSubmit} style={{ padding: "4px 12px", border: "none", borderRadius: "4px", cursor: "pointer", background: "var(--orca-brand-primary)", color: "white" }}>{t("common.confirm")}</button>
-          </div>
-        </div>
-      );
-    }
-    return (
-      <div style={{ padding: "8px" }}>
-        <textarea
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          placeholder={t("embed-view.input-html")}
-          autoFocus
-          style={{ width: "100%", minHeight: "200px", padding: "8px", border: "1px solid var(--orca-color-border-2)", borderRadius: "4px", fontSize: "13px", fontFamily: "monospace", outline: "none", resize: "vertical" }}
-        />
-        <div style={{ display: "flex", gap: "8px", marginTop: "8px", justifyContent: "space-between" }}>
-          <button onClick={handleSwitchMode} style={{ padding: "4px 12px", border: "1px solid var(--orca-color-border-2)", borderRadius: "4px", cursor: "pointer", background: "transparent" }}>{t("embed-view.switch-mode")}</button>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button onClick={() => setIsEditing(false)} style={{ padding: "4px 12px", border: "none", borderRadius: "4px", cursor: "pointer", background: "var(--orca-color-bg-2)" }}>{t("common.cancel")}</button>
-            <button onClick={() => handleHtmlSubmit(inputValue)} style={{ padding: "4px 12px", border: "none", borderRadius: "4px", cursor: "pointer", background: "var(--orca-brand-primary)", color: "white" }}>{t("common.confirm")}</button>
-          </div>
-        </div>
-      </div>
-    );
+    });
   };
 
   if (!block) return null;
@@ -161,17 +99,218 @@ export const EmbedViewRenderer = (props: any) => {
       indentLevel={indentLevel}
       initiallyCollapsed={initiallyCollapsed}
       renderingMode={renderingMode}
+      reprClassName="lets-embed-repr"
+      contentClassName="lets-embed-content"
       contentAttrs={{ contentEditable: false }}
+      editable={false}
+      selfFoldable={true}
       contentJsx={
-        <div style={{ border: "1px solid var(--orca-color-border-2)", borderRadius: "4px", overflow: "hidden" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", background: "var(--orca-color-bg-2)", fontSize: "12px", borderBottom: "1px solid var(--orca-color-border-2)" }}>
-            <span style={{ opacity: 0.6 }}>{embedData.mode === "url" ? t("embed-view.mode-url") : t("embed-view.mode-html")}</span>
+        <div
+          style={{
+            border: "1px solid var(--orca-color-border-2)",
+            borderRadius: "4px",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "4px 8px",
+              background: "var(--orca-color-bg-2)",
+              fontSize: "12px",
+              borderBottom: "1px solid var(--orca-color-border-2)",
+            }}
+          >
+            <span style={{ opacity: 0.6 }}>
+              {embedData.mode === "url" ? "URL 模式" : "HTML 模式"}
+            </span>
             <div style={{ display: "flex", gap: "4px" }}>
-              <button onClick={handleSwitchMode} style={{ padding: "2px 6px", border: "none", borderRadius: "3px", cursor: "pointer", background: "transparent", fontSize: "11px" }} title={t("embed-view.switch-mode")}><i className="ti ti-switch-horizontal" /></button>
-              <button onClick={() => setIsEditing(!isEditing)} style={{ padding: "2px 6px", border: "none", borderRadius: "3px", cursor: "pointer", background: isEditing ? "var(--orca-brand-primary)" : "transparent", color: isEditing ? "white" : "inherit", fontSize: "11px" }} title={isEditing ? t("embed-view.preview") : t("embed-view.edit")}><i className={isEditing ? "ti ti-eye" : "ti ti-pencil"} /></button>
+              <button
+                onClick={handleSwitchMode}
+                style={{
+                  padding: "2px 6px",
+                  border: "none",
+                  borderRadius: "3px",
+                  cursor: "pointer",
+                  background: "transparent",
+                  fontSize: "11px",
+                }}
+                title="切换模式"
+              >
+                <i className="ti ti-switch-horizontal" />
+              </button>
+              <button
+                onClick={() => setIsEditing(!isEditing)}
+                style={{
+                  padding: "2px 6px",
+                  border: "none",
+                  borderRadius: "3px",
+                  cursor: "pointer",
+                  background: isEditing
+                    ? "var(--orca-brand-primary)"
+                    : "transparent",
+                  color: isEditing ? "white" : "inherit",
+                  fontSize: "11px",
+                }}
+                title={isEditing ? "预览" : "编辑"}
+              >
+                <i className={isEditing ? "ti ti-eye" : "ti ti-pencil"} />
+              </button>
             </div>
           </div>
-          {isEditing ? renderEditor() : renderPreview()}
+          {isEditing ? (
+            embedData.mode === "url" ? (
+              <div style={{ padding: "8px" }}>
+                <input
+                  type="text"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleUrlSubmit();
+                    if (e.key === "Escape") setIsEditing(false);
+                  }}
+                  placeholder="输入 URL..."
+                  autoFocus
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    border: "1px solid var(--orca-color-border-2)",
+                    borderRadius: "4px",
+                    fontSize: "13px",
+                    outline: "none",
+                  }}
+                />
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "8px",
+                    marginTop: "8px",
+                    justifyContent: "flex-end",
+                  }}
+                >
+                  <button
+                    onClick={() => setIsEditing(false)}
+                    style={{
+                      padding: "4px 12px",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      background: "var(--orca-color-bg-2)",
+                    }}
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={handleUrlSubmit}
+                    style={{
+                      padding: "4px 12px",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      background: "var(--orca-brand-primary)",
+                      color: "white",
+                    }}
+                  >
+                    确认
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ padding: "8px" }}>
+                <textarea
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder="输入 HTML..."
+                  autoFocus
+                  style={{
+                    width: "100%",
+                    minHeight: "200px",
+                    padding: "8px",
+                    border: "1px solid var(--orca-color-border-2)",
+                    borderRadius: "4px",
+                    fontSize: "13px",
+                    fontFamily: "monospace",
+                    outline: "none",
+                    resize: "vertical",
+                  }}
+                />
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "8px",
+                    marginTop: "8px",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <button
+                    onClick={handleSwitchMode}
+                    style={{
+                      padding: "4px 12px",
+                      border: "1px solid var(--orca-color-border-2)",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      background: "transparent",
+                    }}
+                  >
+                    切换模式
+                  </button>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      onClick={() => setIsEditing(false)}
+                      style={{
+                        padding: "4px 12px",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        background: "var(--orca-color-bg-2)",
+                      }}
+                    >
+                      取消
+                    </button>
+                    <button
+                      onClick={() => handleHtmlSubmit(inputValue)}
+                      style={{
+                        padding: "4px 12px",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        background: "var(--orca-brand-primary)",
+                        color: "white",
+                      }}
+                    >
+                      确认
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )
+          ) : embedData.mode === "url" && embedData.url ? (
+            /twitter\.com|x\.com/.test(embedData.url) ? (
+              <iframe
+                src={`https://platform.twitter.com/embed/Tweet.html?url=${encodeURIComponent(embedData.url)}`}
+                style={{ border: "none", width: "100%", minHeight: "400px" }}
+                title="Twitter Embed"
+              />
+            ) : (
+              <iframe
+                src={embedData.url}
+                style={{
+                  border: "none",
+                  width: "100%",
+                  height: "500px",
+                  borderRadius: "4px",
+                }}
+                title="Web Embed"
+                sandbox="allow-scripts allow-same-origin"
+              />
+            )
+          ) : embedData.mode === "html" && embedData.html ? (
+            <div
+              dangerouslySetInnerHTML={{ __html: embedData.html }}
+              style={{ padding: "8px" }}
+            />
+          ) : null}
         </div>
       }
       childrenJsx={childrenBlocks}

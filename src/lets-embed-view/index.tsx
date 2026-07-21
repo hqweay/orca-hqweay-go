@@ -13,7 +13,7 @@ export default class EmbedViewPlugin extends BasePlugin {
   async load() {
     console.log("[lets-embed-view] load() called");
     if (!orca.state.blockRenderers[RENDERER_TYPE]) {
-      orca.renderers.registerBlock(RENDERER_TYPE, true, EmbedViewRenderer);
+      orca.renderers.registerBlock(RENDERER_TYPE, false, EmbedViewRenderer);
     }
 
     orca.converters.registerBlock("plain", RENDERER_TYPE, (_blockContent: any, repr: any) => {
