@@ -1,5 +1,32 @@
 # Changelog
 
+## 3.6.0
+
+### Features
+
+- 嵌入视图 (lets-embed-view)：URL 模式统一使用 webview 替代 iframe
+  - 绕过 CSP `frame-ancestors` 限制（GitHub 等网站不再报错）
+  - webview 带 `partition="persist:embed"`，保持登录状态持久化
+  - 保留 `ResizableBox` 可拖拽调整高度
+  - 存量 `displayMode: "iframe"` 数据自动迁移至 webview
+  - 支持 `allowpopups` 允许弹窗
+- 嵌入视图：Header 显示 URL 网站图标 + 域名（类似 Twitter 的 𝕏 图标）
+  - 使用 Google Favicons API 获取图标
+- 嵌入视图：HTML 含脚本模式重新加入 `Cmd+R` 键盘拦截
+  - 通过 `executeJavaScript` 注入 keydown 监听 + `console-message` 通信转发 reload
+  - `injectedRef` 防止重复注入
+
+### Improvements
+
+- 嵌入视图：iframe 适配器增加 `onError` 检测，捕获到加载失败时显示底部提示条 + Webview 切换按钮
+- 嵌入视图：iframe 适配器增加 `onSwitchMode` 回调通道，支持适配器组件主动请求切换渲染模式
+
+### Bug Fixes
+
+- 嵌入视图：修复 webview 闪烁问题（remove save from height change 打破渲染循环）
+- 嵌入视图：修复 iframe CSP 拦截时无任何视觉反馈的问题
+- 嵌入视图：修复 HTML 模式 webview 自动高度测量导致存快照写入循环的问题
+
 ## 3.5.1
 
 ### Minor Changes
