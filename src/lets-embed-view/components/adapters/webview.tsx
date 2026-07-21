@@ -21,23 +21,11 @@ function WebviewWidget({ url }: { url: string }) {
   )
 }
 
-// Link mode: Simple URL link
-function WebviewLink({ url }: { url: string }) {
-  return (
-    <div style={{ padding: "12px" }}>
-      <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--orca-color-primary)", textDecoration: "none" }}>
-        {url}
-      </a>
-    </div>
-  )
-}
-
-export const iframeAdapter = {
-  name: "iframe",
+export const webviewAdapter = {
+  name: "webview",
   match: () => true,  // Fallback adapter - matches everything
   modes: {
     widget: WebviewWidget,
-    link: WebviewLink,
   },
   defaultMode: "widget" as const,
 }

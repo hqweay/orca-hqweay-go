@@ -4,12 +4,12 @@ const { BlockShell, BlockChildren, Button, Tooltip } = orca.components
 
 import { registerAdapter, findAdapter, getAvailableModes, type DisplayMode } from "./adapters/registry"
 import { twitterAdapter } from "./adapters/twitter"
-import { iframeAdapter } from "./adapters/iframe"
+import { webviewAdapter } from "./adapters/webview"
 import { EmbedPreview } from "./EmbedPreview"
 import { EmbedEditor } from "./EmbedEditor"
 
 registerAdapter(twitterAdapter)
-registerAdapter(iframeAdapter)
+registerAdapter(webviewAdapter)
 
 type Mode = "url" | "html"
 type EmbedData = { mode: Mode; url?: string; html?: string }
@@ -24,11 +24,10 @@ type Props = {
   renderingMode?: "normal" | "simple" | "simple-children"
 }
 
-const MODE_LABELS: Record<DisplayMode, string> = {
-  widget: "Widget",
-  embed: "Embed",
-  card: "Card",
-  link: "Link",
+function detectMode(input: string): "url" | "html" {
+  const trimmed = input.trim()
+  if (/^https?:\/\//i.test(trimmed)) return "url"
+  return "html"
 }
 
 export const EmbedViewRenderer = ({
@@ -89,19 +88,6 @@ export const EmbedViewRenderer = ({
     setEditing(false)
   }, [save])
 
-  const handleModeSwitch = useCallback(async () => {
-    const newMode: Mode = localData.mode === "url" ? "html" : "url"
-    const newData: EmbedData = {
-      mode: newMode,
-      url: newMode === "url" ? localData.url : undefined,
-      html: newMode === "html" ? localData.html : undefined,
-    }
-    setLocalData(newData)
-    setEditing(true)
-    // Reset display mode when switching between URL/HTML
-    setDisplayMode(undefined)
-  }, [localData])
-
   const handleDisplayModeChange = useCallback(async (mode: DisplayMode) => {
     setDisplayMode(mode)
     await save(localData, mode)
@@ -122,6 +108,8 @@ export const EmbedViewRenderer = ({
 
   if (!block) return null
 
+  const contentLabel = localData.mode === "url" ? "URL" : "HTML"
+
   return (
     <BlockShell
       panelId={panelId}
@@ -139,52 +127,32 @@ export const EmbedViewRenderer = ({
       selfFoldable
       contentJsx={
         <div className="lets-embed-container" style={{ borderRadius: "8px", border: "1px solid var(--orca-color-border-2)", overflow: "hidden", margin: "4px 0" }}>
-          <div className="lets-embed-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", background: "var(--orca-color-bg-2)", borderBottom: "1px solid var(--orca-color-border-2)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          {/* Header - only show in preview mode */}
+          {!editing && (
+            <div className="lets-embed-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", background: "var(--orca-color-bg-2)", borderBottom: "1px solid var(--orca-color-border-2)" }}>
               <span style={{ fontSize: "11px", opacity: 0.5, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                {localData.mode === "url" ? "URL" : "HTML"}
+                {contentLabel}
               </span>
-              {/* Display mode selector - only show for URL mode with available modes */}
-              {localData.mode === "url" && availableModes.length > 1 && (
-                <div style={{ display: "flex", gap: "2px", background: "var(--orca-color-bg-1)", borderRadius: "4px", padding: "2px" }}>
-                  {availableModes.map((mode) => (
-                    <button
-                      key={mode}
-                      onClick={() => handleDisplayModeChange(mode)}
-                      style={{
-                        padding: "2px 6px",
-                        fontSize: "10px",
-                        border: "none",
-                        borderRadius: "3px",
-                        cursor: "pointer",
-                        background: displayMode === mode ? "var(--orca-color-primary)" : "transparent",
-                        color: displayMode === mode ? "white" : "var(--orca-color-text-2)",
-                        fontWeight: displayMode === mode ? 500 : 400,
-                      }}
-                    >
-                      {MODE_LABELS[mode]}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <div style={{ display: "flex", gap: "2px" }}>
+                {localData.mode === "url" && localData.url && (
+                  <Tooltip text="在浏览器中打开">
+                    <Button variant="plain" onClick={() => window.open(localData.url, "_blank")} style={{ fontSize: "13px", padding: "2px 4px", height: "auto", minHeight: 0 }}>
+                      <i className="ti ti-external-link" />
+                    </Button>
+                  </Tooltip>
+                )}
+                <Tooltip text="编辑">
+                  <Button variant="plain" onClick={() => setEditing(true)} style={{ fontSize: "13px", padding: "2px 4px", height: "auto", minHeight: 0 }}>
+                    <i className="ti ti-pencil" />
+                  </Button>
+                </Tooltip>
+              </div>
             </div>
-            <div style={{ display: "flex", gap: "2px" }}>
-              <Tooltip text="切换模式">
-                <Button variant="plain" onClick={handleModeSwitch} style={{ fontSize: "13px", padding: "2px 4px", height: "auto", minHeight: 0 }}>
-                  <i className="ti ti-switch-horizontal" />
-                </Button>
-              </Tooltip>
-              <Tooltip text={editing ? "预览" : "编辑"}>
-                <Button variant="plain" onClick={() => setEditing(!editing)} style={{ fontSize: "13px", padding: "2px 4px", height: "auto", minHeight: 0 }}>
-                  <i className={editing ? "ti ti-eye" : "ti ti-pencil"} />
-                </Button>
-              </Tooltip>
-            </div>
-          </div>
+          )}
           {editing ? (
             <EmbedEditor data={localData} onSave={handleSave} onCancel={() => setEditing(false)} />
           ) : (
-            <EmbedPreview data={localData} displayMode={displayMode} />
+            <EmbedPreview data={localData} displayMode={displayMode} onDisplayModeChange={handleDisplayModeChange} />
           )}
         </div>
       }
