@@ -133,10 +133,35 @@ export const EmbedViewRenderer = ({
           {/* Header - only show in preview mode */}
           {!editing && (
             <div className="lets-embed-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", background: "var(--orca-color-bg-2)", borderBottom: "1px solid var(--orca-color-border-2)" }}>
-              <span style={{ fontSize: "11px", opacity: 0.5, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                {contentLabel}
-              </span>
-              <div style={{ display: "flex", gap: "2px" }}>
+              <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                <span style={{ fontSize: "11px", opacity: 0.5, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  {contentLabel}
+                </span>
+                {localData.mode === "url" && availableModes.length > 1 && adapter && (
+                  <div style={{ display: "flex", gap: "2px", marginLeft: "4px" }}>
+                    {availableModes.map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => handleDisplayModeChange(m)}
+                        style={{
+                          padding: "0 6px",
+                          fontSize: "11px",
+                          border: "none",
+                          borderRadius: "3px",
+                          cursor: "pointer",
+                          lineHeight: "20px",
+                          background: displayMode === m ? "var(--orca-color-primary)" : "transparent",
+                          color: displayMode === m ? "white" : "var(--orca-color-text-2)",
+                          fontWeight: displayMode === m ? 500 : 400,
+                        }}
+                      >
+                        {m === "embed" ? "Embed" : m === "card" ? "Card" : m === "iframe" ? "Iframe" : m === "widget" ? "Widget" : "Link"}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div style={{ display: "flex", gap: "2px", alignItems: "center" }}>
                 {localData.mode === "url" && localData.url && (
                   <Tooltip text="在浏览器中打开">
                     <Button variant="plain" onClick={() => window.open(localData.url, "_blank")} style={{ fontSize: "13px", padding: "2px 4px", height: "auto", minHeight: 0 }}>
@@ -155,7 +180,7 @@ export const EmbedViewRenderer = ({
           {editing ? (
             <EmbedEditor data={localData} onSave={handleSave} onCancel={() => setEditing(false)} />
           ) : (
-            <EmbedPreview data={localData} displayMode={displayMode} onDisplayModeChange={handleDisplayModeChange} />
+            <EmbedPreview data={localData} displayMode={displayMode} />
           )}
         </div>
       }
