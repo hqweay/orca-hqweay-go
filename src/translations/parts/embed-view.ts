@@ -9,4 +9,17 @@ export default {
   "embed-view.switch-mode": "切换模式",
   "embed-view.edit": "编辑",
   "embed-view.preview": "预览",
+  "embed-view.no-content": "暂无内容",
+  "embed-view.open-in-browser": "在浏览器中打开",
+  "embed-view.invalid-url": "请输入有效的 URL",
+  "embed-view.placeholder-input": "输入 URL 或 HTML...",
+  "embed-view.confirm-shortcut": "⌘+Enter 确认",
+  "embed-view.cancel": "取消",
+  "embed-view.confirm": "确认",
+  "embed-view.load-failed": "加载失败",
+  "embed-view.loading": "加载中...",
+  "embed-view.invalid-tweet-url": "无法识别的推文链接",
+  "embed-view.iframe-not-allowed": "该网站不允许 iframe 嵌入",
 };
+
+

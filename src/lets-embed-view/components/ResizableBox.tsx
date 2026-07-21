@@ -6,36 +6,64 @@ type Props = {
   minHeight?: number
   maxHeight?: number
   style?: React.CSSProperties
+  height?: number
 }
 
-export function ResizableBox({ children, defaultHeight = 400, minHeight = 200, maxHeight = 800, style }: Props) {
-  const [height, setHeight] = useState(defaultHeight)
+export function ResizableBox({
+  children,
+  defaultHeight = 400,
+  minHeight = 40,
+  maxHeight = 1200,
+  style,
+  height: controlledHeight,
+}: Props) {
+  const [height, setHeight] = useState(controlledHeight ?? defaultHeight)
+  const [isDragging, setIsDragging] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
   const draggingRef = useRef(false)
   const startYRef = useRef(0)
   const startHeightRef = useRef(0)
 
+  useEffect(() => {
+    if (controlledHeight !== undefined) {
+      setHeight(Math.max(minHeight, Math.min(maxHeight, controlledHeight)))
+    }
+  }, [controlledHeight, minHeight, maxHeight])
+
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     draggingRef.current = true
+    setIsDragging(true)
     startYRef.current = e.clientY
-    startHeightRef.current = height
+    startHeightRef.current = containerRef.current?.offsetHeight ?? height
     document.body.style.cursor = "row-resize"
     document.body.style.userSelect = "none"
   }, [height])
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!draggingRef.current) return
-    const delta = e.clientY - startYRef.current
-    const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeightRef.current + delta))
-    setHeight(newHeight)
-  }, [minHeight, maxHeight])
-
   const handleMouseUp = useCallback(() => {
     if (!draggingRef.current) return
     draggingRef.current = false
+    setIsDragging(false)
     document.body.style.cursor = ""
     document.body.style.userSelect = ""
+    if (containerRef.current) {
+      const final = parseInt(containerRef.current.style.height)
+      if (!isNaN(final)) setHeight(final)
+    }
   }, [])
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!draggingRef.current) return
+    if (e.buttons === 0) {
+      handleMouseUp()
+      return
+    }
+    const delta = e.clientY - startYRef.current
+    const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeightRef.current + delta))
+    if (containerRef.current) {
+      containerRef.current.style.height = `${newHeight}px`
+    }
+  }, [minHeight, maxHeight, handleMouseUp])
 
   useEffect(() => {
     window.addEventListener("mousemove", handleMouseMove)
@@ -47,8 +75,20 @@ export function ResizableBox({ children, defaultHeight = 400, minHeight = 200, m
   }, [handleMouseMove, handleMouseUp])
 
   return (
-    <div style={{ position: "relative", overflow: "hidden", ...style, height }}>
-      {children}
+    <div ref={containerRef} style={{ position: "relative", overflow: "hidden", ...style, height: `${height}px` }}>
+      <div style={{ width: "100%", height: "100%", pointerEvents: isDragging ? "none" : "auto" }}>
+        {children}
+      </div>
+      {isDragging && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 999,
+            cursor: "row-resize",
+          }}
+        />
+      )}
       <div
         onMouseDown={handleMouseDown}
         style={{
@@ -61,6 +101,7 @@ export function ResizableBox({ children, defaultHeight = 400, minHeight = 200, m
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          zIndex: 1000,
         }}
       >
         <div style={{

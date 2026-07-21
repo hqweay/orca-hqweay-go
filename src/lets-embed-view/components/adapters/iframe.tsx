@@ -1,5 +1,6 @@
 import React, { useState } from "react"
 import { ResizableBox } from "../ResizableBox"
+import { t } from "@/libs/l10n"
 
 function IframeWidget({ url }: { url: string }) {
   const [error, setError] = useState(false)
@@ -9,7 +10,7 @@ function IframeWidget({ url }: { url: string }) {
   if (error) {
     return (
       <div style={{ padding: "12px", textAlign: "center", opacity: 0.4, fontSize: "13px" }}>
-        该网站不允许 iframe 嵌入
+        {t("embed-view.iframe-not-allowed")}
       </div>
     )
   }

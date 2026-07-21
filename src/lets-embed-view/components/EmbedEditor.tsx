@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react"
 
 import type { EmbedData } from "../types"
 import { detectMode } from "../logic"
+import { t } from "@/libs/l10n"
 
 export const EmbedEditor = ({
   data,
@@ -32,7 +33,7 @@ export const EmbedEditor = ({
       try {
         new URL(trimmed)
       } catch {
-        setError("请输入有效的 URL")
+        setError(t("embed-view.invalid-url"))
         return
       }
       setError(null)
@@ -60,7 +61,7 @@ export const EmbedEditor = ({
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="输入 URL 或 HTML..."
+        placeholder={t("embed-view.placeholder-input")}
         className="orca-input"
         style={{
           width: "100%",
@@ -83,7 +84,7 @@ export const EmbedEditor = ({
       <style>{`.lets-embed-btn-cancel:hover { background: var(--orca-color-bg-3); }.lets-embed-btn-confirm:hover { background: var(--orca-color-primary-6); }`}</style>
       <div style={{ display: "flex", gap: "6px", marginTop: "8px", justifyContent: "space-between" }}>
         <span style={{ fontSize: "11px", opacity: 0.4, alignSelf: "center" }}>
-          ⌘+Enter 确认
+          {t("embed-view.confirm-shortcut")}
         </span>
         <div style={{ display: "flex", gap: "4px" }}>
           <button
@@ -100,7 +101,7 @@ export const EmbedEditor = ({
               color: "var(--orca-color-text-1)",
             }}
           >
-            取消
+            {t("embed-view.cancel")}
           </button>
           <button
             className="lets-embed-btn-confirm"
@@ -116,7 +117,7 @@ export const EmbedEditor = ({
               color: "#fff",
             }}
           >
-            确认
+            {t("embed-view.confirm")}
           </button>
         </div>
       </div>

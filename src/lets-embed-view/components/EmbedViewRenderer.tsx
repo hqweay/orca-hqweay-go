@@ -7,6 +7,7 @@ import { EmbedPreview } from "./EmbedPreview"
 import { EmbedEditor } from "./EmbedEditor"
 import type { EmbedData } from "../types"
 import { getRepr } from "@/libs/BlockFormatter"
+import { t } from "@/libs/l10n"
 
 type Props = {
   panelId: string
@@ -169,13 +170,13 @@ export const EmbedViewRenderer = ({
               </div>
               <div style={{ display: "flex", gap: "2px", alignItems: "center" }}>
                 {localData.mode === "url" && localData.url && (
-                  <Tooltip text="在浏览器中打开">
+                  <Tooltip text={t("embed-view.open-in-browser")}>
                     <Button variant="plain" onClick={() => window.open(localData.url, "_blank")} style={{ fontSize: "13px", padding: "2px 4px", height: "auto", minHeight: 0 }}>
                       <i className="ti ti-external-link" />
                     </Button>
                   </Tooltip>
                 )}
-                <Tooltip text="编辑">
+                <Tooltip text={t("embed-view.edit")}>
                   <Button variant="plain" onClick={() => setEditing(true)} style={{ fontSize: "13px", padding: "2px 4px", height: "auto", minHeight: 0 }}>
                     <i className="ti ti-pencil" />
                   </Button>

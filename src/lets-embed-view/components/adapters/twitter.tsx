@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react"
+import { t } from "@/libs/l10n"
 
 // Embed mode: oEmbed API - simplified card
 function TwitterEmbed({ url }: { url: string }) {
@@ -14,8 +15,8 @@ function TwitterEmbed({ url }: { url: string }) {
     return () => { cancelled = true }
   }, [url])
 
-  if (error) return <div style={{ padding: "12px", color: "var(--orca-color-error)", fontSize: "13px" }}>加载失败</div>
-  if (!html) return <div style={{ padding: "12px", opacity: 0.3, fontSize: "13px" }}>加载中...</div>
+  if (error) return <div style={{ padding: "12px", color: "var(--orca-color-error)", fontSize: "13px" }}>{t("embed-view.load-failed")}</div>
+  if (!html) return <div style={{ padding: "12px", opacity: 0.3, fontSize: "13px" }}>{t("embed-view.loading")}</div>
   return (
     <>
       <style>{`.lets-embed-oembed blockquote { margin: 0; }`}</style>
@@ -48,7 +49,7 @@ function TwitterCard({ url }: { url: string }) {
   }, [tweetId])
 
   if (!tweetId) {
-    return <div style={{ padding: "12px", color: "var(--orca-color-error)", fontSize: "13px" }}>无法识别的推文链接</div>
+    return <div style={{ padding: "12px", color: "var(--orca-color-error)", fontSize: "13px" }}>{t("embed-view.invalid-tweet-url")}</div>
   }
 
   return (
