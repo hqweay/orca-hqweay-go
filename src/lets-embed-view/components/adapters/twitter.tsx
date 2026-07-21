@@ -16,7 +16,12 @@ function TwitterEmbed({ url }: { url: string }) {
 
   if (error) return <div style={{ padding: "12px", color: "var(--orca-color-error)", fontSize: "13px" }}>加载失败</div>
   if (!html) return <div style={{ padding: "12px", opacity: 0.3, fontSize: "13px" }}>加载中...</div>
-  return <div dangerouslySetInnerHTML={{ __html: html }} style={{ padding: "8px 12px" }} />
+  return (
+    <>
+      <style>{`.lets-embed-oembed blockquote { margin: 0; }`}</style>
+      <div className="lets-embed-oembed" dangerouslySetInnerHTML={{ __html: html }} style={{ padding: "8px 12px" }} />
+    </>
+  )
 }
 
 // Card mode: platform.twitter.com/embed/Tweet.html iframe
@@ -27,6 +32,20 @@ function extractTweetId(url: string): string | null {
 
 function TwitterCard({ url }: { url: string }) {
   const tweetId = extractTweetId(url)
+  const [height, setHeight] = useState(400)
+
+  useEffect(() => {
+    if (!tweetId) return
+    const handler = (event: MessageEvent) => {
+      if (event.origin !== "https://platform.twitter.com") return
+      const data = event.data
+      if (data && typeof data === "object" && data.type === "twttr.embed.height" && typeof data.height === "number") {
+        setHeight(data.height)
+      }
+    }
+    window.addEventListener("message", handler)
+    return () => window.removeEventListener("message", handler)
+  }, [tweetId])
 
   if (!tweetId) {
     return <div style={{ padding: "12px", color: "var(--orca-color-error)", fontSize: "13px" }}>无法识别的推文链接</div>
@@ -35,7 +54,14 @@ function TwitterCard({ url }: { url: string }) {
   return (
     <iframe
       src={`https://platform.twitter.com/embed/Tweet.html?id=${tweetId}&theme=dark&conversation=none&dnt=true&align=center`}
-      style={{ border: "none", width: "100%", height: "500px", maxHeight: "600px", display: "block" }}
+      style={{
+        border: "none",
+        width: "100%",
+        height: `${height}px`,
+        maxHeight: "600px",
+        display: "block",
+        overflow: "hidden",
+      }}
       title="Twitter Embed"
     />
   )
