@@ -1,4 +1,5 @@
 import React, { useState } from "react"
+import { ResizableBox } from "../ResizableBox"
 
 function IframeWidget({ url }: { url: string }) {
   const [error, setError] = useState(false)
@@ -14,19 +15,20 @@ function IframeWidget({ url }: { url: string }) {
   }
 
   return (
-    <iframe
-      src={url}
-      style={{
-        border: "none",
-        width: "100%",
-        height: "400px",
-        minHeight: "200px",
-        display: "block",
-      }}
-      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-      onError={handleError}
-      title="Embedded Content"
-    />
+    <ResizableBox>
+      <iframe
+        src={url}
+        style={{
+          border: "none",
+          width: "100%",
+          height: "100%",
+          display: "block",
+        }}
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+        onError={handleError}
+        title="Embedded Content"
+      />
+    </ResizableBox>
   )
 }
 
