@@ -46,12 +46,10 @@ export default class EmbedViewPlugin extends BasePlugin {
           if (!currentBlock) return null;
 
           await orca.commands.invokeEditorCommand(
-            "core.editor.insertBlock",
-            cursor,
-            currentBlock,
-            "after",
+            "core.editor.setProperties",
             null,
-            { type: RENDERER_TYPE, mode: "html", html: "" },
+            [currentBlock.id],
+            [{ name: "_repr", type: 0, value: { type: RENDERER_TYPE, mode: "html", html: "" } }],
           );
 
           return null;
