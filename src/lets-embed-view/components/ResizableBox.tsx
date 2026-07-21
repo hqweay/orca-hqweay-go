@@ -7,6 +7,7 @@ type Props = {
   maxHeight?: number
   style?: React.CSSProperties
   height?: number
+  onHeightChange?: (height: number) => void
 }
 
 export function ResizableBox({
@@ -16,6 +17,7 @@ export function ResizableBox({
   maxHeight = 1200,
   style,
   height: controlledHeight,
+  onHeightChange,
 }: Props) {
   const [height, setHeight] = useState(controlledHeight ?? defaultHeight)
   const [isDragging, setIsDragging] = useState(false)
@@ -48,9 +50,12 @@ export function ResizableBox({
     document.body.style.userSelect = ""
     if (containerRef.current) {
       const final = parseInt(containerRef.current.style.height)
-      if (!isNaN(final)) setHeight(final)
+      if (!isNaN(final)) {
+        setHeight(final)
+        onHeightChange?.(final)
+      }
     }
-  }, [])
+  }, [onHeightChange])
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!draggingRef.current) return

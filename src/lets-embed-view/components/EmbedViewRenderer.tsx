@@ -38,6 +38,7 @@ export const EmbedViewRenderer = ({
   const [editing, setEditing] = useState(!(repr.mode && (repr.url || repr.html)))
   const [localData, setLocalData] = useState<EmbedData>({ mode: repr.mode || "html", url: repr.url, html: repr.html })
   const [displayMode, setDisplayMode] = useState<DisplayMode | undefined>(repr.displayMode)
+  const [height, setHeight] = useState<number | undefined>(repr.height)
 
   useEffect(() => {
     if (repr.mode) {
@@ -46,7 +47,10 @@ export const EmbedViewRenderer = ({
     if (repr.displayMode) {
       setDisplayMode(repr.displayMode)
     }
-  }, [repr.mode, repr.url, repr.html, repr.displayMode])
+    if (repr.height) {
+      setHeight(repr.height)
+    }
+  }, [repr.mode, repr.url, repr.html, repr.displayMode, repr.height])
 
   // Get available modes for current URL
   const adapter = localData.mode === "url" && localData.url ? findAdapter(localData.url) : null
@@ -59,10 +63,14 @@ export const EmbedViewRenderer = ({
     }
   }, [adapter, displayMode])
 
-  const save = useCallback(async (data: EmbedData, mode?: DisplayMode) => {
+  const save = useCallback(async (data: EmbedData, mode?: DisplayMode, customHeight?: number) => {
     const value: any = { type: "lets.embed-view", ...data }
+    const h = customHeight ?? height ?? repr.height
     if (mode || displayMode) {
       value.displayMode = mode || displayMode
+    }
+    if (h) {
+      value.height = h
     }
     try {
       await orca.commands.invokeEditorCommand(
@@ -85,7 +93,8 @@ export const EmbedViewRenderer = ({
     }
     setLocalData(data)
     if (mode) setDisplayMode(mode)
-  }, [targetId, displayMode])
+    if (customHeight) setHeight(customHeight)
+  }, [targetId, displayMode, height, repr.height])
 
   const handleSave = useCallback(async (data: EmbedData) => {
     await save(data)
@@ -96,6 +105,11 @@ export const EmbedViewRenderer = ({
     setDisplayMode(mode)
     await save(localData, mode)
   }, [localData, save])
+
+  const handleHeightChange = useCallback(async (newHeight: number) => {
+    setHeight(newHeight)
+    await save(localData, displayMode, newHeight)
+  }, [localData, displayMode, save])
 
   const childrenBlocks = useMemo(
     () => (
@@ -187,7 +201,7 @@ export const EmbedViewRenderer = ({
           {editing ? (
             <EmbedEditor data={localData} onSave={handleSave} onCancel={() => setEditing(false)} />
           ) : (
-            <EmbedPreview data={localData} displayMode={displayMode} />
+            <EmbedPreview data={localData} displayMode={displayMode} height={height} onHeightChange={handleHeightChange} />
           )}
         </div>
       }

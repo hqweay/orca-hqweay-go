@@ -2,7 +2,7 @@ import React, { useState } from "react"
 import { ResizableBox } from "../ResizableBox"
 import { t } from "@/libs/l10n"
 
-function IframeWidget({ url }: { url: string }) {
+function IframeWidget({ url, height, onHeightChange }: { url: string; height?: number; onHeightChange?: (h: number) => void }) {
   const [error, setError] = useState(false)
 
   const handleError = () => setError(true)
@@ -16,7 +16,7 @@ function IframeWidget({ url }: { url: string }) {
   }
 
   return (
-    <ResizableBox>
+    <ResizableBox height={height} onHeightChange={onHeightChange}>
       <iframe
         src={url}
         style={{

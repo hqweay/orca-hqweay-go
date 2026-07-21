@@ -4,7 +4,15 @@ import type { EmbedData } from "../types"
 import { ResizableBox } from "./ResizableBox"
 import { t } from "@/libs/l10n"
 
-const HtmlPreview = ({ html }: { html: string }) => {
+const HtmlPreview = ({
+  html,
+  height,
+  onHeightChange,
+}: {
+  html: string
+  height?: number
+  onHeightChange?: (h: number) => void
+}) => {
   const webviewRef = useRef<any>(null)
   const [src, setSrc] = useState("")
   const [contentHeight, setContentHeight] = useState<number | undefined>()
@@ -47,8 +55,10 @@ const HtmlPreview = ({ html }: { html: string }) => {
 
   if (!src) return null
 
+  const effectiveHeight = height ?? contentHeight
+
   return (
-    <ResizableBox defaultHeight={500} height={contentHeight}>
+    <ResizableBox defaultHeight={500} height={effectiveHeight} onHeightChange={onHeightChange}>
       <webview
         ref={webviewRef}
         src={src}
@@ -65,12 +75,16 @@ const EmptyState = () => (
 export const EmbedPreview = ({
   data,
   displayMode,
+  height,
+  onHeightChange,
 }: {
   data: EmbedData
   displayMode?: DisplayMode
+  height?: number
+  onHeightChange?: (h: number) => void
 }) => {
   if (data.mode === "html" && data.html) {
-    return <HtmlPreview html={data.html} />
+    return <HtmlPreview html={data.html} height={height} onHeightChange={onHeightChange} />
   }
 
   if (data.mode === "url" && data.url) {
@@ -79,7 +93,7 @@ export const EmbedPreview = ({
       const mode = displayMode || adapter.defaultMode
       const ModeComponent = adapter.modes[mode]
 
-      return ModeComponent ? <ModeComponent url={data.url} /> : <EmptyState />
+      return ModeComponent ? <ModeComponent url={data.url} height={height} onHeightChange={onHeightChange} /> : <EmptyState />
     }
     return <EmptyState />
   }
