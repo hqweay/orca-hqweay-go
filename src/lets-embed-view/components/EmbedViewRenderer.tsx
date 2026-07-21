@@ -134,9 +134,15 @@ export const EmbedViewRenderer = ({
           {!editing && (
             <div className="lets-embed-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", background: "var(--orca-color-bg-2)", borderBottom: "1px solid var(--orca-color-border-2)" }}>
               <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                <span style={{ fontSize: "11px", opacity: 0.5, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                  {contentLabel}
-                </span>
+                {localData.mode === "url" && adapter?.name === "twitter" ? (
+                  <span style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", opacity: 0.5, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    <i className="ti ti-brand-x" /> Twitter
+                  </span>
+                ) : (
+                  <span style={{ fontSize: "11px", opacity: 0.5, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    {contentLabel}
+                  </span>
+                )}
                 {localData.mode === "url" && availableModes.length > 1 && adapter && (
                   <div style={{ display: "flex", gap: "2px", marginLeft: "4px" }}>
                     {availableModes.map((m) => (
