@@ -20,6 +20,13 @@ type Props = {
   renderingMode?: "normal" | "simple" | "simple-children"
 }
 
+const extractDomain = (url: string): string | null => {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, "")
+    return host || null
+  } catch { return null }
+}
+
 export const EmbedViewRenderer = ({
   panelId,
   blockId,
@@ -130,6 +137,8 @@ export const EmbedViewRenderer = ({
   if (!block) return null
 
   const contentLabel = localData.mode === "url" ? "URL" : "HTML"
+  const domain = localData.url ? extractDomain(localData.url) : null
+  const faviconUrl = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=16` : null
 
   return (
     <BlockShell
@@ -155,6 +164,11 @@ export const EmbedViewRenderer = ({
                 {localData.mode === "url" && adapter?.name === "twitter" ? (
                   <span style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", opacity: 0.5, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.5px" }}>
                     <i className="ti ti-brand-x" /> Twitter
+                  </span>
+                ) : localData.mode === "url" && faviconUrl ? (
+                  <span style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", opacity: 0.5, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    <img src={faviconUrl} alt="" style={{ width: "14px", height: "14px", borderRadius: "2px" }} />
+                    {domain ?? "URL"}
                   </span>
                 ) : (
                   <span style={{ fontSize: "11px", opacity: 0.5, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.5px" }}>
