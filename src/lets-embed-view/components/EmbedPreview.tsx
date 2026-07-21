@@ -16,10 +16,11 @@ const HtmlPreview = ({
   const webviewRef = useRef<any>(null)
   const [src, setSrc] = useState("")
   const [contentHeight, setContentHeight] = useState<number | undefined>()
+  const hasScripts = /<\s*script[\s>]/i.test(html)
 
   useEffect(() => {
     const processed = html.replace(/(src=["']?)\/\//g, "$1https://")
-    const wrapped = `<!DOCTYPE html><html><body style="margin:0;padding:0">${processed}</body></html>`
+    const wrapped = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0">${processed}</body></html>`
     const blob = new Blob([wrapped], { type: "text/html" })
     const url = URL.createObjectURL(blob)
     setSrc(url)
@@ -28,6 +29,7 @@ const HtmlPreview = ({
   }, [html])
 
   useEffect(() => {
+    if (!hasScripts) return
     const wv = webviewRef.current
     if (!wv) return
     let timer: NodeJS.Timeout | null = null
@@ -42,7 +44,6 @@ const HtmlPreview = ({
 
     const handler = () => {
       measureHeight()
-      // Delayed check to capture dynamic script/widget renders
       timer = setTimeout(measureHeight, 300)
     }
 
@@ -51,7 +52,7 @@ const HtmlPreview = ({
       if (timer) clearTimeout(timer)
       try { wv.removeEventListener("dom-ready", handler) } catch {}
     }
-  }, [src])
+  }, [src, hasScripts])
 
   if (!src) return null
 
@@ -59,11 +60,18 @@ const HtmlPreview = ({
 
   return (
     <ResizableBox defaultHeight={500} height={effectiveHeight} onHeightChange={onHeightChange}>
-      <webview
-        ref={webviewRef}
-        src={src}
-        style={{ border: "none", width: "100%", height: "100%" }}
-      />
+      {hasScripts ? (
+        <webview
+          ref={webviewRef}
+          src={src}
+          style={{ border: "none", width: "100%", height: "100%" }}
+        />
+      ) : (
+        <iframe
+          src={src}
+          style={{ border: "none", width: "100%", height: "100%" }}
+        />
+      )}
     </ResizableBox>
   )
 }
@@ -100,5 +108,3 @@ export const EmbedPreview = ({
 
   return <EmptyState />
 }
-
-

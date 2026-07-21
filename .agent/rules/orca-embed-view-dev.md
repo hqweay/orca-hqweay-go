@@ -39,7 +39,13 @@ await orca.commands.invokeEditorCommand(
 
 ### 使用原则
 - **URL 默认模式**：iframe（轻量），被 `X-Frame-Options` 阻拦时用户手动切 webview
-- **HTML 模式**：必须用 `webview src="data:text/html,..."`，因为父窗口 CSP 禁止 `'unsafe-inline'`，srcdoc iframe 继承此限制导致内联脚本不执行
+- **HTML 模式**：自动检测是否存在 `<script>` 标签
+  - 无脚本：使用 iframe（blob URL），避免 webview 键盘快捷键冲突
+  - 含脚本：使用 webview（CSP 限制 iframe 不执行内联脚本），但 `Cmd+Shift+I`/`Cmd+R` 等快捷键会被 webview 劫持
+
+### 自动高度策略
+- webview：`executeJavaScript` 读取 `scrollHeight`，存本地 `contentHeight` state，不触发 store save
+- iframe：不支持自动高度，依赖 `ResizableBox` 手动拖拽
 
 ## 按钮样式规范（Orca CSS 变量）
 
