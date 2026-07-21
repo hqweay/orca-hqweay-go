@@ -1,15 +1,31 @@
+import React, { useState, useEffect } from "react"
 import { findAdapter, type DisplayMode } from "./adapters/registry"
 import type { EmbedData } from "../types"
 import { ResizableBox } from "./ResizableBox"
 
-const HtmlPreview = ({ html }: { html: string }) => (
-  <ResizableBox defaultHeight={500}>
-    <webview
-      src={`data:text/html,${encodeURIComponent(html)}`}
-      style={{ border: "none", width: "100%", height: "100%" }}
-    />
-  </ResizableBox>
-)
+const HtmlPreview = ({ html }: { html: string }) => {
+  const [src, setSrc] = useState("")
+
+  useEffect(() => {
+    const processed = html.replace(/(src=["']?)\/\//g, "$1https://")
+    const wrapped = `<!DOCTYPE html><html><body style="margin:0;padding:0">${processed}</body></html>`
+    const blob = new Blob([wrapped], { type: "text/html" })
+    const url = URL.createObjectURL(blob)
+    setSrc(url)
+    return () => URL.revokeObjectURL(url)
+  }, [html])
+
+  if (!src) return null
+
+  return (
+    <ResizableBox defaultHeight={500}>
+      <webview
+        src={src}
+        style={{ border: "none", width: "100%", height: "100%" }}
+      />
+    </ResizableBox>
+  )
+}
 
 const EmptyState = () => (
   <div style={{ padding: "24px", textAlign: "center", opacity: 0.3, fontSize: "13px" }}>暂无内容</div>
