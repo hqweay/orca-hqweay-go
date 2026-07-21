@@ -43,7 +43,7 @@ export default class EmbedViewPlugin extends BasePlugin {
             cursor,
             currentBlock,
             "after",
-            [],
+            null,
             { type: RENDERER_TYPE, mode: "html", html: "" },
           );
 
