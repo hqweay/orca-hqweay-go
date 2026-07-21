@@ -2,8 +2,12 @@ import { BasePlugin } from "../libs/BasePlugin";
 import { EmbedViewRenderer } from "./components/EmbedViewRenderer";
 import { removeCSSRule } from "@/libs/styleUtil";
 import { t } from "@/libs/l10n";
+import { registerAdapter, unregisterAdapter } from "./components/adapters/registry";
+import { twitterAdapter } from "./components/adapters/twitter";
+import { webviewAdapter } from "./components/adapters/webview";
 
 const RENDERER_TYPE = "lets.embed-view";
+const ADAPTER_NAMES = [twitterAdapter.name, webviewAdapter.name];
 
 export default class EmbedViewPlugin extends BasePlugin {
   constructor(mainPluginName: string, name: string) {
@@ -15,6 +19,9 @@ export default class EmbedViewPlugin extends BasePlugin {
     if (!orca.state.blockRenderers[RENDERER_TYPE]) {
       orca.renderers.registerBlock(RENDERER_TYPE, false, EmbedViewRenderer);
     }
+
+    registerAdapter(twitterAdapter);
+    registerAdapter(webviewAdapter);
 
     orca.converters.registerBlock("plain", RENDERER_TYPE, (_blockContent: any, repr: any) => {
       const mode = repr?.mode || "html";
@@ -75,5 +82,7 @@ export default class EmbedViewPlugin extends BasePlugin {
     orca.converters.unregisterBlock("plain", RENDERER_TYPE);
     orca.converters.unregisterBlock("markdown", RENDERER_TYPE);
     removeCSSRule(RENDERER_TYPE);
+
+    ADAPTER_NAMES.forEach((name) => unregisterAdapter(name));
   }
 }

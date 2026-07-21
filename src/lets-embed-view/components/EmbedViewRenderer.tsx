@@ -1,18 +1,12 @@
-const { useMemo, useState, useEffect, useCallback } = window.React
+import React, { useMemo, useState, useEffect, useCallback } from "react"
 const { useSnapshot } = window.Valtio
 const { BlockShell, BlockChildren, Button, Tooltip } = orca.components
 
-import { registerAdapter, findAdapter, getAvailableModes, type DisplayMode } from "./adapters/registry"
-import { twitterAdapter } from "./adapters/twitter"
-import { webviewAdapter } from "./adapters/webview"
+import { findAdapter, getAvailableModes, type DisplayMode } from "./adapters/registry"
 import { EmbedPreview } from "./EmbedPreview"
 import { EmbedEditor } from "./EmbedEditor"
+import type { EmbedData } from "../types"
 
-registerAdapter(twitterAdapter)
-registerAdapter(webviewAdapter)
-
-type Mode = "url" | "html"
-type EmbedData = { mode: Mode; url?: string; html?: string }
 type Props = {
   panelId: string
   blockId: number
@@ -22,12 +16,6 @@ type Props = {
   mirrorId?: number
   initiallyCollapsed?: boolean
   renderingMode?: "normal" | "simple" | "simple-children"
-}
-
-function detectMode(input: string): "url" | "html" {
-  const trimmed = input.trim()
-  if (/^https?:\/\//i.test(trimmed)) return "url"
-  return "html"
 }
 
 export const EmbedViewRenderer = ({

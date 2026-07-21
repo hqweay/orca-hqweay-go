@@ -1,4 +1,4 @@
-const { useState, useEffect } = window.React
+import React, { useState, useEffect } from "react"
 
 // Embed mode: oEmbed API - simplified card
 function TwitterEmbed({ url }: { url: string }) {

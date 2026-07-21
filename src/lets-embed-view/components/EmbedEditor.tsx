@@ -1,13 +1,8 @@
-const { useState, useEffect, useRef } = window.React
+import React, { useState, useEffect, useRef } from "react"
 const { Button } = orca.components
 
-type EmbedData = { mode: "url"; url?: string } | { mode: "html"; html?: string }
-
-function detectMode(input: string): "url" | "html" {
-  const trimmed = input.trim()
-  if (/^https?:\/\//i.test(trimmed)) return "url"
-  return "html"
-}
+import type { EmbedData } from "../types"
+import { detectMode } from "../logic"
 
 export const EmbedEditor = ({
   data,
@@ -20,6 +15,7 @@ export const EmbedEditor = ({
 }) => {
   const initialValue = data.mode === "url" ? data.url || "" : data.html || ""
   const [value, setValue] = useState(initialValue)
+  const [error, setError] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -34,8 +30,16 @@ export const EmbedEditor = ({
 
     const mode = detectMode(trimmed)
     if (mode === "url") {
+      try {
+        new URL(trimmed)
+      } catch {
+        setError("请输入有效的 URL")
+        return
+      }
+      setError(null)
       onSave({ mode: "url", url: trimmed })
     } else {
+      setError(null)
       onSave({ mode: "html", html: value })
     }
   }
@@ -74,6 +78,9 @@ export const EmbedEditor = ({
           boxSizing: "border-box" as const,
         }}
       />
+      {error && (
+        <div style={{ color: "var(--orca-color-error)", fontSize: "12px", marginTop: "4px" }}>{error}</div>
+      )}
       <div style={{ display: "flex", gap: "6px", marginTop: "8px", justifyContent: "space-between" }}>
         <span style={{ fontSize: "11px", opacity: 0.4, alignSelf: "center" }}>
           ⌘+Enter 确认

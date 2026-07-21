@@ -1,4 +1,4 @@
-const { useRef, useEffect } = window.React
+import React, { useRef, useEffect } from "react"
 
 // Widget mode: webview embed
 function WebviewWidget({ url }: { url: string }) {

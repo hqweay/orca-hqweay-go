@@ -10,7 +10,14 @@ export type EmbedAdapter = {
 const adapters: EmbedAdapter[] = []
 
 export function registerAdapter(adapter: EmbedAdapter) {
-  adapters.push(adapter)
+  if (!adapters.find((a) => a.name === adapter.name)) {
+    adapters.push(adapter)
+  }
+}
+
+export function unregisterAdapter(name: string) {
+  const idx = adapters.findIndex((a) => a.name === name)
+  if (idx !== -1) adapters.splice(idx, 1)
 }
 
 export function findAdapter(url: string): EmbedAdapter | undefined {

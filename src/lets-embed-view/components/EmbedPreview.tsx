@@ -1,7 +1,6 @@
-const { useState, useEffect, useMemo } = window.React
-import { findAdapter, getAdapters, getAvailableModes, type EmbedAdapter, type DisplayMode } from "./adapters/registry"
-
-type EmbedData = { mode: "url"; url?: string } | { mode: "html"; html?: string }
+import React, { useState, useEffect, useMemo } from "react"
+import { findAdapter, getAdapters, getAvailableModes, type DisplayMode } from "./adapters/registry"
+import type { EmbedData } from "../types"
 
 const MODE_LABELS: Record<DisplayMode, string> = {
   widget: "Widget",
@@ -79,5 +78,4 @@ export const EmbedPreview = ({
   return <EmptyState />
 }
 
-export { findAdapter, getAvailableModes }
-export type { DisplayMode }
+
