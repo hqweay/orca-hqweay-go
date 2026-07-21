@@ -1,9 +1,9 @@
-export type DisplayMode = "widget" | "embed" | "card" | "link" | "iframe"
+export type DisplayMode = "widget" | "embed" | "card" | "link" | "iframe" | "webview"
 
 export type EmbedAdapter = {
   name: string
   match: (url: string) => boolean
-  modes: Partial<Record<DisplayMode, (props: { url: string; height?: number; onHeightChange?: (h: number) => void }) => JSX.Element>>
+  modes: Partial<Record<DisplayMode, (props: { url: string; height?: number; onHeightChange?: (h: number) => void; onSwitchMode?: (mode: DisplayMode) => void }) => JSX.Element>>
   defaultMode: DisplayMode
 }
 

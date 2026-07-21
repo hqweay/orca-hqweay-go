@@ -14,6 +14,7 @@ const HtmlPreview = ({
   onHeightChange?: (h: number) => void
 }) => {
   const webviewRef = useRef<any>(null)
+  const injectedRef = useRef(false)
   const [src, setSrc] = useState("")
   const [contentHeight, setContentHeight] = useState<number | undefined>()
   const hasScripts = /<\s*script[\s>]/i.test(html)
@@ -33,6 +34,15 @@ const HtmlPreview = ({
     const wv = webviewRef.current
     if (!wv) return
     let timer: NodeJS.Timeout | null = null
+    injectedRef.current = false
+
+    const KEY_SCRIPT = `
+document.addEventListener('keydown', function(e) {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'r') {
+    e.preventDefault()
+    console.log('ORCA_RELOAD')
+  }
+})`
 
     const measureHeight = () => {
       wv.executeJavaScript("Math.max(document.body.scrollHeight || 0, document.documentElement.scrollHeight || 0)")
@@ -42,15 +52,24 @@ const HtmlPreview = ({
         .catch(() => {})
     }
 
-    const handler = () => {
+    const onDomReady = () => {
+      if (injectedRef.current) return
+      injectedRef.current = true
+      wv.executeJavaScript(KEY_SCRIPT).catch(() => {})
       measureHeight()
       timer = setTimeout(measureHeight, 300)
     }
 
-    wv.addEventListener("dom-ready", handler)
+    const onConsole = (e: any) => {
+      if (e.message === "ORCA_RELOAD") window.location.reload()
+    }
+
+    wv.addEventListener("dom-ready", onDomReady)
+    wv.addEventListener("console-message", onConsole)
     return () => {
       if (timer) clearTimeout(timer)
-      try { wv.removeEventListener("dom-ready", handler) } catch {}
+      try { wv.removeEventListener("dom-ready", onDomReady) } catch {}
+      try { wv.removeEventListener("console-message", onConsole) } catch {}
     }
   }, [src, hasScripts])
 
@@ -85,11 +104,13 @@ export const EmbedPreview = ({
   displayMode,
   height,
   onHeightChange,
+  onSwitchMode,
 }: {
   data: EmbedData
   displayMode?: DisplayMode
   height?: number
   onHeightChange?: (h: number) => void
+  onSwitchMode?: (mode: DisplayMode) => void
 }) => {
   if (data.mode === "html" && data.html) {
     return <HtmlPreview html={data.html} height={height} onHeightChange={onHeightChange} />
@@ -101,7 +122,7 @@ export const EmbedPreview = ({
       const mode = displayMode || adapter.defaultMode
       const ModeComponent = adapter.modes[mode]
 
-      return ModeComponent ? <ModeComponent url={data.url} height={height} onHeightChange={onHeightChange} /> : <EmptyState />
+      return ModeComponent ? <ModeComponent url={data.url} height={height} onHeightChange={onHeightChange} onSwitchMode={onSwitchMode} /> : <EmptyState />
     }
     return <EmptyState />
   }

@@ -4,11 +4,10 @@ import { removeCSSRule } from "@/libs/styleUtil";
 import { t } from "@/libs/l10n";
 import { registerAdapter, unregisterAdapter } from "./components/adapters/registry";
 import { twitterAdapter } from "./components/adapters/twitter";
-import { iframeAdapter } from "./components/adapters/iframe";
 import { webviewAdapter } from "./components/adapters/webview";
 
 const RENDERER_TYPE = "lets.embed-view";
-const ADAPTER_NAMES = [twitterAdapter.name, iframeAdapter.name, webviewAdapter.name];
+const ADAPTER_NAMES = [twitterAdapter.name, webviewAdapter.name];
 
 export default class EmbedViewPlugin extends BasePlugin {
   constructor(mainPluginName: string, name: string) {
@@ -22,7 +21,6 @@ export default class EmbedViewPlugin extends BasePlugin {
     }
 
     registerAdapter(twitterAdapter);
-    registerAdapter(iframeAdapter);
     registerAdapter(webviewAdapter);
 
     orca.converters.registerBlock("plain", RENDERER_TYPE, (_blockContent: any, repr: any) => {

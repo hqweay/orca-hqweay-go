@@ -56,12 +56,15 @@ export const EmbedViewRenderer = ({
   const adapter = localData.mode === "url" && localData.url ? findAdapter(localData.url) : null
   const availableModes = adapter ? getAvailableModes(adapter) : []
 
-  // Auto-select default mode if not set
+  // Auto-select default mode if not set; reset if stored mode is invalid
   useEffect(() => {
-    if (adapter && !displayMode) {
+    if (!adapter || !availableModes.length) return
+    if (!displayMode) {
+      setDisplayMode(adapter.defaultMode)
+    } else if (!availableModes.includes(displayMode)) {
       setDisplayMode(adapter.defaultMode)
     }
-  }, [adapter, displayMode])
+  }, [adapter, displayMode, availableModes])
 
   const save = useCallback(async (data: EmbedData, mode?: DisplayMode, customHeight?: number) => {
     const value: any = { type: "lets.embed-view", ...data }
@@ -176,7 +179,7 @@ export const EmbedViewRenderer = ({
                           fontWeight: displayMode === m ? 500 : 400,
                         }}
                       >
-                        {m === "embed" ? "Embed" : m === "card" ? "Card" : m === "iframe" ? "Iframe" : m === "widget" ? "Widget" : "Link"}
+                        {m === "embed" ? "Embed" : m === "card" ? "Card" : m === "iframe" ? "Iframe" : m === "webview" ? "Webview" : m === "widget" ? "Widget" : "Link"}
                       </button>
                     ))}
                   </div>
@@ -201,7 +204,7 @@ export const EmbedViewRenderer = ({
           {editing ? (
             <EmbedEditor data={localData} onSave={handleSave} onCancel={() => setEditing(false)} />
           ) : (
-            <EmbedPreview data={localData} displayMode={displayMode} height={height} onHeightChange={handleHeightChange} />
+            <EmbedPreview data={localData} displayMode={displayMode} height={height} onHeightChange={handleHeightChange} onSwitchMode={handleDisplayModeChange} />
           )}
         </div>
       }

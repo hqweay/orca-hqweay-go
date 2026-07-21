@@ -20,6 +20,7 @@ export default {
   "embed-view.loading": "加载中...",
   "embed-view.invalid-tweet-url": "无法识别的推文链接",
   "embed-view.iframe-not-allowed": "该网站不允许 iframe 嵌入",
+  "embed-view.switch-to-webview": "Webview",
 };
 
 

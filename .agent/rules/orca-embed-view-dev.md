@@ -38,10 +38,19 @@ await orca.commands.invokeEditorCommand(
 | X-Frame-Options | 不适用 | 被阻拦时无法显示 |
 
 ### 使用原则
-- **URL 默认模式**：iframe（轻量），被 `X-Frame-Options` 阻拦时用户手动切 webview
+- **URL 模式**：统一 webview（`partition="persist:embed"` + `allowpopups` + `ResizableBox`），避免 iframe 被主流网站 CSP 阻止
+  - Twitter/X 使用专用适配器（embed oEmbed / card platform iframe），优先匹配
+  - webviewAdapter 作为 fallback 匹配所有其他 URL
+  - iframeAdapter 已停用（不再注册），保留文件备查
 - **HTML 模式**：自动检测是否存在 `<script>` 标签
   - 无脚本：使用 iframe（blob URL），避免 webview 键盘快捷键冲突
-  - 含脚本：使用 webview（CSP 限制 iframe 不执行内联脚本），但 `Cmd+Shift+I`/`Cmd+R` 等快捷键会被 webview 劫持
+  - 含脚本：使用 webview + 键盘拦截（`Cmd+R` 注入 `preventDefault` + `console-message` 通信）
+  - webview 含 `onHeightChangeRef` 防止渲染循环 + `injectedRef` 防止重复注入
+
+### displayMode 迁移
+- 存量块可能有 `displayMode: "iframe"`（来自旧 iframeAdapter）
+- `EmbedViewRenderer` 自动检测：如果 `displayMode` 不在当前适配器的可用模式中，重置为 `adapter.defaultMode`
+- 重置仅在本地 state，下次用户操作时持久化
 
 ### 自动高度策略
 - webview：`executeJavaScript` 读取 `scrollHeight`，存本地 `contentHeight` state，不触发 store save

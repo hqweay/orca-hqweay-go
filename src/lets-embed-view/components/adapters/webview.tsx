@@ -1,7 +1,6 @@
 import React from "react"
 import { ResizableBox } from "../ResizableBox"
 
-// Widget mode: webview embed
 function WebviewWidget({ url, height, onHeightChange }: { url: string; height?: number; onHeightChange?: (h: number) => void }) {
   return (
     <ResizableBox defaultHeight={500} height={height} onHeightChange={onHeightChange}>
@@ -17,7 +16,7 @@ function WebviewWidget({ url, height, onHeightChange }: { url: string; height?: 
 
 export const webviewAdapter = {
   name: "webview",
-  match: () => true,  // Fallback adapter - matches everything
+  match: () => true,
   modes: {
     widget: WebviewWidget,
   },
