@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 
 // Embed mode: oEmbed API - simplified card
 function TwitterEmbed({ url }: { url: string }) {
@@ -19,11 +19,24 @@ function TwitterEmbed({ url }: { url: string }) {
   return <div dangerouslySetInnerHTML={{ __html: html }} style={{ padding: "8px 12px" }} />
 }
 
+// Widget mode: direct webview embedding of the Twitter page
+function TwitterWidget({ url }: { url: string }) {
+  return (
+    <webview
+      src={url}
+      style={{ border: "none", width: "100%", height: "500px", maxHeight: "600px" }}
+      partition="persist:embed"
+      allowpopups
+    />
+  )
+}
+
 export const twitterAdapter = {
   name: "twitter",
   match: (url: string) => /twitter\.com|x\.com/.test(url),
   modes: {
     embed: TwitterEmbed,
+    widget: TwitterWidget,
   },
   defaultMode: "embed" as const,
 }
