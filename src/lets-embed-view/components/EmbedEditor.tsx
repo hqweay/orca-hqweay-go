@@ -20,9 +20,9 @@ export const EmbedEditor = ({
 
   const handleSubmit = () => {
     if (data.mode === "url") {
-      onSave({ mode: "url", url: value.trim(), html: undefined })
+      onSave({ mode: "url", url: value.trim() } as EmbedData)
     } else {
-      onSave({ mode: "html", html: value, url: undefined })
+      onSave({ mode: "html", html: value } as EmbedData)
     }
   }
 

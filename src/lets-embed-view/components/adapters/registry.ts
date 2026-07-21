@@ -1,7 +1,10 @@
+export type DisplayMode = "widget" | "embed" | "card" | "link"
+
 export type EmbedAdapter = {
   name: string
   match: (url: string) => boolean
-  Preview: (props: { url: string }) => JSX.Element | null
+  modes: Partial<Record<DisplayMode, (props: { url: string }) => JSX.Element>>
+  defaultMode: DisplayMode
 }
 
 const adapters: EmbedAdapter[] = []
@@ -16,4 +19,8 @@ export function findAdapter(url: string): EmbedAdapter | undefined {
 
 export function getAdapters(): EmbedAdapter[] {
   return adapters
+}
+
+export function getAvailableModes(adapter: EmbedAdapter): DisplayMode[] {
+  return Object.keys(adapter.modes) as DisplayMode[]
 }

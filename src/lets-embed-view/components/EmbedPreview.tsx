@@ -1,5 +1,5 @@
 const { useState, useEffect, useMemo } = window.React
-import { findAdapter, getAdapters, type EmbedAdapter } from "./adapters/registry"
+import { findAdapter, getAdapters, getAvailableModes, type EmbedAdapter, type DisplayMode } from "./adapters/registry"
 
 type EmbedData = { mode: "url"; url?: string } | { mode: "html"; html?: string }
 
@@ -13,28 +13,29 @@ const EmptyState = () => (
 
 export const EmbedPreview = ({
   data,
-  adapter,
-  onAdapterChange,
+  displayMode,
 }: {
   data: EmbedData
-  adapter?: string
-  onAdapterChange?: (name: string) => void
+  displayMode?: DisplayMode
 }) => {
   if (data.mode === "html" && data.html) {
     return <HtmlPreview html={data.html} />
   }
 
   if (data.mode === "url" && data.url) {
-    const matched = findAdapter(data.url)
-    const all = getAdapters().filter((a) => a.match(data.url))
-    const active = all.find((a) => a.name === adapter) || matched
-
-    if (active) {
-      return <active.Preview url={data.url} />
+    const adapter = findAdapter(data.url)
+    if (adapter) {
+      const mode = displayMode || adapter.defaultMode
+      const ModeComponent = adapter.modes[mode]
+      if (ModeComponent) {
+        return <ModeComponent url={data.url} />
+      }
     }
-
     return <EmptyState />
   }
 
   return <EmptyState />
 }
+
+export { findAdapter, getAvailableModes }
+export type { DisplayMode }
