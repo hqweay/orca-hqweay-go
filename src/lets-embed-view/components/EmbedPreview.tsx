@@ -2,7 +2,10 @@ import { findAdapter, type DisplayMode } from "./adapters/registry"
 import type { EmbedData } from "../types"
 
 const HtmlPreview = ({ html }: { html: string }) => (
-  <div dangerouslySetInnerHTML={{ __html: html }} style={{ padding: "12px" }} />
+  <webview
+    src={`data:text/html,${encodeURIComponent(html)}`}
+    style={{ border: "none", width: "100%", height: "500px", maxHeight: "600px" }}
+  />
 )
 
 const EmptyState = () => (
