@@ -1,4 +1,4 @@
-export type DisplayMode = "widget" | "embed" | "card" | "link"
+export type DisplayMode = "widget" | "embed" | "card" | "link" | "iframe"
 
 export type EmbedAdapter = {
   name: string

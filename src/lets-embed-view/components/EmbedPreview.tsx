@@ -7,6 +7,7 @@ const MODE_LABELS: Record<DisplayMode, string> = {
   embed: "Embed",
   card: "Card",
   link: "Link",
+  iframe: "Iframe",
 }
 
 const HtmlPreview = ({ html }: { html: string }) => (
