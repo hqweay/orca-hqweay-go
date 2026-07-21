@@ -6,6 +6,7 @@ import { findAdapter, getAvailableModes, type DisplayMode } from "./adapters/reg
 import { EmbedPreview } from "./EmbedPreview"
 import { EmbedEditor } from "./EmbedEditor"
 import type { EmbedData } from "../types"
+import { getRepr } from "@/libs/BlockFormatter"
 
 type Props = {
   panelId: string
@@ -28,9 +29,10 @@ export const EmbedViewRenderer = ({
   initiallyCollapsed,
   renderingMode,
 }: Props) => {
+  const targetId = mirrorId ?? blockId
   const { blocks } = useSnapshot(orca.state)
-  const block = blocks[mirrorId ?? blockId]
-  const repr = (block as any)?._repr || {}
+  const block = blocks[targetId]
+  const repr = block ? getRepr(block) : {}
 
   const [editing, setEditing] = useState(!repr.mode)
   const [localData, setLocalData] = useState<EmbedData>({ mode: repr.mode || "html", url: repr.url, html: repr.html })
@@ -61,15 +63,28 @@ export const EmbedViewRenderer = ({
     if (mode || displayMode) {
       value.displayMode = mode || displayMode
     }
-    await orca.commands.invokeEditorCommand(
-      "core.editor.setProperties",
-      null,
-      [blockId],
-      [{ name: "_repr", type: 0, value }],
-    )
+    try {
+      await orca.commands.invokeEditorCommand(
+        "core.editor.setProperties",
+        null,
+        [targetId],
+        [{ name: "_repr", type: 0, value }],
+      )
+      const b = orca.state.blocks[targetId]
+      if (b) {
+        (b as any)._repr = value
+        if (!b.properties) b.properties = []
+        const idx = b.properties.findIndex((p: any) => p.name === "_repr")
+        if (idx >= 0) b.properties[idx] = { name: "_repr", value, type: 0 }
+        else b.properties.push({ name: "_repr", value, type: 0 })
+      }
+    } catch (e) {
+      console.error("[lets-embed-view] save failed", e)
+      return
+    }
     setLocalData(data)
     if (mode) setDisplayMode(mode)
-  }, [blockId, displayMode])
+  }, [targetId, displayMode])
 
   const handleSave = useCallback(async (data: EmbedData) => {
     await save(data)
