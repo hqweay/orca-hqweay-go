@@ -41,25 +41,12 @@ function TwitterCard({ url }: { url: string }) {
   )
 }
 
-// Widget mode: direct webview embedding of the Twitter page
-function TwitterWidget({ url }: { url: string }) {
-  return (
-    <webview
-      src={url}
-      style={{ border: "none", width: "100%", height: "500px", maxHeight: "600px" }}
-      partition="persist:embed"
-      allowpopups
-    />
-  )
-}
-
 export const twitterAdapter = {
   name: "twitter",
   match: (url: string) => /twitter\.com|x\.com/.test(url),
   modes: {
     embed: TwitterEmbed,
     card: TwitterCard,
-    widget: TwitterWidget,
   },
   defaultMode: "embed" as const,
 }
