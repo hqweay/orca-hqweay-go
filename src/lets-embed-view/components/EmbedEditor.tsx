@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react"
-const { Button } = orca.components
 
 import type { EmbedData } from "../types"
 import { detectMode } from "../logic"
@@ -81,13 +80,44 @@ export const EmbedEditor = ({
       {error && (
         <div style={{ color: "var(--orca-color-error)", fontSize: "12px", marginTop: "4px" }}>{error}</div>
       )}
+      <style>{`.lets-embed-btn-cancel:hover { background: var(--orca-color-bg-3); }.lets-embed-btn-confirm:hover { background: var(--orca-color-primary-6); }`}</style>
       <div style={{ display: "flex", gap: "6px", marginTop: "8px", justifyContent: "space-between" }}>
         <span style={{ fontSize: "11px", opacity: 0.4, alignSelf: "center" }}>
           ⌘+Enter 确认
         </span>
-        <div style={{ display: "flex", gap: "6px" }}>
-          <Button variant="outline" onClick={onCancel}>取消</Button>
-          <Button variant="solid" onClick={handleSubmit}>确认</Button>
+        <div style={{ display: "flex", gap: "4px" }}>
+          <button
+            className="lets-embed-btn-cancel"
+            onClick={onCancel}
+            style={{
+              padding: "0 10px",
+              fontSize: "12px",
+              border: "1px solid var(--orca-color-border-1)",
+              borderRadius: "4px",
+              cursor: "pointer",
+              lineHeight: "26px",
+              background: "transparent",
+              color: "var(--orca-color-text-1)",
+            }}
+          >
+            取消
+          </button>
+          <button
+            className="lets-embed-btn-confirm"
+            onClick={handleSubmit}
+            style={{
+              padding: "0 10px",
+              fontSize: "12px",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              lineHeight: "26px",
+              background: "var(--orca-color-primary-5)",
+              color: "#fff",
+            }}
+          >
+            确认
+          </button>
         </div>
       </div>
     </div>

@@ -34,7 +34,7 @@ export const EmbedViewRenderer = ({
   const block = blocks[targetId]
   const repr = block ? getRepr(block) : {}
 
-  const [editing, setEditing] = useState(!repr.mode)
+  const [editing, setEditing] = useState(!(repr.mode && (repr.url || repr.html)))
   const [localData, setLocalData] = useState<EmbedData>({ mode: repr.mode || "html", url: repr.url, html: repr.html })
   const [displayMode, setDisplayMode] = useState<DisplayMode | undefined>(repr.displayMode)
 
@@ -150,8 +150,8 @@ export const EmbedViewRenderer = ({
                           borderRadius: "3px",
                           cursor: "pointer",
                           lineHeight: "20px",
-                          background: displayMode === m ? "var(--orca-color-primary)" : "transparent",
-                          color: displayMode === m ? "white" : "var(--orca-color-text-2)",
+                          background: displayMode === m ? "var(--orca-color-primary-5)" : "transparent",
+                          color: displayMode === m ? "#fff" : "var(--orca-color-text-1)",
                           fontWeight: displayMode === m ? 500 : 400,
                         }}
                       >
