@@ -1,12 +1,16 @@
 # Changelog
 
+## 3.7.3
+
+### Patch Changes
+
+- 插件设置页 headbar 模式选择器修复：用 renderCustomSettings() 替代 settingsComponent，自定义设置自动获得头栏模式控制
+
 ## 3.7.2
 
 ### Patch Changes
 
 - 子插件设置页缺少 headbar 显示模式控制，通用修复：PluginSettings 支持 children prop，自定义设置组件自动带出头栏模式选择器
-
-## 3.7.1
 
 ### Features
 
