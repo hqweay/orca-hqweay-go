@@ -1,5 +1,23 @@
 # Changelog
 
+## 3.7.4
+
+### Patch Changes
+
+- d06d6c4: lets-roam-sidebar: 收起内容时支持拖拽调整高度
+
+  - 右侧边栏收起内容后，底部出现拖拽条，可自由调整内容区域高度
+  - 调整后的高度会保存，关闭再打开依然保持
+  - 拖拽条常亮显示，方便发现
+  - 去掉了内容区域的边框，视觉更干净
+
+- 6b43565: lets-inject: 简化脚本注入模型，统一通过 $inject 注入变量并提供官方示例
+
+  - 移除 $inject.activeBlockId() 方法
+  - $inject 只保留 targetBlockIds 字段，未来可扩展
+  - 脚本内获取焦点块改用 orca.utils.getCursorDataFromSelection(window.getSelection())
+  - 设置页面示例更新为 batchInsertText + cursor 模式，支持 Markdown 解析
+
 ## 3.7.3
 
 ### Patch Changes
