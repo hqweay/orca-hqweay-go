@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.7.5
+
+### Patch Changes
+
+- 9898ac1: feat: replace pinyin-pro slug with MyMemory API translation + remove pinyin-pro dependency
+
 ## 3.7.4
 
 ### Patch Changes
@@ -255,8 +261,6 @@
 ## v2.2.0
 
 ### New Features
-
-- 新增脑图视图 (Mind Map)：将笔记渲染为思维导图
 
 ## v2.1.0
 
