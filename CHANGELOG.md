@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.1.1
+
+### Patch Changes
+
+- 文档维护;新增一个朋友圈挂件
+
 ## 4.1.0
 
 ### Minor Changes
