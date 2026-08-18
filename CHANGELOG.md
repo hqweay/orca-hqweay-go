@@ -1,5 +1,15 @@
 # Changelog
 
+## 4.6.0
+
+### Minor Changes
+
+- 5032117: 工作台 AI 生成卡片改为复用嵌入视图生成器：create_embed 只收 description，实际 HTML/笔记 API 查询/标题均由 lets-embed-view 的 AI 生成器完成。
+  - 修复卡片运行时抛 no-query-api：早期版本让工作台模型直接写 HTML，模型把工作台工具名与桥接 API 混淆（如编出 window.orca.queryBlocks）；现在委托 embed-view 生成器，其自带 query_api_docs 查询与 HTML 校验纠正。
+  - 修复嵌入块无标题：生成器强制 cap 必填并带标题兜底，插入方式与 embed-view 一致（块文本为空、标题取自 \_repr.cap）。
+  - 移除工作台 system 提示中的桥接 API 文档注入与 query_api_docs 工具，避免重复维护和 API 混淆。
+  - 手动添加与 AI 工具不再提供「网页」组件（url 嵌入统一走 create_embed）；已保存的网页组件仍正常渲染。
+
 ## 4.5.1
 
 ### Patch Changes
