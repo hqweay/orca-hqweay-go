@@ -3,12 +3,14 @@ import { t } from "@/libs/l10n";
 import { Rule, MetadataProperty } from "../types";
 import { PropType } from "@/libs/consts";
 
-// Safe webview type definition: removed as it conflicts with env.
-// We will rely on existing types or @ts-ignore
+// The <webview> element is declared globally in src/electron.d.ts.
 import { matchRule } from "../metadataExtractor";
 import { WebviewUtils } from "@/libs/WebviewUtils";
 import { HTML_TO_MARKDOWN_SCRIPT, CLEAN_URL_SCRIPT } from "../webviewScripts";
 import { defaultGeneric } from "../rules/generic";
+import { Logger } from "@/libs/logger";
+
+const logger = new Logger("link-metadata:browser-modal");
 
 interface BrowserModalProps {
   visible: boolean;
@@ -93,7 +95,7 @@ export function BrowserModal({
           webviewRef.current.setUserAgent(targetUA);
         } catch (e) {
           // Ignore "The WebView must be attached to the DOM" error on initial load
-          console.debug("Failed to set UA (likely not ready yet):", e);
+          logger.debug("Failed to set UA (likely not ready yet):", e);
         }
       }
 
@@ -320,7 +322,7 @@ export function BrowserModal({
         // TODO: close modal after extraction
         // onClose();
       } else {
-        console.error("Extraction returned non-array:", properties);
+        logger.error("Extraction returned non-array:", properties);
         orca.notify("error", t("Script returned invalid data"));
       }
     } catch (e: any) {
@@ -328,7 +330,7 @@ export function BrowserModal({
         "error",
         t("Failed to extract metadata: ${msg}", { msg: e.message }),
       );
-      console.error(e);
+      logger.error(e);
     }
   };
 
@@ -398,7 +400,7 @@ export function BrowserModal({
 
       const properties = await webviewRef.current.executeJavaScript(fullScript);
 
-      console.log("properties", properties);
+      logger.debug("properties", properties);
       
       if (properties && properties.error) {
         throw new Error(properties.error);
@@ -442,8 +444,8 @@ export function BrowserModal({
       <div
         style={{
           backgroundColor:
-            "var(--b3-theme-background, var(--orca-color-bg-main, #ffffff))",
-          color: "var(--b3-theme-on-background)",
+            "var(--orca-color-bg-1, #ffffff)",
+          color: "var(--orca-color-text-1)",
           padding: "20px",
           borderRadius: isDocked ? "0" : "8px",
           width: isDocked ? "40vw" : "80vw",
@@ -633,7 +635,6 @@ export function BrowserModal({
             const partition = "persist:metadata-browser";
 
             return (
-              /* @ts-ignore */
               <webview
                 key="metadata-browser"
                 ref={webviewRef}

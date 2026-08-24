@@ -1,11 +1,151 @@
+/**
+ * Official orca.d.ts references these React types without the `React.` prefix
+ * (inside `React.DetailedHTMLProps<...>`). They live in the React namespace,
+ * not the global scope, so we alias them here to keep `onChange`/etc. inference
+ * working under `strict`. Keep in sync if the official file changes these names.
+ */
+type InputHTMLAttributes<T> = React.InputHTMLAttributes<T>;
+type ButtonHTMLAttributes<T> = React.ButtonHTMLAttributes<T>;
+type TextareaHTMLAttributes<T> = React.TextareaHTMLAttributes<T>;
+
 declare global {
   declare const orca: Orca;
   interface Window {
     orca: Orca;
     React: React;
+    ReactDOM: ReactDOM;
     createRoot: Function;
     Valtio: any;
   }
+}
+
+/** Props for the ContextMenu component */
+export interface ContextMenuProps {
+  className?: string;
+  style?: React.CSSProperties;
+  menu: (close: () => void, state?: any) => React.ReactNode;
+  children: (
+    openMenu: (e: React.UIEvent, state?: any) => void,
+    closeMenu: () => void,
+    menuShown: boolean,
+  ) => React.ReactNode;
+  container?: React.RefObject<HTMLElement>;
+  alignment?: "left" | "top" | "center" | "bottom" | "right";
+  placement?: "vertical" | "horizontal";
+  defaultPlacement?: "top" | "bottom" | "left" | "right";
+  allowBeyondContainer?: boolean;
+  noPointerLogic?: boolean;
+  clickToClose?: boolean;
+  restoreSelectionOnClose?: boolean;
+  keyboardNav?: boolean;
+  navDirection?: "vertical" | "both";
+  onKeyboardNav?: (el: HTMLElement) => void | Promise<void>;
+  menuAttr?: Record<string, any>;
+  offset?: number;
+  crossOffset?: number;
+  escapeToClose?: boolean;
+  replacement?: boolean;
+  useCurrentTarget?: boolean;
+  onOpened?: () => void;
+  onClosed?: () => void;
+  rect?: DOMRect;
+}
+
+/** A single option item for the Select component */
+export interface SelectOption {
+  /** Icon class (e.g., "ti ti-folder") or emoji string */
+  icon?: string;
+  /** Background color for the option label (e.g., "#ff6600") */
+  color?: string;
+  /** Display label shown in the dropdown and button */
+  label?: string;
+  /** Unique value identifying this option */
+  value?: string;
+  /** Pinyin representation for Chinese text filtering */
+  pinyin?: string;
+  /** Click handler attached to the selected chip (multi-selection mode only) */
+  onClick?: (e: React.MouseEvent) => void | Promise<void>;
+  /**
+   * Custom render function for the option item in the dropdown.
+   * Return `null` to skip this option (useful for non-selectable separators/headings).
+   */
+  render?: (
+    closeMenu: () => void,
+    icon?: string,
+    color?: string,
+    label?: string,
+    value?: string,
+    selected?: boolean,
+    onClick?: (e: React.MouseEvent) => void | Promise<void>,
+  ) => React.ReactElement | null;
+  /**
+   * Custom render function for the selected value chip (multi-selection mode only).
+   * When set, this replaces the default coloured-chip display for this option.
+   */
+  renderSelected?: (
+    closeMenu: () => void,
+    icon?: string,
+    color?: string,
+    label?: string,
+    value?: string,
+    onClick?: (e: React.MouseEvent) => void | Promise<void>,
+  ) => React.ReactElement;
+}
+
+/** Props for the Select dropdown component */
+export interface SelectProps {
+  /** Currently selected values */
+  selected: string[];
+  /** Available options */
+  options: SelectOption[];
+  /** Called when selection changes; second argument is the current filter keyword if filtering is active */
+  onChange?: (
+    selected: string[],
+    filterKeyword?: string,
+  ) => void | Promise<void>;
+  /** Formats a selected value into a display string when the value has no matching option */
+  formatter?: (value: string) => string;
+  /** Scrolling container ref for the popup */
+  menuContainer?: React.RefObject<HTMLElement>;
+  /** Minimum width of the select button and dropdown */
+  width?: number | string;
+  /** Placeholder text when nothing is selected */
+  placeholder?: string;
+  /** Allow selecting multiple values */
+  multiSelection?: boolean;
+  /** Show a "Clear selection(s)" action at the bottom of the dropdown */
+  withClear?: boolean;
+  /** Show a search input to filter options */
+  filter?: boolean;
+  /** Placeholder for the filter input */
+  filterPlaceholder?: string;
+  /**
+   * Custom filter function.
+   * Receives the keyword and the full option list, returns filtered options.
+   * When omitted, a default label/pinyin substring match is used.
+   */
+  filterFunction?: (
+    keyword: string,
+    options?: SelectOption[],
+  ) => Promise<SelectOption[]> | SelectOption[];
+  /** Element appended after the filter input */
+  filterPost?: React.ReactElement;
+  /** Popup alignment relative to the button */
+  alignment?: "left" | "center" | "right";
+  /** Element prepended inside the select button */
+  pre?: React.ReactElement;
+  /** Class name for the trigger button */
+  buttonClassName?: string;
+  /** Class name for the dropdown menu */
+  menuClassName?: string;
+  /** Additional attributes forwarded to the Menu component */
+  menuAttrs?: Record<string, any>;
+  /** Disable the select */
+  disabled?: boolean;
+  /** Show the select in read-only mode (button click does nothing) */
+  readOnly?: boolean;
+  onMouseEnter?: (e: React.MouseEvent) => void;
+  onMouseLeave?: (e: React.MouseEvent) => void;
 }
 
 /** The main Orca API entry, access it with the global `orca` object.
@@ -162,7 +302,14 @@ export interface Orca {
      */
     inlineConverters: Record<
       string,
-      | Record<string, (content: ContentFragment) => string | Promise<string>>
+      | Record<
+          string,
+          (
+            content: ContentFragment,
+            forExport?: boolean,
+            context?: ConvertContext,
+          ) => string | Promise<string>
+        >
       | undefined
     >;
 
@@ -305,6 +452,11 @@ export interface Orca {
     settingsOpened: boolean;
 
     /**
+     * Indicates whether the plugin marketplace modal is currently opened.
+     */
+    pluginMarketplaceOpened: boolean;
+
+    /**
      * Indicates whether the command palette is currently opened.
      * This can be used to conditionally change behavior when the command palette is active.
      *
@@ -329,6 +481,22 @@ export interface Orca {
      * ```
      */
     globalSearchOpened: boolean;
+
+    /**
+     * Indicates whether the repo switcher modal is currently opened.
+     * This modal allows switching repos with keyboard navigation and filtering.
+     * Set to `true` to open the modal, `false` to close it.
+     *
+     * @example
+     * ```ts
+     * // Open the repo switcher
+     * orca.state.repoSwitcherOpened = true
+     *
+     * // Close the repo switcher
+     * orca.state.repoSwitcherOpened = false
+     * ```
+     */
+    repoSwitcherOpened: boolean;
 
     /**
      * Registry of keyboard shortcuts, mapping shortcut strings to command IDs.
@@ -970,27 +1138,36 @@ export interface Orca {
     switchFocusTo(id: string): void;
 
     /**
-     * Navigates back to the previous panel state in history.
+     * Navigates back to a previous panel state in history.
      *
-     * @param withRedo - Whether to allow redo (forward navigation) after going back
+     * @param options - Optional navigation settings
+     * @param options.withRedo - Whether to allow redo (forward navigation) after going back
+     * @param options.steps - Number of valid history steps to go back
      *
      * @example
      * ```ts
-     * // Go back with redo support
-     * orca.nav.goBack(true)
+     * // Go back one step with redo support
+     * orca.nav.goBack({ withRedo: true })
+     *
+     * // Go back three valid history steps
+     * orca.nav.goBack({ withRedo: true, steps: 3 })
      * ```
      */
-    goBack(withRedo?: boolean): void;
+    goBack(options?: { withRedo?: boolean; steps?: number }): void;
 
     /**
-     * Navigates forward to the next panel state in history.
+     * Navigates forward to a later panel state in history.
+     *
+     * @param options - Optional navigation settings
+     * @param options.steps - Number of valid history steps to go forward
      *
      * @example
      * ```ts
      * orca.nav.goForward()
+     * orca.nav.goForward({ steps: 2 })
      * ```
      */
-    goForward(): void;
+    goForward(options?: { steps?: number }): void;
 
     /**
      * Navigates to a specific view in the specified panel or current active panel.
@@ -1351,6 +1528,7 @@ export interface Orca {
      * @param name - The name of the plugin
      * @param filePath - The path to the file relative to the plugin's data directory
      * @param type - The expected return type, either "string" or "buffer" (defaults to "string")
+     * @param pluginAsRoot - Whether to use the plugin's directory as the root (defaults to false, which uses the repo's plugin data directory)
      * @returns A Promise that resolves to the file content as a string or ArrayBuffer, or null if not found
      *
      * @example
@@ -1366,6 +1544,7 @@ export interface Orca {
       name: string,
       filePath: string,
       type?: "string" | "buffer",
+      pluginAsRoot?: boolean,
     ): Promise<string | ArrayBuffer | null>;
 
     /**
@@ -1375,6 +1554,7 @@ export interface Orca {
      * @param name - The name of the plugin
      * @param filePath - The path to the file relative to the plugin's data directory
      * @param data - The data to write, either a string or an ArrayBuffer
+     * @param pluginAsRoot - Whether to use the plugin's directory as the root (defaults to false, which uses the repo's plugin data directory)
      * @returns A Promise that resolves when the file is written
      *
      * @example
@@ -1386,6 +1566,7 @@ export interface Orca {
       name: string,
       filePath: string,
       data: string | ArrayBuffer,
+      pluginAsRoot?: boolean,
     ): Promise<void>;
 
     /**
@@ -1393,6 +1574,7 @@ export interface Orca {
      *
      * @param name - The name of the plugin
      * @param filePath - The path to the file relative to the plugin's data directory
+     * @param pluginAsRoot - Whether to use the plugin's directory as the root (defaults to false, which uses the repo's plugin data directory)
      * @returns A Promise that resolves when the file is removed
      *
      * @example
@@ -1400,13 +1582,18 @@ export interface Orca {
      * await orca.plugins.removeFile("my-plugin", "temp-log.txt")
      * ```
      */
-    removeFile(name: string, filePath: string): Promise<void>;
+    removeFile(
+      name: string,
+      filePath: string,
+      pluginAsRoot?: boolean,
+    ): Promise<void>;
 
     /**
      * Removes a folder from the plugin's data directory.
      *
      * @param name - The name of the plugin
      * @param folderPath - The path to the folder relative to the plugin's data directory
+     * @param pluginAsRoot - Whether to use the plugin's directory as the root (defaults to false, which uses the repo's plugin data directory)
      * @returns A Promise that resolves when the folder is removed
      *
      * @example
@@ -1414,12 +1601,17 @@ export interface Orca {
      * await orca.plugins.removeFolder("my-plugin", "temp-folder")
      * ```
      */
-    removeFolder(name: string, folderPath: string): Promise<void>;
+    removeFolder(
+      name: string,
+      folderPath: string,
+      pluginAsRoot?: boolean,
+    ): Promise<void>;
 
     /**
      * Lists all files in the plugin's data directory recursively.
      *
      * @param name - The name of the plugin
+     * @param pluginAsRoot - Whether to use the plugin's directory as the root (defaults to false, which uses the repo's plugin data directory)
      * @returns A Promise that resolves to an array of relative file paths
      *
      * @example
@@ -1428,13 +1620,14 @@ export interface Orca {
      * console.log("Plugin files:", files)
      * ```
      */
-    listFiles(name: string): Promise<string[]>;
+    listFiles(name: string, pluginAsRoot?: boolean): Promise<string[]>;
 
     /**
      * Checks if a file exists in the plugin's data directory.
      *
      * @param name - The name of the plugin
      * @param filePath - The path to the file relative to the plugin's data directory
+     * @param pluginAsRoot - Whether to use the plugin's directory as the root (defaults to false, which uses the repo's plugin data directory)
      * @returns A Promise that resolves to true if the file exists, false otherwise
      *
      * @example
@@ -1442,7 +1635,23 @@ export interface Orca {
      * const exists = await orca.plugins.existsFile("my-plugin", "data.json")
      * ```
      */
-    existsFile(name: string, filePath: string): Promise<boolean>;
+    existsFile(
+      name: string,
+      filePath: string,
+      pluginAsRoot?: boolean,
+    ): Promise<boolean>;
+
+    /**
+     * Reads installed plugin versions from local plugin folders.
+     */
+    getInstalledVersions(
+      ids: string[],
+    ): Promise<Record<string, string | undefined>>;
+
+    /**
+     * Downloads and deploys a marketplace plugin zip package into the local plugins directory.
+     */
+    deployMarketplacePlugin(id: string, zipUrl: string): Promise<void>;
   };
 
   /**
@@ -1535,7 +1744,7 @@ export interface Orca {
    *   "myplugin.customBlock",
    *   true,
    *   CustomBlockRenderer,
-   *   ["image", "attachmentUrl"]
+   *   { assetFields: ["image", "attachmentUrl"] }
    * )
    * ```
    */
@@ -1578,13 +1787,11 @@ export interface Orca {
      * @param type - The type identifier for the block (e.g., "myplugin.diagram")
      * @param isEditable - Whether this block type should be editable
      * @param renderer - The React component that renders the block
-     * @param assetFields - Optional array of property names that may contain asset references
-     *                     (used for proper asset handling during import/export)
-     * @param useChildren - Whether this block type uses the children for rendering.
-     *                      When true, the block's children will be passed to the renderer component
-     *                      for custom rendering instead of being rendered by the default children renderer.
-     *                      This is useful for blocks that need to control how their children are displayed
-     *                      (e.g., custom layouts, tabs, or accordion blocks).
+     * @param opts - Optional settings for block rendering.
+     *               - `assetFields`: property names that may contain asset references
+     *                 (used for proper asset handling during import/export)
+     *               - `useChildren`: whether this block type renders its children itself
+     *               - `foldInQuery`: whether this block type should be folded in query contexts
      *
      * @example
      * ```ts
@@ -1602,7 +1809,7 @@ export interface Orca {
      *   "myplugin.attachment",
      *   true,
      *   AttachmentBlock,
-     *   ["url", "thumbnailUrl"]
+     *   { assetFields: ["url", "thumbnailUrl"] }
      * )
      *
      * // Register a block renderer that uses children for custom layout
@@ -1610,8 +1817,15 @@ export interface Orca {
      *   "myplugin.tabs",
      *   false,
      *   TabsBlock,
-     *   undefined,
-     *   true  // useChildren flag
+     *   { useChildren: true }
+     * )
+     *
+     * // Register a block renderer with query folding metadata
+     * orca.renderers.registerBlock(
+     *   "myplugin.queryCard",
+     *   false,
+     *   QueryCardBlock,
+     *   { foldInQuery: true }
      * )
      * ```
      */
@@ -1619,8 +1833,11 @@ export interface Orca {
       type: string,
       isEditable: boolean,
       renderer: any,
-      assetFields?: string[],
-      useChildren: boolean = false,
+      opts?: {
+        assetFields?: string[];
+        useChildren?: boolean;
+        foldInQuery?: boolean;
+      },
     ): void;
 
     /**
@@ -1768,6 +1985,7 @@ export interface Orca {
       fn: (
         content: ContentFragment,
         forExport?: boolean,
+        context?: ConvertContext,
       ) => string | Promise<string>,
     ): void;
 
@@ -1853,6 +2071,7 @@ export interface Orca {
       type: string,
       content: ContentFragment,
       forExport?: boolean,
+      context?: ConvertContext,
     ): Promise<string>;
   };
 
@@ -2061,13 +2280,37 @@ export interface Orca {
       style?: React.CSSProperties;
     }) => JSX.Element | null;
     /**
+     * Displays an editable caption input for a block.
+     * The caption is saved automatically when the input loses focus.
+     * Only renders when a caption value is present.
+     *
+     * @example
+     * ```tsx
+     * const { BlockCaption } = orca.components;
+     * // Basic usage in a custom block renderer
+     * <BlockCaption
+     *   panelId="main-panel"
+     *   blockId={123}
+     *   cap="My Caption"
+     * />
+     * ```
+     */
+    BlockCaption: (props: {
+      /** The ID of the panel containing the block */
+      panelId: string;
+      /** The ID of the block to display/edit the caption for */
+      blockId: DbId;
+      /** The caption text to display */
+      cap?: string;
+    }) => JSX.Element | null;
+    /**
      * Renders a block's children
      *
      * @example
      * ```tsx
      * // Standard usage
      * <orca.components.BlockChildren
-     *   block={blockObject}
+     *   blockId={123}
      *   panelId="main-panel"
      *   blockLevel={1}
      *   indentLevel={1}
@@ -2075,7 +2318,7 @@ export interface Orca {
      *
      * // Using simplified rendering mode
      * <orca.components.BlockChildren
-     *   block={blockObject}
+     *   blockId={456}
      *   panelId="panel-2"
      *   blockLevel={2}
      *   indentLevel={3}
@@ -2084,7 +2327,7 @@ export interface Orca {
      * ```
      */
     BlockChildren: (props: {
-      block: Block;
+      blockId?: DbId;
       panelId: string;
       blockLevel: number;
       indentLevel: number;
@@ -2206,30 +2449,28 @@ export interface Orca {
       selfFoldable?: boolean;
     }) => JSX.Element | null;
     /**
-     * Displays a block preview in a popup on hover
+     * Renders a block preview popup.
      *
-     * When hovering over the child element, a popup appears showing a preview of the referenced block.
-     * The preview can be made interactive by pressing the configured keyboard shortcut,
-     * allowing users to edit the block content directly in the preview.
+     * The popup is typically opened by hovering the child element, but it can also be
+     * controlled with `visible`. `interactive` enables the editor-like preview mode,
+     * `customQuery` / `expandQueryRoot` customize the preview content source.
      *
      * @example
      * ```tsx
-     * // Basic block preview on link hover
      * <BlockPreviewPopup blockId={123}>
      *   <a href="#block-123">Block Reference</a>
      * </BlockPreviewPopup>
      *
-     * // With custom delay and event handlers
      * <BlockPreviewPopup
      *   blockId={456}
      *   delay={500}
-     *   onClose={() => console.log("Preview closed")}
+     *   interactive
      *   className="custom-preview"
+     *   onClose={() => console.log("Preview closing")}
      * >
      *   <span>Hover me for block preview</span>
      * </BlockPreviewPopup>
      *
-     * // Programmatically controlled visibility
      * <BlockPreviewPopup
      *   blockId={789}
      *   visible={isPreviewOpen}
@@ -2243,21 +2484,31 @@ export interface Orca {
       props: {
         /** The ID of the block to display in the preview */
         blockId: DbId;
+        /** Optional custom query used to build the preview content */
+        customQuery?: BlockCustomQuery;
+        /** Whether to expand the query root block in custom preview mode */
+        expandQueryRoot?: boolean;
         /** Delay in milliseconds before showing the preview on hover (default: 200) */
         delay?: number;
-        /** Reference element to anchor the popup positioning */
+        /** Whether the preview starts in interactive mode */
+        interactive?: boolean;
+        /** Reference element used to anchor popup positioning */
         refElement?: React.RefObject<HTMLElement>;
-        /** Whether the preview popup is visible (controlled mode) */
+        /** DOM rect used to position the popup when no reference element is available */
+        rect?: DOMRect;
+        /** Whether the preview popup is visible in controlled mode */
         visible?: boolean;
-        /** Callback fired when the preview should close */
+        /** Disables hover-to-open behavior for block reference previews */
+        noHoverPreview?: boolean;
+        /** Called when the preview begins closing */
         onClose?: () => void;
-        /** Callback fired after the preview has finished closing animation */
+        /** Called after the close animation finishes */
         onClosed?: () => void;
         /** CSS class name for the popup container */
         className?: string;
         /** Inline styles for the popup container */
         style?: React.CSSProperties;
-        /** The child element that triggers the preview on hover */
+        /** Child element that triggers the preview */
         children?: React.ReactElement;
       } & React.HTMLAttributes<HTMLDivElement>,
     ) => JSX.Element | null;
@@ -2314,7 +2565,10 @@ export interface Orca {
      * ```
      */
     Button: (
-      props: React.ButtonHTMLAttributes<HTMLButtonElement> & {
+      props: React.DetailedHTMLProps<
+        ButtonHTMLAttributes<HTMLButtonElement>,
+        HTMLButtonElement
+      > & {
         variant: "solid" | "soft" | "dangerous" | "outline" | "plain";
       },
     ) => JSX.Element | null;
@@ -2375,7 +2629,10 @@ export interface Orca {
      * ```
      */
     CompositionInput: (
-      props: React.InputHTMLAttributes<HTMLInputElement> & {
+      props: React.DetailedHTMLProps<
+        InputHTMLAttributes<HTMLInputElement>,
+        HTMLInputElement
+      > & {
         pre?: React.ReactElement;
         post?: React.ReactElement;
         error?: React.ReactNode;
@@ -2402,7 +2659,10 @@ export interface Orca {
      * ```
      */
     CompositionTextArea: (
-      props: React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+      props: React.DetailedHTMLProps<
+        TextareaHTMLAttributes<HTMLTextAreaElement>,
+        HTMLTextAreaElement
+      >,
     ) => JSX.Element | null;
     /**
      * Displays a confirmation dialog
@@ -2525,29 +2785,7 @@ export interface Orca {
      * </orca.components.ContextMenu>
      * ```
      */
-    ContextMenu: (props: {
-      className?: string;
-      style?: React.CSSProperties;
-      menu: (close: () => void, state?: any) => React.ReactNode;
-      children: (
-        openMenu: (e: React.UIEvent, state?: any) => void,
-        closeMenu: () => void,
-      ) => React.ReactNode;
-      container?: React.RefObject<HTMLElement>;
-      alignment?: "left" | "top" | "center" | "bottom" | "right";
-      placement?: "vertical" | "horizontal";
-      defaultPlacement?: "top" | "bottom" | "left" | "right";
-      allowBeyondContainer?: boolean;
-      noPointerLogic?: boolean;
-      keyboardNav?: boolean;
-      navDirection?: "vertical" | "both";
-      menuAttr?: Record<string, any>;
-      offset?: number;
-      crossOffset?: number;
-      escapeToClose?: boolean;
-      onOpened?: () => void;
-      onClosed?: () => void;
-    }) => JSX.Element | null;
+    ContextMenu: (props: ContextMenuProps) => JSX.Element | null;
     /**
      * Calendar date picker
      *
@@ -2668,7 +2906,7 @@ export interface Orca {
      * ```
      */
     Image: (
-      props: React.HTMLAttributes<HTMLImageElement>,
+      props: React.ImgHTMLAttributes<HTMLImageElement>,
     ) => JSX.Element | null;
     /**
      * Standard text input component
@@ -2698,7 +2936,10 @@ export interface Orca {
      * ```
      */
     Input: (
-      props: React.InputHTMLAttributes<HTMLInputElement> & {
+      props: React.DetailedHTMLProps<
+        InputHTMLAttributes<HTMLInputElement>,
+        HTMLInputElement
+      > & {
         pre?: React.ReactElement;
         post?: React.ReactElement;
         error?: React.ReactNode;
@@ -3379,32 +3620,7 @@ export interface Orca {
      * />
      * ```
      */
-    Select: (props: {
-      selected: string[];
-      options: { value: string; label: string; group?: string }[];
-      onChange?: (
-        selected: string[],
-        filterKeyword?: string,
-      ) => void | Promise<void>;
-      menuContainer?: React.RefObject<HTMLElement>;
-      width?: number | string;
-      placeholder?: string;
-      multiSelection?: boolean;
-      withClear?: boolean;
-      filter?: boolean;
-      filterPlaceholder?: string;
-      filterFunction?: (
-        keyword: string,
-      ) => Promise<{ value: string; label: string; group?: string }[]>;
-      alignment?: "left" | "center" | "right";
-      pre?: React.ReactElement;
-      buttonClassName?: string;
-      menuClassName?: string;
-      disabled?: boolean;
-      readOnly?: boolean;
-      onMouseEnter?: (e: React.MouseEvent) => void;
-      onMouseLeave?: (e: React.MouseEvent) => void;
-    }) => JSX.Element | null;
+    Select: (props: SelectProps) => JSX.Element | null;
     /**
      * Loading placeholder
      *
@@ -3475,7 +3691,7 @@ export interface Orca {
         unset?: boolean;
         onChange?: (on: boolean) => void | Promise<void>;
         readonly?: boolean;
-      } & Omit<React.HTMLAttributes<HTMLButtonElement>, "onChange">,
+      } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onChange">,
     ) => JSX.Element | null;
     /**
      * Data table component
@@ -3752,9 +3968,84 @@ export interface Orca {
        *
        * @param images - An array of image URLs to display in the viewer.
        * @param thumbnail - The source image element used for transition animation.
+       * @param options - Optional viewer configuration such as initial rotation.
        */
-      viewImages(images: string[], thumbnail: HTMLImageElement): void;
+      viewImages(
+        images: string[],
+        thumbnail: HTMLImageElement,
+        options?: {
+          initialRotation?: number;
+        },
+      ): void;
     };
+
+    /**
+     * Block editor context for accessing the current block editor instance.
+     *
+     * This React context provides access to the currently focused block editor's
+     * DOM references, panel identity and active state. It is
+     * useful for plugins that need to interact with the editor directly, such as
+     * custom UI overlays, toolbars, or editor extensions.
+     *
+     * @example
+     * ```tsx
+     * const { useContext } = window.React
+     * const { useSnapshot } = window.Valtio
+     *
+     * const BlockEditorContext = orca.contexts.BlockEditorContext
+     *
+     * function MyEditorPlugin() {
+     *   const editorCtx = useContext(BlockEditorContext)
+     *
+     *   const { editor, panelId, rootBlockId } = editorCtx
+     *   const { active } = useSnapshot(editorCtx)
+     *
+     *   // Use editor ref to position overlays relative to the editor
+     *
+     *   return active ? (
+     *     <div>Editing block {rootBlockId} in panel {panelId}</div>
+     *   ) : null
+     * }
+     * ```
+     */
+    BlockEditorContext: React.Context<{
+      /** Ref to the editor's content Editable (contentEditable) element. */
+      editor: React.RefObject<HTMLDivElement>;
+      /** The ID of the panel this editor resides in. */
+      panelId: string;
+      /** The database ID of the root block being edited. */
+      rootBlockId: import("@/types/orca").DbId;
+      /** Whether this editor is currently focused / active. */
+      active: boolean;
+    }>;
+
+    /**
+     * Z-index context for managing hierarchical stacking order of UI elements.
+     *
+     * This React context provides the current z-index value for components that
+     * need to establish their own stacking contexts (e.g., popups, tooltips,
+     * maximized overlays). Components that render into portals or elevated
+     * layers should consume this context and offset their z-index from the
+     * provided value to ensure proper stacking order.
+     *
+     * @example
+     * ```tsx
+     * import { useContext } from "react"
+     *
+     * const ZContext = orca.contexts.ZContext
+     *
+     * function MyPopup() {
+     *   const zIndex = useContext(ZContext)
+     *
+     *   return (
+     *     <div style={{ zIndex: zIndex + 10 }}>
+     *       Popup content
+     *     </div>
+     *   )
+     * }
+     * ```
+     */
+    ZContext: React.Context<number>;
   };
 
   /**
@@ -4233,6 +4524,7 @@ export interface Orca {
      * @param refElement - Optional element to anchor the preview to.
      * @param rect - Optional bounding rectangle to anchor the preview to if refElement is not provided.
      * @param interactive - Whether the preview should be interactive (allow editing).
+     * @param blockEditorActive - Whether the preview should render with block editor context active (default: false).
      * @returns A function that, when called, will close the preview.
      *
      * @example
@@ -4249,7 +4541,137 @@ export interface Orca {
       refElement?: HTMLElement,
       rect?: DOMRect,
       interactive?: boolean,
+      blockEditorActive?: boolean,
     ) => () => void;
+
+    /**
+     * Computes a numeric hash from an array of numbers (e.g., block IDs).
+     *
+     * This is commonly used in React components as a dependency for memoization
+     * or as a key to detect changes in a block's children structure.
+     *
+     * @param arr - An array of numbers (e.g., block IDs) to hash, or undefined.
+     *              `undefined` values in the array are treated as 0.
+     * @returns A signed 32-bit integer hash value. Returns 0 if the array is
+     *          empty, undefined, or falsy.
+     *
+     * @example
+     * ```ts
+     * // Hash an array of block IDs to use as a React dependency
+     * const childrenHash = orca.utils.hashArray(block?.children as any)
+     *
+     * // Use in a React hook to detect changes
+     * React.useEffect(() => {
+     *   // Re-run when children structure changes
+     * }, [childrenHash])
+     * ```
+     */
+    hashArray: (arr?: Array<number | undefined>) => number;
+  };
+
+  /**
+   * AI/LLM API, used to send messages to and receive responses from AI models configured in Orca.
+   * Supports both standard (single response) and streaming message exchanges,
+   * with optional custom tools for function calling.
+   *
+   * @example
+   * ```ts
+   * // Send a standard message
+   * const response = await orca.ai.sendMessage([
+   *   { role: "user", content: "Summarize this note" }
+   * ])
+   * const reply = response.choices[0].message.content
+   *
+   * // Stream a message with an abort controller
+   * const controller = new AbortController()
+   * const stream = orca.ai.sendStreamMessage(
+   *   [{ role: "user", content: "Write a poem" }],
+   *   controller
+   * )
+   * for await (const chunk of stream) {
+   *   if (chunk.content) {
+   *     console.log(chunk.content)
+   *   }
+   * }
+   * ```
+   */
+  ai: {
+    /**
+     * Sends a list of chat messages to the AI model and returns a complete response.
+     * This is a non-streaming API — the Promise resolves once the full reply is ready.
+     *
+     * @param messages - An array of chat completion messages representing the conversation history.
+     *                   Each message includes a `role` ("system", "user", or "assistant") and `content`.
+     * @param options - Optional configuration for the request.
+     * @param options.extraTools - Additional function tools to register for the AI model's use during
+     *                             this conversation turn. Each tool follows the OpenAI function tool schema.
+     * @returns A Promise resolving to the full chat completion response object, augmented with an
+     *          optional `_request_id` field for tracing purposes.
+     *
+     * @example
+     * ```ts
+     * const res = await orca.ai.sendMessage([
+     *   { role: "system", content: "You are a helpful assistant." },
+     *   { role: "user", content: "Explain what a Promise is in JavaScript." }
+     * ])
+     * console.log(res.choices[0].message.content)
+     * ```
+     */
+    sendMessage: (
+      messages: ChatCompletionMessageParam[],
+      options?: {
+        extraTools?: OpenAI.Chat.Completions.ChatCompletionFunctionTool[];
+      },
+    ) => Promise<
+      OpenAI.Chat.Completions.ChatCompletion & { _request_id?: string | null }
+    >;
+
+    /**
+     * Sends a list of chat messages to the AI model and returns an async generator
+     * that yields each content delta (streaming chunk) as it arrives.
+     *
+     * This is ideal for real-time display of AI responses character-by-character.
+     * The generator yields `Choice.Delta` objects (with `content`, `role`, or tool-call deltas)
+     * augmented with a `reasoning_content` field for models that support reasoning tokens.
+     *
+     * @param messages - An array of chat completion messages representing the conversation history.
+     * @param controller - An `AbortController` that can be used to cancel the stream mid-flight.
+     * @param options - Optional configuration for the request.
+     * @param options.extraTools - Additional function tools to register for the AI model's use during
+     *                             this conversation turn.
+     * @returns An AsyncGenerator yielding streamed deltas. Each yielded object contains either
+     *          `content`, `role`, `function_call`, or `tool_calls` fields as produced by the model,
+     *          plus a `reasoning_content` string for models that expose chain-of-thought tokens.
+     *
+     * @example
+     * ```ts
+     * const controller = new AbortController()
+     * const stream = orca.ai.sendStreamMessage(
+     *   [{ role: "user", content: "Count from 1 to 5" }],
+     *   controller
+     * )
+     *
+     * for await (const delta of stream) {
+     *   if (delta.content) {
+     *     // Append the incoming content to the UI in real time
+     *     outputElement.textContent += delta.content
+     *   }
+     * }
+     * ```
+     */
+    sendStreamMessage: (
+      messages: ChatCompletionMessageParam[],
+      controller: AbortController,
+      options?: {
+        extraTools?: OpenAI.Chat.Completions.ChatCompletionFunctionTool[];
+      },
+    ) => AsyncGenerator<
+      OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta & {
+        reasoning_content: string;
+      },
+      void,
+      unknown
+    >;
   };
 
   /**
@@ -4438,6 +4860,7 @@ export type PanelProps = {
   active: boolean;
   preview?: "content" | "backRef";
   customQuery?: BlockCustomQuery;
+  expandQueryRoot?: boolean;
 };
 
 // Commands
@@ -4813,6 +5236,13 @@ export interface BlockRef {
  */
 export type BlockRefData = Pick<BlockProperty, "name" | "type" | "value">;
 
+export type TagInput =
+  | string
+  | {
+      name: string;
+      props?: Record<string, any>;
+    };
+
 /**
  * Simplified block structure used when converting blocks to other formats.
  */
@@ -4830,6 +5260,12 @@ export type BlockForConversion = {
 export type ConvertContext = {
   /** The root block ID of the export scope */
   exportRootId?: DbId;
+  /** Resolve a block from a temporary conversion context before falling back to global state. */
+  getBlockById?: (blockId: DbId) => Block | undefined;
+  /** Resolve an inline reference from a temporary conversion context before hitting the backend. */
+  getRefById?: (
+    refId: DbId,
+  ) => Promise<{ to: DbId; alias?: string } | undefined>;
 };
 
 /** Block rendering modes */
@@ -5005,7 +5441,12 @@ export interface QueryNoText {
 export interface QueryBlock {
   /** Kind identifier for block queries (9) */
   kind: QueryKindBlock;
-  /** The block types to match or not match */
+  /**
+   * The block types (`_repr.type`) to match or not match.
+   * NOTE: `op` is typed optional but the runtime requires it explicitly —
+   * use `op: 5` (QueryHas) to match blocks of the listed types,
+   * `op: 6` (QueryNotHas) to exclude them. Example: { kind: 9, types: { op: 5, value: ["aichat"] } }
+   */
   types?: {
     op?: QueryHas | QueryNotHas;
     value?: string[];
@@ -5490,4 +5931,33 @@ export interface BlockCustomQuery {
   q: QueryDescription2;
   /** Optional extra SQL to append to the query defined in `q` */
   extraSql?: string;
+}
+
+/** Options passed to `core.editor.moveBlocks` for fine-grained control over the move operation. */
+export interface BlockMoveOptions {
+  /**
+   * If `true`, the moved blocks' type (repr) is automatically adjusted to match
+   * the target parent or sibling (e.g., converting a text block to a list item
+   * when moving into a list).
+   */
+  autoMatchType?: boolean;
+  /**
+   * Additional move operations that are performed atomically alongside the
+   * primary move. Each entry is a tuple of:
+   * `[blockIds, refBlockId, position]`.
+   *
+   * - `blockIds`: The blocks to move.
+   * - `refBlockId`: The reference block (or `null` for root-level).
+   * - `position`: Where to place the blocks relative to `refBlockId`.
+   */
+  extraMoves?: [
+    DbId[],
+    DbId | null,
+    "before" | "after" | "firstChild" | "lastChild" | null,
+  ][];
+}
+
+export interface BlockMoveBackendOptions {
+  autoMatchType?: boolean;
+  extraMoves?: [DbId[], DbId, DbId | null][];
 }

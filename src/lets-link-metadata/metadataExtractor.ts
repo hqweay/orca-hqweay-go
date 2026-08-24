@@ -1,6 +1,9 @@
 import { MetadataProperty, Rule } from "./types";
 import { PropType } from "@/libs/consts";
 import { HTML_TO_MARKDOWN_SCRIPT, cleanUrl } from "./webviewScripts";
+import { Logger } from "@/libs/logger";
+
+const logger = new Logger("link-metadata:extractor");
 
 // cleanUrl is imported from ./webviewScripts
 
@@ -24,7 +27,7 @@ export function matchRule(url: string, rules: Rule[]): Rule | undefined {
 
       return regex.test(url);
     } catch (e) {
-      console.error(`Invalid regex for rule ${rule.name}`, e);
+      logger.warn(`Invalid regex for rule ${rule.name}`, e);
       return false;
     }
   });
@@ -52,7 +55,7 @@ export async function extractMetadata(
     const response = await fetch(url, fetchOptions);
 
     if (!response.ok) {
-      console.warn(`Fetch error: ${response.status}`);
+      logger.warn(`Fetch error: ${response.status}`);
       // Depending on requirements, we might want to throw or return empty
       // The original code warned and proceeded, but usually fetch failure means no HTML.
       // Let's trying reading text anyway, or throw if critical.
@@ -103,13 +106,13 @@ export async function extractMetadata(
       null, // htmlToMarkdown is defined inside the script body via HTML_TO_MARKDOWN_SCRIPT prefix
     ); // Ensure result is array
     if (!Array.isArray(result)) {
-      console.warn("Script returned non-array:", result);
+      logger.warn("Script returned non-array:", result);
       return [];
     }
 
     return result as MetadataProperty[];
   } catch (error) {
-    console.error("Failed to extract metadata:", error);
+    logger.error("Failed to extract metadata:", error);
     throw error;
   }
 }

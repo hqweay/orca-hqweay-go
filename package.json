@@ -25,14 +25,18 @@
     "rollup-plugin-livereload": "^2.0.5",
     "typescript": "^5.2.2",
     "vite": "^5.2.0",
-    "vite-plugin-static-copy": "^3.1.5"
+    "vite-plugin-static-copy": "^3.1.5",
+    "vitest": "^3.0.0",
+    "@types/lodash.clonedeep": "^4.5.9"
   },
   "dependencies": {
     "@types/jszip": "^3.4.1",
     "date-fns": "^4.1.0",
     "gray-matter": "^4.0.3",
     "jszip": "^3.10.1",
+    "lodash.clonedeep": "^4.5.0",
     "pinyin-pro": "^3.28.0",
+    "ts-fsrs": "^5.2.3",
     "vite-plugin-zip-pack": "^1.2.4"
   }
 }

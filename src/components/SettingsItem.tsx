@@ -5,6 +5,8 @@ export interface SettingsItemProps {
   description?: string;
   children: React.ReactNode;
   vertical?: boolean;
+  /** Where to render the description: above the row ("top") or below it ("bottom"). */
+  descriptionPosition?: "top" | "bottom";
 }
 
 export function SettingsItem({
@@ -12,7 +14,11 @@ export function SettingsItem({
   description,
   children,
   vertical = false,
+  descriptionPosition = "bottom",
 }: SettingsItemProps) {
+  const desc = description && (
+    <div style={{ fontSize: "0.85em", opacity: 0.7 }}>{description}</div>
+  );
   return (
     <div
       style={{
@@ -32,11 +38,10 @@ export function SettingsItem({
         }}
       >
         <div style={{ fontWeight: "bold" }}>{label}</div>
+        {descriptionPosition === "top" && desc}
         <div style={{ width: vertical ? "100%" : "auto" }}>{children}</div>
       </div>
-      {description && (
-        <div style={{ fontSize: "0.85em", opacity: 0.7 }}>{description}</div>
-      )}
+      {descriptionPosition === "bottom" && desc}
     </div>
   );
 }
@@ -45,7 +50,7 @@ export function SettingsSection({ title, children }: { title: string, children: 
   return (
     <div style={{ marginBottom: "24px" }}>
       <h3 style={{ 
-        borderBottom: "1px solid var(--b3-theme-surface-lighter)", 
+        borderBottom: "1px solid var(--orca-color-border)", 
         paddingBottom: "8px",
         marginBottom: "16px" 
       }}>{title}</h3>

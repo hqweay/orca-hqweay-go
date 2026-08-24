@@ -2,31 +2,59 @@ import React from "react";
 import { Logger } from "./logger";
 import { t } from "./l10n";
 import { PluginSettings } from "@/components/PluginSettings";
+import { PluginSettingsAdapter } from "./PluginSettingsAdapter";
 
 export abstract class BasePlugin {
   protected mainPluginName: string;
   protected logger: Logger;
-  protected name: string;
+  protected _name: string;
+  get name(): string { return this._name; }
   protected headbarButtonId: string | null = null;
   protected isLoaded: boolean = false;
 
+  protected _registeredCommandIds = new Set<string>();
+  protected _registeredBlockMenuIds = new Set<string>();
+  protected _cleanupFns: (() => void)[] = [];
+  protected settingsAdapter: PluginSettingsAdapter;
+
   constructor(mainPluginName: string, name: string) {
     this.mainPluginName = mainPluginName;
-    this.name = name;
+    this._name = name;
     this.logger = new Logger(name);
+    this.settingsAdapter = new PluginSettingsAdapter(
+      this.mainPluginName,
+      this._name,
+      () => this.getDefaultSettings(),
+      (config) => this.onConfigChanged(config),
+      this.logger
+    );
   }
 
   public getDisplayName(): string {
-    return t(this.name);
+    return t(this._name);
   }
 
   public getDescription(): string {
-    return t(`${this.name}.description`);
+    return t(`${this._name}.description`);
+  }
+
+  /**
+   * Translates a key, automatically prefixing it with the plugin name.
+   * Idempotent to the prefix: "ai.custom" and "custom" both resolve.
+   */
+  public t(key: string, args?: { [key: string]: string }): string {
+    const fullKey = key.startsWith(`${this._name}.`) ? key : `${this._name}.${key}`;
+    return t(fullKey, args);
   }
 
   public abstract load(): Promise<void>;
 
-  public abstract unload(): Promise<void>;
+  /**
+   * Called when the plugin is unloaded.
+   * Override if you need to perform manual cleanup (e.g. intervals, DOM elements).
+   * Note: Commands and Block Menus registered via helpers are cleaned up automatically.
+   */
+  public async unload(): Promise<void> {}
 
   /**
    * Render headbar button for this plugin.
@@ -55,8 +83,94 @@ export abstract class BasePlugin {
     // Auto unregister headbar
     this.unregisterHeadbar();
 
+    // Auto unregister commands
+    for (const fullId of this._registeredCommandIds) {
+      try {
+        orca.commands.unregisterCommand(fullId);
+      } catch (e) {
+        this.logger.error(`Error unregistering command ${fullId}`, e);
+      }
+    }
+    this._registeredCommandIds.clear();
+
+    // Auto unregister block menus
+    if (orca.blockMenuCommands && orca.blockMenuCommands.unregisterBlockMenuCommand) {
+      for (const fullId of this._registeredBlockMenuIds) {
+        try {
+          orca.blockMenuCommands.unregisterBlockMenuCommand(fullId);
+        } catch (e) {
+          this.logger.error(`Error unregistering block menu command ${fullId}`, e);
+        }
+      }
+    }
+    this._registeredBlockMenuIds.clear();
+
+    // Execute arbitrary cleanup closures
+    for (const fn of this._cleanupFns) {
+      try {
+        fn();
+      } catch (e) {
+        this.logger.error("Error during cleanup", e);
+      }
+    }
+    this._cleanupFns = [];
+
+    this.settingsAdapter.dispose();
+
     this.logger.info("Sub-plugin unloaded");
   }
+
+  // --- Auto-Cleanup Registration Helpers ---
+
+  protected registerCommand(id: string, callback: any, title: string = "") {
+    const fullId = `${this._name}.${id}`;
+    orca.commands.registerCommand(fullId, callback, title);
+    this._registeredCommandIds.add(fullId);
+  }
+
+  protected unregisterCommand(id: string) {
+    const fullId = `${this._name}.${id}`;
+    orca.commands.unregisterCommand(fullId);
+    this._registeredCommandIds.delete(fullId);
+  }
+
+  protected registerBlockMenuCommand(id: string, options: any) {
+    const fullId = `${this._name}.${id}`;
+    if (orca.blockMenuCommands && orca.blockMenuCommands.registerBlockMenuCommand) {
+      orca.blockMenuCommands.registerBlockMenuCommand(fullId, options);
+      this._registeredBlockMenuIds.add(fullId);
+    }
+  }
+
+  protected unregisterBlockMenuCommand(id: string) {
+    const fullId = `${this._name}.${id}`;
+    if (orca.blockMenuCommands && orca.blockMenuCommands.unregisterBlockMenuCommand) {
+      orca.blockMenuCommands.unregisterBlockMenuCommand(fullId);
+      this._registeredBlockMenuIds.delete(fullId);
+    }
+  }
+
+  /**
+   * Registers a block converter that is automatically unregistered on unload.
+   */
+  protected registerBlockConverter(
+    format: string,
+    type: string,
+    fn: (
+      blockContent: any,
+      repr: any,
+      block?: any,
+      forExport?: boolean,
+      context?: any,
+    ) => string | Promise<string>,
+  ) {
+    orca.converters.registerBlock(format, type, fn);
+    this._cleanupFns.push(() => {
+      orca.converters.unregisterBlock(format, type);
+    });
+  }
+
+  // ----------------------------------------
 
   protected syncHeadbar() {
     if (!this.headbarButtonId) return;
@@ -89,10 +203,10 @@ export abstract class BasePlugin {
     const displayName = this.getDisplayName();
     const description = this.getDescription();
     return {
-      [this.name]: {
+      [this._name]: {
         label: t("Enable ${name}", { name: displayName }),
         description:
-          description !== `${this.name}.description`
+          description !== `${this._name}.description`
             ? description
             : t("Enable ${name}", { name: displayName }),
         type: "boolean",
@@ -101,35 +215,18 @@ export abstract class BasePlugin {
     };
   }
 
-  protected _config: any = {};
-  private _saveTimer: any = null;
-
   /**
    * Loaded settings from persistent storage
    */
   public async initializeSettings(): Promise<void> {
-    const rawData = await orca.plugins.getData(this.mainPluginName, this.name);
-    let diskConfig = {};
-
-    if (rawData && typeof rawData === "string") {
-      try {
-        diskConfig = JSON.parse(rawData);
-      } catch (e) {
-        this.logger.error("Failed to parse settings", e);
-      }
-    } else if (rawData && typeof rawData === "object") {
-      diskConfig = rawData;
-    }
-
-    // Merge with defaults
-    this._config = { ...this.getDefaultSettings(), ...diskConfig };
+    await this.settingsAdapter.initializeSettings();
   }
 
   /**
    * Get the settings scoped to this sub-plugin
    */
   public getSettings(): any {
-    return this._config;
+    return this.settingsAdapter.getSettings();
   }
 
   /**
@@ -146,20 +243,7 @@ export abstract class BasePlugin {
    * Restore settings to their default values.
    */
   public async restoreDefaultSettings(): Promise<void> {
-    const defaults = this.getDefaultSettings();
-    // Replacing entirely, not merging
-    this._config = { ...defaults };
-
-    // Persist immediately
-    await orca.plugins.setData(
-      this.mainPluginName,
-      this.name,
-      JSON.stringify(this._config),
-    );
-
-    // Trigger effects
-    await this.onConfigChanged(this._config);
-    this.logger.info("Settings restored to defaults");
+    await this.settingsAdapter.restoreDefaultSettings();
   }
 
   /**
@@ -168,45 +252,7 @@ export abstract class BasePlugin {
    * This method uses debouncing (default 500ms) for persistence and hook triggering.
    */
   public async updateSettings(pathOrPartial: any, value?: any) {
-    let nextSubSettings;
-    if (typeof pathOrPartial === "string") {
-      nextSubSettings = this.setDeepProperty(
-        this._config,
-        pathOrPartial,
-        value,
-      );
-    } else {
-      nextSubSettings = { ...this._config, ...pathOrPartial };
-    }
-
-    // 1. Update in-memory state immediately for UI responsiveness
-    this._config = nextSubSettings;
-
-    // 2. Debounce persistence and side-effects
-    if (this._saveTimer) {
-      clearTimeout(this._saveTimer);
-    }
-
-    this._saveTimer = setTimeout(async () => {
-      this.logger.info(
-        "Persisting settings after debounce",
-        this.name,
-        this._config,
-      );
-
-      // Persistence
-      await orca.plugins.setData(
-        this.mainPluginName,
-        this.name,
-        JSON.stringify(this._config),
-      );
-
-      // Trigger real-time configuration change hook
-      await this.onConfigChanged(this._config);
-
-      this._saveTimer = null;
-      // 防抖时间长点，性能好些，没必要太快
-    }, 2000);
+    await this.settingsAdapter.updateSettings(pathOrPartial, value);
   }
 
   /**
@@ -224,7 +270,7 @@ export abstract class BasePlugin {
   public async setData(key: string, value: any): Promise<void> {
     await orca.plugins.setData(
       this.mainPluginName,
-      `${this.name}.${key}`,
+      `${this._name}.${key}`,
       value,
     );
   }
@@ -235,7 +281,7 @@ export abstract class BasePlugin {
   public async getData(key: string): Promise<any> {
     return await orca.plugins.getData(
       this.mainPluginName,
-      `${this.name}.${key}`,
+      `${this._name}.${key}`,
     );
   }
 
@@ -266,18 +312,6 @@ export abstract class BasePlugin {
     return [];
   }
 
-  private setDeepProperty(obj: any, path: string, value: any): any {
-    const keys = path.split(".");
-    const newObj = { ...obj };
-    let current = newObj;
-    for (let i = 0; i < keys.length - 1; i++) {
-      current[keys[i]] = { ...current[keys[i]] };
-      current = current[keys[i]];
-    }
-    current[keys[keys.length - 1]] = value;
-    return newObj;
-  }
-
   /**
    * Override this property to return the React component for the settings UI.
    * Internal use, please use renderCustomSettings for simpler customization.
@@ -289,7 +323,10 @@ export abstract class BasePlugin {
    * Render custom settings UI for this sub-plugin.
    * Override this instead of renderSettings for standard layout.
    */
-  protected renderCustomSettings(): React.ReactNode {
+  public renderCustomSettings(
+    _settings: any,
+    _updateSettings: (val: any) => void,
+  ): React.ReactNode {
     return null;
   }
 
@@ -299,8 +336,10 @@ export abstract class BasePlugin {
   public hasSettings(): boolean {
     if (this.settingsComponent) return true;
     if (this.headbarButtonId) return true;
-    if (this.renderCustomSettings() !== null) return true;
-    return false;
+    // 检测子类是否覆盖了 renderCustomSettings
+    return (
+      this.renderCustomSettings !== BasePlugin.prototype.renderCustomSettings
+    );
   }
 
   /**
@@ -316,22 +355,26 @@ export abstract class BasePlugin {
    */
   public renderSettings(): React.ReactNode | null {
     const content = this.settingsComponent
-      ? React.createElement(this.settingsComponent, { plugin: this })
+      ? React.createElement(this.settingsComponent, {
+          plugin: this,
+          key: this._name,
+        })
       : React.createElement(PluginSettings, {
           plugin: this as any,
-          customSettings: this.renderCustomSettings(),
+          key: this._name,
         });
 
     return React.createElement(SettingWrapper, {
       plugin: this,
       children: content,
+      key: this._name,
     });
   }
 
   protected defineSetting(key: string, label: string, desc: string, def = "") {
     return {
-      [`${this.name}.${key}`]: {
-        label: t(`${this.name}.${label}`),
+      [`${this._name}.${key}`]: {
+        label: t(`${this._name}.${label}`),
         description: t(desc),
         type: "string",
         defaultValue: def,

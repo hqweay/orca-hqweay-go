@@ -7,7 +7,10 @@ import { PropType } from "@/libs/consts";
 import { DEFAULT_RULES } from "./defaultRules";
 import { DataImporter, BlockData } from "@/libs/DataImporter";
 import { BrowserModal } from "./components/BrowserModal";
+
+import { injectContextMenu } from "./context-menu";
 import React from "react";
+import { ensureBlockInState } from "@/libs/BlockCache";
 
 const DEFAULT_QUICK_LINKS = [
   {
@@ -34,54 +37,14 @@ export default class LinkMetadataPlugin extends BasePlugin {
   private modalContainer: HTMLElement | null = null;
   private lastVisitedUrl: string | null = null;
   private lastClipboardUrl: string | null = null;
+  private contextMenuInjector: ReturnType<typeof injectContextMenu> | null = null;
 
   public async load(): Promise<void> {
-    if (orca.blockMenuCommands.registerBlockMenuCommand) {
-      orca.blockMenuCommands.registerBlockMenuCommand(
-        `${this.name}.extract-metadata`,
-        {
-          worksOnMultipleBlocks: false,
-          render: (blockId: number, rootBlockId: number, close: any) => {
-            const MenuText = orca.components.MenuText;
-            if (!MenuText) return null;
-            return (
-              <>
-                <MenuText
-                  preIcon="ti ti-link"
-                  title={t("Extract Link Metadata")}
-                  onClick={() => {
-                    close();
-                    orca.commands.invokeCommand(
-                      `${this.name}.extract-metadata`,
-                      blockId,
-                    );
-                  }}
-                />
-                <MenuText
-                  preIcon="ti ti-world"
-                  title={t("Metadata: Browser Mode")}
-                  onClick={async () => {
-                    close();
-                    const block = await orca.invokeBackend(
-                      "get-block",
-                      blockId,
-                    );
-                    const url = this.findUrlInBlock(block) || "";
-                    await this.handleOpenBrowser(url, block);
-                  }}
-                />
-              </>
-            );
-          },
-        },
-      );
-    }
-
     // Auto/Static Command
     orca.commands.registerCommand(
       `${this.name}.extract-metadata`,
       async (blockId: number) => {
-        const block = await orca.invokeBackend("get-block", blockId);
+        const block = await ensureBlockInState(blockId);
         if (!block) {
           orca.notify("error", t("Block not found"));
           return;
@@ -100,7 +63,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
         let url = "";
         let block = null;
         if (blockId) {
-          block = await orca.invokeBackend("get-block", blockId);
+          block = await ensureBlockInState(blockId);
           url = this.findUrlInBlock(block) || "";
         }
 
@@ -145,15 +108,26 @@ export default class LinkMetadataPlugin extends BasePlugin {
       },
     );
 
+    // 注入右键菜单
+    this.contextMenuInjector = injectContextMenu(
+      this.logger,
+      this.handleOpenBrowser.bind(this),
+      async (blockId: number) => {
+        await orca.commands.invokeCommand(
+          `${this.name}.extract-metadata`,
+          blockId,
+        );
+      }
+    );
+
     this.logger.info(`${this.name} loaded.`);
   }
 
   public async unload(): Promise<void> {
-    orca.blockMenuCommands.unregisterBlockMenuCommand(
-      `${this.name}.extract-metadata`,
-    );
     orca.commands.unregisterCommand(`${this.name}.extract-metadata`);
     orca.commands.unregisterEditorCommand(`${this.name}.open-browser`);
+    this.contextMenuInjector?.disconnect();
+    this.contextMenuInjector = null;
     this.destroyBrowserModal();
     this.logger.info(`${this.name} unloaded.`);
   }
@@ -167,8 +141,17 @@ export default class LinkMetadataPlugin extends BasePlugin {
     };
   }
 
-  protected renderCustomSettings(): React.ReactNode {
-    return React.createElement(Settings, { plugin: this as any });
+  public renderCustomSettings(
+    settings: any,
+    updateSettings: (val: any) => void,
+  ): React.ReactNode {
+    return React.createElement(Settings, {
+      plugin: {
+        ...this,
+        getSettings: () => settings,
+        updateSettings,
+      } as any,
+    });
   }
 
   public renderHeadbarButton(): React.ReactNode {
@@ -365,7 +348,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
                 false,
               );
             } catch (e) {
-              console.error("Failed to update block content", e);
+              this.logger.error("Failed to update block content", e);
             }
           }
 
@@ -429,14 +412,14 @@ export default class LinkMetadataPlugin extends BasePlugin {
                   url,
                 );
 
-                // Set as long form display
-                await orca.commands.invokeEditorCommand(
-                  "core.editor.toggleShowAsLongForm",
-                  null, // cursor can be null for this operation
-                  parentBlock.id,
-                );
-
                 if (parentBlock && contentProp && contentProp.value) {
+                  // Set as long form display
+                  await orca.commands.invokeEditorCommand(
+                    "core.editor.toggleShowAsLongForm",
+                    null, // cursor can be null for this operation
+                    parentBlock.id,
+                  );
+
                   // 2. Then insert the content under it
                   await orca.commands.invokeEditorCommand(
                     "core.editor.batchInsertText",
@@ -491,7 +474,7 @@ export default class LinkMetadataPlugin extends BasePlugin {
             orca.notify("error", t("Could not find Daily Note"));
           }
         } catch (e) {
-          console.error("Failed to save selection to Daily Note", e);
+          this.logger.error("Failed to save selection to Daily Note", e);
           orca.notify("error", t("Failed to save to Daily Note"));
         }
       },

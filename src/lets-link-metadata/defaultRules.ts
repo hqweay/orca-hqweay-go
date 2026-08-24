@@ -1,7 +1,8 @@
 import { Rule } from "./types";
 
-// @ts-ignore
-const modules = import.meta.glob("./rules/*.ts", { eager: true });
+const modules = import.meta.glob<{ default: Rule }>("./rules/*.ts", {
+  eager: true,
+});
 
 let allRules: Rule[] = [];
 
